@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'MS Sans Serif';
-  src: url('/fonts/ms-sans-serif.woff2') format('woff2');
+  font-family: "MS Sans Serif";
+  src: url("/fonts/ms-sans-serif.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'Helvetica Neue';
-  src: url('/fonts/helvetica-neue.woff2') format('woff2');
+  font-family: "Helvetica Neue";
+  src: url("/fonts/helvetica-neue.woff2") format("woff2");
 }
 
 :root {
@@ -24,9 +24,9 @@
 body {
   background-color: var(--win-bg);
   color: var(--win-text);
-  font-family: 'Helvetica Neue', 'MS Sans Serif', -apple-system, sans-serif;
+  font-family: "Helvetica Neue", "MS Sans Serif", -apple-system, sans-serif;
   cursor: default;
-  background-image: url('https://static1.howtogeekimages.com/wordpress/wp-content/uploads/2024/06/windows-2000.png?q=70&fit=crop&w=825&dpr=1');
+  background-image: url("https://static1.howtogeekimages.com/wordpress/wp-content/uploads/2024/06/windows-2000.png?q=70&fit=crop&w=825&dpr=1");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -57,6 +57,7 @@ body {
 
 .desktop-icon {
   width: 100%;
+  max-width: 120px;
   text-align: center;
   padding: 8px;
   color: var(--win-text);
@@ -65,12 +66,29 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  transition: all 0.2s ease;
+  border-radius: 4px;
 }
 
 .desktop-icon:hover {
-  background: var(--accent-yellow);
+  background: rgba(255, 255, 0, 0.8);
   color: var(--win-bg);
   text-shadow: none;
+}
+
+.desktop-icon:hover .desktop-icon-label {
+  color: var(--win-bg);
+  background: rgba(0, 0, 0, 0.1);
+  text-shadow: none;
+}
+
+.desktop-icon.coming-soon {
+  opacity: 0.8;
+}
+
+.desktop-icon.coming-soon:hover {
+  background: rgba(255, 165, 0, 0.8);
+  opacity: 1;
 }
 
 .desktop-icon-emoji {
@@ -92,6 +110,9 @@ body {
   text-align: center;
   white-space: pre-line;
   line-height: 1.2;
+  color: var(--win-text);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
+  transition: all 0.2s ease;
 }
 
 .win-btn {
@@ -144,7 +165,7 @@ body {
 }
 
 .canary-text {
-  font-family: 'Helvetica Neue', sans-serif;
+  font-family: "Helvetica Neue", sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: var(--win-text);
@@ -163,9 +184,7 @@ body {
   font-weight: bold;
   color: #000;
   text-shadow: 1px 1px 0 #fff;
-  box-shadow: 
-    inset -4px -4px 0 #e7a210,
-    inset 4px 4px 0 #ffea94;
+  box-shadow: inset -4px -4px 0 #e7a210, inset 4px 4px 0 #ffea94;
   animation: bounce 0.5s infinite alternate;
 }
 

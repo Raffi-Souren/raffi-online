@@ -1,0 +1,92 @@
+{
+  "articles": [
+    {
+      "version": "v8",
+      "slug": "when-bigger-stops-being-better",
+      "title": "When Bigger Stops Being Better",
+      "thesis": "Exploring the inflection point where model size becomes counterproductive",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v8-when-bigger-khatchadourian-gbjee",
+      "tags": ["AI", "LLMs", "Enterprise", "Efficiency"],
+      "publishDate": "2024-12-15",
+      "readTime": "6 min",
+      "summary": "As AI models grow exponentially, we're hitting diminishing returns. This piece explores why smaller, specialized models might be the future of enterprise AI."
+    },
+    {
+      "version": "v7",
+      "slug": "ai-infrastructure-open-source-inflection",
+      "title": "AI Infrastructure at an Open Source Inflection Point",
+      "thesis": "The open source AI ecosystem is reaching a critical mass",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v7-ai-open-khatchadourian-zzsqe",
+      "tags": ["AI", "Open Source", "Infrastructure"],
+      "publishDate": "2024-12-01",
+      "readTime": "7 min",
+      "summary": "Open source AI tools are maturing rapidly, creating new opportunities for enterprise adoption and innovation."
+    },
+    {
+      "version": "v6",
+      "slug": "small-language-models-service-layer",
+      "title": "Small Language Models and the Service Layer Reality",
+      "thesis": "SLMs are becoming the practical choice for production systems",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v6-small-layer-khatchadourian-zmdce",
+      "tags": ["AI", "SLMs", "Architecture", "Production"],
+      "publishDate": "2024-11-15",
+      "readTime": "5 min",
+      "summary": "Small Language Models are proving more practical than their larger counterparts for real-world enterprise applications."
+    },
+    {
+      "version": "v5",
+      "slug": "stress-testing-blockchain-ai-global-scale",
+      "title": "Stress-Testing Blockchain and AI at Global Scale",
+      "thesis": "Real-world testing reveals the limits and potential of combined technologies",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v5-blockchain-khatchadourian-hwske",
+      "tags": ["AI", "Blockchain", "Scale", "Testing"],
+      "publishDate": "2024-11-01",
+      "readTime": "8 min",
+      "summary": "Lessons learned from deploying AI and blockchain solutions at enterprise scale across global markets."
+    },
+    {
+      "version": "v4",
+      "slug": "shipping-real-value-ai-champagne-era",
+      "title": "Shipping Real Value in the AI Champagne Era",
+      "thesis": "Moving beyond hype to deliver tangible business outcomes",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v3-research-khatchadourian-nqmae",
+      "tags": ["AI", "Business Value", "Implementation"],
+      "publishDate": "2024-10-15",
+      "readTime": "6 min",
+      "summary": "How to cut through AI hype and focus on solutions that deliver measurable business impact."
+    },
+    {
+      "version": "v3",
+      "slug": "research-but-make-it-deep",
+      "title": "Research, but make it deep",
+      "thesis": "The importance of rigorous research in AI development",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-todays-ai-raffi-khatchadourian-zp0ke",
+      "tags": ["AI", "Research", "Methodology"],
+      "publishDate": "2024-10-01",
+      "readTime": "7 min",
+      "summary": "Why deep, methodical research is crucial for building reliable AI systems in enterprise environments."
+    },
+    {
+      "version": "v2",
+      "slug": "are-todays-ai-agents-actually-agentic",
+      "title": "Are Today's AI Agents Actually Agentic?",
+      "thesis": "Examining the gap between AI agent marketing and reality",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-todays-ai-raffi-khatchadourian-zp0ke",
+      "tags": ["AI", "Agents", "Analysis"],
+      "publishDate": "2024-09-15",
+      "readTime": "5 min",
+      "summary": "A critical look at whether current AI agents truly exhibit autonomous behavior or are just sophisticated automation."
+    },
+    {
+      "version": "v1",
+      "slug": "ai-agents-finance-crypto",
+      "title": "AI Agents in Finance and Crypto",
+      "thesis": "Exploring autonomous agents in financial markets",
+      "linkedinUrl": "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-ai-agents-raffi-khatchadourian-ulpfe",
+      "tags": ["AI", "Finance", "Crypto", "Agents"],
+      "publishDate": "2024-09-01",
+      "readTime": "6 min",
+      "summary": "The first exploration of how AI agents are being deployed in financial services and cryptocurrency markets."
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "events": [
+    {
+      "id": "gen-ai-capital-markets-2025",
+      "title": "Building Gen AI for Capital Markets",
+      "date": "2025-08-21",
+      "time": "18:00",
+      "timezone": "America/New_York",
+      "venue": "NYC Financial District",
+      "venueAddress": "TBD",
+      "description": "A deep dive into implementing generative AI solutions for capital markets, covering regulatory considerations, risk management, and practical deployment strategies.",
+      "lumaUrl": "https://lu.ma/chks6i58",
+      "type": "speaking",
+      "status": "upcoming",
+      "topics": ["Generative AI", "Capital Markets", "Financial Services", "Regulation"],
+      "attendees": 150
+    },
+    {
+      "id": "ai-enterprise-summit-2024",
+      "title": "Enterprise AI: Beyond the Hype",
+      "date": "2024-11-15",
+      "time": "14:00",
+      "timezone": "America/New_York",
+      "venue": "IBM Watson Center",
+      "venueAddress": "51 Astor Pl, New York, NY 10003",
+      "description": "Keynote presentation on practical AI implementation strategies for large enterprises.",
+      "type": "keynote",
+      "status": "past",
+      "topics": ["Enterprise AI", "Implementation", "Strategy"],
+      "attendees": 300,
+      "recordingUrl": "https://example.com/recording",
+      "slidesUrl": "https://example.com/slides"
+    }
+  ]
+}

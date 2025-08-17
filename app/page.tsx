@@ -5,51 +5,32 @@ import { WindowsIcons } from "./components/Icons"
 import SongOfTheDay from "./components/SongOfTheDay"
 import Counter from "./components/Counter"
 import EasterEgg from "./components/EasterEgg"
-import TerminalWindow from "./components/TerminalWindow"
 import GameSelector from "./components/GameSelector"
-import PoolsuitePlayer from "./components/PoolsuitePlayer"
+import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
+import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
 export default function Home() {
   const [activeWindow, setActiveWindow] = useState<string | null>(null)
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false)
   const currentTime = new Date().toLocaleTimeString()
 
-  const desktopIcons = [
+  // Working features first
+  const workingIcons = [
     {
       icon: WindowsIcons.User,
       label: "About RAF\nVinyl",
       action: "about",
     },
     {
-      icon: WindowsIcons.Music,
-      label: 'DJ Sets\n12"',
-      action: "music",
-    },
-    {
-      icon: WindowsIcons.Poolsuite,
-      label: "Poolsuite\nFM",
-      action: "poolsuite",
-    },
-    {
-      icon: WindowsIcons.Documents,
-      label: "Projects\nLabels",
-      action: "projects",
+      icon: WindowsIcons.Internet,
+      label: "Blogroll\n2025",
+      action: "blogroll",
     },
     {
       icon: WindowsIcons.Games,
       label: "Games\nBeats",
       action: "games",
-    },
-    {
-      icon: WindowsIcons.Internet,
-      label: "Web\nCrates",
-      action: "internet",
-    },
-    {
-      icon: WindowsIcons.Terminal,
-      label: "Pitch\nStartup",
-      action: "terminal",
     },
     {
       icon: WindowsIcons.Notes,
@@ -58,16 +39,74 @@ export default function Home() {
     },
   ]
 
+  // Coming soon features at bottom (removed Web Crates, removed ...)
+  const comingSoonIcons = [
+    {
+      icon: WindowsIcons.Music,
+      label: 'DJ Sets\n12"\n(Coming soon)',
+      action: "music",
+    },
+    {
+      icon: WindowsIcons.Documents,
+      label: "Projects\nLabels\n(Coming soon)",
+      action: "projects",
+    },
+    {
+      icon: WindowsIcons.Terminal,
+      label: "Pitch\nStartup\n(Coming soon)",
+      action: "terminal",
+    },
+  ]
+
+  const handleIconClick = (action: string) => {
+    if (action === "music" || action === "projects" || action === "terminal") {
+      // Show under construction for these
+      setActiveWindow(`construction-${action}`)
+    } else {
+      setActiveWindow(action)
+    }
+  }
+
+  const getConstructionTitle = (action: string) => {
+    switch (action) {
+      case "music":
+        return "DJ Sets"
+      case "projects":
+        return "Projects Labels"
+      case "terminal":
+        return "Pitch Startup"
+      default:
+        return "Feature"
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Desktop Icons */}
-      <div className="flex-1 p-2 grid grid-cols-3 md:grid-cols-6 gap-2 content-start">
-        {desktopIcons.map((item, index) => (
-          <button key={index} className="desktop-icon" onClick={() => setActiveWindow(item.action)}>
-            <span className="desktop-icon-emoji">{item.icon}</span>
-            <div className="desktop-icon-label">{item.label}</div>
-          </button>
-        ))}
+      <div className="flex-1 flex flex-col justify-between p-2">
+        {/* Working Features - Top Area */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 justify-items-center">
+          {workingIcons.map((item, index) => (
+            <button key={`working-${index}`} className="desktop-icon" onClick={() => handleIconClick(item.action)}>
+              <span className="desktop-icon-emoji">{item.icon}</span>
+              <div className="desktop-icon-label">{item.label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Coming Soon Features - Bottom Area */}
+        <div className="grid grid-cols-3 gap-2 justify-items-center mb-4">
+          {comingSoonIcons.map((item, index) => (
+            <button
+              key={`coming-${index}`}
+              className="desktop-icon coming-soon"
+              onClick={() => handleIconClick(item.action)}
+            >
+              <span className="desktop-icon-emoji">{item.icon}</span>
+              <div className="desktop-icon-label">{item.label}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Active Windows */}
@@ -114,26 +153,19 @@ export default function Home() {
         </div>
       )}
 
-      {/* Poolsuite Window */}
-      {activeWindow === "poolsuite" && (
-        <div className="window fixed inset-0 md:inset-auto md:top-20 md:left-1/2 md:-translate-x-1/2 w-full md:w-[800px] h-[90vh] md:h-[600px] overflow-hidden z-50">
-          <div className="window-title sticky top-0 z-10">
-            <span>{WindowsIcons.Poolsuite} Poolsuite FM</span>
-            <button className="ml-auto" onClick={() => setActiveWindow(null)}>
-              {WindowsIcons.Close}
-            </button>
-          </div>
-          <div className="window-content p-0 h-[calc(100%-2rem)]">
-            <PoolsuitePlayer />
-          </div>
-        </div>
-      )}
-
-      {/* Terminal Window */}
-      {activeWindow === "terminal" && <TerminalWindow onClose={() => setActiveWindow(null)} />}
+      {/* Blogroll Window */}
+      {activeWindow === "blogroll" && <BlogrollWindow onClose={() => setActiveWindow(null)} />}
 
       {/* Notes Window */}
       {activeWindow === "notes" && <NotesWindow onClose={() => setActiveWindow(null)} />}
+
+      {/* Under Construction Windows */}
+      {activeWindow?.startsWith("construction-") && (
+        <UnderConstructionWindow
+          title={getConstructionTitle(activeWindow.replace("construction-", ""))}
+          onClose={() => setActiveWindow(null)}
+        />
+      )}
 
       {/* Taskbar */}
       <div className="taskbar flex items-center gap-2">
