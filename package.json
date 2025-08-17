@@ -30,7 +30,6 @@
     "openai": "latest",
     "react": "^18",
     "react-dom": "^18",
-    "shadcn": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "three": "latest",
