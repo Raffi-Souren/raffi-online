@@ -29,7 +29,7 @@ export default function Home() {
     },
     {
       icon: WindowsIcons.Games,
-      label: "Games\nBeats",
+      label: "Games",
       action: "games",
     },
     {
@@ -39,7 +39,7 @@ export default function Home() {
     },
   ]
 
-  // Coming soon features at bottom (removed Web Crates, removed ...)
+  // Coming soon features at bottom (updated labels)
   const comingSoonIcons = [
     {
       icon: WindowsIcons.Music,
@@ -48,7 +48,7 @@ export default function Home() {
     },
     {
       icon: WindowsIcons.Documents,
-      label: "Projects\nLabels\n(Coming soon)",
+      label: "Projects\n(Coming soon)",
       action: "projects",
     },
     {
@@ -72,7 +72,7 @@ export default function Home() {
       case "music":
         return "DJ Sets"
       case "projects":
-        return "Projects Labels"
+        return "Projects"
       case "terminal":
         return "Pitch Startup"
       default:
