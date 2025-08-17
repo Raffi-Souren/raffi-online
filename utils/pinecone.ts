@@ -60,4 +60,3 @@ export async function loadVectorsIntoPinecone(indexName: string) {
 
   console.log(`Loaded ${records.length} vectors into Pinecone index ${indexName}`)
 }
-

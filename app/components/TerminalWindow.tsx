@@ -128,4 +128,3 @@ export default function TerminalWindow({ onClose }: TerminalWindowProps) {
     </div>
   )
 }
-

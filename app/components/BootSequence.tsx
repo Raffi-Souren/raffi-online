@@ -36,4 +36,3 @@ export default function BootSequence({ onComplete }: { onComplete: () => void })
     </div>
   )
 }
-

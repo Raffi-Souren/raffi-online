@@ -25,4 +25,3 @@ export default function Counter({ end, label, icon }: { end: number; label: stri
     </div>
   )
 }
-

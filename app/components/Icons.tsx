@@ -40,4 +40,3 @@ export const WindowsIcons = {
   Poolsuite: "🌊",
   Notes: "📝",
 }
-
