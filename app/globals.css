@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'MS Sans Serif';
+  src: url('/fonts/ms-sans-serif.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/helvetica-neue.woff2') format('woff2');
+}
+
+:root {
+  --win-bg: #000000;
+  --win-gray: #1a1a1a;
+  --win-border-light: #ffffff;
+  --win-border-dark: #808080;
+  --win-text: #ffffff;
+  --accent-yellow: #ffff00;
+}
+
+body {
+  background-color: var(--win-bg);
+  color: var(--win-text);
+  font-family: 'Helvetica Neue', 'MS Sans Serif', -apple-system, sans-serif;
+  cursor: default;
+  background-image: url('https://static1.howtogeekimages.com/wordpress/wp-content/uploads/2024/06/windows-2000.png?q=70&fit=crop&w=825&dpr=1');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.window {
+  background: var(--win-gray);
+  border: 2px solid var(--win-border-light);
+  box-shadow: 4px 4px 0 var(--accent-yellow);
+}
+
+.window-title {
+  background: var(--accent-yellow);
+  color: var(--win-bg);
+  font-weight: bold;
+  padding: 3px 5px;
+  display: flex;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.window-content {
+  padding: 8px;
+  background: var(--win-gray);
+}
+
+.desktop-icon {
+  width: 100%;
+  text-align: center;
+  padding: 8px;
+  color: var(--win-text);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.desktop-icon:hover {
+  background: var(--accent-yellow);
+  color: var(--win-bg);
+  text-shadow: none;
+}
+
+.desktop-icon-emoji {
+  font-size: 32px;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
+  margin-bottom: 4px;
+}
+
+.desktop-icon-label {
+  background: rgba(0, 0, 0, 0.9);
+  padding: 4px;
+  border-radius: 2px;
+  font-size: 10px;
+  word-wrap: break-word;
+  text-transform: uppercase;
+  font-weight: bold;
+  width: 90%;
+  max-width: 120px;
+  text-align: center;
+  white-space: pre-line;
+  line-height: 1.2;
+}
+
+.win-btn {
+  background: var(--win-gray);
+  border: 2px solid var(--win-border-light);
+  color: var(--win-text);
+  padding: 4px 8px;
+  min-width: 70px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.win-btn:hover {
+  background: var(--accent-yellow);
+  color: var(--win-bg);
+}
+
+.taskbar {
+  background: var(--win-gray);
+  border-top: 2px solid var(--win-border-light);
+  padding: 2px;
+}
+
+.start-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--win-gray);
+  border: 2px solid var(--win-border-light);
+  color: var(--win-text);
+  padding: 2px 8px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.start-btn:hover {
+  background: var(--accent-yellow);
+  color: var(--win-bg);
+}
+
+.pyrex-text {
+  font-size: 24px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent-yellow);
+  text-shadow: 2px 2px 0 var(--win-border-dark);
+}
+
+.canary-text {
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--win-text);
+}
+
+/* Mario Question Mark Box */
+.mario-box {
+  width: 40px;
+  height: 40px;
+  background-color: #ffcb3d;
+  border: 4px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #000;
+  text-shadow: 1px 1px 0 #fff;
+  box-shadow: 
+    inset -4px -4px 0 #e7a210,
+    inset 4px 4px 0 #ffea94;
+  animation: bounce 0.5s infinite alternate;
+}
+
+.mario-box-inner {
+  transform: scale(1.2);
+}
+
+@keyframes bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-5px);
+  }
+}
+
