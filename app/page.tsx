@@ -10,7 +10,7 @@ import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import DesktopWindow from "../components/DesktopWindow"
 
-// Dynamic import EasterEgg with SSR disabled
+// Lazy load heavy features - don't ship on first paint
 const EasterEgg = dynamic(() => import("./components/EasterEgg"), {
   ssr: false,
   loading: () => null,
@@ -119,9 +119,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col font-system relative">
-      {/* Desktop Content Area - Takes remaining space above taskbar */}
-      <div className="flex-1 flex flex-col justify-between p-1 md:p-2 pb-8">
+    <div className="vh-safe flex flex-col">
+      {/* REVERTED: Remove pointer-events-none from root - let everything be clickable */}
+      {/* Desktop Icons */}
+      <div className="flex-1 flex flex-col justify-between p-1 md:p-2">
         {/* Working Features - Top Area */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-2 justify-items-center">
           {workingIcons.map((item, index) => (
@@ -133,7 +134,7 @@ export default function Home() {
         </div>
 
         {/* Coming Soon Features - Bottom Area */}
-        <div className="grid grid-cols-3 gap-1 md:gap-2 justify-items-center">
+        <div className="grid grid-cols-3 gap-1 md:gap-2 justify-items-center mb-2 md:mb-4">
           {comingSoonIcons.map((item, index) => (
             <button
               key={`coming-${index}`}
@@ -146,47 +147,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-
-      {/* Fixed Taskbar at Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 taskbar flex items-center gap-1 md:gap-2 z-[100]">
-        <button className="start-btn min-h-[32px]" onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}>
-          {WindowsIcons.Windows} Start
-        </button>
-        {activeWindow && (
-          <button className="win-btn flex items-center gap-1 md:gap-2 text-xs md:text-sm min-h-[32px]">
-            {WindowsIcons[activeWindow]} {activeWindow}
-          </button>
-        )}
-        <div className="ml-auto bg-white px-1 md:px-2 py-1 border border-gray-400 text-black text-xs md:text-sm">
-          {currentTime}
-        </div>
-      </div>
-
-      {/* Start Menu */}
-      {isStartMenuOpen && (
-        <div className="fixed bottom-7 md:bottom-8 left-0 window w-56 md:w-64 z-[200]">
-          <div className="window-content">
-            <div className="bg-black text-white p-3 mb-2">
-              <div className="pyrex-text text-base md:text-xl">RAF OS</div>
-              <div className="canary-text text-xs md:text-sm">Version 1.0</div>
-            </div>
-            <div className="space-y-1">
-              {startMenuItems.map((item) => (
-                <button
-                  key={item.name}
-                  className="w-full text-left px-3 py-2 hover:bg-yellow-400 hover:text-black flex items-center gap-2 transition-colors text-sm min-h-[44px]"
-                  onClick={() => {
-                    handleIconClick(item.action)
-                    setIsStartMenuOpen(false)
-                  }}
-                >
-                  {item.icon} {item.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* About Me Window */}
       <DesktopWindow title="ABOUT ME - RAF.TXT" isOpen={activeWindow === "about"} onClose={() => setActiveWindow(null)}>
@@ -265,9 +225,45 @@ export default function Home() {
         />
       )}
 
-      {/* Easter"")}
-          onClose={() => setActiveWindow(null)}
-        />
+      {/* Taskbar */}
+      <div className="taskbar flex items-center gap-1 md:gap-2">
+        <button className="start-btn min-h-[32px]" onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}>
+          {WindowsIcons.Windows} Start
+        </button>
+        {activeWindow && (
+          <button className="win-btn flex items-center gap-1 md:gap-2 text-xs md:text-sm min-h-[32px]">
+            {WindowsIcons[activeWindow]} {activeWindow}
+          </button>
+        )}
+        <div className="ml-auto bg-white px-1 md:px-2 py-1 border border-gray-400 text-black text-xs md:text-sm">
+          {currentTime}
+        </div>
+      </div>
+
+      {/* Start Menu */}
+      {isStartMenuOpen && (
+        <div className="window absolute bottom-7 md:bottom-8 left-0 w-56 md:w-64 z-[200]">
+          <div className="window-content">
+            <div className="bg-black text-white p-3 mb-2">
+              <div className="pyrex-text text-base md:text-xl">RAF OS</div>
+              <div className="canary-text text-xs md:text-sm">Version 1.0</div>
+            </div>
+            <div className="space-y-1">
+              {startMenuItems.map((item) => (
+                <button
+                  key={item.name}
+                  className="w-full text-left px-3 py-2 hover:bg-yellow-400 hover:text-black flex items-center gap-2 transition-colors text-sm min-h-[44px]"
+                  onClick={() => {
+                    handleIconClick(item.action)
+                    setIsStartMenuOpen(false)
+                  }}
+                >
+                  {item.icon} {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Easter Egg - Always visible for bouncing question mark */}

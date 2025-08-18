@@ -2,64 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 182 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 182 100% 50%;
-    --radius: 0.75rem;
-    --shadow-win: 0 8px 24px rgba(0, 0, 0, 0.35);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      /* keep same or tweak for dark; your site is dark-first */
-    }
-  }
-
-  * {
-    border-color: hsl(var(--border));
-  }
-
-  html,
-  body {
-    height: auto;
-    font-family: "MS Sans Serif", Tahoma, sans-serif;
-  }
-
-  body {
-    min-height: 100%;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
 
-  .xp-bg {
-    background-image: url("/wallpapers/xp-bliss.jpg");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    --shadow-win: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* REVERTED: Normal scrolling behavior - no global overflow restrictions */
+  html,
+  body {
+    height: auto;
+  }
+
+  body {
+    min-height: 100%;
+    @apply bg-background text-foreground;
   }
 }
 
@@ -84,12 +119,11 @@
   }
 }
 
-/* Windows XP Desktop Styling - v76 fonts restored */
+/* Windows XP Desktop Styling */
 .window {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
   box-shadow: var(--shadow-win);
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 .window-title {
@@ -103,7 +137,6 @@
   letter-spacing: 1px;
   font-size: 10px;
   min-height: 32px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -119,7 +152,6 @@
   background: #000000;
   border: 3px solid #ffd700;
   box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 .yellow-window .window-title {
@@ -130,7 +162,6 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   font-size: 10px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -144,7 +175,6 @@
   background: #000000;
   color: #ffd700;
   padding: 8px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -159,7 +189,6 @@
   overflow-y: auto;
   overflow-x: hidden;
   height: 100%;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
   /* Smooth scrolling */
   scroll-behavior: smooth;
   /* Better scrolling on mobile */
@@ -185,7 +214,6 @@
   cursor: pointer;
   padding: 2px;
   border-radius: 4px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -220,7 +248,7 @@
   }
 }
 
-/* v76 style desktop icon labels - black background with MS Sans Serif */
+/* v76 style desktop icon labels - black background */
 .desktop-icon-label {
   background: rgba(0, 0, 0, 0.8);
   padding: 2px 4px;
@@ -235,7 +263,6 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -255,7 +282,6 @@
   font-weight: bold;
   cursor: pointer;
   font-size: 10px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -287,7 +313,6 @@
   text-transform: uppercase;
   font-size: 8px;
   letter-spacing: 1px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -314,7 +339,6 @@
   display: flex;
   align-items: center;
   z-index: 100;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -334,7 +358,6 @@
   font-weight: bold;
   cursor: pointer;
   font-size: 9px;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -360,7 +383,6 @@
   letter-spacing: 1px;
   color: #ffd700;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -375,7 +397,6 @@
   line-height: 1.6;
   color: #ffff99;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -384,128 +405,49 @@
   }
 }
 
-/* Enhanced Mario Question Mark Box with Motion */
+/* FIXED: Mario Question Mark Box - High z-index, explicit pointer events */
 .mario-box {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffb347 50%, #ffa500 100%);
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
   border: 3px solid #8b4513;
-  border-radius: 6px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.6), inset -3px -3px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
-    rgba(0, 0, 0, 0.5);
-  transition: all 0.15s ease;
+  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.5), inset -2px -2px 0px rgba(0, 0, 0, 0.3), 2px 2px 8px
+    rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease;
   cursor: pointer;
-  z-index: 2000;
-  pointer-events: auto;
-  position: relative;
-  animation: mario-bounce 2s ease-in-out infinite, mario-glow 3s ease-in-out infinite alternate;
+  z-index: 2000; /* FIXED: High z-index above everything */
+  pointer-events: auto; /* FIXED: Explicit pointer events */
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
   .mario-box {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
   }
 }
 
 .mario-box:hover {
-  transform: scale(1.15) rotate(5deg);
-  box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.8), inset -3px -3px 0px rgba(0, 0, 0, 0.5), 6px 6px 20px
-    rgba(255, 215, 0, 0.6);
-  background: linear-gradient(135deg, #ffed4e 0%, #ffc947 50%, #ff8c00 100%);
-  animation: mario-hover-pulse 0.3s ease-in-out infinite alternate;
-}
-
-.mario-box:active {
-  transform: scale(0.9) rotate(-2deg);
-  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.4), inset -2px -2px 0px rgba(0, 0, 0, 0.6), 2px 2px 8px
-    rgba(0, 0, 0, 0.4);
-  animation: mario-click 0.1s ease-out;
+  transform: scale(1.1);
+  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.6), inset -2px -2px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
+    rgba(0, 0, 0, 0.5);
 }
 
 .mario-box-inner {
-  font-size: 28px;
-  font-weight: 900;
+  font-size: 18px;
+  font-weight: bold;
   color: #8b4513;
-  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.8), -1px -1px 0px rgba(0, 0, 0, 0.3);
+  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
   user-select: none;
-  pointer-events: none;
-  font-family: "MS Sans Serif", Tahoma, sans-serif;
-  line-height: 1;
-  animation: mario-question-wiggle 4s ease-in-out infinite;
+  pointer-events: none; /* Let clicks pass through to parent */
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
   .mario-box-inner {
-    font-size: 20px;
-  }
-}
-
-/* Enhanced Mario Box Animations */
-@keyframes mario-bounce {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-3px) rotate(1deg);
-  }
-  50% {
-    transform: translateY(-6px) rotate(0deg);
-  }
-  75% {
-    transform: translateY(-3px) rotate(-1deg);
-  }
-}
-
-@keyframes mario-glow {
-  0% {
-    box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.6), inset -3px -3px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
-      rgba(0, 0, 0, 0.5);
-  }
-  100% {
-    box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.7), inset -3px -3px 0px rgba(0, 0, 0, 0.4), 3px 3px 16px
-      rgba(255, 215, 0, 0.4);
-  }
-}
-
-@keyframes mario-question-wiggle {
-  0%,
-  100% {
-    transform: rotate(0deg) scale(1);
-  }
-  25% {
-    transform: rotate(2deg) scale(1.05);
-  }
-  50% {
-    transform: rotate(0deg) scale(1);
-  }
-  75% {
-    transform: rotate(-2deg) scale(1.05);
-  }
-}
-
-@keyframes mario-hover-pulse {
-  0% {
-    transform: scale(1.15) rotate(5deg);
-  }
-  100% {
-    transform: scale(1.2) rotate(5deg);
-  }
-}
-
-@keyframes mario-click {
-  0% {
-    transform: scale(0.9) rotate(-2deg);
-  }
-  50% {
-    transform: scale(0.85) rotate(-3deg);
-  }
-  100% {
-    transform: scale(0.9) rotate(-2deg);
+    font-size: 24px;
   }
 }
 

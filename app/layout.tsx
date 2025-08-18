@@ -1,6 +1,7 @@
 import type React from "react"
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
+import Image from "next/image"
 
 export const metadata: Metadata = {
   title: "Raffi Sourenkhatchadourian",
@@ -27,10 +28,26 @@ export default function RootLayout({
         <link rel="preconnect" href="https://w.soundcloud.com" crossOrigin="" />
         <link rel="preconnect" href="https://soundcloud.com" crossOrigin="" />
         <link rel="preconnect" href="https://i1.sndcdn.com" crossOrigin="" />
+        <link rel="preconnect" href="https://cdn.emulatorjs.org" crossOrigin="" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
+        <link rel="preconnect" href="https://player.vimeo.com" crossOrigin="" />
+        <link rel="preconnect" href="https://vimeo.com" crossOrigin="" />
+        <link rel="preconnect" href="https://poolsuite.net" crossOrigin="" />
+        {/* Preload wallpaper */}
+        <link rel="preload" as="image" href="/windows-2000-background.png" fetchPriority="high" />
       </head>
-      <body className="bg-black text-white overflow-x-hidden font-system">
-        {/* XP Background using public path */}
-        <div className="fixed inset-0 -z-10 xp-bg" />
+      <body className="bg-black text-white overflow-x-hidden">
+        {/* Critical wallpaper - render above the fold */}
+        <Image
+          src="/windows-2000-background.png"
+          alt=""
+          fill
+          priority
+          fetchPriority="high"
+          sizes="100vw"
+          className="object-cover object-center -z-10 pointer-events-none select-none"
+          quality={85}
+        />
         <main>{children}</main>
       </body>
     </html>

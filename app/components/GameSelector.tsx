@@ -1,91 +1,163 @@
 "use client"
 
 import { useState } from "react"
-import BrickBreaker from "./games/BrickBreaker"
-import SnakeGame from "./games/SnakeGame"
-import ParachuteGame from "./games/ParachuteGame"
-import MinesweeperGame from "./MinesweeperGame"
+import { Card } from "@/components/ui/card"
+import { Smartphone, Music, Gamepad, Radio, Phone, Monitor } from "lucide-react"
+import BlackberryMockup from "./BlackberryMockup"
+import IpodClassicMockup from "./IpodClassicMockup"
+import RazorPhoneMockup from "./RazorPhoneMockup"
+import DesktopMockup from "./DesktopMockup"
+import WebGamesHub from "./WebGamesHub"
+import WindowShell from "./WindowShell"
 
-type GameType = "brickbreaker" | "snake" | "parachute" | "minesweeper" | null
+type Device = "blackberry" | "ipod" | "webgames" | "psp" | "razor" | "desktop" | null
 
 export default function GameSelector() {
-  const [selectedGame, setSelectedGame] = useState<GameType>(null)
+  const [selectedDevice, setSelectedDevice] = useState<Device>(null)
 
-  const games = [
+  const devices = [
     {
-      id: "brickbreaker" as const,
-      name: "Brick Breaker",
-      description: "Classic Blackberry game",
-      color: "bg-blue-600",
-      emoji: "🧱",
+      id: "blackberry",
+      name: "Blackberry",
+      icon: Smartphone,
+      description: "Play Brickbreaker",
+      color: "bg-gray-900",
     },
     {
-      id: "snake" as const,
-      name: "Snake",
-      description: "Nokia classic",
+      id: "ipod",
+      name: "iPod Classic",
+      icon: Music,
+      description: "Play Parachute",
+      color: "bg-zinc-200",
+    },
+    {
+      id: "razor",
+      name: "Motorola Razr",
+      icon: Phone,
+      description: "Play Snake",
+      color: "bg-pink-600",
+    },
+    {
+      id: "desktop",
+      name: "Desktop PC",
+      icon: Monitor,
+      description: "Play Minesweeper",
+      color: "bg-blue-700",
+    },
+    {
+      id: "webgames",
+      name: "Web Games",
+      icon: Gamepad,
+      description: "Classic Arcade Games",
       color: "bg-green-600",
-      emoji: "🐍",
     },
     {
-      id: "parachute" as const,
-      name: "Parachute",
-      description: "iPod Classic game",
-      color: "bg-purple-600",
-      emoji: "🪂",
-    },
-    {
-      id: "minesweeper" as const,
-      name: "Minesweeper",
-      description: "Windows classic",
-      color: "bg-red-600",
-      emoji: "💣",
+      id: "psp",
+      name: "Emulator",
+      icon: Radio,
+      description: "Retro Console Games",
+      color: "bg-blue-900",
     },
   ]
 
-  if (selectedGame) {
+  if (selectedDevice === "blackberry") {
     return (
-      <div className="w-full h-full">
-        <div className="flex items-center justify-between mb-4 p-3 bg-gray-800 rounded">
-          <h2 className="text-xl font-bold text-white">{games.find((g) => g.id === selectedGame)?.name}</h2>
-          <button
-            onClick={() => setSelectedGame(null)}
-            className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-          >
-            Back to Games
-          </button>
+      <WindowShell title="BLACKBERRY BRICKBREAKER" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100">
+            <BlackberryMockup />
+          </div>
         </div>
+      </WindowShell>
+    )
+  }
 
-        <div className="game-container">
-          {selectedGame === "brickbreaker" && <BrickBreaker />}
-          {selectedGame === "snake" && <SnakeGame />}
-          {selectedGame === "parachute" && <ParachuteGame />}
-          {selectedGame === "minesweeper" && <MinesweeperGame />}
+  if (selectedDevice === "ipod") {
+    return (
+      <WindowShell title="IPOD CLASSIC PARACHUTE" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100">
+            <IpodClassicMockup />
+          </div>
         </div>
-      </div>
+      </WindowShell>
+    )
+  }
+
+  if (selectedDevice === "razor") {
+    return (
+      <WindowShell title="MOTOROLA RAZR SNAKE" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100">
+            <RazorPhoneMockup />
+          </div>
+        </div>
+      </WindowShell>
+    )
+  }
+
+  if (selectedDevice === "desktop") {
+    return (
+      <WindowShell title="DESKTOP MINESWEEPER" onClose={() => setSelectedDevice(null)} size="lg">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100 w-full max-w-4xl">
+            <DesktopMockup />
+          </div>
+        </div>
+      </WindowShell>
+    )
+  }
+
+  if (selectedDevice === "webgames") {
+    return (
+      <WindowShell title="WEB GAMES HUB" onClose={() => setSelectedDevice(null)} size="lg">
+        <div className="min-h-[400px]">
+          <WebGamesHub />
+        </div>
+      </WindowShell>
+    )
+  }
+
+  if (selectedDevice === "psp") {
+    return (
+      <WindowShell title="RETRO CONSOLE EMULATOR" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-lg md:text-2xl font-bold mb-4">Retro Console Emulator</h2>
+            <p className="text-gray-400 mb-6 text-sm md:text-base">Play classic console games in your browser</p>
+            <button
+              onClick={() => window.open("/games/emulator", "_blank")}
+              className="bg-blue-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm md:text-base min-h-[44px]"
+            >
+              Open Emulator
+            </button>
+            <div className="mt-4 text-xs md:text-sm text-gray-500">
+              <p>⚠️ Educational purposes only - Bring your own ROM files</p>
+            </div>
+          </div>
+        </div>
+      </WindowShell>
     )
   }
 
   return (
-    <div className="w-full h-full p-4">
-      <h2 className="text-2xl font-bold mb-6 text-center text-white">Retro Games</h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {games.map((game) => (
-          <button
-            key={game.id}
-            className={`${game.color} p-6 rounded-lg cursor-pointer transition-transform hover:scale-105 text-white shadow-lg flex flex-col items-center justify-center min-h-[120px]`}
-            onClick={() => setSelectedGame(game.id)}
+    <div className="max-h-[calc(82dvh-120px)] max-h-[calc(82svh-120px)] overflow-y-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-2">
+        {devices.map((device) => (
+          <Card
+            key={device.id}
+            className={`p-3 cursor-pointer transition-transform hover:scale-105 ${device.color} text-white min-h-[72px] flex flex-col justify-center`}
+            onClick={() => setSelectedDevice(device.id as Device)}
           >
-            <div className="text-4xl mb-2">{game.emoji}</div>
-            <h3 className="text-xl font-bold mb-2">{game.name}</h3>
-            <p className="text-sm opacity-90">{game.description}</p>
-          </button>
+            <div className="flex flex-col items-center text-center space-y-2">
+              <device.icon size={24} className="md:w-8 md:h-8" />
+              <div>
+                <h3 className="font-bold text-sm">{device.name}</h3>
+                <p className="text-xs opacity-80">{device.description}</p>
+              </div>
+            </div>
+          </Card>
         ))}
-      </div>
-
-      <div className="text-center text-gray-400 text-sm">
-        <p>Click any game above to start playing!</p>
-        <p className="mt-2">All games support keyboard and touch controls.</p>
       </div>
     </div>
   )
