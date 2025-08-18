@@ -2,13 +2,18 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Shuffle, X } from "lucide-react"
+import { WindowsIcons } from "./Icons"
 
 type Track = {
   id: string
   url: string
   title: string
   artist: string
+}
+
+interface EasterEggProps {
+  forceOpen?: boolean
+  onForceClose?: () => void
 }
 
 // Complete SoundCloud collection from your list - 250+ tracks
@@ -1431,11 +1436,38 @@ const SOUNDCLOUD_TRACKS: Track[] = [
   },
 ]
 
-export default function EasterEgg() {
+const EasterEgg: React.FC<EasterEggProps> = ({ forceOpen, onForceClose }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
+
+  const tracks = [
+    "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1234567890&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
+    "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/987654321&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
+    "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/555666777&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
+  ]
+
+  // Handle force open from start menu
+  useEffect(() => {
+    if (forceOpen) {
+      setIsOpen(true)
+    }
+  }, [forceOpen])
+
+  const handleClose = () => {
+    setIsOpen(false)
+    if (onForceClose) {
+      onForceClose()
+    }
+  }
+
+  const shuffleTrack = () => {
+    const nextTrack = (currentTrackIndex + 1) % tracks.length
+    setCurrentTrackIndex(nextTrack)
+  }
+
   const [position, setPosition] = useState({ x: 20, y: 80 })
   const [velocity, setVelocity] = useState({ x: 1.5, y: 1.5 })
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isPaused, setIsPaused] = useState(false)
   const animationRef = useRef<number | null>(null)
 
@@ -1456,7 +1488,7 @@ export default function EasterEgg() {
 
   // Movement animation - PAUSE when modal is open or motion is reduced
   useEffect(() => {
-    if (isModalOpen || isPaused) {
+    if (isOpen || isPaused) {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
         animationRef.current = null
@@ -1495,7 +1527,7 @@ export default function EasterEgg() {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [velocity, isModalOpen, isPaused])
+  }, [velocity, isOpen, isPaused])
 
   // Load random track
   const loadRandomTrack = () => {
@@ -1514,14 +1546,14 @@ export default function EasterEgg() {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsModalOpen(true)
+    setIsOpen(true)
     if (!currentTrack) {
       loadRandomTrack()
     }
   }
 
   const closeModal = () => {
-    setIsModalOpen(false)
+    setIsOpen(false)
   }
 
   // Handle ESC key
@@ -1532,11 +1564,11 @@ export default function EasterEgg() {
       }
     }
 
-    if (isModalOpen) {
+    if (isOpen) {
       document.addEventListener("keydown", handleEscape)
       return () => document.removeEventListener("keydown", handleEscape)
     }
-  }, [isModalOpen])
+  }, [isOpen])
 
   // Build SoundCloud embed URL - using your exact format
   const buildEmbedUrl = (track: Track) => {
@@ -1545,101 +1577,54 @@ export default function EasterEgg() {
 
   return (
     <>
-      {/* FIXED: Moving Yellow Mario Question Mark - High z-index, explicit pointer events */}
-      <div
-        className="mario-box fixed z-[2000] pointer-events-auto cursor-pointer"
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-        }}
-        onClick={handleClick}
-      >
-        <div className="mario-box-inner">?</div>
+      {/* Bouncing Question Mark - Always visible */}
+      <div className="fixed bottom-24 right-4 z-[2000] cursor-pointer animate-bounce" onClick={handleClick}>
+        <div className="w-8 h-8 bg-yellow-400 border-2 border-black flex items-center justify-center text-black font-bold text-lg rounded">
+          ?
+        </div>
       </div>
 
-      {/* SoundCloud Discovery Mode Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-3 md:p-6 overflow-y-auto">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal} />
-
-          {/* Window */}
-          <div
-            className="relative w-[min(92vw,960px)] max-h-[min(88vh,900px)] bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden pointer-events-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Title Bar */}
-            <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🎵</span>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Discovery Mode</h2>
-                  <p className="text-sm text-gray-400">
-                    {SOUNDCLOUD_TRACKS.length} tracks from @djsweeterman's collection
-                  </p>
-                </div>
+      {/* Music Player Popup */}
+      {isOpen && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="window w-full max-w-2xl mx-4">
+            <div className="window-title">
+              <span className="flex items-center gap-2">💿 DIGGING IN THE CRATES</span>
+              <div className="flex gap-2">
+                <button
+                  className="px-2 py-1 text-xs bg-yellow-400 text-black rounded hover:bg-yellow-300"
+                  onClick={loadRandomTrack}
+                >
+                  SHUFFLE
+                </button>
+                <button className="ml-auto hover:bg-red-600 px-2 py-1 rounded" onClick={handleClose}>
+                  {WindowsIcons.Close}
+                </button>
               </div>
-              <button
-                onClick={closeModal}
-                className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
-
-            {/* Scrollable Content */}
-            <div className="overflow-y-auto overflow-x-hidden" style={{ maxHeight: "calc(min(88vh, 900px) - 80px)" }}>
-              <div className="p-4 space-y-4">
-                {/* Track Info & Controls */}
-                {currentTrack && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{currentTrack.title}</h3>
-                        <p className="text-sm text-gray-400">{currentTrack.artist}</p>
-                      </div>
-                      <button
-                        onClick={loadRandomTrack}
-                        disabled={SOUNDCLOUD_TRACKS.length <= 1}
-                        className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-all min-h-[44px] flex items-center gap-2"
-                      >
-                        <Shuffle className="w-4 h-4" />
-                        Next Track
-                      </button>
-                    </div>
-
-                    {/* SoundCloud Embed - using your exact format */}
-                    <div className="relative w-full">
-                      <iframe
-                        width="100%"
-                        height="166"
-                        scrolling="no"
-                        frameBorder="no"
-                        allow="autoplay"
-                        loading="lazy"
-                        decoding="async"
-                        src={buildEmbedUrl(currentTrack)}
-                        className="w-full rounded-md"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Footer */}
-                <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-700">
-                  <span>Press ESC to close • Click outside to dismiss</span>
+            <div className="window-content">
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="text-black font-bold mb-2">🎵 CRATE DIGGING SESSION</h3>
+                  <p className="text-gray-700 text-sm">Discover underground tracks and hidden gems from the vault</p>
+                </div>
+                <div className="bg-black p-4 rounded">
                   {currentTrack && (
-                    <a
-                      href={currentTrack.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-cyan-400 hover:text-cyan-300 underline min-h-[44px] flex items-center"
-                    >
-                      View on SoundCloud →
-                    </a>
+                    <iframe
+                      width="100%"
+                      height="300"
+                      scrolling="no"
+                      frameBorder="no"
+                      allow="autoplay"
+                      src={buildEmbedUrl(currentTrack)}
+                    />
                   )}
                 </div>
+                {currentTrack && (
+                  <div className="text-white">
+                    Now Playing: {currentTrack.title} by {currentTrack.artist}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1648,3 +1633,5 @@ export default function EasterEgg() {
     </>
   )
 }
+
+export default EasterEgg

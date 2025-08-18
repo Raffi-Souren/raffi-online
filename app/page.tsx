@@ -19,6 +19,7 @@ const EasterEgg = dynamic(() => import("./components/EasterEgg"), {
 export default function Home() {
   const [activeWindow, setActiveWindow] = useState<string | null>(null)
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false)
+  const [easterEggForceOpen, setEasterEggForceOpen] = useState(false)
   const currentTime = new Date().toLocaleTimeString()
 
   // Working features first - v76 style labels
@@ -97,8 +98,8 @@ export default function Home() {
       }
       setIsStartMenuOpen(false)
     } else if (action === "easter-egg") {
-      // The easter egg is handled by the EasterEgg component itself
-      // Just close the start menu
+      // Force open the easter egg popup
+      setEasterEggForceOpen(true)
       setIsStartMenuOpen(false)
     } else {
       setActiveWindow(action)
@@ -266,8 +267,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Easter Egg - Always visible for bouncing question mark */}
-      <EasterEgg />
+      {/* Easter Egg - Always visible for bouncing question mark + force open capability */}
+      <EasterEgg forceOpen={easterEggForceOpen} onForceClose={() => setEasterEggForceOpen(false)} />
     </div>
   )
 }
