@@ -2,157 +2,267 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: "MS Sans Serif";
-  src: url("/fonts/ms-sans-serif.woff2") format("woff2");
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
-@font-face {
-  font-family: "Helvetica Neue";
-  src: url("/fonts/helvetica-neue.woff2") format("woff2");
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
 }
 
-:root {
-  --win-bg: #000000;
-  --win-gray: #1a1a1a;
-  --win-border-light: #ffffff;
-  --win-border-dark: #808080;
-  --win-text: #ffffff;
-  --accent-yellow: #ffff00;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: url("/windows-2000-background.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
 }
 
-body {
-  background-color: var(--win-bg);
-  color: var(--win-text);
-  font-family: "Helvetica Neue", "MS Sans Serif", -apple-system, sans-serif;
-  cursor: default;
-  background-image: url("https://static1.howtogeekimages.com/wordpress/wp-content/uploads/2024/06/windows-2000.png?q=70&fit=crop&w=825&dpr=1");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
+/* Windows XP Desktop Styling */
 .window {
-  background: var(--win-gray);
-  border: 2px solid var(--win-border-light);
-  box-shadow: 4px 4px 0 var(--accent-yellow);
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .window-title {
-  background: var(--accent-yellow);
-  color: var(--win-bg);
+  background: linear-gradient(90deg, #0054e3 0%, #0041b8 100%);
+  color: white;
   font-weight: bold;
   padding: 3px 5px;
   display: flex;
   align-items: center;
   text-transform: uppercase;
   letter-spacing: 1px;
+  font-size: 11px;
+}
+
+/* Special yellow styling for Blogroll - v76 style */
+.yellow-window {
+  background: #000000;
+  border: 3px solid #ffd700;
+  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+}
+
+.yellow-window .window-title {
+  background: linear-gradient(90deg, #ffd700 0%, #ffa500 100%);
+  color: black;
+  font-weight: bold;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+}
+
+.yellow-window .window-content {
+  background: #000000;
+  color: #ffd700;
+  padding: 12px;
 }
 
 .window-content {
   padding: 8px;
-  background: var(--win-gray);
+  background: #c0c0c0;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .desktop-icon {
-  width: 100%;
-  max-width: 120px;
+  width: 80px;
   text-align: center;
-  padding: 8px;
-  color: var(--win-text);
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 4px;
   border-radius: 4px;
 }
 
 .desktop-icon:hover {
-  background: rgba(255, 255, 0, 0.8);
-  color: var(--win-bg);
-  text-shadow: none;
-}
-
-.desktop-icon:hover .desktop-icon-label {
-  color: var(--win-bg);
-  background: rgba(0, 0, 0, 0.1);
-  text-shadow: none;
+  background: rgba(0, 0, 255, 0.3);
+  border: 1px dotted white;
 }
 
 .desktop-icon.coming-soon {
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .desktop-icon.coming-soon:hover {
-  background: rgba(255, 165, 0, 0.8);
   opacity: 1;
 }
 
 .desktop-icon-emoji {
   font-size: 32px;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
-  margin-bottom: 4px;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
 }
 
+/* v76 style desktop icon labels - black background */
 .desktop-icon-label {
-  background: rgba(0, 0, 0, 0.9);
-  padding: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 3px 6px;
   border-radius: 2px;
   font-size: 10px;
-  word-wrap: break-word;
-  text-transform: uppercase;
   font-weight: bold;
-  width: 90%;
-  max-width: 120px;
   text-align: center;
   white-space: pre-line;
-  line-height: 1.2;
-  color: var(--win-text);
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
-  transition: all 0.2s ease;
+  line-height: 1.1;
+  color: white;
+  text-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .win-btn {
-  background: var(--win-gray);
-  border: 2px solid var(--win-border-light);
-  color: var(--win-text);
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  color: black;
   padding: 4px 8px;
   min-width: 70px;
   text-align: center;
-  text-transform: uppercase;
   font-weight: bold;
-  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .win-btn:hover {
-  background: var(--accent-yellow);
-  color: var(--win-bg);
+  background: #d0d0d0;
+}
+
+.win-btn:active {
+  border: 2px inset #c0c0c0;
+}
+
+/* Yellow buttons for yellow windows */
+.yellow-btn {
+  background: #ffd700;
+  border: 2px outset #ffd700;
+  color: black;
+  padding: 4px 8px;
+  min-width: 70px;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.yellow-btn:hover {
+  background: #ffa500;
+}
+
+.yellow-btn:active {
+  border: 2px inset #ffd700;
 }
 
 .taskbar {
-  background: var(--win-gray);
-  border-top: 2px solid var(--win-border-light);
+  background: linear-gradient(180deg, #245edb 0%, #1941a5 100%);
+  border-top: 1px solid #4a90e2;
   padding: 2px;
+  height: 30px;
+  display: flex;
+  align-items: center;
 }
 
 .start-btn {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: var(--win-gray);
-  border: 2px solid var(--win-border-light);
-  color: var(--win-text);
+  background: linear-gradient(180deg, #4caf50 0%, #2e7d32 100%);
+  border: 2px outset #4caf50;
+  color: white;
   padding: 2px 8px;
-  text-transform: uppercase;
   font-weight: bold;
+  cursor: pointer;
+  font-size: 11px;
 }
 
 .start-btn:hover {
-  background: var(--accent-yellow);
-  color: var(--win-bg);
+  background: linear-gradient(180deg, #388e3c 0%, #1b5e20 100%);
+}
+
+.start-btn:active {
+  border: 2px inset #4caf50;
 }
 
 .pyrex-text {
@@ -160,43 +270,87 @@ body {
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: var(--accent-yellow);
-  text-shadow: 2px 2px 0 var(--win-border-dark);
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .canary-text {
-  font-family: "Helvetica Neue", sans-serif;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--win-text);
+  color: #ffff99;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Mario Question Mark Box */
 .mario-box {
   width: 40px;
   height: 40px;
-  background-color: #ffcb3d;
-  border: 4px solid #000;
+  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+  border: 3px solid #8b4513;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: #000;
-  text-shadow: 1px 1px 0 #fff;
-  box-shadow: inset -4px -4px 0 #e7a210, inset 4px 4px 0 #ffea94;
-  animation: bounce 0.5s infinite alternate;
+  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.5), inset -2px -2px 0px rgba(0, 0, 0, 0.3), 2px 2px 8px
+    rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease;
+  cursor: pointer;
+  z-index: 40;
+}
+
+.mario-box:hover {
+  transform: scale(1.1);
+  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.6), inset -2px -2px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
+    rgba(0, 0, 0, 0.5);
 }
 
 .mario-box-inner {
-  transform: scale(1.2);
+  font-size: 24px;
+  font-weight: bold;
+  color: #8b4513;
+  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+  user-select: none;
 }
 
-@keyframes bounce {
-  from {
-    transform: translateY(0);
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .desktop-icon {
+    width: 70px;
   }
-  to {
-    transform: translateY(-5px);
+
+  .desktop-icon-emoji {
+    font-size: 28px;
   }
+
+  .desktop-icon-label {
+    font-size: 9px;
+  }
+
+  .mario-box {
+    width: 35px;
+    height: 35px;
+  }
+
+  .mario-box-inner {
+    font-size: 20px;
+  }
+}
+
+/* Scrollbar styling for Windows XP look */
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border: 1px solid #c0c0c0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #e0e0e0 0%, #c0c0c0 100%);
+  border: 1px solid #808080;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d0d0d0 0%, #b0b0b0 100%);
 }

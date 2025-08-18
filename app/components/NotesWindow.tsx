@@ -137,15 +137,15 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
   const [activeTab, setActiveTab] = useState<"upcoming" | "previous">("upcoming")
 
   return (
-    <div className="window fixed inset-0 md:inset-auto md:top-20 md:left-1/2 md:-translate-x-1/2 w-full md:w-[800px] h-[90vh] md:h-auto md:max-h-[80vh] overflow-y-auto z-50">
+    <div className="window fixed bottom-8 right-4 w-[600px] md:w-[700px] h-[500px] md:h-[600px] overflow-y-auto z-50">
       <div className="window-title sticky top-0 z-10">
-        <span>{WindowsIcons.Notes} RAF's Notes</span>
+        <span>{WindowsIcons.Notes} RAF'S NOTES</span>
         <button className="ml-auto" onClick={onClose}>
           {WindowsIcons.Close}
         </button>
       </div>
       <div className="window-content">
-        <h2 className="pyrex-text mb-4">My Articles, Research Papers & Events</h2>
+        <h2 className="pyrex-text mb-4">MY ARTICLES, RESEARCH PAPERS & EVENTS</h2>
 
         <div className="space-y-6">
           {/* Events Section with Tabs */}

@@ -1,13 +1,13 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react"
 
 export default function Counter({ end, label, icon }: { end: number; label: string; icon: string }) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCount(c => Math.min(c + 1, end))
+      setCount((c) => Math.min(c + 1, end))
     }, 50)
 
     return () => clearInterval(timer)

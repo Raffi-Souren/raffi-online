@@ -40,7 +40,12 @@ export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
     if (item.embedType === "poolsuite") {
       return (
         <div className="w-full h-full bg-black">
-          <iframe src="https://poolsuite.net" className="w-full h-full" allow="autoplay" style={{ border: "none" }} />
+          <iframe
+            src="https://poolsuite.net"
+            className="w-full h-full border-0"
+            allow="autoplay"
+            style={{ border: "none", background: "black" }}
+          />
         </div>
       )
     } else if (item.embedType === "youtube") {
@@ -55,7 +60,7 @@ export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
-            style={{ border: "none", minHeight: "400px" }}
+            style={{ border: "none", minHeight: "400px", background: "black" }}
           />
         </div>
       )
@@ -294,7 +299,7 @@ export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
   if (activeEmbed) {
     const item = blogrollItems.find((item) => item.name === activeEmbed)
     return (
-      <div className="window fixed inset-0 md:inset-auto md:top-20 md:left-1/2 md:-translate-x-1/2 w-full md:w-[900px] h-[90vh] md:h-[700px] overflow-hidden z-50">
+      <div className="yellow-window fixed inset-0 z-50 overflow-hidden">
         <div className="window-title sticky top-0 z-10">
           <span>
             {WindowsIcons.Internet} {item?.name}
@@ -306,46 +311,50 @@ export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
             {WindowsIcons.Close}
           </button>
         </div>
-        <div className="window-content p-0 h-[calc(100%-2rem)]">{item && renderEmbed(item)}</div>
+        <div className="window-content p-0 h-[calc(100vh-2rem)] bg-black overflow-hidden">
+          {item && renderEmbed(item)}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="window fixed inset-0 md:inset-auto md:top-20 md:left-1/2 md:-translate-x-1/2 w-full md:w-[600px] h-[90vh] md:h-auto md:max-h-[80vh] overflow-y-auto z-50">
+    <div className="yellow-window fixed bottom-8 left-4 w-[500px] md:w-[600px] h-[400px] md:h-[500px] overflow-y-auto z-50">
       <div className="window-title sticky top-0 z-10">
-        <span>{WindowsIcons.Internet} Blogroll</span>
+        <span>{WindowsIcons.Internet} BLOGROLL</span>
         <button className="ml-auto" onClick={onClose}>
           {WindowsIcons.Close}
         </button>
       </div>
       <div className="window-content">
-        <h2 className="pyrex-text mb-4">List of blogs/apps I'm using in 2025</h2>
+        <h2 className="text-yellow-400 font-bold text-lg mb-4 uppercase tracking-wider">
+          LIST OF BLOGS/APPS I'M USING IN 2025
+        </h2>
 
         <div className="space-y-4">
           {blogrollItems.map((item, index) => (
-            <div key={index} className="bg-black p-4 border border-yellow-400">
+            <div key={index} className="border border-yellow-400 p-3">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-yellow-400 font-bold">{item.name}</h3>
                 <div className="flex gap-2">
                   {item.type === "embed" && (
-                    <button className="win-btn text-xs" onClick={() => setActiveEmbed(item.name)}>
-                      Open Embed
+                    <button className="yellow-btn text-xs" onClick={() => setActiveEmbed(item.name)}>
+                      OPEN EMBED
                     </button>
                   )}
-                  <button className="win-btn text-xs" onClick={() => window.open(item.url, "_blank")}>
-                    Visit Site
+                  <button className="yellow-btn text-xs" onClick={() => window.open(item.url, "_blank")}>
+                    VISIT SITE
                   </button>
                 </div>
               </div>
-              <p className="text-gray-400 text-sm">{item.description}</p>
+              <p className="text-yellow-300 text-sm">{item.description}</p>
               <p className="text-blue-400 text-xs mt-1 font-mono">{item.url}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 p-4 bg-black border border-gray-600">
-          <p className="text-gray-400 text-sm">
+        <div className="mt-6 p-4 border border-gray-600">
+          <p className="text-yellow-300 text-sm">
             This is my curated list of websites, apps, and platforms that I'm actively using and following in 2025. Each
             represents a different aspect of my interests in AI, music, art, and technology.
           </p>

@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { WindowsIcons } from "./components/Icons"
-import SongOfTheDay from "./components/SongOfTheDay"
 import Counter from "./components/Counter"
 import EasterEgg from "./components/EasterEgg"
 import GameSelector from "./components/GameSelector"
@@ -15,53 +14,85 @@ export default function Home() {
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false)
   const currentTime = new Date().toLocaleTimeString()
 
-  // Working features first
+  // Working features first - v76 style labels
   const workingIcons = [
     {
       icon: WindowsIcons.User,
-      label: "About RAF\nVinyl",
+      label: "ABOUT RAF\nVINYL",
       action: "about",
     },
     {
       icon: WindowsIcons.Internet,
-      label: "Blogroll\n2025",
+      label: "BLOGROLL\n2025",
       action: "blogroll",
     },
     {
       icon: WindowsIcons.Games,
-      label: "Games",
+      label: "GAMES",
       action: "games",
     },
     {
       icon: WindowsIcons.Notes,
-      label: "My\nNotes",
+      label: "MY\nNOTES",
       action: "notes",
     },
   ]
 
-  // Coming soon features at bottom (updated labels)
+  // Coming soon features at bottom - v76 style labels
   const comingSoonIcons = [
     {
       icon: WindowsIcons.Music,
-      label: 'DJ Sets\n12"\n(Coming soon)',
+      label: 'DJ SETS\n12"\n(COMING SOON)',
       action: "music",
     },
     {
       icon: WindowsIcons.Documents,
-      label: "Projects\n(Coming soon)",
+      label: "PROJECTS\n(COMING SOON)",
       action: "projects",
     },
     {
       icon: WindowsIcons.Terminal,
-      label: "Pitch\nStartup\n(Coming soon)",
+      label: "PITCH\nSTARTUP\n(COMING SOON)",
       action: "terminal",
     },
   ]
 
+  // Working start menu items - FIXED single CD emoji and easter egg action
+  const startMenuItems = [
+    { name: "About", icon: WindowsIcons.User, action: "about" },
+    { name: "Blogroll", icon: WindowsIcons.Internet, action: "blogroll" },
+    { name: "Games", icon: WindowsIcons.Games, action: "games" },
+    { name: "My Notes", icon: WindowsIcons.Notes, action: "notes" },
+    { name: "Email", icon: WindowsIcons.Email, action: "email" },
+    { name: "Digging in the Crates", icon: "💿", action: "easter-egg" },
+  ]
+
   const handleIconClick = (action: string) => {
     if (action === "music" || action === "projects" || action === "terminal") {
-      // Show under construction for these
       setActiveWindow(`construction-${action}`)
+    } else if (action === "email") {
+      // Fixed email handling
+      try {
+        const email = "raffi@notgoodcompany.com"
+        const subject = "Contact from Website"
+        const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}`
+
+        // Try to open mailto, fallback to copying email
+        const link = document.createElement("a")
+        link.href = mailtoUrl
+        link.click()
+
+        // Also copy to clipboard as backup
+        navigator.clipboard.writeText(email).catch(() => {})
+      } catch (error) {
+        // Fallback - show email in alert
+        alert("Email: raffi@notgoodcompany.com")
+      }
+      setIsStartMenuOpen(false)
+    } else if (action === "easter-egg") {
+      // Easter egg is always visible, just close menu - this should trigger the easter egg
+      setIsStartMenuOpen(false)
+      // The easter egg is always visible and clickable
     } else {
       setActiveWindow(action)
     }
@@ -109,11 +140,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Active Windows */}
+      {/* Active Windows - v76 sizing */}
       {activeWindow === "about" && (
-        <div className="window fixed inset-0 md:inset-auto md:top-20 md:left-1/2 md:-translate-x-1/2 w-full md:w-[800px] h-[90vh] md:h-auto md:max-h-[80vh] overflow-y-auto z-50">
+        <div className="window fixed bottom-8 left-4 w-[600px] md:w-[700px] h-[500px] md:h-[600px] overflow-y-auto z-50">
           <div className="window-title sticky top-0 z-10">
-            <span>{WindowsIcons.User} About Me - RAF.txt</span>
+            <span>{WindowsIcons.User} ABOUT ME - RAF.TXT</span>
             <button className="ml-auto" onClick={() => setActiveWindow(null)}>
               {WindowsIcons.Close}
             </button>
@@ -122,16 +153,50 @@ export default function Home() {
             <div className="mb-4 flex items-start gap-4">
               <div className="w-20 h-20 bg-white flex items-center justify-center text-black font-bold">RAF</div>
               <div>
-                <h1 className="pyrex-text mb-2">Raffi Sourenkhatchadourian</h1>
+                <h1 className="pyrex-text mb-2">RAFFI SOURENKHATCHADOURIAN</h1>
                 <p className="canary-text mb-4">NYC-based AI architect and technology consultant</p>
               </div>
             </div>
+
+            {/* Bio Section */}
+            <div className="mb-6 p-4 bg-black border border-yellow-400">
+              <h3 className="text-yellow-400 font-bold mb-3">BIO</h3>
+              <p className="text-white text-sm leading-relaxed mb-3">
+                Raffi is an NYC-based AI Architect driving generative AI transformations for IBM's enterprise clients
+                since 2016 - from early Watson solutions to today's large-scale automation initiatives. He's also an
+                entrepreneur and advisor @ Nameless Ventures, plus co-founder of Bad Company, a creative collective
+                managing partnerships at high-profile NYC venues.
+              </p>
+              <p className="text-white text-sm leading-relaxed">
+                Previously COO @ indify (music data startup through Thought Into Action incubator). Outside corporate
+                life, he's deep in NYC's creative scene - DJing across city venues, playing pick-up soccer in Brooklyn,
+                and crate-digging for vinyls with family.
+              </p>
+            </div>
+
+            {/* AI Summit Keynote Embed */}
+            <div className="mb-6 p-4 bg-black border border-yellow-400">
+              <h3 className="text-yellow-400 font-bold mb-3">🎤 AI SUMMIT KEYNOTE - BANKING ON AI AGENTS</h3>
+              <p className="text-white text-sm mb-3">Finance stage at Javits Center NYC - Dec 14, 2024</p>
+              <div style={{ padding: "62.5% 0 0 0", position: "relative" }}>
+                <iframe
+                  src="https://player.vimeo.com/video/1047612862?badge=0&autopause=0&player_id=0&app_id=58479"
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                  title="Banking on AI Agents - Keynote @ AI Summit 12-14-24"
+                ></iframe>
+              </div>
+              <script src="https://player.vimeo.com/api/player.js"></script>
+            </div>
+
+            {/* Counters */}
             <div className="space-y-4">
-              <SongOfTheDay />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Counter end={500} label="DJ Sets" icon={WindowsIcons.Music} />
-                <Counter end={100} label="Events" icon={WindowsIcons.Calendar} />
-                <Counter end={50} label="AI Projects" icon={WindowsIcons.MyComputer} />
+                <Counter end={150} label="DJ Sets" icon={WindowsIcons.Music} />
+                <Counter end={120} label="Events" icon={WindowsIcons.Calendar} />
+                <Counter end={30} label="AI Projects" icon={WindowsIcons.MyComputer} />
               </div>
             </div>
           </div>
@@ -140,9 +205,9 @@ export default function Home() {
 
       {/* Games Window */}
       {activeWindow === "games" && (
-        <div className="window fixed inset-0 md:inset-auto md:top-20 md:left-1/2 md:-translate-x-1/2 w-full md:w-[800px] h-[90vh] md:h-auto md:max-h-[80vh] overflow-y-auto z-50">
+        <div className="window fixed top-20 left-1/2 -translate-x-1/2 w-[90vw] max-w-[900px] h-[80vh] overflow-y-auto z-50">
           <div className="window-title sticky top-0 z-10">
-            <span>{WindowsIcons.Games} Retro Games</span>
+            <span>{WindowsIcons.Games} RETRO GAMES</span>
             <button className="ml-auto" onClick={() => setActiveWindow(null)}>
               {WindowsIcons.Close}
             </button>
@@ -189,16 +254,16 @@ export default function Home() {
               <div className="canary-text">Version 1.0</div>
             </div>
             <div className="space-y-2">
-              {Object.entries(WindowsIcons).map(([name, icon]) => (
+              {startMenuItems.map((item) => (
                 <button
-                  key={name}
+                  key={item.name}
                   className="w-full text-left px-4 py-2 hover:bg-yellow-400 hover:text-black flex items-center gap-2 transition-colors"
                   onClick={() => {
-                    setActiveWindow(name.toLowerCase())
+                    handleIconClick(item.action)
                     setIsStartMenuOpen(false)
                   }}
                 >
-                  {icon} {name}
+                  {item.icon} {item.name}
                 </button>
               ))}
             </div>
