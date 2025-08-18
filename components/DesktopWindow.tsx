@@ -33,9 +33,9 @@ export default function DesktopWindow({ title, isOpen, onClose, children, classN
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[3000] flex items-start md:items-center justify-center p-3 md:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center p-3 md:p-6 overflow-y-auto">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black bg-opacity-70" onClick={onClose} />
 
       {/* Window */}
       <div
@@ -43,8 +43,8 @@ export default function DesktopWindow({ title, isOpen, onClose, children, classN
         aria-modal="true"
         className={[
           "relative w-[min(92vw,960px)]",
-          "max-h-[min(88vh,900px)]",
-          isYellow ? "bg-black border-2 border-[#ffd700]" : "bg-[#c0c0c0] border-2 border-[#c0c0c0]",
+          "max-h-[85vh]",
+          isYellow ? "bg-black border-2 border-yellow-400" : "bg-gray-200 border-2 border-gray-200",
           "rounded-none shadow-2xl overflow-hidden",
           "pointer-events-auto",
           className || "",
@@ -54,13 +54,13 @@ export default function DesktopWindow({ title, isOpen, onClose, children, classN
           border: isYellow ? "3px solid #ffd700" : "2px outset #c0c0c0",
         }}
       >
-        {/* Title Bar */}
+        {/* Title Bar - Sticky */}
         <div
           className={[
-            "sticky top-0 z-10 flex items-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wide",
+            "sticky top-0 z-10 flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide",
             isYellow
-              ? "bg-gradient-to-r from-[#ffd700] to-[#ffa500] text-black"
-              : "bg-gradient-to-r from-[#0054e3] to-[#0041b8] text-white",
+              ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-black"
+              : "bg-gradient-to-r from-blue-600 to-blue-700 text-white",
           ].join(" ")}
           style={{ minHeight: "32px" }}
         >
@@ -82,10 +82,10 @@ export default function DesktopWindow({ title, isOpen, onClose, children, classN
         <div
           className={[
             "overflow-y-auto overflow-x-hidden",
-            isYellow ? "bg-black text-[#ffd700]" : "bg-[#c0c0c0] text-black",
+            isYellow ? "bg-black text-yellow-400" : "bg-gray-200 text-black",
           ].join(" ")}
           style={{
-            maxHeight: "calc(min(88vh, 900px) - 40px)",
+            maxHeight: "calc(85vh - 40px)",
             WebkitOverflowScrolling: "touch",
           }}
         >

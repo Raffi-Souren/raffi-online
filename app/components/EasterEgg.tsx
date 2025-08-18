@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Shuffle, X } from "lucide-react"
 
 type Track = {
@@ -119,184 +119,16 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     url: "https://soundcloud.com/novemberrosemusic/sade-sweetest-taboo-november-rose-amapiano-remix",
   },
   {
+    id: "name",
+    title: "Name",
+    artist: "theconcreteleaksystem",
+    url: "https://soundcloud.com/theconcreteleaksystem/name",
+  },
+  {
     id: "mitsubishi-sony",
     title: "Mitsubishi Sony",
     artist: "donovanfreer188",
     url: "https://soundcloud.com/donovanfreer188/mitsubishi-sony",
-  },
-  {
-    id: "partynextdoor-showing-you-baile-baile-funk-edit",
-    title: "Showing You (Baile Funk Edit)",
-    artist: "PARTYNEXTDOOR",
-    url: "https://soundcloud.com/ang-official/partynextdoor-showing-you-baile-baile-funk-edit",
-  },
-  {
-    id: "beyonce-end-of-time-sydney-sousa-baile-funk-edit",
-    title: "End of Time (Sydney Sousa Baile Funk Edit)",
-    artist: "Beyoncé",
-    url: "https://soundcloud.com/dj-sydney-sousa/beyonce-end-of-time-sydney-sousa-baile-funk-edit",
-  },
-  {
-    id: "peggy-gou-it-goes-like-nanana-baile-funk-edit",
-    title: "It Goes Like (Nanana) Baile Funk Edit",
-    artist: "Peggy Gou",
-    url: "https://soundcloud.com/caiohot/peggy-gou-it-goes-like-nanana-baile-funk-edit",
-  },
-  {
-    id: "sango-amor-di-american-loverboy",
-    title: "Amor Di American Loverboy",
-    artist: "Sango",
-    url: "https://soundcloud.com/manlikesirene/sango-amor-di-american-loverboy",
-  },
-  {
-    id: "chamber-of-reflection-brazilian-funk-remix",
-    title: "Chamber of Reflection (Brazilian Funk Remix)",
-    artist: "Mac DeMarco",
-    url: "https://soundcloud.com/user-167742358/chamber-of-reflection-brazilian-funk-remix",
-  },
-  {
-    id: "fisherrr-shekdash-remix",
-    title: "Fisher (Shekdash Remix)",
-    artist: "shekdash",
-    url: "https://soundcloud.com/shekdash/fisherrr-shekdash-remix",
-  },
-  {
-    id: "kanye-west-i-wonder-yanghi-amapiano-edit",
-    title: "I Wonder (Yanghi Amapiano Edit)",
-    artist: "Kanye West",
-    url: "https://soundcloud.com/giovaneyanghi/kanye-west-i-wonder-yanghi-amapiano-edit-free-dl-1",
-  },
-  {
-    id: "4batz-act-ii-bailefunk-adr",
-    title: "Act II (Baile Funk Edit)",
-    artist: "4batz",
-    url: "https://soundcloud.com/alldayrayatx/4batz-act-ii-bailefunk-adr",
-  },
-  {
-    id: "raf-republic-mar-7",
-    title: "RAF Republic Mar 7",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/raf-republic-mar-7",
-  },
-  {
-    id: "andromeda-by-sweeterman",
-    title: "Andromeda By Sweeterman",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/andromeda-by-sweeterman",
-  },
-  {
-    id: "kim-k-by-sweeterman",
-    title: "Kim K By Sweeterman",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/kim-k-by-sweeterman",
-  },
-  {
-    id: "jam-with-brie",
-    title: "Jam With Brie",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/jam-with-brie",
-  },
-  {
-    id: "whats-the-move-with-brie",
-    title: "What's The Move With Brie",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/whats-the-move-with-brie",
-  },
-  {
-    id: "escondido-x-badco",
-    title: "Escondido X BadCo",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/escondido-x-badco",
-  },
-  {
-    id: "tristan-thompson",
-    title: "Tristan Thompson",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/tristan-thompson",
-  },
-  {
-    id: "ftsv1latenightsnacc",
-    title: "FTS V1 Late Night Snacc",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/ftsv1latenightsnacc",
-  },
-  {
-    id: "ftsv1dinner",
-    title: "FTS V1 Dinner",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/ftsv1dinner",
-  },
-  {
-    id: "ftsv1breakfast",
-    title: "FTS V1 Breakfast",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/ftsv1breakfast",
-  },
-  {
-    id: "drake-sweeterman-explicit",
-    title: "Sweeterman (Explicit)",
-    artist: "Drake",
-    url: "https://soundcloud.com/chargedupdrake/drake-sweeterman-explicit",
-  },
-  {
-    id: "latch-feat-sam-smith",
-    title: "Latch (feat. Sam Smith)",
-    artist: "Disclosure",
-    url: "https://soundcloud.com/disclosure/latch-feat-sam-smith",
-  },
-  {
-    id: "sleepless",
-    title: "Sleepless",
-    artist: "Flume",
-    url: "https://soundcloud.com/flume/sleepless",
-  },
-  {
-    id: "say-my-name-feat-zyra",
-    title: "Say My Name (feat. Zyra)",
-    artist: "ODESZA",
-    url: "https://soundcloud.com/odesza/say-my-name-feat-zyra",
-  },
-  {
-    id: "glowed-up-feat-anderson-paak",
-    title: "Glowed Up (feat. Anderson .Paak)",
-    artist: "Kaytranada",
-    url: "https://soundcloud.com/kaytranada/glowed-up-feat-anderson-paak",
-  },
-  {
-    id: "gosh",
-    title: "Gosh",
-    artist: "Jamie xx",
-    url: "https://soundcloud.com/jamie-xx/gosh",
-  },
-  {
-    id: "kiara-feat-bajka",
-    title: "Kiara (feat. Bajka)",
-    artist: "Bonobo",
-    url: "https://soundcloud.com/bonobomusic/kiara-feat-bajka",
-  },
-  {
-    id: "a-walk",
-    title: "A Walk",
-    artist: "Tycho",
-    url: "https://soundcloud.com/tycho/a-walk",
-  },
-  {
-    id: "a-new-error",
-    title: "A New Error",
-    artist: "Moderat",
-    url: "https://soundcloud.com/moderat-official/a-new-error",
-  },
-  {
-    id: "glue",
-    title: "Glue",
-    artist: "Bicep",
-    url: "https://soundcloud.com/bicep-music/glue",
-  },
-  {
-    id: "odessa",
-    title: "Odessa",
-    artist: "Caribou",
-    url: "https://soundcloud.com/caribouband/odessa",
   },
 ]
 
@@ -304,12 +136,73 @@ export default function EasterEgg() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [position, setPosition] = useState({ x: 100, y: 100 })
+  const [velocity, setVelocity] = useState({ x: 1.5, y: 1.2 })
+  const animationRef = useRef<number>()
+  const boundsRef = useRef({ width: 0, height: 0 })
+
+  // Update bounds on resize
+  useEffect(() => {
+    const updateBounds = () => {
+      boundsRef.current = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }
+    }
+
+    updateBounds()
+    window.addEventListener("resize", updateBounds)
+    return () => window.removeEventListener("resize", updateBounds)
+  }, [])
+
+  // Bouncing animation - COMPLETELY FIXED
+  useEffect(() => {
+    const animate = () => {
+      setPosition((prev) => {
+        const bounds = boundsRef.current
+        const boxSize = 50 // Mario box size
+        const taskbarHeight = 40 // Account for taskbar
+
+        let newX = prev.x + velocity.x
+        let newY = prev.y + velocity.y
+
+        // Bounce off left/right walls
+        if (newX <= 0) {
+          newX = 0
+          velocity.x = Math.abs(velocity.x) // Force positive
+        } else if (newX >= bounds.width - boxSize) {
+          newX = bounds.width - boxSize
+          velocity.x = -Math.abs(velocity.x) // Force negative
+        }
+
+        // Bounce off top/bottom walls
+        if (newY <= 0) {
+          newY = 0
+          velocity.y = Math.abs(velocity.y) // Force positive
+        } else if (newY >= bounds.height - boxSize - taskbarHeight) {
+          newY = bounds.height - boxSize - taskbarHeight
+          velocity.y = -Math.abs(velocity.y) // Force negative
+        }
+
+        return { x: newX, y: newY }
+      })
+
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
+    animationRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [])
 
   const loadRandomTrack = () => {
     setIsLoading(true)
     const randomTrack = SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]
     setCurrentTrack(randomTrack)
-    // Small delay to show loading state
     setTimeout(() => setIsLoading(false), 500)
   }
 
@@ -324,26 +217,48 @@ export default function EasterEgg() {
     return `https://w.soundcloud.com/player/?url=${encodeURIComponent(track.url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`
   }
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isModalOpen])
+
   return (
     <>
-      {/* Animated Mario Question Mark - Bottom Left Corner */}
-      <div className="mario-box fixed bottom-16 left-4 z-[2000] cursor-pointer" onClick={handleClick}>
+      {/* Fixed Mario Question Mark - z-40 pointer-events-auto */}
+      <div
+        className="mario-box fixed z-40 cursor-pointer pointer-events-auto"
+        style={{
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+        }}
+        onClick={handleClick}
+      >
         <div className="mario-box-inner">?</div>
       </div>
 
-      {/* Modal */}
+      {/* Modal with fixed backdrop and proper scrolling */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setIsModalOpen(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Fixed backdrop */}
+          <div className="absolute inset-0 bg-black bg-opacity-70" onClick={() => setIsModalOpen(false)} />
 
-          <div className="relative bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
+          {/* Modal panel with max height and scroll */}
+          <div className="relative bg-gray-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+            {/* Sticky header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🎵</span>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Discovery Mode</h2>
-                  <p className="text-sm text-gray-400">{SOUNDCLOUD_TRACKS.length} curated tracks</p>
+                  <h2 className="text-lg font-bold text-white">Digging in the Crates</h2>
+                  <p className="text-sm text-gray-400">RAF's SoundCloud Gems • {SOUNDCLOUD_TRACKS.length} tracks</p>
                 </div>
               </div>
               <button
@@ -354,7 +269,7 @@ export default function EasterEgg() {
               </button>
             </div>
 
-            {/* Content */}
+            {/* Scrollable content */}
             <div className="p-4 space-y-4">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
@@ -387,7 +302,7 @@ export default function EasterEgg() {
                       allow="autoplay"
                       src={buildEmbedUrl(currentTrack)}
                       className="w-full rounded-md"
-                      key={currentTrack.id} // Force re-render when track changes
+                      key={currentTrack.id}
                     />
                   </div>
                 </>

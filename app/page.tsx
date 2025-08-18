@@ -10,7 +10,7 @@ import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import DesktopWindow from "../components/DesktopWindow"
 
-// Lazy load heavy features - SSR safe
+// Dynamic import EasterEgg with SSR disabled
 const EasterEgg = dynamic(() => import("./components/EasterEgg"), {
   ssr: false,
   loading: () => null,
@@ -265,7 +265,12 @@ export default function Home() {
         />
       )}
 
-      {/* Easter Egg - Always visible for static question mark */}
+      {/* Easter"")}
+          onClose={() => setActiveWindow(null)}
+        />
+      )}
+
+      {/* Easter Egg - Always visible for bouncing question mark */}
       <EasterEgg />
     </div>
   )
