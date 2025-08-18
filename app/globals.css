@@ -384,7 +384,7 @@
   }
 }
 
-/* v76 Mario Question Mark Box - Restored original styling */
+/* Enhanced Mario Question Mark Box with Motion */
 .mario-box {
   width: 40px;
   height: 40px;
@@ -401,7 +401,7 @@
   z-index: 2000;
   pointer-events: auto;
   position: relative;
-  animation: mario-bounce 3s ease-in-out infinite;
+  animation: mario-bounce 2s ease-in-out infinite, mario-glow 3s ease-in-out infinite alternate;
 }
 
 @media (max-width: 768px) {
@@ -412,17 +412,18 @@
 }
 
 .mario-box:hover {
-  transform: scale(1.1) rotate(2deg);
-  box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.7), inset -3px -3px 0px rgba(0, 0, 0, 0.5), 4px 4px 16px
-    rgba(0, 0, 0, 0.6);
+  transform: scale(1.15) rotate(5deg);
+  box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.8), inset -3px -3px 0px rgba(0, 0, 0, 0.5), 6px 6px 20px
+    rgba(255, 215, 0, 0.6);
   background: linear-gradient(135deg, #ffed4e 0%, #ffc947 50%, #ff8c00 100%);
-  animation: none;
+  animation: mario-hover-pulse 0.3s ease-in-out infinite alternate;
 }
 
 .mario-box:active {
-  transform: scale(0.95);
+  transform: scale(0.9) rotate(-2deg);
   box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.4), inset -2px -2px 0px rgba(0, 0, 0, 0.6), 2px 2px 8px
     rgba(0, 0, 0, 0.4);
+  animation: mario-click 0.1s ease-out;
 }
 
 .mario-box-inner {
@@ -434,6 +435,7 @@
   pointer-events: none;
   font-family: "MS Sans Serif", Tahoma, sans-serif;
   line-height: 1;
+  animation: mario-question-wiggle 4s ease-in-out infinite;
 }
 
 @media (max-width: 768px) {
@@ -442,14 +444,68 @@
   }
 }
 
-/* Add subtle animation to make it more Mario-like */
+/* Enhanced Mario Box Animations */
 @keyframes mario-bounce {
   0%,
   100% {
-    transform: translateY(0px);
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotate(1deg);
   }
   50% {
-    transform: translateY(-2px);
+    transform: translateY(-6px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-3px) rotate(-1deg);
+  }
+}
+
+@keyframes mario-glow {
+  0% {
+    box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.6), inset -3px -3px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
+      rgba(0, 0, 0, 0.5);
+  }
+  100% {
+    box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.7), inset -3px -3px 0px rgba(0, 0, 0, 0.4), 3px 3px 16px
+      rgba(255, 215, 0, 0.4);
+  }
+}
+
+@keyframes mario-question-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(2deg) scale(1.05);
+  }
+  50% {
+    transform: rotate(0deg) scale(1);
+  }
+  75% {
+    transform: rotate(-2deg) scale(1.05);
+  }
+}
+
+@keyframes mario-hover-pulse {
+  0% {
+    transform: scale(1.15) rotate(5deg);
+  }
+  100% {
+    transform: scale(1.2) rotate(5deg);
+  }
+}
+
+@keyframes mario-click {
+  0% {
+    transform: scale(0.9) rotate(-2deg);
+  }
+  50% {
+    transform: scale(0.85) rotate(-3deg);
+  }
+  100% {
+    transform: scale(0.9) rotate(-2deg);
   }
 }
 
