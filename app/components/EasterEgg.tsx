@@ -2,8 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Shuffle } from "lucide-react"
-import WindowShell from "./WindowShell"
+import { Shuffle, X } from "lucide-react"
 
 type Track = {
   id: string
@@ -15,10 +14,10 @@ type Track = {
 // Hardcoded, validated SoundCloud tracks - no API calls needed
 const SOUNDCLOUD_TRACKS: Track[] = [
   {
-    id: "nba-youngboy-turnt-up",
-    title: "NBA YoungBoy Turnt Up Prod",
-    artist: "user-927335574",
-    url: "https://soundcloud.com/user-927335574/nba-youngboy-turnt-up-prod",
+    id: "yukon-x-up-dj-hunny-bee-mashup",
+    title: "YUKON x UP (DJ Hunny Bee Mashup)",
+    artist: "DJ Hunny Bee",
+    url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-mashup",
   },
   {
     id: "raf-republic-mar-7",
@@ -193,16 +192,30 @@ export default function EasterEgg() {
     setIsModalOpen(false)
   }
 
-  // Build SoundCloud embed URL - v76 style with cyan color
+  // Handle ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeModal()
+      }
+    }
+
+    if (isModalOpen) {
+      document.addEventListener("keydown", handleEscape)
+      return () => document.removeEventListener("keydown", handleEscape)
+    }
+  }, [isModalOpen])
+
+  // Build SoundCloud embed URL - using the format from your example
   const buildEmbedUrl = (track: Track) => {
-    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(track.url)}&color=%2300ffff&visual=true&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`
+    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(track.url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
   }
 
   return (
     <>
-      {/* Moving Yellow Mario Question Mark - Pauses when modal is open */}
+      {/* FIXED: Moving Yellow Mario Question Mark - High z-index, explicit pointer events */}
       <div
-        className="mario-box absolute z-40 cursor-pointer"
+        className="mario-box fixed z-[2000] pointer-events-auto cursor-pointer"
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
@@ -212,66 +225,93 @@ export default function EasterEgg() {
         <div className="mario-box-inner">?</div>
       </div>
 
-      {/* SoundCloud Discovery Mode Modal - v76 Style with WindowShell */}
+      {/* SoundCloud Discovery Mode Modal */}
       {isModalOpen && (
-        <WindowShell title="🎵 Discovery Mode" onClose={closeModal}>
-          <div className="p-4 space-y-4">
-            {/* Header Info */}
-            <div className="text-center">
-              <p className="text-sm text-gray-400">{SOUNDCLOUD_TRACKS.length} tracks from @djsweeterman's collection</p>
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal} />
+
+          {/* Window */}
+          <div
+            className="relative w-[min(92vw,960px)] max-h-[min(88vh,900px)] bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Title Bar */}
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎵</span>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Discovery Mode</h2>
+                  <p className="text-sm text-gray-400">
+                    {SOUNDCLOUD_TRACKS.length} tracks from @djsweeterman's collection
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeModal}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Track Info & Controls */}
-            {currentTrack && (
-              <>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{currentTrack.title}</h3>
-                    <p className="text-sm text-gray-400">{currentTrack.artist}</p>
-                  </div>
-                  <button
-                    onClick={loadRandomTrack}
-                    disabled={SOUNDCLOUD_TRACKS.length <= 1}
-                    className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-all min-h-[44px] flex items-center gap-2"
-                  >
-                    <Shuffle className="w-4 h-4" />
-                    Next Track
-                  </button>
-                </div>
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto overflow-x-hidden" style={{ maxHeight: "calc(min(88vh, 900px) - 80px)" }}>
+              <div className="p-4 space-y-4">
+                {/* Track Info & Controls */}
+                {currentTrack && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{currentTrack.title}</h3>
+                        <p className="text-sm text-gray-400">{currentTrack.artist}</p>
+                      </div>
+                      <button
+                        onClick={loadRandomTrack}
+                        disabled={SOUNDCLOUD_TRACKS.length <= 1}
+                        className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-all min-h-[44px] flex items-center gap-2"
+                      >
+                        <Shuffle className="w-4 h-4" />
+                        Next Track
+                      </button>
+                    </div>
 
-                {/* SoundCloud Embed - v76 style */}
-                <div className="relative w-full">
-                  <iframe
-                    width="100%"
-                    height="200"
-                    scrolling="no"
-                    frameBorder="no"
-                    allow="autoplay"
-                    loading="lazy"
-                    decoding="async"
-                    src={buildEmbedUrl(currentTrack)}
-                    className="w-full rounded-md"
-                  />
-                </div>
-              </>
-            )}
+                    {/* SoundCloud Embed - using your exact format */}
+                    <div className="relative w-full">
+                      <iframe
+                        width="100%"
+                        height="166"
+                        scrolling="no"
+                        frameBorder="no"
+                        allow="autoplay"
+                        loading="lazy"
+                        decoding="async"
+                        src={buildEmbedUrl(currentTrack)}
+                        className="w-full rounded-md"
+                      />
+                    </div>
+                  </>
+                )}
 
-            {/* Footer - v76 Style */}
-            <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-700">
-              <span>Press ESC to close • Click outside to dismiss</span>
-              {currentTrack && (
-                <a
-                  href={currentTrack.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-cyan-400 hover:text-cyan-300 underline min-h-[44px] flex items-center"
-                >
-                  View on SoundCloud →
-                </a>
-              )}
+                {/* Footer */}
+                <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-700">
+                  <span>Press ESC to close • Click outside to dismiss</span>
+                  {currentTrack && (
+                    <a
+                      href={currentTrack.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-400 hover:text-cyan-300 underline min-h-[44px] flex items-center"
+                    >
+                      View on SoundCloud →
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </WindowShell>
+        </div>
       )}
     </>
   )

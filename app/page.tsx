@@ -119,9 +119,10 @@ export default function Home() {
   }
 
   return (
-    <div className="vh-safe flex flex-col pointer-events-none">
+    <div className="vh-safe flex flex-col">
+      {/* REVERTED: Remove pointer-events-none from root - let everything be clickable */}
       {/* Desktop Icons */}
-      <div className="flex-1 flex flex-col justify-between p-1 md:p-2 pointer-events-auto">
+      <div className="flex-1 flex flex-col justify-between p-1 md:p-2">
         {/* Working Features - Top Area */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-2 justify-items-center">
           {workingIcons.map((item, index) => (
@@ -224,8 +225,8 @@ export default function Home() {
         />
       )}
 
-      {/* FIXED: Taskbar with proper z-index */}
-      <div className="taskbar flex items-center gap-1 md:gap-2 pointer-events-auto">
+      {/* Taskbar */}
+      <div className="taskbar flex items-center gap-1 md:gap-2">
         <button className="start-btn min-h-[32px]" onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}>
           {WindowsIcons.Windows} Start
         </button>
@@ -239,9 +240,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* FIXED: Start Menu with proper z-index */}
+      {/* Start Menu */}
       {isStartMenuOpen && (
-        <div className="window absolute bottom-7 md:bottom-8 left-0 w-56 md:w-64 pointer-events-auto z-[200]">
+        <div className="window absolute bottom-7 md:bottom-8 left-0 w-56 md:w-64 z-[200]">
           <div className="window-content">
             <div className="bg-black text-white p-3 mb-2">
               <div className="pyrex-text text-base md:text-xl">RAF OS</div>

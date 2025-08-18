@@ -86,11 +86,10 @@
     @apply border-border;
   }
 
-  /* FIXED: Use auto height instead of 100vh trap - NO global overflow restrictions */
+  /* REVERTED: Normal scrolling behavior - no global overflow restrictions */
   html,
   body {
     height: auto;
-    overflow: auto; /* Allow normal scrolling */
   }
 
   body {
@@ -332,7 +331,6 @@
   border: 2px inset #ffd700;
 }
 
-/* FIXED: Taskbar z-index - lower than windows */
 .taskbar {
   background: linear-gradient(180deg, #245edb 0%, #1941a5 100%);
   border-top: 1px solid #4a90e2;
@@ -340,7 +338,7 @@
   height: 28px;
   display: flex;
   align-items: center;
-  z-index: 100; /* Lower than windows z-[1000] */
+  z-index: 100;
 }
 
 @media (min-width: 768px) {
@@ -407,7 +405,7 @@
   }
 }
 
-/* Mario Question Mark Box - FIXED: Lower z-index than windows */
+/* FIXED: Mario Question Mark Box - High z-index, explicit pointer events */
 .mario-box {
   width: 32px;
   height: 32px;
@@ -421,7 +419,8 @@
     rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease;
   cursor: pointer;
-  z-index: 40; /* Lower than windows z-[1000] */
+  z-index: 2000; /* FIXED: High z-index above everything */
+  pointer-events: auto; /* FIXED: Explicit pointer events */
 }
 
 @media (min-width: 768px) {
@@ -443,6 +442,7 @@
   color: #8b4513;
   text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
   user-select: none;
+  pointer-events: none; /* Let clicks pass through to parent */
 }
 
 @media (min-width: 768px) {
