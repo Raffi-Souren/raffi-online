@@ -1,141 +1,62 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
+import RetroEmulator from "@/app/components/RetroEmulator"
 
-interface GameROM {
+interface GameCore {
+  id: string
   name: string
-  core: string
   description: string
-  controls: string[]
+  fileTypes: string[]
 }
 
-const availableGames: GameROM[] = [
+const availableCores: GameCore[] = [
   {
-    name: "NES Demo",
-    core: "nes",
-    description: "Nintendo Entertainment System",
-    controls: ["Arrow Keys: D-Pad", "Z: A Button", "X: B Button", "Enter: Start", "Shift: Select"],
+    id: "nes",
+    name: "Nintendo (NES)",
+    description: "8-bit Nintendo Entertainment System",
+    fileTypes: [".nes"],
   },
   {
-    name: "Game Boy Demo",
-    core: "gb",
-    description: "Nintendo Game Boy",
-    controls: ["Arrow Keys: D-Pad", "Z: A Button", "X: B Button", "Enter: Start", "Shift: Select"],
+    id: "snes",
+    name: "Super Nintendo (SNES)",
+    description: "16-bit Super Nintendo Entertainment System",
+    fileTypes: [".smc", ".sfc"],
   },
   {
-    name: "SNES Demo",
-    core: "snes",
-    description: "Super Nintendo Entertainment System",
-    controls: ["Arrow Keys: D-Pad", "Z: A", "X: B", "A: X", "S: Y", "Q: L", "W: R", "Enter: Start", "Shift: Select"],
+    id: "gb",
+    name: "Game Boy",
+    description: "Nintendo Game Boy handheld console",
+    fileTypes: [".gb"],
   },
-]
-
-const cores = [
-  { id: "nes", name: "Nintendo (NES)", description: "8-bit Nintendo Entertainment System" },
-  { id: "snes", name: "Super Nintendo (SNES)", description: "16-bit Super Nintendo Entertainment System" },
-  { id: "gb", name: "Game Boy", description: "Nintendo Game Boy handheld console" },
-  { id: "gbc", name: "Game Boy Color", description: "Nintendo Game Boy Color handheld console" },
-  { id: "genesis", name: "Sega Genesis", description: "16-bit Sega Genesis/Mega Drive" },
+  {
+    id: "gbc",
+    name: "Game Boy Color",
+    description: "Nintendo Game Boy Color handheld console",
+    fileTypes: [".gbc"],
+  },
+  {
+    id: "genesis",
+    name: "Sega Genesis",
+    description: "16-bit Sega Genesis/Mega Drive",
+    fileTypes: [".md", ".gen"],
+  },
 ]
 
 export default function EmulatorPage() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false)
-  const [emulatorLoaded, setEmulatorLoaded] = useState(false)
-  const [selectedCore, setSelectedCore] = useState("nes")
+  const [selectedCore, setSelectedCore] = useState<string | null>(null)
+  const [emulatorStarted, setEmulatorStarted] = useState(false)
 
-  const loadEmulator = () => {
-    if (!containerRef.current || !disclaimerAccepted) return
-
-    setIsLoading(true)
-
-    // Clear any existing content
-    const gameContainer = document.getElementById("game")
-    if (gameContainer) {
-      gameContainer.innerHTML = ""
-    }
-
-    // Remove existing EmulatorJS scripts
-    const existingScripts = document.querySelectorAll('script[src*="emulatorjs"], script[src*="loader.js"]')
-    existingScripts.forEach((script) => script.remove())
-
-    // Remove existing config scripts
-    const existingConfigs = document.querySelectorAll("script:not([src])")
-    existingConfigs.forEach((script) => {
-      if (script.innerHTML.includes("EJS_")) {
-        script.remove()
-      }
-    })
-
-    // Wait a moment for cleanup
-    setTimeout(() => {
-      try {
-        // Create configuration script
-        const configScript = document.createElement("script")
-        configScript.type = "text/javascript"
-        configScript.innerHTML = `
-          window.EJS_player = '#game';
-          window.EJS_core = '${selectedCore}';
-          window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-          window.EJS_startOnLoaded = false;
-          window.EJS_color = '#0f0f0f';
-          window.EJS_VirtualGamepadSettings = {
-            enabled: true,
-            opacity: 0.8
-          };
-          window.EJS_biosUrl = '';
-          window.EJS_gameUrl = '';
-          window.EJS_gameName = 'EmulatorJS';
-          window.EJS_loadStateOnStart = false;
-        `
-
-        // Create loader script
-        const loaderScript = document.createElement("script")
-        loaderScript.src = "https://cdn.emulatorjs.org/stable/data/loader.js"
-        loaderScript.type = "text/javascript"
-        loaderScript.async = true
-
-        loaderScript.onload = () => {
-          console.log("EmulatorJS loaded successfully")
-          setIsLoading(false)
-          setEmulatorLoaded(true)
-        }
-
-        loaderScript.onerror = (error) => {
-          console.error("Failed to load EmulatorJS:", error)
-          setIsLoading(false)
-          // Try alternative CDN
-          const fallbackScript = document.createElement("script")
-          fallbackScript.src = "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@latest/data/loader.js"
-          fallbackScript.onload = () => {
-            setIsLoading(false)
-            setEmulatorLoaded(true)
-          }
-          fallbackScript.onerror = () => {
-            setIsLoading(false)
-            alert("Failed to load emulator. Please check your internet connection and try again.")
-          }
-          document.head.appendChild(fallbackScript)
-        }
-
-        // Add scripts to document
-        document.head.appendChild(configScript)
-        document.head.appendChild(loaderScript)
-      } catch (error) {
-        console.error("Error setting up emulator:", error)
-        setIsLoading(false)
-      }
-    }, 100)
+  const startEmulator = (coreId: string) => {
+    setSelectedCore(coreId)
+    setEmulatorStarted(true)
   }
 
-  useEffect(() => {
-    // Cleanup on unmount
-    return () => {
-      const scripts = document.querySelectorAll('script[src*="emulatorjs"], script[src*="loader.js"]')
-      scripts.forEach((script) => script.remove())
-    }
-  }, [])
+  const closeEmulator = () => {
+    setEmulatorStarted(false)
+    setSelectedCore(null)
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -185,125 +106,32 @@ export default function EmulatorPage() {
             <p className="text-gray-400">Play classic console games in your browser using EmulatorJS</p>
           </div>
 
-          {/* Core Selection */}
-          {!emulatorLoaded && (
+          {/* Console Selection */}
+          {!emulatorStarted && (
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-4">Select Console</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {cores.map((core) => (
+                {availableCores.map((core) => (
                   <div
                     key={core.id}
-                    className={`p-4 rounded-lg cursor-pointer transition-colors ${
-                      selectedCore === core.id
-                        ? "bg-blue-600 border-2 border-blue-400"
-                        : "bg-gray-800 hover:bg-gray-700 border-2 border-transparent"
-                    }`}
-                    onClick={() => setSelectedCore(core.id)}
+                    className="p-6 bg-gray-800 hover:bg-gray-700 border-2 border-gray-600 hover:border-blue-400 rounded-lg cursor-pointer transition-all"
+                    onClick={() => startEmulator(core.id)}
                   >
-                    <h3 className="font-bold text-lg">{core.name}</h3>
-                    <p className="text-sm text-gray-300">{core.description}</p>
+                    <h3 className="font-bold text-lg mb-2">{core.name}</h3>
+                    <p className="text-sm text-gray-300 mb-3">{core.description}</p>
+                    <div className="text-xs text-gray-400">
+                      <span className="font-semibold">Supported files:</span> {core.fileTypes.join(", ")}
+                    </div>
                   </div>
                 ))}
               </div>
-
-              <div className="text-center">
-                <button
-                  onClick={loadEmulator}
-                  disabled={isLoading}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg"
-                >
-                  {isLoading ? "Loading Emulator..." : "Start Emulator"}
-                </button>
-              </div>
             </div>
           )}
 
-          {/* Loading State */}
-          {isLoading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-                <p className="text-xl">Loading {cores.find((c) => c.id === selectedCore)?.name} Emulator...</p>
-                <p className="text-gray-400 mt-2">This may take a moment...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Emulator Container */}
-          {emulatorLoaded && (
-            <div className="bg-gray-900 rounded-lg p-4 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">{cores.find((c) => c.id === selectedCore)?.name} Emulator</h2>
-                <button
-                  onClick={() => {
-                    setEmulatorLoaded(false)
-                    const gameContainer = document.getElementById("game")
-                    if (gameContainer) gameContainer.innerHTML = ""
-                    // Remove scripts
-                    const scripts = document.querySelectorAll('script[src*="emulatorjs"], script[src*="loader.js"]')
-                    scripts.forEach((script) => script.remove())
-                  }}
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                >
-                  Close Emulator
-                </button>
-              </div>
-
-              <div
-                id="game"
-                ref={containerRef}
-                className="w-full bg-black rounded border-2 border-gray-700"
-                style={{ minHeight: "480px", aspectRatio: "4/3" }}
-              />
-
-              <div className="mt-4 p-4 bg-yellow-900 bg-opacity-50 rounded text-yellow-200 text-sm">
-                <p className="font-bold mb-2">📁 ROM File Required</p>
-                <p>
-                  To play games, you need to provide your own ROM files. Use the file upload option in the emulator
-                  interface above. Only use ROM files that you legally own.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions */}
-          {emulatorLoaded && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-gray-800 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-4">How to Load Games</h3>
-                <ol className="space-y-2 text-sm list-decimal list-inside">
-                  <li>Click the folder icon in the emulator to browse for ROM files</li>
-                  <li>Select a ROM file from your computer (must be legally owned)</li>
-                  <li>Wait for the game to load</li>
-                  <li>Use keyboard controls or virtual gamepad to play</li>
-                </ol>
-              </div>
-
-              <div className="bg-gray-800 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-4">Keyboard Controls</h3>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Arrow Keys:</span>
-                    <span>D-Pad</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Z:</span>
-                    <span>A Button</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>X:</span>
-                    <span>B Button</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Enter:</span>
-                    <span>Start</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shift:</span>
-                    <span>Select</span>
-                  </div>
-                </div>
-              </div>
+          {/* Emulator */}
+          {emulatorStarted && selectedCore && (
+            <div className="mb-6">
+              <RetroEmulator core={selectedCore} onClose={closeEmulator} />
             </div>
           )}
 
@@ -347,13 +175,13 @@ export default function EmulatorPage() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">Supported File Types:</h4>
+                <h4 className="font-semibold mb-2">Legal Notice:</h4>
                 <ul className="space-y-1 text-gray-300">
-                  <li>• NES: .nes files</li>
-                  <li>• SNES: .smc, .sfc files</li>
-                  <li>• Game Boy: .gb, .gbc files</li>
-                  <li>• Genesis: .md, .gen files</li>
-                  <li>• Most common ROM formats</li>
+                  <li>• Only use ROM files you legally own</li>
+                  <li>• Respect copyright and intellectual property</li>
+                  <li>• This is for educational purposes only</li>
+                  <li>• We do not provide or host ROM files</li>
+                  <li>• EmulatorJS is open source software</li>
                 </ul>
               </div>
             </div>

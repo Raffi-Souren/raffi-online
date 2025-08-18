@@ -119,7 +119,7 @@ const previousEvents: Event[] = [
   },
   {
     title: "AI in Finance @ a16z Tech Week NYC",
-    date: "Nov 2024",
+    date: "May 2025",
     venue: "a16z NYC",
     replayUrl:
       "https://www.linkedin.com/posts/raffi-khatchadourian_genai-finance-modelcompression-activity-7336880144894083072-vH4C?utm_source=share&utm_medium=member_desktop&rcm=ACoAABPUWSgBJVLvatVBEiSUU0ICEXhNODcutls",
