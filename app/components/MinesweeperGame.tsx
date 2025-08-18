@@ -183,7 +183,7 @@ export default function MinesweeperGame() {
 
   const getCellStyle = (cell: Cell) => {
     let baseStyle =
-      "w-6 h-6 flex items-center justify-center border border-gray-400 text-xs font-bold cursor-pointer select-none "
+      "w-6 h-6 flex items-center justify-center border border-gray-400 text-xs font-bold cursor-pointer select-none min-h-[24px] "
 
     if (cell.state === "hidden") {
       baseStyle += "bg-gray-300 hover:bg-gray-200 "
@@ -209,18 +209,21 @@ export default function MinesweeperGame() {
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex justify-between items-center">
+    <div className="p-4 max-w-full overflow-auto">
+      <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
         <div className="text-sm">
           <span className="mr-4">🚩 {flagsLeft}</span>
           <span>💣 {NUM_MINES}</span>
         </div>
-        <button onClick={resetGame} className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
+        <button
+          onClick={resetGame}
+          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 min-h-[44px]"
+        >
           New Game
         </button>
       </div>
 
-      <div className="grid grid-cols-10 gap-0 w-fit mx-auto border-2 border-gray-600">
+      <div className="grid grid-cols-10 gap-0 w-fit mx-auto border-2 border-gray-600 max-w-full overflow-auto">
         {grid.map((row, x) =>
           row.map((cell, y) => (
             <button

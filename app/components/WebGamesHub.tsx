@@ -32,7 +32,7 @@ export default function WebGamesHub() {
   if (selectedGame) {
     const game = games.find((g) => g.id === selectedGame)
     return (
-      <div className="relative w-full h-full flex flex-col">
+      <div className="relative w-full h-full">
         <div className="flex justify-between items-center mb-4 p-4 bg-gray-800 rounded-t-lg">
           <h2 className="text-xl font-bold text-white">{game?.name}</h2>
           <button
@@ -43,7 +43,10 @@ export default function WebGamesHub() {
           </button>
         </div>
 
-        <div className="flex-1 bg-white rounded-lg overflow-hidden">
+        <div
+          className="relative w-full bg-white rounded-lg overflow-hidden"
+          style={{ aspectRatio: "4/3", minHeight: "500px" }}
+        >
           <iframe
             src={game?.url}
             className="w-full h-full border-0"
@@ -68,14 +71,14 @@ export default function WebGamesHub() {
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="p-6">
       <h2 className="text-2xl font-bold mb-6 text-center">Classic Web Games</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {games.map((game) => (
           <div
             key={game.id}
-            className={`${game.color} p-6 rounded-lg cursor-pointer transition-transform hover:scale-105 text-white shadow-lg flex flex-col justify-center`}
+            className={`${game.color} p-6 rounded-lg cursor-pointer transition-transform hover:scale-105 text-white shadow-lg`}
             onClick={() => setSelectedGame(game.id)}
           >
             <h3 className="text-xl font-bold mb-2">{game.name}</h3>

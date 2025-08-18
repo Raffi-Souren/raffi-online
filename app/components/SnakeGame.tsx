@@ -226,12 +226,12 @@ export default function SnakeGame() {
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        className="bg-gray-800 border-2 border-gray-600 rounded"
+        className="bg-gray-800 border-2 border-gray-600 rounded max-w-full h-auto"
         tabIndex={0}
       />
       {!gameStarted && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded">
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4 p-4">
             <h2 className="text-xl font-bold text-white">Snake Game</h2>
             {gameOver && (
               <>
@@ -242,7 +242,7 @@ export default function SnakeGame() {
               </>
             )}
             <button
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-bold"
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-bold min-h-[44px]"
               onClick={startGame}
             >
               {gameOver ? "Play Again" : "Start Game"}
