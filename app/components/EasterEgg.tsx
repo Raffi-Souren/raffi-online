@@ -1334,10 +1334,10 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     url: "https://soundcloud.com/blaccmass/blaccmass-radio-one-night-only",
   },
   {
-    id: "four-tet-insect-near-piha-beach-oshee",
+    id: "four-tet-insect-near-piha-beach",
     title: "Four Tet - Insect Near Piha Beach",
-    artist: "oshee",
-    url: "https://soundcloud.com/oshee/four-tet-insect-near-piha-beach",
+    artist: "Four Tet",
+    url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
   },
   {
     id: "four-tet-caribou-jamie-xx-dj-set",

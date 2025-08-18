@@ -114,8 +114,7 @@ export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
 
         <div className="p-3 border border-gray-600 mt-4">
           <p className="text-yellow-300 text-sm">
-            This is my curated list of websites, apps, and platforms that I'm actively using and following in 2025. Each
-            represents a different aspect of my interests in AI, music, art, and technology.
+            This is my curated list of websites, apps, and platforms that I'm actively using and following in 2025.
           </p>
         </div>
       </div>

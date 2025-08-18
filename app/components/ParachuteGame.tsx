@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 
-const GAME_WIDTH = 220
-const GAME_HEIGHT = 176
-const PLAYER_SIZE = 8
-const HELICOPTER_SIZE = 16
-const MISSILE_SPEED = 2.5
-const PLAYER_SPEED = 1.2
-const HELICOPTER_SPEED = 0.5
+const GAME_WIDTH = 200
+const GAME_HEIGHT = 150
+const PLAYER_SIZE = 6
+const HELICOPTER_SIZE = 12
+const MISSILE_SPEED = 2
+const PLAYER_SPEED = 1
+const HELICOPTER_SPEED = 0.4
 
 interface GameObject {
   x: number
@@ -20,7 +20,7 @@ interface GameObject {
 export default function ParachuteGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameStateRef = useRef({
-    player: { x: GAME_WIDTH / 2, y: 20, falling: true, vx: 0 },
+    player: { x: GAME_WIDTH / 2, y: 15, falling: true, vx: 0 },
     helicopters: [] as GameObject[],
     missiles: [] as GameObject[],
     animationId: null as number | null,
@@ -33,10 +33,10 @@ export default function ParachuteGame() {
 
   const spawnHelicopter = useCallback(() => {
     const gameState = gameStateRef.current
-    if (gameState.helicopters.length < 2 && Math.random() < 0.02) {
+    if (gameState.helicopters.length < 2 && Math.random() < 0.015) {
       gameState.helicopters.push({
         x: Math.random() > 0.5 ? -HELICOPTER_SIZE : GAME_WIDTH,
-        y: GAME_HEIGHT - HELICOPTER_SIZE - 20 - Math.random() * 50,
+        y: GAME_HEIGHT - HELICOPTER_SIZE - 15 - Math.random() * 40,
         active: true,
         vx: Math.random() > 0.5 ? HELICOPTER_SPEED : -HELICOPTER_SPEED,
       })
@@ -45,7 +45,7 @@ export default function ParachuteGame() {
 
   const fireMissile = useCallback((helicopter: GameObject) => {
     const gameState = gameStateRef.current
-    if (Math.random() < 0.015) {
+    if (Math.random() < 0.01) {
       gameState.missiles.push({
         x: helicopter.x + HELICOPTER_SIZE / 2,
         y: helicopter.y,
@@ -73,7 +73,7 @@ export default function ParachuteGame() {
           } else {
             // Reset player position
             gameState.player.x = GAME_WIDTH / 2
-            gameState.player.y = 20
+            gameState.player.y = 15
             gameState.player.vx = 0
             return newLives
           }
@@ -83,10 +83,10 @@ export default function ParachuteGame() {
     })
 
     // Check ground collision (successful landing)
-    if (gameState.player.y + PLAYER_SIZE >= GAME_HEIGHT - 15) {
+    if (gameState.player.y + PLAYER_SIZE >= GAME_HEIGHT - 12) {
       setScore((prev) => prev + 10)
-      gameState.player.y = 20
-      gameState.player.x = GAME_WIDTH / 2 + (Math.random() - 0.5) * 100
+      gameState.player.y = 15
+      gameState.player.x = GAME_WIDTH / 2 + (Math.random() - 0.5) * 80
       gameState.player.vx = 0
     }
   }, [])
@@ -96,10 +96,10 @@ export default function ParachuteGame() {
 
     // Update player movement
     if (gameState.keys["ArrowLeft"] || gameState.keys["a"]) {
-      gameState.player.vx = Math.max(-2, gameState.player.vx - 0.2)
+      gameState.player.vx = Math.max(-1.5, gameState.player.vx - 0.15)
     }
     if (gameState.keys["ArrowRight"] || gameState.keys["d"]) {
-      gameState.player.vx = Math.min(2, gameState.player.vx + 0.2)
+      gameState.player.vx = Math.min(1.5, gameState.player.vx + 0.15)
     }
 
     // Apply air resistance
@@ -167,39 +167,39 @@ export default function ParachuteGame() {
 
     // Draw clouds
     ctx.fillStyle = "rgba(255, 255, 255, 0.8)"
-    for (let i = 0; i < 3; i++) {
-      const x = (i * 80 + 20) % GAME_WIDTH
-      const y = 30 + i * 20
+    for (let i = 0; i < 2; i++) {
+      const x = (i * 60 + 15) % GAME_WIDTH
+      const y = 20 + i * 15
       ctx.beginPath()
-      ctx.arc(x, y, 15, 0, Math.PI * 2)
-      ctx.arc(x + 15, y, 20, 0, Math.PI * 2)
-      ctx.arc(x + 30, y, 15, 0, Math.PI * 2)
+      ctx.arc(x, y, 8, 0, Math.PI * 2)
+      ctx.arc(x + 8, y, 10, 0, Math.PI * 2)
+      ctx.arc(x + 16, y, 8, 0, Math.PI * 2)
       ctx.fill()
     }
 
     // Draw ground
     ctx.fillStyle = "#8B4513"
-    ctx.fillRect(0, GAME_HEIGHT - 15, GAME_WIDTH, 15)
+    ctx.fillRect(0, GAME_HEIGHT - 12, GAME_WIDTH, 12)
 
     // Draw grass
     ctx.fillStyle = "#228B22"
-    ctx.fillRect(0, GAME_HEIGHT - 18, GAME_WIDTH, 3)
+    ctx.fillRect(0, GAME_HEIGHT - 14, GAME_WIDTH, 2)
 
     // Draw player with parachute
     ctx.fillStyle = "#000"
     // Draw parachute
     ctx.beginPath()
-    ctx.arc(gameState.player.x, gameState.player.y - 10, 12, Math.PI, 0)
+    ctx.arc(gameState.player.x, gameState.player.y - 8, 8, Math.PI, 0)
     ctx.strokeStyle = "#FF6B6B"
-    ctx.lineWidth = 2
+    ctx.lineWidth = 1.5
     ctx.stroke()
 
     // Draw parachute lines
     ctx.beginPath()
-    ctx.moveTo(gameState.player.x - 10, gameState.player.y - 2)
-    ctx.lineTo(gameState.player.x, gameState.player.y + 2)
-    ctx.moveTo(gameState.player.x + 10, gameState.player.y - 2)
-    ctx.lineTo(gameState.player.x, gameState.player.y + 2)
+    ctx.moveTo(gameState.player.x - 6, gameState.player.y - 1)
+    ctx.lineTo(gameState.player.x, gameState.player.y + 1)
+    ctx.moveTo(gameState.player.x + 6, gameState.player.y - 1)
+    ctx.lineTo(gameState.player.x, gameState.player.y + 1)
     ctx.strokeStyle = "#000"
     ctx.lineWidth = 1
     ctx.stroke()
@@ -214,17 +214,17 @@ export default function ParachuteGame() {
         ctx.fillStyle = "#333"
         ctx.fillRect(helicopter.x, helicopter.y, HELICOPTER_SIZE, HELICOPTER_SIZE / 2)
 
-        // Draw rotor (animated)
+        // Draw rotor
         ctx.strokeStyle = "#666"
-        ctx.lineWidth = 2
+        ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(helicopter.x - 8, helicopter.y - 2)
-        ctx.lineTo(helicopter.x + HELICOPTER_SIZE + 8, helicopter.y - 2)
+        ctx.moveTo(helicopter.x - 6, helicopter.y - 1)
+        ctx.lineTo(helicopter.x + HELICOPTER_SIZE + 6, helicopter.y - 1)
         ctx.stroke()
 
         // Draw tail
         ctx.fillStyle = "#333"
-        ctx.fillRect(helicopter.x + HELICOPTER_SIZE, helicopter.y + 2, 6, 2)
+        ctx.fillRect(helicopter.x + HELICOPTER_SIZE, helicopter.y + 1, 4, 1)
       }
     })
 
@@ -233,25 +233,25 @@ export default function ParachuteGame() {
       if (missile.active) {
         ctx.fillStyle = "#FF4500"
         ctx.beginPath()
-        ctx.arc(missile.x, missile.y, 3, 0, Math.PI * 2)
+        ctx.arc(missile.x, missile.y, 2, 0, Math.PI * 2)
         ctx.fill()
 
         // Draw missile trail
         ctx.strokeStyle = "#FF6347"
-        ctx.lineWidth = 2
+        ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(missile.x, missile.y)
-        ctx.lineTo(missile.x, missile.y + 8)
+        ctx.lineTo(missile.x, missile.y + 4)
         ctx.stroke()
       }
     })
 
     // Draw UI
     ctx.fillStyle = "#000"
-    ctx.font = "12px Arial"
-    ctx.fillText(`Score: ${score}`, 5, 15)
-    ctx.fillText(`Lives: ${lives}`, 5, 30)
-    ctx.fillText(`Alt: ${Math.floor((GAME_HEIGHT - gameState.player.y) / 2)}ft`, GAME_WIDTH - 60, 15)
+    ctx.font = "8px Arial"
+    ctx.fillText(`Score: ${score}`, 3, 10)
+    ctx.fillText(`Lives: ${lives}`, 3, 20)
+    ctx.fillText(`Alt: ${Math.floor((GAME_HEIGHT - gameState.player.y) / 1.5)}ft`, GAME_WIDTH - 40, 10)
 
     if (gameStarted && !gameOver) {
       update()
@@ -262,6 +262,12 @@ export default function ParachuteGame() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       gameStateRef.current.keys[e.key] = true
+
+      // Handle space bar for start/pause
+      if (e.key === " " && !gameStarted && !gameOver) {
+        e.preventDefault()
+        startGame()
+      }
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -275,7 +281,7 @@ export default function ParachuteGame() {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("keyup", handleKeyUp)
     }
-  }, [])
+  }, [gameStarted, gameOver])
 
   useEffect(() => {
     if (gameStarted && !gameOver) {
@@ -291,7 +297,7 @@ export default function ParachuteGame() {
 
   const startGame = () => {
     gameStateRef.current = {
-      player: { x: GAME_WIDTH / 2, y: 20, falling: true, vx: 0 },
+      player: { x: GAME_WIDTH / 2, y: 15, falling: true, vx: 0 },
       helicopters: [],
       missiles: [],
       animationId: null,
@@ -304,32 +310,32 @@ export default function ParachuteGame() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full bg-gray-100">
       <canvas
         ref={canvasRef}
         width={GAME_WIDTH}
         height={GAME_HEIGHT}
-        className="bg-gray-100 border-2 border-gray-600 rounded max-w-full h-auto"
-        tabIndex={0}
+        className="w-full h-full object-contain"
+        style={{ imageRendering: "pixelated" }}
       />
       {!gameStarted && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded">
-          <div className="text-center space-y-4 p-4">
-            <h2 className="text-lg font-bold text-white">Parachute</h2>
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="text-center space-y-2 p-2">
+            <h2 className="text-sm font-bold text-white">Parachute</h2>
             {gameOver && (
               <>
-                <div className="text-red-400">Mission Failed!</div>
-                <div className="text-white">Final Score: {score}</div>
+                <div className="text-red-400 text-xs">Mission Failed!</div>
+                <div className="text-white text-xs">Final Score: {score}</div>
               </>
             )}
             <button
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 font-bold min-h-[44px]"
+              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-xs"
               onClick={startGame}
             >
               {gameOver ? "Try Again" : "Start Mission"}
             </button>
             <div className="text-white text-xs space-y-1">
-              <div>Use arrow keys or A/D to steer</div>
+              <div>Use iPod wheel to steer</div>
               <div>Avoid missiles and land safely!</div>
             </div>
           </div>
