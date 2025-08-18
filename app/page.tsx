@@ -120,7 +120,6 @@ export default function Home() {
 
   return (
     <div className="vh-safe flex flex-col">
-      {/* REVERTED: Remove pointer-events-none from root - let everything be clickable */}
       {/* Desktop Icons */}
       <div className="flex-1 flex flex-col justify-between p-1 md:p-2">
         {/* Working Features - Top Area */}

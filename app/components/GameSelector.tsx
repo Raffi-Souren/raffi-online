@@ -3,12 +3,6 @@
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Smartphone, Music, Gamepad, Radio, Phone, Monitor } from "lucide-react"
-import BlackberryMockup from "./BlackberryMockup"
-import IpodClassicMockup from "./IpodClassicMockup"
-import RazorPhoneMockup from "./RazorPhoneMockup"
-import DesktopMockup from "./DesktopMockup"
-import WebGamesHub from "./WebGamesHub"
-import WindowShell from "./WindowShell"
 
 type Device = "blackberry" | "ipod" | "webgames" | "psp" | "razor" | "desktop" | null
 
@@ -59,86 +53,6 @@ export default function GameSelector() {
       color: "bg-blue-900",
     },
   ]
-
-  if (selectedDevice === "blackberry") {
-    return (
-      <WindowShell title="BLACKBERRY BRICKBREAKER" onClose={() => setSelectedDevice(null)} size="md">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="scale-75 md:scale-100">
-            <BlackberryMockup />
-          </div>
-        </div>
-      </WindowShell>
-    )
-  }
-
-  if (selectedDevice === "ipod") {
-    return (
-      <WindowShell title="IPOD CLASSIC PARACHUTE" onClose={() => setSelectedDevice(null)} size="md">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="scale-75 md:scale-100">
-            <IpodClassicMockup />
-          </div>
-        </div>
-      </WindowShell>
-    )
-  }
-
-  if (selectedDevice === "razor") {
-    return (
-      <WindowShell title="MOTOROLA RAZR SNAKE" onClose={() => setSelectedDevice(null)} size="md">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="scale-75 md:scale-100">
-            <RazorPhoneMockup />
-          </div>
-        </div>
-      </WindowShell>
-    )
-  }
-
-  if (selectedDevice === "desktop") {
-    return (
-      <WindowShell title="DESKTOP MINESWEEPER" onClose={() => setSelectedDevice(null)} size="lg">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="scale-75 md:scale-100 w-full max-w-4xl">
-            <DesktopMockup />
-          </div>
-        </div>
-      </WindowShell>
-    )
-  }
-
-  if (selectedDevice === "webgames") {
-    return (
-      <WindowShell title="WEB GAMES HUB" onClose={() => setSelectedDevice(null)} size="lg">
-        <div className="min-h-[400px]">
-          <WebGamesHub />
-        </div>
-      </WindowShell>
-    )
-  }
-
-  if (selectedDevice === "psp") {
-    return (
-      <WindowShell title="RETRO CONSOLE EMULATOR" onClose={() => setSelectedDevice(null)} size="md">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <h2 className="text-lg md:text-2xl font-bold mb-4">Retro Console Emulator</h2>
-            <p className="text-gray-400 mb-6 text-sm md:text-base">Play classic console games in your browser</p>
-            <button
-              onClick={() => window.open("/games/emulator", "_blank")}
-              className="bg-blue-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm md:text-base min-h-[44px]"
-            >
-              Open Emulator
-            </button>
-            <div className="mt-4 text-xs md:text-sm text-gray-500">
-              <p>⚠️ Educational purposes only - Bring your own ROM files</p>
-            </div>
-          </div>
-        </div>
-      </WindowShell>
-    )
-  }
 
   return (
     <div className="max-h-[calc(82dvh-120px)] max-h-[calc(82svh-120px)] overflow-y-auto">

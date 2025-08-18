@@ -28,11 +28,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://w.soundcloud.com" crossOrigin="" />
         <link rel="preconnect" href="https://soundcloud.com" crossOrigin="" />
         <link rel="preconnect" href="https://i1.sndcdn.com" crossOrigin="" />
-        <link rel="preconnect" href="https://cdn.emulatorjs.org" crossOrigin="" />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
-        <link rel="preconnect" href="https://player.vimeo.com" crossOrigin="" />
-        <link rel="preconnect" href="https://vimeo.com" crossOrigin="" />
-        <link rel="preconnect" href="https://poolsuite.net" crossOrigin="" />
         {/* Preload wallpaper */}
         <link rel="preload" as="image" href="/windows-2000-background.png" fetchPriority="high" />
       </head>
