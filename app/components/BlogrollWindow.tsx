@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { WindowsIcons } from "./Icons"
-import WindowShell from "./WindowShell"
+import DesktopWindow from "../../components/DesktopWindow"
 
 interface BlogrollWindowProps {
   onClose: () => void
@@ -72,20 +71,14 @@ export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
   if (activeEmbed) {
     const item = blogrollItems.find((item) => item.name === activeEmbed)
     return (
-      <WindowShell
-        title={item?.name || "Embed"}
-        icon={WindowsIcons.Internet}
-        onClose={() => setActiveEmbed(null)}
-        size="xl"
-        isYellow={true}
-      >
+      <DesktopWindow title={item?.name || "Embed"} isOpen={true} onClose={() => setActiveEmbed(null)} isYellow={true}>
         <div className="h-full">{item && renderEmbed(item)}</div>
-      </WindowShell>
+      </DesktopWindow>
     )
   }
 
   return (
-    <WindowShell title="BLOGROLL" icon={WindowsIcons.Internet} onClose={onClose} size="xl" isYellow={true}>
+    <DesktopWindow title="BLOGROLL" isOpen={true} onClose={onClose} isYellow={true}>
       <div className="space-y-4">
         <h2 className="text-yellow-400 font-bold text-lg uppercase tracking-wider text-center md:text-left">
           LIST OF BLOGS/APPS I'M USING IN 2025
@@ -126,6 +119,6 @@ export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
           </p>
         </div>
       </div>
-    </WindowShell>
+    </DesktopWindow>
   )
 }

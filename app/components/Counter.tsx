@@ -14,14 +14,10 @@ export default function Counter({ end, label, icon }: { end: number; label: stri
   }, [end])
 
   return (
-    <div className="window">
-      <div className="window-title">
-        {icon} {label}
-      </div>
-      <div className="window-content text-center p-4">
-        <div className="pyrex-text mb-2">{count}</div>
-        <div className="canary-text">{label}</div>
-      </div>
+    <div className="bg-gradient-to-b from-blue-600 to-blue-800 border-2 border-white rounded-lg p-4 text-center shadow-lg">
+      <div className="text-white mb-2 text-lg">{icon}</div>
+      <div className="text-3xl font-bold text-yellow-400 mb-1">{count}</div>
+      <div className="text-white text-sm font-semibold uppercase tracking-wide">{label}</div>
     </div>
   )
 }

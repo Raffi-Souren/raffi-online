@@ -85,9 +85,30 @@
   * {
     @apply border-border;
   }
+
+  /* FIXED: Use auto height instead of 100vh trap - NO global overflow restrictions */
+  html,
   body {
+    height: auto;
+    overflow: auto; /* Allow normal scrolling */
+  }
+
+  body {
+    min-height: 100%;
     @apply bg-background text-foreground;
   }
+}
+
+/* Modern viewport units for mobile */
+@supports (height: 100dvh) {
+  .vh-safe {
+    min-height: 100dvh;
+  }
+}
+
+/* Fallback for older browsers */
+.vh-safe {
+  min-height: 100vh;
 }
 
 /* Performance: Reduced motion support */
@@ -311,6 +332,7 @@
   border: 2px inset #ffd700;
 }
 
+/* FIXED: Taskbar z-index - lower than windows */
 .taskbar {
   background: linear-gradient(180deg, #245edb 0%, #1941a5 100%);
   border-top: 1px solid #4a90e2;
@@ -318,6 +340,7 @@
   height: 28px;
   display: flex;
   align-items: center;
+  z-index: 100; /* Lower than windows z-[1000] */
 }
 
 @media (min-width: 768px) {
@@ -384,7 +407,7 @@
   }
 }
 
-/* Mario Question Mark Box */
+/* Mario Question Mark Box - FIXED: Lower z-index than windows */
 .mario-box {
   width: 32px;
   height: 32px;
@@ -398,7 +421,7 @@
     rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease;
   cursor: pointer;
-  z-index: 40;
+  z-index: 40; /* Lower than windows z-[1000] */
 }
 
 @media (min-width: 768px) {

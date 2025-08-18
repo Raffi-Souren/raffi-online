@@ -8,7 +8,7 @@ import GameSelector from "./components/GameSelector"
 import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
-import WindowShell from "./components/WindowShell"
+import DesktopWindow from "../components/DesktopWindow"
 
 // Lazy load heavy features - don't ship on first paint
 const EasterEgg = dynamic(() => import("./components/EasterEgg"), {
@@ -97,9 +97,9 @@ export default function Home() {
       }
       setIsStartMenuOpen(false)
     } else if (action === "easter-egg") {
-      // Easter egg is always visible, just close menu - this should trigger the easter egg
+      // The easter egg is handled by the EasterEgg component itself
+      // Just close the start menu
       setIsStartMenuOpen(false)
-      // The easter egg is always visible and clickable
     } else {
       setActiveWindow(action)
     }
@@ -119,7 +119,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col pointer-events-none">
+    <div className="vh-safe flex flex-col pointer-events-none">
       {/* Desktop Icons */}
       <div className="flex-1 flex flex-col justify-between p-1 md:p-2 pointer-events-auto">
         {/* Working Features - Top Area */}
@@ -147,74 +147,68 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Active Windows - Using WindowShell */}
-      {activeWindow === "about" && (
-        <WindowShell
-          title="ABOUT ME - RAF.TXT"
-          icon={WindowsIcons.User}
-          onClose={() => setActiveWindow(null)}
-          size="lg"
-        >
-          <div className="space-y-6 p-2">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-white flex items-center justify-center text-black font-bold text-sm md:text-base shrink-0">
-                RAF
-              </div>
-              <div className="text-center md:text-left">
-                <h1 className="pyrex-text mb-2">RAFFI SOURENKHATCHADOURIAN</h1>
-                <p className="canary-text mb-4">NYC-based AI architect and technology consultant</p>
-              </div>
+      {/* About Me Window */}
+      <DesktopWindow title="ABOUT ME - RAF.TXT" isOpen={activeWindow === "about"} onClose={() => setActiveWindow(null)}>
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-white flex items-center justify-center text-black font-bold text-sm md:text-base shrink-0">
+              RAF
             </div>
-
-            {/* Bio Section */}
-            <div className="p-3 bg-black border border-yellow-400">
-              <h3 className="text-yellow-400 font-bold mb-3">BIO</h3>
-              <p className="text-white text-sm leading-relaxed mb-3">
-                Raffi is an NYC-based AI Architect driving generative AI transformations for IBM's enterprise clients
-                since 2016 - from early Watson solutions to today's large-scale automation initiatives. He's also an
-                entrepreneur and advisor @ Nameless Ventures, plus co-founder of Bad Company, a creative collective
-                managing partnerships at high-profile NYC venues.
-              </p>
-              <p className="text-white text-sm leading-relaxed">
-                Previously COO @ indify (music data startup through Thought Into Action incubator). Outside corporate
-                life, he's deep in NYC's creative scene - DJing across city venues, playing pick-up soccer in Brooklyn,
-                and crate-digging for vinyls with family.
-              </p>
-            </div>
-
-            {/* AI Summit Keynote Embed - Fixed responsive sizing */}
-            <div className="p-3 bg-black border border-yellow-400">
-              <h3 className="text-yellow-400 font-bold mb-3">🎤 AI SUMMIT KEYNOTE - BANKING ON AI AGENTS</h3>
-              <p className="text-white text-sm mb-3">Finance stage at Javits Center NYC - Dec 14, 2024</p>
-              <div className="w-full">
-                <iframe
-                  className="w-full h-[250px] md:h-[300px] rounded-md border border-gray-700"
-                  src="https://player.vimeo.com/video/1047612862?badge=0&autopause=0&player_id=0&app_id=58479"
-                  loading="lazy"
-                  decoding="async"
-                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  title="Banking on AI Agents - Keynote @ AI Summit 12-14-24"
-                />
-              </div>
-            </div>
-
-            {/* Counters */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Counter end={150} label="DJ Sets" icon={WindowsIcons.Music} />
-              <Counter end={120} label="Events" icon={WindowsIcons.Calendar} />
-              <Counter end={30} label="AI Projects" icon={WindowsIcons.MyComputer} />
+            <div className="text-center md:text-left">
+              <h1 className="pyrex-text mb-2">RAFFI SOURENKHATCHADOURIAN</h1>
+              <p className="canary-text mb-4">NYC-based AI architect and technology consultant</p>
             </div>
           </div>
-        </WindowShell>
-      )}
+
+          {/* Bio Section */}
+          <div className="p-3 bg-black border border-yellow-400">
+            <h3 className="text-yellow-400 font-bold mb-3">BIO</h3>
+            <p className="text-white text-sm leading-relaxed mb-3">
+              Raffi is an NYC-based AI Architect driving generative AI transformations for IBM's enterprise clients
+              since 2016 - from early Watson solutions to today's large-scale automation initiatives. He's also an
+              entrepreneur and advisor @ Nameless Ventures, plus co-founder of Bad Company, a creative collective
+              managing partnerships at high-profile NYC venues.
+            </p>
+            <p className="text-white text-sm leading-relaxed">
+              Previously COO @ indify (music data startup through Thought Into Action incubator). Outside corporate
+              life, he's deep in NYC's creative scene - DJing across city venues, playing pick-up soccer in Brooklyn,
+              and crate-digging for vinyls with family.
+            </p>
+          </div>
+
+          {/* AI Summit Keynote Embed - Fixed responsive sizing */}
+          <div className="p-3 bg-black border border-yellow-400">
+            <h3 className="text-yellow-400 font-bold mb-3">🎤 AI SUMMIT KEYNOTE - BANKING ON AI AGENTS</h3>
+            <p className="text-white text-sm mb-3">Finance stage at Javits Center NYC - Dec 14, 2024</p>
+            <div className="w-full">
+              <iframe
+                className="w-full h-[250px] md:h-[300px] rounded-md border border-gray-700"
+                src="https://player.vimeo.com/video/1047612862?badge=0&autopause=0&player_id=0&app_id=58479"
+                loading="lazy"
+                decoding="async"
+                allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                title="Banking on AI Agents - Keynote @ AI Summit 12-14-24"
+              />
+            </div>
+          </div>
+
+          {/* Enhanced Counters Section */}
+          <div className="space-y-4">
+            <h3 className="text-yellow-400 font-bold text-center">BY THE NUMBERS</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Counter end={150} label="DJ Sets" icon="🎧" />
+              <Counter end={120} label="Events" icon="📅" />
+              <Counter end={30} label="AI Projects" icon="🤖" />
+            </div>
+          </div>
+        </div>
+      </DesktopWindow>
 
       {/* Games Window */}
-      {activeWindow === "games" && (
-        <WindowShell title="RETRO GAMES" icon={WindowsIcons.Games} onClose={() => setActiveWindow(null)} size="lg">
-          <GameSelector />
-        </WindowShell>
-      )}
+      <DesktopWindow title="RETRO GAMES" isOpen={activeWindow === "games"} onClose={() => setActiveWindow(null)}>
+        <GameSelector />
+      </DesktopWindow>
 
       {/* Blogroll Window */}
       {activeWindow === "blogroll" && <BlogrollWindow onClose={() => setActiveWindow(null)} />}
@@ -230,7 +224,7 @@ export default function Home() {
         />
       )}
 
-      {/* Taskbar */}
+      {/* FIXED: Taskbar with proper z-index */}
       <div className="taskbar flex items-center gap-1 md:gap-2 pointer-events-auto">
         <button className="start-btn min-h-[32px]" onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}>
           {WindowsIcons.Windows} Start
@@ -245,9 +239,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Start Menu */}
+      {/* FIXED: Start Menu with proper z-index */}
       {isStartMenuOpen && (
-        <div className="window absolute bottom-7 md:bottom-8 left-0 w-56 md:w-64 pointer-events-auto">
+        <div className="window absolute bottom-7 md:bottom-8 left-0 w-56 md:w-64 pointer-events-auto z-[200]">
           <div className="window-content">
             <div className="bg-black text-white p-3 mb-2">
               <div className="pyrex-text text-base md:text-xl">RAF OS</div>
@@ -271,7 +265,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Easter Egg - Lazy loaded */}
+      {/* Easter Egg - Always visible for bouncing question mark */}
       <EasterEgg />
     </div>
   )

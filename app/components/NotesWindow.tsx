@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { WindowsIcons } from "./Icons"
-import WindowShell from "./WindowShell"
+import DesktopWindow from "../../components/DesktopWindow"
 
 interface Article {
   version: string
@@ -136,7 +135,7 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
   const [activeTab, setActiveTab] = useState<"upcoming" | "previous">("upcoming")
 
   return (
-    <WindowShell title="RAF'S NOTES" icon={WindowsIcons.Notes} onClose={onClose} size="md">
+    <DesktopWindow title="RAF'S NOTES" isOpen={true} onClose={onClose}>
       <div className="space-y-4 h-full flex flex-col">
         <h2 className="pyrex-text text-center md:text-left">MY ARTICLES, RESEARCH PAPERS & EVENTS</h2>
 
@@ -282,6 +281,6 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
           </div>
         </div>
       </div>
-    </WindowShell>
+    </DesktopWindow>
   )
 }
