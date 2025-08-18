@@ -43,6 +43,7 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --shadow-win: 0 8px 24px rgba(0, 0, 0, 0.35);
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -86,11 +87,15 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: url("/windows-2000-background.png");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+  }
+}
+
+/* Performance: Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
 
@@ -98,19 +103,28 @@
 .window {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-win);
 }
 
 .window-title {
   background: linear-gradient(90deg, #0054e3 0%, #0041b8 100%);
   color: white;
   font-weight: bold;
-  padding: 3px 5px;
+  padding: 6px 8px;
   display: flex;
   align-items: center;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 11px;
+  font-size: 10px;
+  min-height: 32px;
+}
+
+@media (min-width: 768px) {
+  .window-title {
+    padding: 3px 5px;
+    font-size: 11px;
+    min-height: auto;
+  }
 }
 
 /* Special yellow styling for Blogroll - v76 style */
@@ -124,38 +138,70 @@
   background: linear-gradient(90deg, #ffd700 0%, #ffa500 100%);
   color: black;
   font-weight: bold;
-  padding: 4px 8px;
+  padding: 6px 8px;
   text-transform: uppercase;
   letter-spacing: 2px;
-  font-size: 12px;
+  font-size: 10px;
+}
+
+@media (min-width: 768px) {
+  .yellow-window .window-title {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
 }
 
 .yellow-window .window-content {
   background: #000000;
   color: #ffd700;
-  padding: 12px;
+  padding: 8px;
+}
+
+@media (min-width: 768px) {
+  .yellow-window .window-content {
+    padding: 12px;
+  }
 }
 
 .window-content {
-  padding: 8px;
+  padding: 6px;
   background: #c0c0c0;
-  max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  /* Better scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .window-content {
+    padding: 8px;
+  }
 }
 
 .desktop-icon {
-  width: 80px;
+  width: 60px;
   text-align: center;
   color: white;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   transition: all 0.2s ease;
   cursor: pointer;
-  padding: 4px;
+  padding: 2px;
   border-radius: 4px;
+}
+
+@media (min-width: 768px) {
+  .desktop-icon {
+    width: 80px;
+    gap: 4px;
+    padding: 4px;
+  }
 }
 
 .desktop-icon:hover {
@@ -172,16 +218,22 @@
 }
 
 .desktop-icon-emoji {
-  font-size: 32px;
+  font-size: 24px;
   filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+@media (min-width: 768px) {
+  .desktop-icon-emoji {
+    font-size: 32px;
+  }
 }
 
 /* v76 style desktop icon labels - black background */
 .desktop-icon-label {
   background: rgba(0, 0, 0, 0.8);
-  padding: 3px 6px;
+  padding: 2px 4px;
   border-radius: 2px;
-  font-size: 10px;
+  font-size: 8px;
   font-weight: bold;
   text-align: center;
   white-space: pre-line;
@@ -193,15 +245,31 @@
   letter-spacing: 0.5px;
 }
 
+@media (min-width: 768px) {
+  .desktop-icon-label {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+}
+
 .win-btn {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
   color: black;
-  padding: 4px 8px;
-  min-width: 70px;
+  padding: 2px 4px;
+  min-width: 50px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
+  font-size: 10px;
+}
+
+@media (min-width: 768px) {
+  .win-btn {
+    padding: 4px 8px;
+    min-width: 70px;
+    font-size: 11px;
+  }
 }
 
 .win-btn:hover {
@@ -217,14 +285,22 @@
   background: #ffd700;
   border: 2px outset #ffd700;
   color: black;
-  padding: 4px 8px;
-  min-width: 70px;
+  padding: 2px 4px;
+  min-width: 50px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 8px;
   letter-spacing: 1px;
+}
+
+@media (min-width: 768px) {
+  .yellow-btn {
+    padding: 4px 8px;
+    min-width: 70px;
+    font-size: 10px;
+  }
 }
 
 .yellow-btn:hover {
@@ -239,22 +315,36 @@
   background: linear-gradient(180deg, #245edb 0%, #1941a5 100%);
   border-top: 1px solid #4a90e2;
   padding: 2px;
-  height: 30px;
+  height: 28px;
   display: flex;
   align-items: center;
+}
+
+@media (min-width: 768px) {
+  .taskbar {
+    height: 30px;
+  }
 }
 
 .start-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   background: linear-gradient(180deg, #4caf50 0%, #2e7d32 100%);
   border: 2px outset #4caf50;
   color: white;
-  padding: 2px 8px;
+  padding: 2px 6px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 9px;
+}
+
+@media (min-width: 768px) {
+  .start-btn {
+    gap: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+  }
 }
 
 .start-btn:hover {
@@ -266,25 +356,38 @@
 }
 
 .pyrex-text {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: #ffd700;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+@media (min-width: 768px) {
+  .pyrex-text {
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+}
+
 .canary-text {
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.6;
   color: #ffff99;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
+@media (min-width: 768px) {
+  .canary-text {
+    font-size: 14px;
+  }
+}
+
 /* Mario Question Mark Box */
 .mario-box {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
   border: 3px solid #8b4513;
   border-radius: 4px;
@@ -298,6 +401,13 @@
   z-index: 40;
 }
 
+@media (min-width: 768px) {
+  .mario-box {
+    width: 40px;
+    height: 40px;
+  }
+}
+
 .mario-box:hover {
   transform: scale(1.1);
   box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.6), inset -2px -2px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
@@ -305,40 +415,28 @@
 }
 
 .mario-box-inner {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: bold;
   color: #8b4513;
   text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
   user-select: none;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .desktop-icon {
-    width: 70px;
-  }
-
-  .desktop-icon-emoji {
-    font-size: 28px;
-  }
-
-  .desktop-icon-label {
-    font-size: 9px;
-  }
-
-  .mario-box {
-    width: 35px;
-    height: 35px;
-  }
-
+@media (min-width: 768px) {
   .mario-box-inner {
-    font-size: 20px;
+    font-size: 24px;
   }
 }
 
 /* Scrollbar styling for Windows XP look */
 ::-webkit-scrollbar {
-  width: 16px;
+  width: 12px;
+}
+
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 16px;
+  }
 }
 
 ::-webkit-scrollbar-track {
@@ -353,4 +451,40 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #d0d0d0 0%, #b0b0b0 100%);
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 767px) {
+  .window {
+    border: 1px outset #c0c0c0;
+  }
+
+  .yellow-window {
+    border: 2px solid #ffd700;
+  }
+
+  /* Make touch targets larger on mobile */
+  button {
+    min-height: 32px;
+  }
+
+  /* Improve text readability on mobile */
+  .text-xs {
+    font-size: 10px;
+  }
+
+  .text-sm {
+    font-size: 12px;
+  }
+}
+
+/* Ensure modals are properly positioned and sized */
+@media (max-width: 640px) {
+  .window {
+    min-height: auto !important;
+  }
+
+  .window-content {
+    min-height: 200px;
+  }
 }

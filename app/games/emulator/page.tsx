@@ -1,7 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import RetroEmulator from "@/app/components/RetroEmulator"
+import dynamic from "next/dynamic"
+import Link from "next/link"
+
+// Lazy load the heavy emulator component
+const RetroEmulator = dynamic(() => import("@/app/components/RetroEmulator"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center py-12">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+        <p className="text-xl text-white">Loading Emulator...</p>
+      </div>
+    </div>
+  ),
+})
 
 interface GameCore {
   id: string
@@ -84,16 +98,16 @@ export default function EmulatorPage() {
             <div className="flex gap-4">
               <button
                 onClick={() => setDisclaimerAccepted(true)}
-                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-semibold"
+                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-semibold min-h-[44px]"
               >
                 I Understand & Accept
               </button>
-              <button
-                onClick={() => window.history.back()}
-                className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 font-semibold"
+              <Link
+                href="/"
+                className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 font-semibold min-h-[44px] flex items-center"
               >
                 Go Back
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -114,7 +128,7 @@ export default function EmulatorPage() {
                 {availableCores.map((core) => (
                   <div
                     key={core.id}
-                    className="p-6 bg-gray-800 hover:bg-gray-700 border-2 border-gray-600 hover:border-blue-400 rounded-lg cursor-pointer transition-all"
+                    className="p-6 bg-gray-800 hover:bg-gray-700 border-2 border-gray-600 hover:border-blue-400 rounded-lg cursor-pointer transition-all min-h-[120px] flex flex-col justify-center"
                     onClick={() => startEmulator(core.id)}
                   >
                     <h3 className="font-bold text-lg mb-2">{core.name}</h3>
@@ -147,7 +161,7 @@ export default function EmulatorPage() {
                       href="https://emulatorjs.org"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:underline"
+                      className="hover:underline min-h-[44px] flex items-center"
                     >
                       • Official Website
                     </a>
@@ -157,7 +171,7 @@ export default function EmulatorPage() {
                       href="https://github.com/EmulatorJS/EmulatorJS"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:underline"
+                      className="hover:underline min-h-[44px] flex items-center"
                     >
                       • GitHub Repository
                     </a>
@@ -167,7 +181,7 @@ export default function EmulatorPage() {
                       href="https://emulatorjs.org/docs"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:underline"
+                      className="hover:underline min-h-[44px] flex items-center"
                     >
                       • Documentation
                     </a>

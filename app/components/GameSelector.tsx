@@ -8,6 +8,7 @@ import IpodClassicMockup from "./IpodClassicMockup"
 import RazorPhoneMockup from "./RazorPhoneMockup"
 import DesktopMockup from "./DesktopMockup"
 import WebGamesHub from "./WebGamesHub"
+import WindowShell from "./WindowShell"
 
 type Device = "blackberry" | "ipod" | "webgames" | "psp" | "razor" | "desktop" | null
 
@@ -61,117 +62,103 @@ export default function GameSelector() {
 
   if (selectedDevice === "blackberry") {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <BlackberryMockup />
-      </div>
+      <WindowShell title="BLACKBERRY BRICKBREAKER" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100">
+            <BlackberryMockup />
+          </div>
+        </div>
+      </WindowShell>
     )
   }
 
   if (selectedDevice === "ipod") {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <IpodClassicMockup />
-      </div>
+      <WindowShell title="IPOD CLASSIC PARACHUTE" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100">
+            <IpodClassicMockup />
+          </div>
+        </div>
+      </WindowShell>
     )
   }
 
   if (selectedDevice === "razor") {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <RazorPhoneMockup />
-      </div>
+      <WindowShell title="MOTOROLA RAZR SNAKE" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100">
+            <RazorPhoneMockup />
+          </div>
+        </div>
+      </WindowShell>
     )
   }
 
   if (selectedDevice === "desktop") {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <DesktopMockup />
-      </div>
+      <WindowShell title="DESKTOP MINESWEEPER" onClose={() => setSelectedDevice(null)} size="lg">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="scale-75 md:scale-100 w-full max-w-4xl">
+            <DesktopMockup />
+          </div>
+        </div>
+      </WindowShell>
     )
   }
 
   if (selectedDevice === "webgames") {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <WebGamesHub />
-      </div>
+      <WindowShell title="WEB GAMES HUB" onClose={() => setSelectedDevice(null)} size="lg">
+        <div className="min-h-[400px]">
+          <WebGamesHub />
+        </div>
+      </WindowShell>
     )
   }
 
   if (selectedDevice === "psp") {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <div className="text-center p-8">
-          <h2 className="text-2xl font-bold mb-4">Retro Console Emulator</h2>
-          <p className="text-gray-400 mb-6">Play classic console games in your browser</p>
-          <button
-            onClick={() => window.open("/games/emulator", "_blank")}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-          >
-            Open Emulator
-          </button>
-          <div className="mt-4 text-sm text-gray-500">
-            <p>⚠️ Educational purposes only - Bring your own ROM files</p>
+      <WindowShell title="RETRO CONSOLE EMULATOR" onClose={() => setSelectedDevice(null)} size="md">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-lg md:text-2xl font-bold mb-4">Retro Console Emulator</h2>
+            <p className="text-gray-400 mb-6 text-sm md:text-base">Play classic console games in your browser</p>
+            <button
+              onClick={() => window.open("/games/emulator", "_blank")}
+              className="bg-blue-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm md:text-base min-h-[44px]"
+            >
+              Open Emulator
+            </button>
+            <div className="mt-4 text-xs md:text-sm text-gray-500">
+              <p>⚠️ Educational purposes only - Bring your own ROM files</p>
+            </div>
           </div>
         </div>
-      </div>
+      </WindowShell>
     )
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 max-w-3xl mx-auto">
-      {devices.map((device) => (
-        <Card
-          key={device.id}
-          className={`p-6 cursor-pointer transition-transform hover:scale-105 ${device.color} text-white`}
-          onClick={() => setSelectedDevice(device.id as Device)}
-        >
-          <div className="flex flex-col items-center text-center space-y-4">
-            <device.icon size={48} />
-            <div>
-              <h3 className="font-bold text-lg">{device.name}</h3>
-              <p className="text-sm opacity-80">{device.description}</p>
+    <div className="max-h-[calc(82dvh-120px)] max-h-[calc(82svh-120px)] overflow-y-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-2">
+        {devices.map((device) => (
+          <Card
+            key={device.id}
+            className={`p-3 cursor-pointer transition-transform hover:scale-105 ${device.color} text-white min-h-[72px] flex flex-col justify-center`}
+            onClick={() => setSelectedDevice(device.id as Device)}
+          >
+            <div className="flex flex-col items-center text-center space-y-2">
+              <device.icon size={24} className="md:w-8 md:h-8" />
+              <div>
+                <h3 className="font-bold text-sm">{device.name}</h3>
+                <p className="text-xs opacity-80">{device.description}</p>
+              </div>
             </div>
-          </div>
-        </Card>
-      ))}
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

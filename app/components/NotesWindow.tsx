@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { WindowsIcons } from "./Icons"
+import WindowShell from "./WindowShell"
 
 interface Article {
   version: string
@@ -23,7 +24,6 @@ interface Event {
 }
 
 const articles: Article[] = [
-  // LinkedIn Articles - From Consumer Buzz to Enterprise Adoption Series
   {
     version: "v8",
     title: "When Bigger Stops Being Better",
@@ -72,7 +72,6 @@ const articles: Article[] = [
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-ai-agents-raffi-khatchadourian-ulpfe",
     type: "LinkedIn",
   },
-  // Research Papers
   {
     version: "",
     title: "Impact of External Forces and the Digital Age on the Turkish Narrative of Armenians in Turkey's Textbooks",
@@ -137,54 +136,48 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
   const [activeTab, setActiveTab] = useState<"upcoming" | "previous">("upcoming")
 
   return (
-    <div className="window fixed bottom-8 right-4 w-[600px] md:w-[700px] h-[500px] md:h-[600px] overflow-y-auto z-50">
-      <div className="window-title sticky top-0 z-10">
-        <span>{WindowsIcons.Notes} RAF'S NOTES</span>
-        <button className="ml-auto" onClick={onClose}>
-          {WindowsIcons.Close}
-        </button>
-      </div>
-      <div className="window-content">
-        <h2 className="pyrex-text mb-4">MY ARTICLES, RESEARCH PAPERS & EVENTS</h2>
+    <WindowShell title="RAF'S NOTES" icon={WindowsIcons.Notes} onClose={onClose} size="md">
+      <div className="space-y-4 h-full flex flex-col">
+        <h2 className="pyrex-text text-center md:text-left">MY ARTICLES, RESEARCH PAPERS & EVENTS</h2>
 
-        <div className="space-y-6">
-          {/* Events Section with Tabs */}
-          <div>
-            <div className="flex gap-2 mb-4">
-              <button
-                className={`px-4 py-2 font-bold text-sm border-2 ${
-                  activeTab === "upcoming"
-                    ? "bg-green-600 text-white border-green-400"
-                    : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
-                }`}
-                onClick={() => setActiveTab("upcoming")}
-              >
-                📅 UPCOMING
-              </button>
-              <button
-                className={`px-4 py-2 font-bold text-sm border-2 ${
-                  activeTab === "previous"
-                    ? "bg-red-600 text-white border-red-400"
-                    : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
-                }`}
-                onClick={() => setActiveTab("previous")}
-              >
-                📋 PREVIOUS
-              </button>
-            </div>
+        {/* Events Section with Tabs */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex gap-2 mb-4 shrink-0">
+            <button
+              className={`px-3 py-2 font-bold text-sm border-2 min-h-[44px] flex-1 md:flex-none ${
+                activeTab === "upcoming"
+                  ? "bg-green-600 text-white border-green-400"
+                  : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+              }`}
+              onClick={() => setActiveTab("upcoming")}
+            >
+              📅 UPCOMING
+            </button>
+            <button
+              className={`px-3 py-2 font-bold text-sm border-2 min-h-[44px] flex-1 md:flex-none ${
+                activeTab === "previous"
+                  ? "bg-red-600 text-white border-red-400"
+                  : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+              }`}
+              onClick={() => setActiveTab("previous")}
+            >
+              📋 PREVIOUS
+            </button>
+          </div>
 
+          <div className="flex-1 overflow-y-auto space-y-6">
             {/* Upcoming Events */}
             {activeTab === "upcoming" && (
               <div className="bg-black p-3 border border-green-400">
                 {upcomingEvents.map((event, index) => (
                   <div key={index} className="mb-3 last:mb-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-400 font-mono text-xs bg-green-400 bg-opacity-20 px-2 py-1 rounded">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                      <span className="text-green-400 font-mono text-xs bg-green-400 bg-opacity-20 px-2 py-1 rounded w-fit">
                         {event.type.toUpperCase()}
                       </span>
                       <span className="text-green-400 text-xs">UPCOMING</span>
                     </div>
-                    <h4 className="text-white font-bold">{event.title}</h4>
+                    <h4 className="text-white font-bold text-sm md:text-base">{event.title}</h4>
                     <p className="text-gray-400 text-sm">
                       {event.date} {event.time && `at ${event.time}`} • {event.venue}
                     </p>
@@ -194,7 +187,7 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
                         href={event.lumaUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 text-sm underline"
+                        className="text-blue-400 hover:text-blue-300 text-sm underline inline-block mt-2 min-h-[44px] flex items-center"
                       >
                         RSVP on Luma →
                       </a>
@@ -209,13 +202,13 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
               <div className="bg-black p-3 border border-red-400">
                 {previousEvents.map((event, index) => (
                   <div key={index} className="mb-4 last:mb-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-red-400 font-mono text-xs bg-red-400 bg-opacity-20 px-2 py-1 rounded">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                      <span className="text-red-400 font-mono text-xs bg-red-400 bg-opacity-20 px-2 py-1 rounded w-fit">
                         {event.type.toUpperCase()}
                       </span>
                       <span className="text-red-400 text-xs">COMPLETED</span>
                     </div>
-                    <h4 className="text-white font-bold">{event.title}</h4>
+                    <h4 className="text-white font-bold text-sm md:text-base">{event.title}</h4>
                     <p className="text-gray-400 text-sm">
                       {event.date} • {event.venue}
                     </p>
@@ -225,7 +218,7 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
                         href={event.replayUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 text-sm underline inline-flex items-center gap-1 mt-2"
+                        className="text-blue-400 hover:text-blue-300 text-sm underline inline-flex items-center gap-1 mt-2 min-h-[44px]"
                       >
                         🎥 Watch Replay →
                       </a>
@@ -234,61 +227,61 @@ export default function NotesWindow({ onClose }: NotesWindowProps) {
                 ))}
               </div>
             )}
-          </div>
 
-          {/* LinkedIn Articles Section */}
-          <div>
-            <h3 className="canary-text mb-2 text-yellow-400 font-bold">📝 LinkedIn Articles</h3>
-            <div className="bg-black p-3 border border-yellow-400">
-              <h4 className="text-yellow-400 mb-3 font-bold">From Consumer Buzz to Enterprise Adoption Series</h4>
-              <ul className="space-y-2">
-                {articles
-                  .filter((article) => article.type === "LinkedIn")
-                  .map((article, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      {article.version && (
-                        <span className="text-yellow-400 font-mono text-xs bg-yellow-400 bg-opacity-20 px-1 py-0.5 rounded flex-shrink-0">
-                          {article.version}
-                        </span>
-                      )}
-                      <a
-                        href={article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 text-sm underline"
-                      >
-                        {article.title}
-                      </a>
-                    </li>
-                  ))}
-              </ul>
+            {/* LinkedIn Articles Section */}
+            <div>
+              <h3 className="canary-text mb-2 text-yellow-400 font-bold">📝 LinkedIn Articles</h3>
+              <div className="bg-black p-3 border border-yellow-400">
+                <h4 className="text-yellow-400 mb-3 font-bold">From Consumer Buzz to Enterprise Adoption Series</h4>
+                <ul className="space-y-2">
+                  {articles
+                    .filter((article) => article.type === "LinkedIn")
+                    .map((article, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        {article.version && (
+                          <span className="text-yellow-400 font-mono text-xs bg-yellow-400 bg-opacity-20 px-1 py-0.5 rounded flex-shrink-0">
+                            {article.version}
+                          </span>
+                        )}
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 text-sm underline break-words min-h-[44px] flex items-center"
+                        >
+                          {article.title}
+                        </a>
+                      </li>
+                    ))}
+                </ul>
+              </div>
             </div>
-          </div>
 
-          {/* Research Papers Section */}
-          <div>
-            <h3 className="canary-text mb-2 text-yellow-400 font-bold">🎓 Research Papers</h3>
-            <div className="bg-black p-3 border border-yellow-400">
-              <ul className="space-y-2">
-                {articles
-                  .filter((article) => article.type === "Research")
-                  .map((article, index) => (
-                    <li key={index}>
-                      <a
-                        href={article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 text-sm underline"
-                      >
-                        {article.title}
-                      </a>
-                    </li>
-                  ))}
-              </ul>
+            {/* Research Papers Section */}
+            <div>
+              <h3 className="canary-text mb-2 text-yellow-400 font-bold">🎓 Research Papers</h3>
+              <div className="bg-black p-3 border border-yellow-400">
+                <ul className="space-y-2">
+                  {articles
+                    .filter((article) => article.type === "Research")
+                    .map((article, index) => (
+                      <li key={index}>
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 text-sm underline break-words min-h-[44px] flex items-center"
+                        >
+                          {article.title}
+                        </a>
+                      </li>
+                    ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </WindowShell>
   )
 }

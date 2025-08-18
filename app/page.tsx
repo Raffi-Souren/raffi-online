@@ -1,13 +1,20 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import { WindowsIcons } from "./components/Icons"
 import Counter from "./components/Counter"
-import EasterEgg from "./components/EasterEgg"
 import GameSelector from "./components/GameSelector"
 import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
+import WindowShell from "./components/WindowShell"
+
+// Lazy load heavy features - don't ship on first paint
+const EasterEgg = dynamic(() => import("./components/EasterEgg"), {
+  ssr: false,
+  loading: () => null,
+})
 
 export default function Home() {
   const [activeWindow, setActiveWindow] = useState<string | null>(null)
@@ -112,11 +119,11 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pointer-events-none">
       {/* Desktop Icons */}
-      <div className="flex-1 flex flex-col justify-between p-2">
+      <div className="flex-1 flex flex-col justify-between p-1 md:p-2 pointer-events-auto">
         {/* Working Features - Top Area */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 justify-items-center">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-2 justify-items-center">
           {workingIcons.map((item, index) => (
             <button key={`working-${index}`} className="desktop-icon" onClick={() => handleIconClick(item.action)}>
               <span className="desktop-icon-emoji">{item.icon}</span>
@@ -126,7 +133,7 @@ export default function Home() {
         </div>
 
         {/* Coming Soon Features - Bottom Area */}
-        <div className="grid grid-cols-3 gap-2 justify-items-center mb-4">
+        <div className="grid grid-cols-3 gap-1 md:gap-2 justify-items-center mb-2 md:mb-4">
           {comingSoonIcons.map((item, index) => (
             <button
               key={`coming-${index}`}
@@ -140,26 +147,27 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Active Windows - v76 sizing */}
+      {/* Active Windows - Using WindowShell */}
       {activeWindow === "about" && (
-        <div className="window fixed bottom-8 left-4 w-[600px] md:w-[700px] h-[500px] md:h-[600px] overflow-y-auto z-50">
-          <div className="window-title sticky top-0 z-10">
-            <span>{WindowsIcons.User} ABOUT ME - RAF.TXT</span>
-            <button className="ml-auto" onClick={() => setActiveWindow(null)}>
-              {WindowsIcons.Close}
-            </button>
-          </div>
-          <div className="window-content">
-            <div className="mb-4 flex items-start gap-4">
-              <div className="w-20 h-20 bg-white flex items-center justify-center text-black font-bold">RAF</div>
-              <div>
+        <WindowShell
+          title="ABOUT ME - RAF.TXT"
+          icon={WindowsIcons.User}
+          onClose={() => setActiveWindow(null)}
+          size="lg"
+        >
+          <div className="space-y-6 p-2">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-white flex items-center justify-center text-black font-bold text-sm md:text-base shrink-0">
+                RAF
+              </div>
+              <div className="text-center md:text-left">
                 <h1 className="pyrex-text mb-2">RAFFI SOURENKHATCHADOURIAN</h1>
                 <p className="canary-text mb-4">NYC-based AI architect and technology consultant</p>
               </div>
             </div>
 
             {/* Bio Section */}
-            <div className="mb-6 p-4 bg-black border border-yellow-400">
+            <div className="p-3 bg-black border border-yellow-400">
               <h3 className="text-yellow-400 font-bold mb-3">BIO</h3>
               <p className="text-white text-sm leading-relaxed mb-3">
                 Raffi is an NYC-based AI Architect driving generative AI transformations for IBM's enterprise clients
@@ -174,48 +182,38 @@ export default function Home() {
               </p>
             </div>
 
-            {/* AI Summit Keynote Embed */}
-            <div className="mb-6 p-4 bg-black border border-yellow-400">
+            {/* AI Summit Keynote Embed - Fixed responsive sizing */}
+            <div className="p-3 bg-black border border-yellow-400">
               <h3 className="text-yellow-400 font-bold mb-3">🎤 AI SUMMIT KEYNOTE - BANKING ON AI AGENTS</h3>
               <p className="text-white text-sm mb-3">Finance stage at Javits Center NYC - Dec 14, 2024</p>
-              <div style={{ padding: "62.5% 0 0 0", position: "relative" }}>
+              <div className="w-full">
                 <iframe
+                  className="w-full h-[250px] md:h-[300px] rounded-md border border-gray-700"
                   src="https://player.vimeo.com/video/1047612862?badge=0&autopause=0&player_id=0&app_id=58479"
-                  frameBorder="0"
+                  loading="lazy"
+                  decoding="async"
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
                   referrerPolicy="strict-origin-when-cross-origin"
-                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
                   title="Banking on AI Agents - Keynote @ AI Summit 12-14-24"
-                ></iframe>
+                />
               </div>
-              <script src="https://player.vimeo.com/api/player.js"></script>
             </div>
 
             {/* Counters */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Counter end={150} label="DJ Sets" icon={WindowsIcons.Music} />
-                <Counter end={120} label="Events" icon={WindowsIcons.Calendar} />
-                <Counter end={30} label="AI Projects" icon={WindowsIcons.MyComputer} />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Counter end={150} label="DJ Sets" icon={WindowsIcons.Music} />
+              <Counter end={120} label="Events" icon={WindowsIcons.Calendar} />
+              <Counter end={30} label="AI Projects" icon={WindowsIcons.MyComputer} />
             </div>
           </div>
-        </div>
+        </WindowShell>
       )}
 
       {/* Games Window */}
       {activeWindow === "games" && (
-        <div className="window fixed top-20 left-1/2 -translate-x-1/2 w-[90vw] max-w-[900px] h-[80vh] overflow-y-auto z-50">
-          <div className="window-title sticky top-0 z-10">
-            <span>{WindowsIcons.Games} RETRO GAMES</span>
-            <button className="ml-auto" onClick={() => setActiveWindow(null)}>
-              {WindowsIcons.Close}
-            </button>
-          </div>
-          <div className="window-content">
-            <GameSelector />
-          </div>
-        </div>
+        <WindowShell title="RETRO GAMES" icon={WindowsIcons.Games} onClose={() => setActiveWindow(null)} size="lg">
+          <GameSelector />
+        </WindowShell>
       )}
 
       {/* Blogroll Window */}
@@ -233,31 +231,33 @@ export default function Home() {
       )}
 
       {/* Taskbar */}
-      <div className="taskbar flex items-center gap-2">
-        <button className="start-btn" onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}>
+      <div className="taskbar flex items-center gap-1 md:gap-2 pointer-events-auto">
+        <button className="start-btn min-h-[32px]" onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}>
           {WindowsIcons.Windows} Start
         </button>
         {activeWindow && (
-          <button className="win-btn flex items-center gap-2">
+          <button className="win-btn flex items-center gap-1 md:gap-2 text-xs md:text-sm min-h-[32px]">
             {WindowsIcons[activeWindow]} {activeWindow}
           </button>
         )}
-        <div className="ml-auto bg-white px-2 py-1 border border-gray-400 text-black">{currentTime}</div>
+        <div className="ml-auto bg-white px-1 md:px-2 py-1 border border-gray-400 text-black text-xs md:text-sm">
+          {currentTime}
+        </div>
       </div>
 
       {/* Start Menu */}
       {isStartMenuOpen && (
-        <div className="window absolute bottom-8 left-0 w-64">
+        <div className="window absolute bottom-7 md:bottom-8 left-0 w-56 md:w-64 pointer-events-auto">
           <div className="window-content">
-            <div className="bg-black text-white p-4 mb-2">
-              <div className="pyrex-text">RAF OS</div>
-              <div className="canary-text">Version 1.0</div>
+            <div className="bg-black text-white p-3 mb-2">
+              <div className="pyrex-text text-base md:text-xl">RAF OS</div>
+              <div className="canary-text text-xs md:text-sm">Version 1.0</div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {startMenuItems.map((item) => (
                 <button
                   key={item.name}
-                  className="w-full text-left px-4 py-2 hover:bg-yellow-400 hover:text-black flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-3 py-2 hover:bg-yellow-400 hover:text-black flex items-center gap-2 transition-colors text-sm min-h-[44px]"
                   onClick={() => {
                     handleIconClick(item.action)
                     setIsStartMenuOpen(false)
@@ -271,7 +271,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Easter Egg */}
+      {/* Easter Egg - Lazy loaded */}
       <EasterEgg />
     </div>
   )
