@@ -86,28 +86,38 @@
     @apply border-border;
   }
 
-  /* REVERTED: Normal scrolling behavior - no global overflow restrictions */
+  /* Better mobile viewport handling */
   html,
   body {
     height: auto;
+    overflow-x: hidden;
   }
 
   body {
     min-height: 100%;
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Modern viewport units for mobile */
+/* Better mobile viewport units */
 @supports (height: 100dvh) {
   .vh-safe {
     min-height: 100dvh;
   }
 }
 
-/* Fallback for older browsers */
 .vh-safe {
   min-height: 100vh;
+  min-height: calc(100vh - env(safe-area-inset-bottom));
+}
+
+@supports (padding: max(0px)) {
+  .vh-safe {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
 }
 
 /* Performance: Reduced motion support */
@@ -119,11 +129,11 @@
   }
 }
 
-/* Windows XP Desktop Styling */
+/* Windows XP/2000 Base Styling */
 .window {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
-  box-shadow: var(--shadow-win);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .window-title {
@@ -133,54 +143,11 @@
   padding: 6px 8px;
   display: flex;
   align-items: center;
+  justify-content: between;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 10px;
   min-height: 32px;
-}
-
-@media (min-width: 768px) {
-  .window-title {
-    padding: 3px 5px;
-    font-size: 11px;
-    min-height: auto;
-  }
-}
-
-/* Special yellow styling for Blogroll - v76 style */
-.yellow-window {
-  background: #000000;
-  border: 3px solid #ffd700;
-  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
-}
-
-.yellow-window .window-title {
-  background: linear-gradient(90deg, #ffd700 0%, #ffa500 100%);
-  color: black;
-  font-weight: bold;
-  padding: 6px 8px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-size: 10px;
-}
-
-@media (min-width: 768px) {
-  .yellow-window .window-title {
-    padding: 4px 8px;
-    font-size: 12px;
-  }
-}
-
-.yellow-window .window-content {
-  background: #000000;
-  color: #ffd700;
-  padding: 8px;
-}
-
-@media (min-width: 768px) {
-  .yellow-window .window-content {
-    padding: 12px;
-  }
 }
 
 .window-content {
@@ -189,107 +156,17 @@
   overflow-y: auto;
   overflow-x: hidden;
   height: 100%;
-  /* Smooth scrolling */
   scroll-behavior: smooth;
-  /* Better scrolling on mobile */
   -webkit-overflow-scrolling: touch;
 }
 
-@media (min-width: 768px) {
-  .window-content {
-    padding: 8px;
-  }
-}
-
-.desktop-icon {
-  width: 80px;
-  text-align: center;
-  color: white;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-@media (min-width: 768px) {
-  .desktop-icon {
-    width: 100px;
-    gap: 6px;
-    padding: 6px;
-  }
-}
-
-.desktop-icon:hover {
-  background: rgba(0, 0, 255, 0.3);
-  border: 1px dotted white;
-}
-
-.desktop-icon.coming-soon {
-  opacity: 0.7;
-}
-
-.desktop-icon.coming-soon:hover {
-  opacity: 1;
-}
-
-.desktop-icon-emoji {
-  font-size: 32px;
-  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
-}
-
-@media (min-width: 768px) {
-  .desktop-icon-emoji {
-    font-size: 40px;
-  }
-}
-
-/* v76 style desktop icon labels - black background */
-.desktop-icon-label {
-  background: rgba(0, 0, 0, 0.8);
-  padding: 3px 6px;
-  border-radius: 2px;
-  font-size: 9px;
-  font-weight: bold;
-  text-align: center;
-  white-space: pre-line;
-  line-height: 1.1;
-  color: white;
-  text-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-@media (min-width: 768px) {
-  .desktop-icon-label {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-}
-
 .win-btn {
+  padding: 4px 8px;
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
-  color: black;
-  padding: 2px 4px;
-  min-width: 50px;
-  text-align: center;
-  font-weight: bold;
+  font-size: 11px;
   cursor: pointer;
-  font-size: 10px;
-}
-
-@media (min-width: 768px) {
-  .win-btn {
-    padding: 4px 8px;
-    min-width: 70px;
-    font-size: 11px;
-  }
+  transition: all 0.1s ease;
 }
 
 .win-btn:hover {
@@ -300,166 +177,9 @@
   border: 2px inset #c0c0c0;
 }
 
-/* Yellow buttons for yellow windows */
-.yellow-btn {
-  background: #ffd700;
-  border: 2px outset #ffd700;
-  color: black;
-  padding: 2px 4px;
-  min-width: 50px;
-  text-align: center;
-  font-weight: bold;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-size: 8px;
-  letter-spacing: 1px;
-}
-
-@media (min-width: 768px) {
-  .yellow-btn {
-    padding: 4px 8px;
-    min-width: 70px;
-    font-size: 10px;
-  }
-}
-
-.yellow-btn:hover {
-  background: #ffa500;
-}
-
-.yellow-btn:active {
-  border: 2px inset #ffd700;
-}
-
-.taskbar {
-  background: linear-gradient(180deg, #245edb 0%, #1941a5 100%);
-  border-top: 1px solid #4a90e2;
-  padding: 2px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  z-index: 100;
-}
-
-@media (min-width: 768px) {
-  .taskbar {
-    height: 30px;
-  }
-}
-
-.start-btn {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: linear-gradient(180deg, #4caf50 0%, #2e7d32 100%);
-  border: 2px outset #4caf50;
-  color: white;
-  padding: 2px 6px;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 9px;
-}
-
-@media (min-width: 768px) {
-  .start-btn {
-    gap: 4px;
-    padding: 2px 8px;
-    font-size: 11px;
-  }
-}
-
-.start-btn:hover {
-  background: linear-gradient(180deg, #388e3c 0%, #1b5e20 100%);
-}
-
-.start-btn:active {
-  border: 2px inset #4caf50;
-}
-
-.pyrex-text {
-  font-size: 18px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #ffd700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-@media (min-width: 768px) {
-  .pyrex-text {
-    font-size: 24px;
-    letter-spacing: 2px;
-  }
-}
-
-.canary-text {
-  font-size: 12px;
-  line-height: 1.6;
-  color: #ffff99;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-@media (min-width: 768px) {
-  .canary-text {
-    font-size: 14px;
-  }
-}
-
-/* FIXED: Mario Question Mark Box - High z-index, explicit pointer events */
-.mario-box {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-  border: 3px solid #8b4513;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.5), inset -2px -2px 0px rgba(0, 0, 0, 0.3), 2px 2px 8px
-    rgba(0, 0, 0, 0.4);
-  transition: transform 0.1s ease;
-  cursor: pointer;
-  z-index: 2000; /* FIXED: High z-index above everything */
-  pointer-events: auto; /* FIXED: Explicit pointer events */
-}
-
-@media (min-width: 768px) {
-  .mario-box {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-.mario-box:hover {
-  transform: scale(1.1);
-  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.6), inset -2px -2px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
-    rgba(0, 0, 0, 0.5);
-}
-
-.mario-box-inner {
-  font-size: 18px;
-  font-weight: bold;
-  color: #8b4513;
-  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
-  user-select: none;
-  pointer-events: none; /* Let clicks pass through to parent */
-}
-
-@media (min-width: 768px) {
-  .mario-box-inner {
-    font-size: 24px;
-  }
-}
-
 /* Scrollbar styling for Windows XP look */
 ::-webkit-scrollbar {
-  width: 12px;
-}
-
-@media (min-width: 768px) {
-  ::-webkit-scrollbar {
-    width: 16px;
-  }
+  width: 16px;
 }
 
 ::-webkit-scrollbar-track {
@@ -476,14 +196,230 @@
   background: linear-gradient(180deg, #d0d0d0 0%, #b0b0b0 100%);
 }
 
-/* Mobile-specific improvements */
-@media (max-width: 767px) {
+@layer components {
+  /* Mario Question Mark Box - V143 Style */
+  .mario-box {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+    border: 3px solid #8b4513;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.5), inset -2px -2px 0px rgba(0, 0, 0, 0.3), 2px 2px 8px
+      rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s ease;
+    cursor: pointer;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
+
+  .mario-box:hover {
+    transform: scale(1.1);
+    box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.6), inset -2px -2px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
+      rgba(0, 0, 0, 0.5);
+  }
+
+  .mario-box-inner {
+    font-size: 24px;
+    font-weight: bold;
+    color: #8b4513;
+    text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Desktop Icons - V147 Style */
+  .desktop-icon {
+    @apply p-2 rounded-lg transition-all duration-200 hover:bg-white/20 hover:backdrop-blur-sm;
+  }
+
+  /* Desktop Label - Fixed to avoid CSS concatenation issues */
+  .desktop-label {
+    background: #000000;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Safe area handling for mobile */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Enhanced modal sizing for better content display */
+  .modal-container {
+    max-width: min(95vw, 800px);
+    max-height: min(90vh, 700px);
+    width: 100%;
+  }
+
+  /* Improved scrollable content areas */
+  .modal-content-scrollable {
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Enhanced start menu styling */
+  .start-menu {
+    background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+    border: 2px outset #c0c0c0;
+    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.3);
+    border-radius: 0;
+  }
+
+  .start-menu-header {
+    background: linear-gradient(90deg, #0054e3 0%, #0041b8 100%);
+    color: white;
+    font-weight: bold;
+    padding: 8px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .start-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #000;
+    transition: all 0.1s ease;
+    border: none;
+    background: transparent;
+  }
+
+  .start-menu-item:hover {
+    background: linear-gradient(90deg, #316ac5 0%, #1e4a8c 100%);
+    color: white;
+  }
+
+  .start-menu-separator {
+    height: 1px;
+    background: #808080;
+    margin: 2px 8px;
+    border-top: 1px solid #c0c0c0;
+  }
+}
+
+/* Taskbar styling */
+.taskbar {
+  background: linear-gradient(180deg, #245edb 0%, #1941a5 100%);
+  border-top: 1px solid #4a90e2;
+  padding: 2px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  z-index: 100;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding-bottom: max(2px, env(safe-area-inset-bottom));
+}
+
+.start-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(180deg, #4caf50 0%, #2e7d32 100%);
+  border: 2px outset #4caf50;
+  color: white;
+  padding: 2px 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.start-btn:hover {
+  background: linear-gradient(180deg, #388e3c 0%, #1b5e20 100%);
+}
+
+.start-btn:active {
+  border: 2px inset #4caf50;
+}
+
+/* Typography styles */
+.pyrex-text {
+  font-size: 24px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.canary-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #ffff99;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
   .window {
     border: 1px outset #c0c0c0;
   }
 
-  .yellow-window {
-    border: 2px solid #ffd700;
+  .window-title {
+    padding: 3px 5px;
+    font-size: 11px;
+    min-height: auto;
+  }
+
+  .window-content {
+    padding: 8px;
+  }
+
+  .mario-box {
+    width: 32px;
+    height: 32px;
+  }
+
+  .mario-box-inner {
+    font-size: 18px;
+  }
+
+  .desktop-label {
+    font-size: 10px;
+    max-width: 100px;
+  }
+
+  .taskbar {
+    height: 30px;
+    padding-bottom: 2px;
+  }
+
+  .start-btn {
+    gap: 2px;
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .pyrex-text {
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+
+  .canary-text {
+    font-size: 12px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
   }
 
   /* Make touch targets larger on mobile */
@@ -499,15 +435,68 @@
   .text-sm {
     font-size: 12px;
   }
+
+  /* Prevent content from going behind mobile browser UI */
+  .vh-safe {
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+
+  .modal-container {
+    max-width: 98vw;
+    max-height: 95vh;
+    margin: 2px;
+  }
+
+  .modal-content-scrollable {
+    max-height: calc(95vh - 100px);
+  }
+
+  .start-menu {
+    width: min(280px, 90vw);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
 }
 
-/* Ensure modals are properly positioned and sized */
+/* Mobile-specific improvements */
+@media (max-width: 767px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .desktop-icon {
+    max-width: calc(50vw - 16px);
+  }
+}
+
+/* Ensure modals are properly positioned and sized on mobile */
 @media (max-width: 640px) {
   .window {
     min-height: auto !important;
+    max-height: calc(100vh - 60px) !important;
   }
 
   .window-content {
     min-height: 200px;
+    max-height: calc(100vh - 120px);
   }
+
+  /* Better modal positioning on mobile */
+  .fixed.inset-0.z-\[3000\] {
+    padding-bottom: max(60px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Game container improvements */
+.game-container {
+  width: 100%;
+  max-width: min(90vw, 900px);
+  max-height: min(85vh, 700px);
+  overflow: hidden;
+}
+
+.game-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

@@ -3,17 +3,50 @@
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Smartphone, Music, Gamepad, Radio, Phone, Monitor } from "lucide-react"
-import BlackberryMockup from "./BlackberryMockup"
-import IpodClassicMockup from "./IpodClassicMockup"
-import RazorPhoneMockup from "./RazorPhoneMockup"
-import DesktopMockup from "./DesktopMockup"
-import WebGamesHub from "./WebGamesHub"
-import RetroEmulator from "./RetroEmulator"
 
 type Device = "blackberry" | "ipod" | "webgames" | "psp" | "razor" | "desktop" | null
 
+const games = [
+  {
+    id: "blackberry",
+    name: "Blackberry",
+    url: "/games/brickbreaker",
+    description: "Play Brickbreaker",
+  },
+  {
+    id: "ipod",
+    name: "iPod Classic",
+    url: "/games/parachute",
+    description: "Play Parachute",
+  },
+  {
+    id: "razor",
+    name: "Motorola Razr",
+    url: "/games/snake",
+    description: "Play Snake",
+  },
+  {
+    id: "desktop",
+    name: "Desktop PC",
+    url: "/games/minesweeper",
+    description: "Play Minesweeper",
+  },
+  {
+    id: "webgames",
+    name: "Web Games",
+    url: "/games/webgameshub",
+    description: "Classic Arcade Games",
+  },
+  {
+    id: "psp",
+    name: "Emulator",
+    url: "/games/retroemulator",
+    description: "Retro Console Games",
+  },
+]
+
 export default function GameSelector() {
-  const [selectedDevice, setSelectedDevice] = useState<Device>(null)
+  const [selectedGame, setSelectedGame] = useState<Device>(null)
 
   const devices = [
     {
@@ -60,86 +93,45 @@ export default function GameSelector() {
     },
   ]
 
-  if (selectedDevice === "blackberry") {
+  if (selectedGame) {
+    const game = games.find((g) => g.id === selectedGame)
     return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <BlackberryMockup />
-      </div>
-    )
-  }
+      <div className="game-container">
+        <div className="flex justify-between items-center mb-4 p-4 bg-gray-800 rounded-t-lg shrink-0">
+          <h2 className="text-xl font-bold text-white">{game?.name}</h2>
+          <button
+            onClick={() => setSelectedGame(null)}
+            className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+          >
+            Close
+          </button>
+        </div>
 
-  if (selectedDevice === "ipod") {
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <IpodClassicMockup />
-      </div>
-    )
-  }
+        <div className="game-content">
+          <div
+            className="relative w-full bg-white rounded-lg overflow-hidden"
+            style={{ aspectRatio: "4/3", minHeight: "400px" }}
+          >
+            <iframe
+              src={game?.url}
+              className="w-full h-full border-0"
+              loading="lazy"
+              title={game?.name}
+              tabIndex={0}
+              allow="fullscreen; gamepad; autoplay"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
 
-  if (selectedDevice === "razor") {
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <RazorPhoneMockup />
-      </div>
-    )
-  }
-
-  if (selectedDevice === "desktop") {
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <DesktopMockup />
-      </div>
-    )
-  }
-
-  if (selectedDevice === "webgames") {
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <WebGamesHub />
-      </div>
-    )
-  }
-
-  if (selectedDevice === "psp") {
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setSelectedDevice(null)}
-          className="absolute top-4 right-4 z-50 bg-gray-800 text-white px-3 py-1 rounded-md hover:bg-gray-700"
-        >
-          Back
-        </button>
-        <RetroEmulator core="nes" onClose={() => setSelectedDevice(null)} />
+          <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
+            <p>
+              <strong>Game Info:</strong> {game?.description}. Games are embedded from their original sources. Click
+              inside the game area to ensure keyboard focus. Some games may require clicking "Play" or similar buttons
+              to start.
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -150,7 +142,7 @@ export default function GameSelector() {
         <Card
           key={device.id}
           className={`p-6 cursor-pointer transition-transform hover:scale-105 ${device.color} text-white`}
-          onClick={() => setSelectedDevice(device.id as Device)}
+          onClick={() => setSelectedGame(device.id as Device)}
         >
           <div className="flex flex-col items-center text-center space-y-4">
             <device.icon size={48} />

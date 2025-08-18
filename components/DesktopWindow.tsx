@@ -42,8 +42,7 @@ export default function DesktopWindow({ title, isOpen, onClose, children, classN
         role="dialog"
         aria-modal="true"
         className={[
-          "relative w-[min(92vw,960px)]",
-          "max-h-[min(88vh,900px)]",
+          "relative modal-container",
           isYellow ? "bg-black border-2 border-[#ffd700]" : "bg-[#c0c0c0] border-2 border-[#c0c0c0]",
           "rounded-none shadow-2xl overflow-hidden",
           "pointer-events-auto",
@@ -81,7 +80,7 @@ export default function DesktopWindow({ title, isOpen, onClose, children, classN
         {/* Scrollable Content */}
         <div
           className={[
-            "overflow-y-auto overflow-x-hidden",
+            "modal-content-scrollable",
             isYellow ? "bg-black text-[#ffd700]" : "bg-[#c0c0c0] text-black",
           ].join(" ")}
           style={{

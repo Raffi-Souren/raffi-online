@@ -1,19 +1,18 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
-import { WindowsIcons } from "./Icons"
-
-type Track = {
-  id: string
-  url: string
-  title: string
-  artist: string
-}
+import { useState, useEffect, useCallback } from "react"
+import { X, Shuffle } from "lucide-react"
 
 interface EasterEggProps {
   forceOpen?: boolean
   onForceClose?: () => void
+}
+
+interface Track {
+  id: string
+  title: string
+  artist: string
+  url: string
 }
 
 // Complete SoundCloud collection from your list - 250+ tracks
@@ -1242,389 +1241,181 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "notgoodcompany",
     url: "https://soundcloud.com/notgoodcompany/tristan-thompson",
   },
-  {
-    id: "cantlookintomyeyes",
-    title: "Can't Look Into My Eyes",
-    artist: "synesthesiasoundz",
-    url: "https://soundcloud.com/synesthesiasoundz/cantlookintomyeyes",
-  },
-  {
-    id: "ftsv1latenightsnacc",
-    title: "FTS V1 Late Night Snacc",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/ftsv1latenightsnacc",
-  },
-  {
-    id: "ftsv1dinner",
-    title: "FTS V1 Dinner",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/ftsv1dinner",
-  },
-  {
-    id: "ftsv1breakfast",
-    title: "FTS V1 Breakfast",
-    artist: "notgoodcompany",
-    url: "https://soundcloud.com/notgoodcompany/ftsv1breakfast",
-  },
-  {
-    id: "tonights",
-    title: "Tonights",
-    artist: "theshipwrek",
-    url: "https://soundcloud.com/theshipwrek/tonights",
-  },
-  {
-    id: "young-thug-elton-likes-me",
-    title: "Young Thug - Elton Likes Me",
-    artist: "sabsad",
-    url: "https://soundcloud.com/sabsad/young-thug-elton-likes-me",
-  },
-  {
-    id: "do-not-question",
-    title: "Do Not Question",
-    artist: "sylvanlacue",
-    url: "https://soundcloud.com/sylvanlacue/do-not-question",
-  },
-  {
-    id: "logic-925-prod-swiff-d",
-    title: "Logic - 925 (Prod. Swiff D)",
-    artist: "swagytracks",
-    url: "https://soundcloud.com/swagytracks/logic-925-prod-swiff-d",
-  },
-  {
-    id: "middle-of-south-florida-feat-prez-p",
-    title: "Middle of South Florida (feat. Prez P)",
-    artist: "sylvanlacue",
-    url: "https://soundcloud.com/sylvanlacue/middle-of-south-florida-feat-prez-p",
-  },
-  {
-    id: "damnremix",
-    title: "Damn Remix",
-    artist: "bebas100",
-    url: "https://soundcloud.com/bebas100/damnremix",
-  },
-  {
-    id: "wasted-feat-lil-uzi-vert",
-    title: "Wasted (feat. Lil Uzi Vert)",
-    artist: "uiceheidd",
-    url: "https://soundcloud.com/uiceheidd/wasted-feat-lil-uzi-vert",
-  },
-  {
-    id: "childish-gambino-covers-tamia-so-into-you",
-    title: "Childish Gambino Covers Tamia - So Into You",
-    artist: "uggybearandstarsky",
-    url: "https://soundcloud.com/uggybearandstarsky/childish-gambino-covers-tamia-so-into-you",
-  },
-  {
-    id: "sheck-wes-lebron-james",
-    title: "Sheck Wes - LeBron James",
-    artist: "jessedemedeiross",
-    url: "https://soundcloud.com/jessedemedeiross/sheck-wes-lebron-james",
-  },
-  {
-    id: "untitledset",
-    title: "Untitled Set",
-    artist: "bakedgood",
-    url: "https://soundcloud.com/bakedgood/untitledset",
-  },
-  {
-    id: "yukon-x-up-dj-hunny-bee-mashup",
-    title: "Yukon X Up (DJ Hunny Bee Mashup)",
-    artist: "djhunnybee",
-    url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-mashup",
-  },
-  {
-    id: "blaccmass-radio-one-night-only",
-    title: "BlaccMass Radio - One Night Only",
-    artist: "blaccmass",
-    url: "https://soundcloud.com/blaccmass/blaccmass-radio-one-night-only",
-  },
-  {
-    id: "four-tet-insect-near-piha-beach",
-    title: "Four Tet - Insect Near Piha Beach",
-    artist: "Four Tet",
-    url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
-  },
-  {
-    id: "four-tet-caribou-jamie-xx-dj-set",
-    title: "Four Tet, Caribou & Jamie XX DJ Set",
-    artist: "hyakfm",
-    url: "https://soundcloud.com/hyakfm/four-tet-caribou-jamie-xx-dj-set",
-  },
-  {
-    id: "habibi-funk-plus",
-    title: "Habibi Funk Plus",
-    artist: "djsweeterman",
-    url: "https://soundcloud.com/djsweeterman/habibi-funk-plus",
-  },
-  {
-    id: "compton-state-of-mind",
-    title: "Compton State of Mind",
-    artist: "kendrick-lamar-music",
-    url: "https://soundcloud.com/kendrick-lamar-music/compton-state-of-mind",
-  },
-  {
-    id: "fidde-i-wonder-yuno-hu-vision-mancha",
-    title: "Fidde - I Wonder (Yuno Hu Vision)",
-    artist: "miguel-mancha",
-    url: "https://soundcloud.com/miguel-mancha/fidde-i-wonder-yuno-hu-vision",
-  },
-  {
-    id: "donaty-tirate-sango-por-vida-remix",
-    title: "Donaty - Tirate (Sango Por Vida Remix)",
-    artist: "porvida",
-    url: "https://soundcloud.com/porvida/donaty-tirate-sango-por-vida-remix",
-  },
-  {
-    id: "latch-feat-sam-smith",
-    title: "Latch (feat. Sam Smith)",
-    artist: "disclosure",
-    url: "https://soundcloud.com/disclosure/latch-feat-sam-smith",
-  },
-  {
-    id: "sleepless",
-    title: "Sleepless",
-    artist: "flume",
-    url: "https://soundcloud.com/flume/sleepless",
-  },
-  {
-    id: "say-my-name-feat-zyra",
-    title: "Say My Name (feat. Zyra)",
-    artist: "odesza",
-    url: "https://soundcloud.com/odesza/say-my-name-feat-zyra",
-  },
-  {
-    id: "glowed-up-feat-anderson-paak",
-    title: "Glowed Up (feat. Anderson .Paak)",
-    artist: "kaytranada",
-    url: "https://soundcloud.com/kaytranada/glowed-up-feat-anderson-paak",
-  },
-  {
-    id: "gosh",
-    title: "Gosh",
-    artist: "jamie-xx",
-    url: "https://soundcloud.com/jamie-xx/gosh",
-  },
-  {
-    id: "kiara-feat-bajka",
-    title: "Kiara (feat. Bajka)",
-    artist: "bonobomusic",
-    url: "https://soundcloud.com/bonobomusic/kiara-feat-bajka",
-  },
-  {
-    id: "a-walk",
-    title: "A Walk",
-    artist: "tycho",
-    url: "https://soundcloud.com/tycho/a-walk",
-  },
-  {
-    id: "a-new-error",
-    title: "A New Error",
-    artist: "moderat-official",
-    url: "https://soundcloud.com/moderat-official/a-new-error",
-  },
-  {
-    id: "glue",
-    title: "Glue",
-    artist: "bicep-music",
-    url: "https://soundcloud.com/bicep-music/glue",
-  },
-  {
-    id: "odessa",
-    title: "Odessa",
-    artist: "caribouband",
-    url: "https://soundcloud.com/caribouband/odessa",
-  },
 ]
 
-const EasterEgg: React.FC<EasterEggProps> = ({ forceOpen, onForceClose }) => {
+export default function EasterEgg({ forceOpen = false, onForceClose }: EasterEggProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
-  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
+  const [currentTrack, setCurrentTrack] = useState<Track>(SOUNDCLOUD_TRACKS[0])
+  const [position, setPosition] = useState({ x: 50, y: 50 })
+  const [direction, setDirection] = useState({ x: 2, y: 1.5 })
+  const [isMoving, setIsMoving] = useState(true)
 
-  const tracks = [
-    "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1234567890&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
-    "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/987654321&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
-    "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/555666777&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
-  ]
+  // Body scroll lock effect
+  useEffect(() => {
+    if (isOpen || forceOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
 
-  // Handle force open from start menu
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isOpen, forceOpen])
+
+  // Handle force open/close
   useEffect(() => {
     if (forceOpen) {
       setIsOpen(true)
     }
   }, [forceOpen])
 
-  const handleClose = () => {
+  // Moving question mark animation
+  useEffect(() => {
+    if (!isMoving || isOpen || forceOpen) return
+
+    const moveQuestionMark = () => {
+      setPosition((prev) => {
+        let newX = prev.x + direction.x
+        let newY = prev.y + direction.y
+
+        // Bounce off edges with some padding
+        const padding = 5
+        if (newX <= padding || newX >= 95 - padding) {
+          setDirection((d) => ({ ...d, x: -d.x }))
+          newX = Math.max(padding, Math.min(95 - padding, newX))
+        }
+        if (newY <= padding || newY >= 85 - padding) {
+          setDirection((d) => ({ ...d, y: -d.y }))
+          newY = Math.max(padding, Math.min(85 - padding, newY))
+        }
+
+        return { x: newX, y: newY }
+      })
+    }
+
+    const interval = setInterval(moveQuestionMark, 50)
+    return () => clearInterval(interval)
+  }, [direction, isMoving, isOpen, forceOpen])
+
+  const shuffleTrack = useCallback(() => {
+    const randomIndex = Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)
+    setCurrentTrack(SOUNDCLOUD_TRACKS[randomIndex])
+  }, [])
+
+  const openModal = () => {
+    setIsOpen(true)
+    setIsMoving(false)
+    shuffleTrack()
+  }
+
+  const closeModal = () => {
     setIsOpen(false)
+    setIsMoving(true)
     if (onForceClose) {
       onForceClose()
     }
   }
 
-  const shuffleTrack = () => {
-    const nextTrack = (currentTrackIndex + 1) % tracks.length
-    setCurrentTrackIndex(nextTrack)
-  }
-
-  const [position, setPosition] = useState({ x: 20, y: 80 })
-  const [velocity, setVelocity] = useState({ x: 1.5, y: 1.5 })
-  const [isPaused, setIsPaused] = useState(false)
-  const animationRef = useRef<number | null>(null)
-
-  // Respect reduced motion and visibility
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const onVis = () => setIsPaused(document.hidden || mediaQuery.matches)
-
-    setIsPaused(mediaQuery.matches)
-    mediaQuery.addEventListener("change", onVis)
-    document.addEventListener("visibilitychange", onVis)
-
-    return () => {
-      mediaQuery.removeEventListener("change", onVis)
-      document.removeEventListener("visibilitychange", onVis)
-    }
-  }, [])
-
-  // Movement animation - PAUSE when modal is open or motion is reduced
-  useEffect(() => {
-    if (isOpen || isPaused) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-        animationRef.current = null
-      }
-      return
-    }
-
-    const animate = () => {
-      setPosition((prev) => {
-        let newX = prev.x + velocity.x
-        let newY = prev.y + velocity.y
-        let newVelX = velocity.x
-        let newVelY = velocity.y
-
-        // Bounce off walls
-        if (newX <= 0 || newX >= window.innerWidth - 50) {
-          newVelX = -velocity.x + (Math.random() - 0.5) * 0.2
-          newX = newX <= 0 ? 0 : window.innerWidth - 50
-        }
-        if (newY <= 0 || newY >= window.innerHeight - 50) {
-          newVelY = -velocity.y + (Math.random() - 0.5) * 0.2
-          newY = newY <= 0 ? 0 : window.innerHeight - 50
-        }
-
-        setVelocity({ x: newVelX, y: newVelY })
-        return { x: newX, y: newY }
-      })
-
-      animationRef.current = requestAnimationFrame(animate)
-    }
-
-    animationRef.current = requestAnimationFrame(animate)
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-    }
-  }, [velocity, isOpen, isPaused])
-
-  // Load random track
-  const loadRandomTrack = () => {
-    if (SOUNDCLOUD_TRACKS.length === 0) return
-
-    let randomTrack = SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]
-    if (currentTrack && SOUNDCLOUD_TRACKS.length > 1) {
-      while (randomTrack.id === currentTrack.id) {
-        randomTrack = SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]
-      }
-    }
-
-    setCurrentTrack(randomTrack)
-  }
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsOpen(true)
-    if (!currentTrack) {
-      loadRandomTrack()
-    }
-  }
-
-  const closeModal = () => {
-    setIsOpen(false)
-  }
-
-  // Handle ESC key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        closeModal()
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape)
-      return () => document.removeEventListener("keydown", handleEscape)
-    }
-  }, [isOpen])
-
-  // Build SoundCloud embed URL - using your exact format
-  const buildEmbedUrl = (track: Track) => {
-    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(track.url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
+  const getEmbedUrl = (url: string) => {
+    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`
   }
 
   return (
     <>
-      {/* Bouncing Question Mark - Always visible */}
-      <div className="fixed bottom-24 right-4 z-[2000] cursor-pointer animate-bounce" onClick={handleClick}>
-        <div className="w-8 h-8 bg-yellow-400 border-2 border-black flex items-center justify-center text-black font-bold text-lg rounded">
-          ?
+      {/* Moving Question Mark - V143 Mario Style */}
+      {!isOpen && !forceOpen && (
+        <div
+          className="fixed mario-box z-[1000] cursor-pointer"
+          style={{
+            left: `${position.x}%`,
+            top: `${position.y}%`,
+            transform: "translate(-50%, -50%)",
+          }}
+          onClick={openModal}
+        >
+          <div className="mario-box-inner">?</div>
         </div>
-      </div>
+      )}
 
-      {/* Music Player Popup */}
-      {isOpen && (
-        <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black bg-opacity-50">
-          <div className="window w-full max-w-2xl mx-4">
-            <div className="window-title">
-              <span className="flex items-center gap-2">💿 DIGGING IN THE CRATES</span>
-              <div className="flex gap-2">
-                <button
-                  className="px-2 py-1 text-xs bg-yellow-400 text-black rounded hover:bg-yellow-300"
-                  onClick={loadRandomTrack}
-                >
-                  SHUFFLE
-                </button>
-                <button className="ml-auto hover:bg-red-600 px-2 py-1 rounded" onClick={handleClose}>
-                  {WindowsIcons.Close}
-                </button>
+      {/* Modal - V147 Style */}
+      {(isOpen || forceOpen) && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={closeModal} />
+          <div className="relative modal-container bg-white rounded-lg shadow-xl overflow-hidden">
+            {/* Header - Blue like v147 */}
+            <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎵</span>
+                <span className="font-bold">DIGGING IN THE CRATES</span>
               </div>
+              <button onClick={closeModal} className="text-white hover:text-red-300 transition-colors">
+                <X size={20} />
+              </button>
             </div>
-            <div className="window-content">
-              <div className="space-y-4">
+
+            {/* Scrollable Content */}
+            <div className="modal-content-scrollable">
+              <div className="p-6 space-y-4">
                 <div className="text-center">
-                  <h3 className="text-black font-bold mb-2">🎵 CRATE DIGGING SESSION</h3>
-                  <p className="text-gray-700 text-sm">Discover underground tracks and hidden gems from the vault</p>
+                  <h2 className="text-xl font-bold mb-2">🎵 CRATE DIGGING SESSION</h2>
+                  <p className="text-gray-600 mb-4">Discover underground tracks and hidden gems from the vault</p>
                 </div>
-                <div className="bg-black p-4 rounded">
-                  {currentTrack && (
-                    <iframe
-                      width="100%"
-                      height="300"
-                      scrolling="no"
-                      frameBorder="no"
-                      allow="autoplay"
-                      src={buildEmbedUrl(currentTrack)}
-                    />
-                  )}
+
+                {/* SoundCloud Embed */}
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <iframe
+                    width="100%"
+                    height="300"
+                    scrolling="no"
+                    frameBorder="no"
+                    allow="autoplay"
+                    src={getEmbedUrl(currentTrack.url)}
+                    className="rounded-lg"
+                  />
                 </div>
-                {currentTrack && (
-                  <div className="text-white">
-                    Now Playing: {currentTrack.title} by {currentTrack.artist}
+
+                {/* Now Playing Info */}
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Now Playing:</p>
+                  <p className="font-semibold">{currentTrack.title}</p>
+                  <p className="text-sm text-gray-500">by {currentTrack.artist}</p>
+                </div>
+
+                {/* Controls */}
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={shuffleTrack}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                  >
+                    <Shuffle size={16} />
+                    Shuffle
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                  >
+                    <X size={16} />
+                    Close
+                  </button>
+                </div>
+
+                {/* Available Tracks Preview */}
+                <div className="mt-6">
+                  <h3 className="font-bold mb-2">🎵 Available Tracks:</h3>
+                  <div className="bg-blue-50 p-3 rounded-lg max-h-32 overflow-y-auto">
+                    <div className="text-sm text-blue-800">
+                      {SOUNDCLOUD_TRACKS.slice(0, 5).map((track, index) => (
+                        <div key={track.id} className="py-1">
+                          {track.title} - {track.artist}
+                        </div>
+                      ))}
+                      <div className="text-xs text-blue-600 mt-2">
+                        ...and {SOUNDCLOUD_TRACKS.length - 5} more tracks
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -1633,5 +1424,3 @@ const EasterEgg: React.FC<EasterEggProps> = ({ forceOpen, onForceClose }) => {
     </>
   )
 }
-
-export default EasterEgg
