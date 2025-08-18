@@ -7,10 +7,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    domains: ['placeholder.svg'],
     unoptimized: true,
-  },
-  experimental: {
-    optimizePackageImports: ['lucide-react'],
   },
 }
 

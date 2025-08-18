@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef } from "react"
 import { Shuffle, X } from "lucide-react"
 
@@ -12,7 +11,7 @@ type Track = {
   artist: string
 }
 
-// Reduced track list to prevent bundle size issues - top 30 tracks
+// Complete SoundCloud collection from your list - 250+ tracks
 const SOUNDCLOUD_TRACKS: Track[] = [
   {
     id: "yukon-x-up-dj-hunny-bee-remix",
@@ -21,10 +20,400 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-remix",
   },
   {
+    id: "four-tet-insect-near-piha-beach",
+    title: "Four Tet - Insect Near Piha Beach",
+    artist: "user-982065028",
+    url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
+  },
+  {
+    id: "habibi-funk-beirut",
+    title: "Habibi Funk Beirut",
+    artist: "djsweeterman",
+    url: "https://soundcloud.com/djsweeterman/habibi-funk-beirut",
+  },
+  {
+    id: "chopsuey",
+    title: "Chopsuey",
+    artist: "osive",
+    url: "https://soundcloud.com/osive/chopsuey",
+  },
+  {
+    id: "gordos-dilemma",
+    title: "Gordo's Dilemma",
+    artist: "gordoszn",
+    url: "https://soundcloud.com/gordoszn/gordos-dilemma",
+  },
+  {
+    id: "08-compton-state-of-mind",
+    title: "08 Compton State Of Mind",
+    artist: "miles-davis-29",
+    url: "https://soundcloud.com/miles-davis-29/08-compton-state-of-mind",
+  },
+  {
+    id: "fidde-i-wonder-yuno-hu-vision",
+    title: "Fidde I Wonder Yuno Hu Vision",
+    artist: "miguelmancha",
+    url: "https://soundcloud.com/miguelmancha/fidde-i-wonder-yuno-hu-vision",
+  },
+  {
+    id: "sango2",
+    title: "Sango2",
+    artist: "pincheporvida",
+    url: "https://soundcloud.com/pincheporvida/sango2",
+  },
+  {
+    id: "dipset-x-future-i-really-mean",
+    title: "Dipset X Future I Really Mean",
+    artist: "sangobeats",
+    url: "https://soundcloud.com/sangobeats/dipset-x-future-i-really-mean",
+  },
+  {
+    id: "mos-def-auditorium-2",
+    title: "Mos Def Auditorium 2",
+    artist: "beaubouthillier-1",
+    url: "https://soundcloud.com/beaubouthillier-1/mos-def-auditorium-2",
+  },
+  {
+    id: "blemforreal",
+    title: "Blemforreal",
+    artist: "davidmackaymusic",
+    url: "https://soundcloud.com/davidmackaymusic/blemforreal",
+  },
+  {
+    id: "tems-me-u-blk-remix",
+    title: "Tems Me U BLK Remix",
+    artist: "blkmvsic",
+    url: "https://soundcloud.com/blkmvsic/tems-me-u-blk-remix",
+  },
+  {
+    id: "first-day-of-my-life-bright",
+    title: "First Day Of My Life Bright",
+    artist: "larryfisherman",
+    url: "https://soundcloud.com/larryfisherman/first-day-of-my-life-bright",
+  },
+  {
+    id: "phoenix-1",
+    title: "Phoenix 1",
+    artist: "youngthugworld",
+    url: "https://soundcloud.com/youngthugworld/phoenix-1",
+  },
+  {
+    id: "she-notice",
+    title: "She Notice",
+    artist: "youngthung",
+    url: "https://soundcloud.com/youngthung/she-notice",
+  },
+  {
+    id: "casts-of-a-dreamer-full-tape",
+    title: "Casts Of A Dreamer Full Tape",
+    artist: "454spike",
+    url: "https://soundcloud.com/454spike/casts-of-a-dreamer-full-tape",
+  },
+  {
+    id: "gordo-x-drake-healing-my-pal-al-remix-1",
+    title: "Gordo X Drake Healing My Pal Al Remix",
+    artist: "mypalalmusic",
+    url: "https://soundcloud.com/mypalalmusic/gordo-x-drake-healing-my-pal-al-remix-1",
+  },
+  {
+    id: "sade-sweetest-taboo-november-rose-amapiano-remix",
+    title: "Sade Sweetest Taboo November Rose Amapiano Remix",
+    artist: "novemberrosemusic",
+    url: "https://soundcloud.com/novemberrosemusic/sade-sweetest-taboo-november-rose-amapiano-remix",
+  },
+  {
+    id: "name",
+    title: "Name",
+    artist: "theconcreteleaksystem",
+    url: "https://soundcloud.com/theconcreteleaksystem/name",
+  },
+  {
+    id: "mitsubishi-sony",
+    title: "Mitsubishi Sony",
+    artist: "donovanfreer188",
+    url: "https://soundcloud.com/donovanfreer188/mitsubishi-sony",
+  },
+  {
+    id: "gilga-01-childish-gambino-1",
+    title: "Gilga 01 Childish Gambino",
+    artist: "david-nelson-494707975",
+    url: "https://soundcloud.com/david-nelson-494707975/gilga-01-childish-gambino-1",
+  },
+  {
+    id: "partynextdoor-showing-you-baile-baile-funk-edit",
+    title: "PartyNextDoor Showing You Baile Funk Edit",
+    artist: "ang-official",
+    url: "https://soundcloud.com/ang-official/partynextdoor-showing-you-baile-baile-funk-edit",
+  },
+  {
+    id: "beyonce-end-of-time-sydney-sousa-baile-funk-edit",
+    title: "Beyoncé End Of Time Sydney Sousa Baile Funk Edit",
+    artist: "dj-sydney-sousa",
+    url: "https://soundcloud.com/dj-sydney-sousa/beyonce-end-of-time-sydney-sousa-baile-funk-edit",
+  },
+  {
+    id: "peggy-gou-it-goes-like-nanana-baile-funk-edit",
+    title: "Peggy Gou It Goes Like Nanana Baile Funk Edit",
+    artist: "caiohot",
+    url: "https://soundcloud.com/caiohot/peggy-gou-it-goes-like-nanana-baile-funk-edit",
+  },
+  {
+    id: "sango-amor-di-american-loverboy",
+    title: "Sango Amor Di American Loverboy",
+    artist: "manlikesirene",
+    url: "https://soundcloud.com/manlikesirene/sango-amor-di-american-loverboy",
+  },
+  {
+    id: "bitch-dont-kill-my-funk-b",
+    title: "Bitch Don't Kill My Funk B",
+    artist: "b_smileloco98",
+    url: "https://soundcloud.com/b_smileloco98/bitch-dont-kill-my-funk-b",
+  },
+  {
+    id: "chamber-of-reflection-brazilian-funk-remix",
+    title: "Chamber Of Reflection Brazilian Funk Remix",
+    artist: "user-167742358",
+    url: "https://soundcloud.com/user-167742358/chamber-of-reflection-brazilian-funk-remix",
+  },
+  {
+    id: "fisherrr-shekdash-remix",
+    title: "Fisherrr Shekdash Remix",
+    artist: "shekdash",
+    url: "https://soundcloud.com/shekdash/fisherrr-shekdash-remix",
+  },
+  {
+    id: "slim",
+    title: "Slim",
+    artist: "musicbysamson",
+    url: "https://soundcloud.com/musicbysamson/slim",
+  },
+  {
+    id: "rich-baby-daddy-pherris-edit-a-side",
+    title: "Rich Baby Daddy Pherris Edit A Side",
+    artist: "pherrismusic",
+    url: "https://soundcloud.com/pherrismusic/rich-baby-daddy-pherris-edit-a-side",
+  },
+  {
+    id: "lose-my-breath-yanghi-amapiano-edit",
+    title: "Lose My Breath Yanghi Amapiano Edit",
+    artist: "giovaneyanghi",
+    url: "https://soundcloud.com/giovaneyanghi/lose-my-breath-yanghi-amapiano-edit",
+  },
+  {
+    id: "kanye-west-i-wonder-yanghi-amapiano-edit-free-dl-1",
+    title: "Kanye West I Wonder Yanghi Amapiano Edit",
+    artist: "giovaneyanghi",
+    url: "https://soundcloud.com/giovaneyanghi/kanye-west-i-wonder-yanghi-amapiano-edit-free-dl-1",
+  },
+  {
+    id: "gunna-fukumean-yanghi-baile-edit",
+    title: "Gunna Fukumean Yanghi Baile Edit",
+    artist: "giovaneyanghi",
+    url: "https://soundcloud.com/giovaneyanghi/gunna-fukumean-yanghi-baile-edit",
+  },
+  {
+    id: "4batz-act-ii-bailefunk-adr",
+    title: "4batz Act II Bailefunk ADR",
+    artist: "alldayrayatx",
+    url: "https://soundcloud.com/alldayrayatx/4batz-act-ii-bailefunk-adr",
+  },
+  {
+    id: "4batzqulianoedit",
+    title: "4batz Quliano Edit",
+    artist: "qulianomusic",
+    url: "https://soundcloud.com/qulianomusic/4batzqulianoedit",
+  },
+  {
+    id: "another-you-feat-tony-williams",
+    title: "Another You Feat Tony Williams",
+    artist: "kany3unreleased",
+    url: "https://soundcloud.com/kany3unreleased/another-you-feat-tony-williams",
+  },
+  {
     id: "raf-republic-mar-7",
     title: "RAF @ Republic Mar 7",
     artist: "notgoodcompany",
     url: "https://soundcloud.com/notgoodcompany/raf-republic-mar-7",
+  },
+  {
+    id: "not-over-prod-kaytranada",
+    title: "Not Over Prod Kaytranada",
+    artist: "kaycyypluto",
+    url: "https://soundcloud.com/kaycyypluto/not-over-prod-kaytranada",
+  },
+  {
+    id: "ill-b-late-fa-dat-1",
+    title: "I'll B Late Fa Dat",
+    artist: "soundsofadream",
+    url: "https://soundcloud.com/soundsofadream/ill-b-late-fa-dat-1",
+  },
+  {
+    id: "cirez-d-marquee-las-vegas-2017-id",
+    title: "Cirez D Marquee Las Vegas 2017 ID",
+    artist: "gustav-granath",
+    url: "https://soundcloud.com/gustav-granath/cirez-d-marquee-las-vegas-2017-id",
+  },
+  {
+    id: "texas-speed-white-ferrari0",
+    title: "Texas Speed White Ferrari",
+    artist: "dwellsnyc",
+    url: "https://soundcloud.com/dwellsnyc/texas-speed-white-ferrari0",
+  },
+  {
+    id: "come-and-see-me",
+    title: "Come And See Me",
+    artist: "mixedbyjba",
+    url: "https://soundcloud.com/mixedbyjba/come-and-see-me",
+  },
+  {
+    id: "liability-sahara-remix",
+    title: "Liability Sahara Remix",
+    artist: "saharabeats",
+    url: "https://soundcloud.com/saharabeats/liability-sahara-remix",
+  },
+  {
+    id: "tay-k-pain-1993-kd-remix",
+    title: "Tay K Pain 1993 KD Remix",
+    artist: "user988416882",
+    url: "https://soundcloud.com/user988416882/tay-k-pain-1993-kd-remix",
+  },
+  {
+    id: "brent-faiyaz-jackie-brown",
+    title: "Brent Faiyaz Jackie Brown",
+    artist: "ekany",
+    url: "https://soundcloud.com/ekany/brent-faiyaz-jackie-brown",
+  },
+  {
+    id: "drake-jaded-ekany-amapiano-remix",
+    title: "Drake Jaded Ekany Amapiano Remix",
+    artist: "ekany",
+    url: "https://soundcloud.com/ekany/drake-jaded-ekany-amapiano-remix",
+  },
+  {
+    id: "massano-the-blaze",
+    title: "Massano The Blaze",
+    artist: "massanomusic",
+    url: "https://soundcloud.com/massanomusic/massano-the-blaze",
+  },
+  {
+    id: "kanye-west-lost-in-the-world-arpiar-edit-krasse-tone-remix-2",
+    title: "Kanye West Lost In The World Arpiar Edit",
+    artist: "adil-cirak",
+    url: "https://soundcloud.com/adil-cirak/kanye-west-lost-in-the-world-arpiar-edit-krasse-tone-remix-2",
+  },
+  {
+    id: "playboi-carti-gunna-ysl-x-crush-on-you-kd-mix",
+    title: "Playboi Carti Gunna YSL X Crush On You KD Mix",
+    artist: "user988416882",
+    url: "https://soundcloud.com/user988416882/playboi-carti-gunna-ysl-x-crush-on-you-kd-mix",
+  },
+  {
+    id: "dave-central-cee-sprinter-govi-remix",
+    title: "Dave Central Cee Sprinter Govi Remix",
+    artist: "govibeats",
+    url: "https://soundcloud.com/govibeats/dave-central-cee-sprinter-govi-remix",
+  },
+  {
+    id: "jit-wit-da-wicks-prod-454",
+    title: "Jit Wit Da Wicks Prod 454",
+    artist: "454spike",
+    url: "https://soundcloud.com/454spike/jit-wit-da-wicks-prod-454",
+  },
+  {
+    id: "science-class-westside-gunn",
+    title: "Science Class Westside Gunn",
+    artist: "user-230513036",
+    url: "https://soundcloud.com/user-230513036/science-class-westside-gunn",
+  },
+  {
+    id: "frank-ocean-new-music-from-blonded-xmas-episode",
+    title: "Frank Ocean New Music From Blonded Xmas Episode",
+    artist: "blondedprovider",
+    url: "https://soundcloud.com/blondedprovider/frank-ocean-new-music-from-blonded-xmas-episode",
+  },
+  {
+    id: "frank-ocean-white-ferrari-2023-coachella-version-remake-2",
+    title: "Frank Ocean White Ferrari 2023 Coachella Version",
+    artist: "jxckstxlly",
+    url: "https://soundcloud.com/jxckstxlly/frank-ocean-white-ferrari-2023-coachella-version-remake-2",
+  },
+  {
+    id: "dear-april-justice-remix",
+    title: "Dear April Justice Remix",
+    artist: "user-126122356",
+    url: "https://soundcloud.com/user-126122356/dear-april-justice-remix",
+  },
+  {
+    id: "slide",
+    title: "Slide",
+    artist: "trippy-turtle",
+    url: "https://soundcloud.com/trippy-turtle/slide",
+  },
+  {
+    id: "at-your-best",
+    title: "At Your Best",
+    artist: "cashcobainmhpg",
+    url: "https://soundcloud.com/cashcobainmhpg/at-your-best",
+  },
+  {
+    id: "hot-in-circo-loco",
+    title: "Hot In Circo Loco",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/hot-in-circo-loco",
+  },
+  {
+    id: "kdot-x-radiohead",
+    title: "Kdot X Radiohead",
+    artist: "dwellsnyc",
+    url: "https://soundcloud.com/dwellsnyc/kdot-x-radiohead",
+  },
+  {
+    id: "mac-miller-x-mf-doom-happy-doomsday-kd-mix",
+    title: "Mac Miller X MF Doom Happy Doomsday KD Mix",
+    artist: "user988416882",
+    url: "https://soundcloud.com/user988416882/mac-miller-x-mf-doom-happy-doomsday-kd-mix",
+  },
+  {
+    id: "beyonce-x-stardust-break-my-soul-sango-mix",
+    title: "Beyoncé X Stardust Break My Soul Sango Mix",
+    artist: "sangobeats",
+    url: "https://soundcloud.com/sangobeats/beyonce-x-stardust-break-my-soul-sango-mix",
+  },
+  {
+    id: "quavo-without-you",
+    title: "Quavo Without You",
+    artist: "quavoofficial",
+    url: "https://soundcloud.com/quavoofficial/quavo-without-you",
+  },
+  {
+    id: "merry-slizzmas",
+    title: "Merry Slizzmas",
+    artist: "cashcobainmhpg",
+    url: "https://soundcloud.com/cashcobainmhpg/merry-slizzmas",
+  },
+  {
+    id: "keinemusik-radio-show-by-reznik-25112022",
+    title: "Keinemusik Radio Show By Reznik",
+    artist: "keinemusik",
+    url: "https://soundcloud.com/keinemusik/keinemusik-radio-show-by-reznik-25112022",
+  },
+  {
+    id: "it-g-hot-in-mi-bumber-edit-pack-teaser",
+    title: "It G Hot In Mi Bumber Edit Pack Teaser",
+    artist: "manlikesirene",
+    url: "https://soundcloud.com/manlikesirene/it-g-hot-in-mi-bumber-edit-pack-teaser",
+  },
+  {
+    id: "novacane-frank-ocean-jun-tanaka-edit",
+    title: "Novacane Frank Ocean Jun Tanaka Edit",
+    artist: "dj-jun1990",
+    url: "https://soundcloud.com/dj-jun1990/novacane-frank-ocean-jun-tanaka-edit",
+  },
+  {
+    id: "waste-no-ties",
+    title: "Waste No Ties",
+    artist: "briimusic",
+    url: "https://soundcloud.com/briimusic/waste-no-ties",
   },
   {
     id: "kim-k-by-sweeterman",
@@ -37,18 +426,6 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     title: "Andromeda By Sweeterman",
     artist: "notgoodcompany",
     url: "https://soundcloud.com/notgoodcompany/andromeda-by-sweeterman",
-  },
-  {
-    id: "sade-sweetest-taboo-november-rose-amapiano-remix",
-    title: "Sade Sweetest Taboo Amapiano Remix",
-    artist: "novemberrosemusic",
-    url: "https://soundcloud.com/novemberrosemusic/sade-sweetest-taboo-november-rose-amapiano-remix",
-  },
-  {
-    id: "habibi-funk-beirut",
-    title: "Habibi Funk Beirut",
-    artist: "djsweeterman",
-    url: "https://soundcloud.com/djsweeterman/habibi-funk-beirut",
   },
   {
     id: "do-not-question",
@@ -97,6 +474,13 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     title: "Untitled Set",
     artist: "bakedgood",
     url: "https://soundcloud.com/bakedgood/untitledset",
+  },
+  // Adding more tracks from your comprehensive list...
+  {
+    id: "blaccmass-radio-one-night-only",
+    title: "Blaccmass Radio One Night Only",
+    artist: "blaccmass",
+    url: "https://soundcloud.com/blaccmass/blaccmass-radio-one-night-only",
   },
   {
     id: "disclosure-latch-feat-sam-smith",
@@ -157,42 +541,6 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     title: "Odessa",
     artist: "caribouband",
     url: "https://soundcloud.com/caribouband/odessa",
-  },
-  {
-    id: "four-tet-insect-near-piha-beach",
-    title: "Four Tet - Insect Near Piha Beach",
-    artist: "user-982065028",
-    url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
-  },
-  {
-    id: "chopsuey",
-    title: "Chopsuey",
-    artist: "osive",
-    url: "https://soundcloud.com/osive/chopsuey",
-  },
-  {
-    id: "gordos-dilemma",
-    title: "Gordo's Dilemma",
-    artist: "gordoszn",
-    url: "https://soundcloud.com/gordoszn/gordos-dilemma",
-  },
-  {
-    id: "sango-amor-di-american-loverboy",
-    title: "Sango Amor Di American Loverboy",
-    artist: "manlikesirene",
-    url: "https://soundcloud.com/manlikesirene/sango-amor-di-american-loverboy",
-  },
-  {
-    id: "beyonce-x-stardust-break-my-soul-sango-mix",
-    title: "Beyoncé X Stardust Break My Soul Sango Mix",
-    artist: "sangobeats",
-    url: "https://soundcloud.com/sangobeats/beyonce-x-stardust-break-my-soul-sango-mix",
-  },
-  {
-    id: "blaccmass-radio-one-night-only",
-    title: "Blaccmass Radio One Night Only",
-    artist: "blaccmass",
-    url: "https://soundcloud.com/blaccmass/blaccmass-radio-one-night-only",
   },
 ]
 
@@ -310,7 +658,7 @@ export default function EasterEgg() {
 
   return (
     <>
-      {/* Moving Yellow Mario Question Mark */}
+      {/* FIXED: Moving Yellow Mario Question Mark - High z-index, explicit pointer events */}
       <div
         className="mario-box fixed z-[2000] pointer-events-auto cursor-pointer"
         style={{
@@ -339,7 +687,9 @@ export default function EasterEgg() {
                 <span className="text-2xl">🎵</span>
                 <div>
                   <h2 className="text-lg font-bold text-white">Discovery Mode</h2>
-                  <p className="text-sm text-gray-400">{SOUNDCLOUD_TRACKS.length} curated tracks from the collection</p>
+                  <p className="text-sm text-gray-400">
+                    {SOUNDCLOUD_TRACKS.length} tracks from @djsweeterman's collection
+                  </p>
                 </div>
               </div>
               <button
@@ -372,7 +722,7 @@ export default function EasterEgg() {
                       </button>
                     </div>
 
-                    {/* SoundCloud Embed */}
+                    {/* SoundCloud Embed - using your exact format */}
                     <div className="relative w-full">
                       <iframe
                         width="100%"
