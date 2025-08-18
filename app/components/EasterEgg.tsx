@@ -130,50 +130,1122 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "donovanfreer188",
     url: "https://soundcloud.com/donovanfreer188/mitsubishi-sony",
   },
+  {
+    id: "gilga-01-childish-gambino-1",
+    title: "Gilga - Childish Gambino",
+    artist: "david-nelson-494707975",
+    url: "https://soundcloud.com/david-nelson-494707975/gilga-01-childish-gambino-1",
+  },
+  {
+    id: "partynextdoor-showing-you-baile-baile-funk-edit",
+    title: "PARTYNEXTDOOR - Showing You (Baile Funk Edit)",
+    artist: "ang-official",
+    url: "https://soundcloud.com/ang-official/partynextdoor-showing-you-baile-baile-funk-edit",
+  },
+  {
+    id: "beyonce-end-of-time-sydney-sousa-baile-funk-edit",
+    title: "Beyonce - End Of Time (Sydney Sousa Baile Funk Edit)",
+    artist: "dj-sydney-sousa",
+    url: "https://soundcloud.com/dj-sydney-sousa/beyonce-end-of-time-sydney-sousa-baile-funk-edit",
+  },
+  {
+    id: "peggy-gou-it-goes-like-nanana-baile-funk-edit",
+    title: "Peggy Gou - It Goes Like Nanana (Baile Funk Edit)",
+    artist: "caiohot",
+    url: "https://soundcloud.com/caiohot/peggy-gou-it-goes-like-nanana-baile-funk-edit",
+  },
+  {
+    id: "sango-amor-di-american-loverboy",
+    title: "Sango - Amor Di American Loverboy",
+    artist: "manlikesirene",
+    url: "https://soundcloud.com/manlikesirene/sango-amor-di-american-loverboy",
+  },
+  {
+    id: "bitch-dont-kill-my-funk-b",
+    title: "Bitch Don't Kill My Funk",
+    artist: "b_smileloco98",
+    url: "https://soundcloud.com/b_smileloco98/bitch-dont-kill-my-funk-b",
+  },
+  {
+    id: "chamber-of-reflection-brazilian-funk-remix",
+    title: "Chamber of Reflection (Brazilian Funk Remix)",
+    artist: "user-167742358",
+    url: "https://soundcloud.com/user-167742358/chamber-of-reflection-brazilian-funk-remix",
+  },
+  {
+    id: "fisherrr-shekdash-remix",
+    title: "Fisherrr (Shekdash Remix)",
+    artist: "shekdash",
+    url: "https://soundcloud.com/shekdash/fisherrr-shekdash-remix",
+  },
+  {
+    id: "slim",
+    title: "Slim",
+    artist: "musicbysamson",
+    url: "https://soundcloud.com/musicbysamson/slim",
+  },
+  {
+    id: "rich-baby-daddy-pherris-edit-a-side",
+    title: "Rich Baby Daddy (Pherris Edit A-Side)",
+    artist: "pherrismusic",
+    url: "https://soundcloud.com/pherrismusic/rich-baby-daddy-pherris-edit-a-side",
+  },
+  {
+    id: "lose-my-breath-yanghi-amapiano-edit",
+    title: "Lose My Breath (Yanghi Amapiano Edit)",
+    artist: "giovaneyanghi",
+    url: "https://soundcloud.com/giovaneyanghi/lose-my-breath-yanghi-amapiano-edit",
+  },
+  {
+    id: "kanye-west-i-wonder-yanghi-amapiano-edit-free-dl-1",
+    title: "Kanye West - I Wonder (Yanghi Amapiano Edit)",
+    artist: "giovaneyanghi",
+    url: "https://soundcloud.com/giovaneyanghi/kanye-west-i-wonder-yanghi-amapiano-edit-free-dl-1",
+  },
+  {
+    id: "gunna-fukumean-yanghi-baile-edit",
+    title: "Gunna - Fukumean (Yanghi Baile Edit)",
+    artist: "giovaneyanghi",
+    url: "https://soundcloud.com/giovaneyanghi/gunna-fukumean-yanghi-baile-edit",
+  },
+  {
+    id: "4batz-act-ii-bailefunk-adr",
+    title: "4batz - Act II (Bailefunk ADR)",
+    artist: "alldayrayatx",
+    url: "https://soundcloud.com/alldayrayatx/4batz-act-ii-bailefunk-adr",
+  },
+  {
+    id: "4batzqulianoedit",
+    title: "4batz (Quliano Edit)",
+    artist: "qulianomusic",
+    url: "https://soundcloud.com/qulianomusic/4batzqulianoedit",
+  },
+  {
+    id: "another-you-feat-tony-williams",
+    title: "Another You (feat. Tony Williams)",
+    artist: "kany3unreleased",
+    url: "https://soundcloud.com/kany3unreleased/another-you-feat-tony-williams",
+  },
+  {
+    id: "raf-republic-mar-7",
+    title: "RAF Republic Mar 7",
+    artist: "notgoodcompany",
+    url: "https://soundcloud.com/notgoodcompany/raf-republic-mar-7",
+  },
+  {
+    id: "not-over-prod-kaytranada",
+    title: "Not Over (Prod. Kaytranada)",
+    artist: "kaycyypluto",
+    url: "https://soundcloud.com/kaycyypluto/not-over-prod-kaytranada",
+  },
+  {
+    id: "ill-b-late-fa-dat-1",
+    title: "I'll B Late Fa Dat",
+    artist: "soundsofadream",
+    url: "https://soundcloud.com/soundsofadream/ill-b-late-fa-dat-1",
+  },
+  {
+    id: "cirez-d-marquee-las-vegas-2017-id",
+    title: "Cirez D - Marquee Las Vegas 2017 ID",
+    artist: "gustav-granath",
+    url: "https://soundcloud.com/gustav-granath/cirez-d-marquee-las-vegas-2017-id",
+  },
+  {
+    id: "texas-speed-white-ferrari0",
+    title: "Texas Speed White Ferrari",
+    artist: "dwellsnyc",
+    url: "https://soundcloud.com/dwellsnyc/texas-speed-white-ferrari0",
+  },
+  {
+    id: "come-and-see-me",
+    title: "Come And See Me",
+    artist: "mixedbyjba",
+    url: "https://soundcloud.com/mixedbyjba/come-and-see-me",
+  },
+  {
+    id: "liability-sahara-remix",
+    title: "Liability (Sahara Remix)",
+    artist: "saharabeats",
+    url: "https://soundcloud.com/saharabeats/liability-sahara-remix",
+  },
+  {
+    id: "tay-k-pain-1993-kd-remix",
+    title: "Tay K - Pain (1993 KD Remix)",
+    artist: "user988416882",
+    url: "https://soundcloud.com/user988416882/tay-k-pain-1993-kd-remix",
+  },
+  {
+    id: "brent-faiyaz-jackie-brown",
+    title: "Brent Faiyaz - Jackie Brown",
+    artist: "ekany",
+    url: "https://soundcloud.com/ekany/brent-faiyaz-jackie-brown",
+  },
+  {
+    id: "drake-jaded-ekany-amapiano-remix",
+    title: "Drake - Jaded (Ekany Amapiano Remix)",
+    artist: "ekany",
+    url: "https://soundcloud.com/ekany/drake-jaded-ekany-amapiano-remix",
+  },
+  {
+    id: "massano-the-blaze",
+    title: "Massano - The Blaze",
+    artist: "massanomusic",
+    url: "https://soundcloud.com/massanomusic/massano-the-blaze",
+  },
+  {
+    id: "kanye-west-lost-in-the-world-arpiar-edit-krasse-tone-remix-2",
+    title: "Kanye West - Lost In The World (Arpiar Edit Krasse Tone Remix)",
+    artist: "adil-cirak",
+    url: "https://soundcloud.com/adil-cirak/kanye-west-lost-in-the-world-arpiar-edit-krasse-tone-remix-2",
+  },
+  {
+    id: "playboi-carti-gunna-ysl-x-crush-on-you-kd-mix",
+    title: "Playboi Carti & Gunna - YSL x Crush On You (KD Mix)",
+    artist: "user988416882",
+    url: "https://soundcloud.com/user988416882/playboi-carti-gunna-ysl-x-crush-on-you-kd-mix",
+  },
+  {
+    id: "dave-central-cee-sprinter-govi-remix",
+    title: "Dave & Central Cee - Sprinter (Govi Remix)",
+    artist: "govibeats",
+    url: "https://soundcloud.com/govibeats/dave-central-cee-sprinter-govi-remix",
+  },
+  {
+    id: "jit-wit-da-wicks-prod-454",
+    title: "Jit Wit Da Wicks (Prod. 454)",
+    artist: "454spike",
+    url: "https://soundcloud.com/454spike/jit-wit-da-wicks-prod-454",
+  },
+  {
+    id: "science-class-westside-gunn",
+    title: "Science Class - Westside Gunn",
+    artist: "user-230513036",
+    url: "https://soundcloud.com/user-230513036/science-class-westside-gunn",
+  },
+  {
+    id: "frank-ocean-new-music-from-blonded-xmas-episode",
+    title: "Frank Ocean - New Music from Blonded Xmas Episode",
+    artist: "blondedprovider",
+    url: "https://soundcloud.com/blondedprovider/frank-ocean-new-music-from-blonded-xmas-episode",
+  },
+  {
+    id: "frank-ocean-white-ferrari-2023-coachella-version-remake-2",
+    title: "Frank Ocean - White Ferrari (2023 Coachella Version Remake)",
+    artist: "jxckstxlly",
+    url: "https://soundcloud.com/jxckstxlly/frank-ocean-white-ferrari-2023-coachella-version-remake-2",
+  },
+  {
+    id: "dear-april-justice-remix",
+    title: "Dear April (Justice Remix)",
+    artist: "user-126122356",
+    url: "https://soundcloud.com/user-126122356/dear-april-justice-remix",
+  },
+  {
+    id: "slide",
+    title: "Slide",
+    artist: "trippy-turtle",
+    url: "https://soundcloud.com/trippy-turtle/slide",
+  },
+  {
+    id: "at-your-best",
+    title: "At Your Best",
+    artist: "cashcobainmhpg",
+    url: "https://soundcloud.com/cashcobainmhpg/at-your-best",
+  },
+  {
+    id: "hot-in-circo-loco",
+    title: "Hot in Circo Loco",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/hot-in-circo-loco",
+  },
+  {
+    id: "kdot-x-radiohead",
+    title: "Kdot x Radiohead",
+    artist: "dwellsnyc",
+    url: "https://soundcloud.com/dwellsnyc/kdot-x-radiohead",
+  },
+  {
+    id: "mac-miller-x-mf-doom-happy-doomsday-kd-mix",
+    title: "Mac Miller x MF DOOM - Happy Doomsday (KD Mix)",
+    artist: "user988416882",
+    url: "https://soundcloud.com/user988416882/mac-miller-x-mf-doom-happy-doomsday-kd-mix",
+  },
+  {
+    id: "beyonce-x-stardust-break-my-soul-sango-mix",
+    title: "Beyonce x Stardust - Break My Soul (Sango Mix)",
+    artist: "sangobeats",
+    url: "https://soundcloud.com/sangobeats/beyonce-x-stardust-break-my-soul-sango-mix",
+  },
+  {
+    id: "quavo-without-you",
+    title: "Without You",
+    artist: "quavoofficial",
+    url: "https://soundcloud.com/quavoofficial/quavo-without-you",
+  },
+  {
+    id: "merry-slizzmas",
+    title: "Merry Slizzmas",
+    artist: "cashcobainmhpg",
+    url: "https://soundcloud.com/cashcobainmhpg/merry-slizzmas",
+  },
+  {
+    id: "keinemusik-radio-show-by-reznik-25112022",
+    title: "Keinemusik Radio Show by Reznik",
+    artist: "keinemusik",
+    url: "https://soundcloud.com/keinemusik/keinemusik-radio-show-by-reznik-25112022",
+  },
+  {
+    id: "it-g-hot-in-mi-bumber-edit-pack-teaser",
+    title: "It G Hot In Mi Bumber Edit Pack Teaser",
+    artist: "manlikesirene",
+    url: "https://soundcloud.com/manlikesirene/it-g-hot-in-mi-bumber-edit-pack-teaser",
+  },
+  {
+    id: "novacane-frank-ocean-jun-tanaka-edit",
+    title: "Novacane - Frank Ocean (Jun Tanaka Edit)",
+    artist: "dj-jun1990",
+    url: "https://soundcloud.com/dj-jun1990/novacane-frank-ocean-jun-tanaka-edit",
+  },
+  {
+    id: "waste-no-ties",
+    title: "Waste No Ties",
+    artist: "briimusic",
+    url: "https://soundcloud.com/briimusic/waste-no-ties",
+  },
+  {
+    id: "get-u-out-tha-kitchen",
+    title: "Get U Out Tha Kitchen",
+    artist: "drolavish",
+    url: "https://soundcloud.com/drolavish/get-u-out-tha-kitchen",
+  },
+  {
+    id: "mlk-feat-trouble-shad-da-god",
+    title: "MLK (feat. Trouble & Shad Da God)",
+    artist: "youngthugworld",
+    url: "https://soundcloud.com/youngthugworld/mlk-feat-trouble-shad-da-god",
+  },
+  {
+    id: "shawny-binladen-yellowtears",
+    title: "Shawny Binladen - Yellowtears",
+    artist: "james-belcher-9",
+    url: "https://soundcloud.com/james-belcher-9/shawny-binladen-yellowtears",
+  },
+  {
+    id: "hbk-freestyle",
+    title: "HBK Freestyle",
+    artist: "drolavish",
+    url: "https://soundcloud.com/drolavish/hbk-freestyle",
+  },
+  {
+    id: "brent-faiyaz-all-mine-dwells-rmx",
+    title: "Brent Faiyaz - All Mine (Dwells RMX)",
+    artist: "dwellsnyc",
+    url: "https://soundcloud.com/dwellsnyc/brent-faiyaz-all-mine-dwells-rmx",
+  },
+  {
+    id: "asap-rocky-x-dr-gabba-mixed-by-kd_muzak",
+    title: "ASAP Rocky x Dr. Gabba (Mixed by KD_Muzak)",
+    artist: "user988416882",
+    url: "https://soundcloud.com/user988416882/asap-rocky-x-dr-gabba-mixed-by-kd_muzak",
+  },
+  {
+    id: "wale-ft-j-cole-winter-schemes",
+    title: "Wale ft. J. Cole - Winter Schemes",
+    artist: "fevermcfly",
+    url: "https://soundcloud.com/fevermcfly/wale-ft-j-cole-winter-schemes",
+  },
+  {
+    id: "welcome-back-chilly",
+    title: "Welcome Back Chilly",
+    artist: "muathmy",
+    url: "https://soundcloud.com/muathmy/welcome-back-chilly",
+  },
+  {
+    id: "fast-trax-3",
+    title: "Fast Trax 3",
+    artist: "454spike",
+    url: "https://soundcloud.com/454spike/fast-trax-3",
+  },
+  {
+    id: "tie-that-binds-vs-rmx",
+    title: "Tie That Binds VS RMX",
+    artist: "voidstryker",
+    url: "https://soundcloud.com/voidstryker/tie-that-binds-vs-rmx",
+  },
+  {
+    id: "semi-on-em-1979",
+    title: "Semi On Em 1979",
+    artist: "dwellsnyc",
+    url: "https://soundcloud.com/dwellsnyc/semi-on-em-1979",
+  },
+  {
+    id: "central-cee-doja-cmano-remix",
+    title: "Central Cee - Doja (Cmano Remix)",
+    artist: "cmano",
+    url: "https://soundcloud.com/cmano/central-cee-doja-cmano-remix",
+  },
+  {
+    id: "other-shit-playboi-carti-josh",
+    title: "Other Shit - Playboi Carti",
+    artist: "josh-christian-532114961l",
+    url: "https://soundcloud.com/josh-christian-532114961l/other-shit-playboi-carti-josh",
+  },
+  {
+    id: "praise-the-lord-durdenhauer-edit",
+    title: "Praise The Lord (Durdenhauer Edit)",
+    artist: "durdenhauer",
+    url: "https://soundcloud.com/durdenhauer/praise-the-lord-durdenhauer-edit",
+  },
+  {
+    id: "drake-a-keeper-open-till-l8-remix",
+    title: "Drake - A Keeper (Open Till L8 Remix)",
+    artist: "opentilll8",
+    url: "https://soundcloud.com/opentilll8/drake-a-keeper-open-till-l8-remix",
+  },
+  {
+    id: "track-9-1",
+    title: "Track 9",
+    artist: "skepta",
+    url: "https://soundcloud.com/skepta/track-9-1",
+  },
+  {
+    id: "flex-up-prod-by-maaly-raw",
+    title: "Flex Up (Prod. by Maaly Raw)",
+    artist: "liluzivert",
+    url: "https://soundcloud.com/liluzivert/flex-up-prod-by-maaly-raw",
+  },
+  {
+    id: "glock-in-my-purse-prod-by-mustard",
+    title: "Glock In My Purse (Prod. by Mustard)",
+    artist: "liluzivert",
+    url: "https://soundcloud.com/liluzivert/glock-in-my-purse-prod-by-mustard",
+  },
+  {
+    id: "off-the-grid",
+    title: "Off The Grid",
+    artist: "juel-sanchez",
+    url: "https://soundcloud.com/juel-sanchez/off-the-grid",
+  },
+  {
+    id: "tlop5",
+    title: "TLOP5",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/tlop5",
+  },
+  {
+    id: "drake-sticky-zack-bia-remix",
+    title: "Drake - Sticky (Zack Bia Remix)",
+    artist: "zackbia",
+    url: "https://soundcloud.com/zackbia/drake-sticky-zack-bia-remix",
+  },
+  {
+    id: "jeff-mills-changes-of-life",
+    title: "Jeff Mills - Changes of Life",
+    artist: "discofanatic",
+    url: "https://soundcloud.com/discofanatic/jeff-mills-changes-of-life",
+  },
+  {
+    id: "cirez-d-on-off-pryda-remix",
+    title: "Cirez D - On Off (Pryda Remix)",
+    artist: "gustav-granath",
+    url: "https://soundcloud.com/gustav-granath/cirez-d-on-off-pryda-remix",
+  },
+  {
+    id: "cut-her-off-pierre-bourne",
+    title: "Cut Her Off - Pierre Bourne",
+    artist: "202-exclusive",
+    url: "https://soundcloud.com/202-exclusive/cut-her-off-pierre-bourne",
+  },
+  {
+    id: "kendrick-lamar-n95-never-dull-remix",
+    title: "Kendrick Lamar - N95 (Never Dull Remix)",
+    artist: "neverdullmusic",
+    url: "https://soundcloud.com/neverdullmusic/kendrick-lamar-n95-never-dull-remix",
+  },
+  {
+    id: "idris-muhammad-could-heaven-ever-be-like-this-house-remix",
+    title: "Idris Muhammad - Could Heaven Ever Be Like This (House Remix)",
+    artist: "julas-beats",
+    url: "https://soundcloud.com/julas-beats/idris-muhammad-could-heaven-ever-be-like-this-house-remix",
+  },
+  {
+    id: "aj-tracey-naila-conducta-edit",
+    title: "AJ Tracey - Naila (Conducta Edit)",
+    artist: "jude-noon-790532112",
+    url: "https://soundcloud.com/jude-noon-790532112/aj-tracey-naila-conducta-edit",
+  },
+  {
+    id: "1-2-step-ciara-remix",
+    title: "1, 2 Step (Ciara Remix)",
+    artist: "samgellaitry",
+    url: "https://soundcloud.com/samgellaitry/1-2-step-ciara-remix",
+  },
+  {
+    id: "pharrell-and-kanye-west-number",
+    title: "Pharrell and Kanye West - Number",
+    artist: "samgellaitry",
+    url: "https://soundcloud.com/samgellaitry/pharrell-and-kanye-west-number",
+  },
+  {
+    id: "chief-keef-f-lil-durk-gotta",
+    title: "Chief Keef & Lil Durk - Gotta",
+    artist: "2hunned",
+    url: "https://soundcloud.com/2hunned/chief-keef-f-lil-durk-gotta",
+  },
+  {
+    id: "nba-youngboy-turnt-up-prod",
+    title: "NBA YoungBoy - Turnt Up",
+    artist: "user-927325574",
+    url: "https://soundcloud.com/user-927325574/nba-youngboy-turnt-up-prod",
+  },
+  {
+    id: "kanye-west-white-dress-other",
+    title: "Kanye West - White Dress",
+    artist: "sonboronic-1",
+    url: "https://soundcloud.com/sonboronic-1/kanye-west-white-dress-other",
+  },
+  {
+    id: "kanye-west-eyes-closed",
+    title: "Kanye West - Eyes Closed",
+    artist: "undergroundfadetv",
+    url: "https://soundcloud.com/undergroundfadetv/kanye-west-eyes-closed",
+  },
+  {
+    id: "heartloosex",
+    title: "Heartloosex",
+    artist: "spliffhappy",
+    url: "https://soundcloud.com/spliffhappy/heartloosex",
+  },
+  {
+    id: "kanye-west-get-well-soon-mixtape-2002",
+    title: "Kanye West - Get Well Soon Mixtape 2002",
+    artist: "hip-hop-underground-776271975",
+    url: "https://soundcloud.com/hip-hop-underground-776271975/kanye-west-get-well-soon-mixtape-2002",
+  },
+  {
+    id: "champagne-stains",
+    title: "Champagne Stains",
+    artist: "sexdrugslang",
+    url: "https://soundcloud.com/sexdrugslang/champagne-stains",
+  },
+  {
+    id: "24-og-kanye-ft-ssc-kaycyy",
+    title: "24 OG - Kanye ft. SSC & KayCyy",
+    artist: "user-33366669",
+    url: "https://soundcloud.com/user-33366669/24-og-kanye-ft-ssc-kaycyy",
+  },
+  {
+    id: "teriyaki-funk-150-wile-out",
+    title: "Teriyaki Funk 150",
+    artist: "wileoutmusic",
+    url: "https://soundcloud.com/wileoutmusic/teriyaki-funk-150-wile-out",
+  },
+  {
+    id: "ghostrider",
+    title: "Ghostrider",
+    artist: "madeintyo",
+    url: "https://soundcloud.com/madeintyo/ghostrider",
+  },
+  {
+    id: "stay-up-feat-lancey-foux-prod-wonda-gurl",
+    title: "Stay Up (feat. Lancey Foux)",
+    artist: "kaycyypluto",
+    url: "https://soundcloud.com/kaycyypluto/stay-up-feat-lancey-foux-prod-wonda-gurl",
+  },
+  {
+    id: "rumors-90s-version",
+    title: "Rumors (90s Version)",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/rumors-90s-version",
+  },
+  {
+    id: "intoxikated-dro-lavish-prod-1mattmarvin",
+    title: "Intoxikated",
+    artist: "drolavish",
+    url: "https://soundcloud.com/drolavish/intoxikated-dro-lavish-prod-1mattmarvin",
+  },
+  {
+    id: "pierre-bourne-captain-save-a-hoe",
+    title: "Pierre Bourne - Captain Save A Hoe",
+    artist: "oganja",
+    url: "https://soundcloud.com/oganja/pierre-bourne-captain-save-a-hoe",
+  },
+  {
+    id: "7-its-up",
+    title: "It's Up",
+    artist: "678uno",
+    url: "https://soundcloud.com/678uno/7-its-up",
+  },
+  {
+    id: "andromeda-by-sweeterman",
+    title: "Andromeda",
+    artist: "notgoodcompany",
+    url: "https://soundcloud.com/notgoodcompany/andromeda-by-sweeterman",
+  },
+  {
+    id: "dance-floor",
+    title: "Dance Floor",
+    artist: "livelikedavis",
+    url: "https://soundcloud.com/livelikedavis/dance-floor",
+  },
+  {
+    id: "weiland-going-out-demo",
+    title: "Weiland - Going Out (Demo)",
+    artist: "sphinx28",
+    url: "https://soundcloud.com/sphinx28/weiland-going-out-demo",
+  },
+  {
+    id: "ovo-sound-radio-episode-19",
+    title: "OVO Sound Radio Episode 19",
+    artist: "what-is-this-link-anyway",
+    url: "https://soundcloud.com/what-is-this-link-anyway/ovo-sound-radio-episode-19",
+  },
+  {
+    id: "lil-yachty-cortex",
+    title: "Lil Yachty - Cortex",
+    artist: "jrproper",
+    url: "https://soundcloud.com/jrproper/lil-yachty-cortex",
+  },
+  {
+    id: "west-war",
+    title: "West War",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/west-war",
+  },
+  {
+    id: "erykah-badu-on-soleil-camara-flip-2021",
+    title: "Erykah Badu - On (Soleil Camara Flip)",
+    artist: "soleilcamara",
+    url: "https://soundcloud.com/soleilcamara/erykah-badu-on-soleil-camara-flip-2021",
+  },
+  {
+    id: "a-boogie-wit-da-hoodie-this-1",
+    title: "A Boogie Wit Da Hoodie - This",
+    artist: "mya-perez-909487479",
+    url: "https://soundcloud.com/mya-perez-909487479/a-boogie-wit-da-hoodie-this-1",
+  },
+  {
+    id: "baby-keem-orange-soda-sjayy-official-remix",
+    title: "Baby Keem - Orange Soda (Sjayy Official Remix)",
+    artist: "sjayyofficial",
+    url: "https://soundcloud.com/sjayyofficial/baby-keem-orange-soda-sjayy-official-remix",
+  },
+  {
+    id: "jarrad-cleofe-bankrolls-lak7-ep04",
+    title: "Jarrad Cleofe - Bankrolls (LAK7 EP04)",
+    artist: "checklak7",
+    url: "https://soundcloud.com/checklak7/jarrad-cleofe-bankrolls-lak7-ep04",
+  },
+  {
+    id: "just-blaze-sinjin-hawke-one",
+    title: "Just Blaze & Sinjin Hawke - One",
+    artist: "sinjin_hawke",
+    url: "https://soundcloud.com/sinjin_hawke/just-blaze-sinjin-hawke-one",
+  },
+  {
+    id: "yea-hoe",
+    title: "Yea Hoe",
+    artist: "sinjin_hawke",
+    url: "https://soundcloud.com/sinjin_hawke/yea-hoe",
+  },
+  {
+    id: "islabert",
+    title: "Islabert",
+    artist: "bakedgood",
+    url: "https://soundcloud.com/bakedgood/islabert",
+  },
+  {
+    id: "the-good-1",
+    title: "The Good",
+    artist: "senai-sounds",
+    url: "https://soundcloud.com/senai-sounds/the-good-1",
+  },
+  {
+    id: "michael-jackson-beat-it-remix-lld",
+    title: "Michael Jackson - Beat It (Remix LLD)",
+    artist: "livelikedavis",
+    url: "https://soundcloud.com/livelikedavis/michael-jackson-beat-it-remix-lld",
+  },
+  {
+    id: "hurricane-pt-2",
+    title: "Hurricane Pt. 2",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/hurricane-pt-2",
+  },
+  {
+    id: "kanye-west-awesome-original-pitch",
+    title: "Kanye West - Awesome (Original Pitch)",
+    artist: "charliewyatt5",
+    url: "https://soundcloud.com/charliewyatt5/kanye-west-awesome-original-pitch",
+  },
+  {
+    id: "dustin-paik-paradise-ny-at-the-brooklyn-mirage",
+    title: "Dustin Paik - Paradise NY at The Brooklyn Mirage",
+    artist: "dustinpaik",
+    url: "https://soundcloud.com/dustinpaik/dustin-paik-paradise-ny-at-the-brooklyn-mirage",
+  },
+  {
+    id: "mamas-boyfriend-kanye-west-1",
+    title: "Mama's Boyfriend - Kanye West",
+    artist: "yo-boi-lester",
+    url: "https://soundcloud.com/yo-boi-lester/mamas-boyfriend-kanye-west-1",
+  },
+  {
+    id: "gab3-x-lil-peep-hollywood-dreaming-prod-by-money-posse",
+    title: "Gab3 x Lil Peep - Hollywood Dreaming",
+    artist: "gab3omg",
+    url: "https://soundcloud.com/gab3omg/gab3-x-lil-peep-hollywood-dreaming-prod-by-money-posse",
+  },
+  {
+    id: "none-of-it-prod-bam-bam",
+    title: "None Of It (Prod. Bam Bam)",
+    artist: "uptownchavo",
+    url: "https://soundcloud.com/uptownchavo/none-of-it-prod-bam-bam",
+  },
+  {
+    id: "yesladyyy-1",
+    title: "Yesladyyy",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/yesladyyy-1",
+  },
+  {
+    id: "never-leave-you-rashad-rawkus-drogba-jonanna-edit-mp3",
+    title: "Never Leave You (Rashad Rawkus Drogba Jonanna Edit)",
+    artist: "rashadrawkus",
+    url: "https://soundcloud.com/rashadrawkus/never-leave-you-rashad-rawkus-drogba-jonanna-edit-mp3",
+  },
+  {
+    id: "lord-pretty-bad-gal-jodye",
+    title: "Lord Pretty Bad Gal Jodye",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/lord-pretty-bad-gal-jodye",
+  },
+  {
+    id: "how-it-be",
+    title: "How It Be",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/how-it-be",
+  },
+  {
+    id: "how-2-luv",
+    title: "How 2 Luv",
+    artist: "beldina",
+    url: "https://soundcloud.com/beldina/how-2-luv",
+  },
+  {
+    id: "atl-freestyle-1",
+    title: "ATL Freestyle",
+    artist: "snowmanservin",
+    url: "https://soundcloud.com/snowmanservin/atl-freestyle-1",
+  },
+  {
+    id: "454-fast-trax",
+    title: "454 - Fast Trax",
+    artist: "user-247074481",
+    url: "https://soundcloud.com/user-247074481/454-fast-trax",
+  },
+  {
+    id: "travis-scott-analogue",
+    title: "Travis Scott - Analogue",
+    artist: "user-809721490",
+    url: "https://soundcloud.com/user-809721490/travis-scott-analogue",
+  },
+  {
+    id: "xhu-trap-tt4l-prod-pierre-1",
+    title: "XHU - Trap TT4L (Prod. Pierre)",
+    artist: "xhulooo",
+    url: "https://soundcloud.com/xhulooo/xhu-trap-tt4l-prod-pierre-1",
+  },
+  {
+    id: "chance-feat-sofaygo",
+    title: "Chance (feat. SoFaygo)",
+    artist: "ssgko",
+    url: "https://soundcloud.com/ssgko/chance-feat-sofaygo",
+  },
+  {
+    id: "money-in-the-grave-jbroadway-remix",
+    title: "Money In The Grave (JBroadway Remix)",
+    artist: "jbroadwaymusic",
+    url: "https://soundcloud.com/jbroadwaymusic/money-in-the-grave-jbroadway-remix",
+  },
+  {
+    id: "cheers-mate",
+    title: "Cheers Mate",
+    artist: "a-k-paul",
+    url: "https://soundcloud.com/a-k-paul/cheers-mate",
+  },
+  {
+    id: "skateboard-p-mix-prod-by-elijah-who",
+    title: "Skateboard P Mix (Prod. by Elijah Who)",
+    artist: "theprivateclub-382844997",
+    url: "https://soundcloud.com/theprivateclub-382844997/skateboard-p-mix-prod-by-elijah-who",
+  },
+  {
+    id: "yeye-prodpharoah",
+    title: "Yeye (Prod. Pharoah)",
+    artist: "user-409102805",
+    url: "https://soundcloud.com/user-409102805/yeye-prodpharoah",
+  },
+  {
+    id: "playboi-carti-switching-lanes",
+    title: "Playboi Carti - Switching Lanes",
+    artist: "user-113418145",
+    url: "https://soundcloud.com/user-113418145/playboi-carti-switching-lanes",
+  },
+  {
+    id: "aap-rocky-distraction",
+    title: "A$AP Rocky - Distraction",
+    artist: "americanalovesyou",
+    url: "https://soundcloud.com/americanalovesyou/aap-rocky-distraction",
+  },
+  {
+    id: "infinity",
+    title: "Infinity",
+    artist: "matt_ox",
+    url: "https://soundcloud.com/matt_ox/infinity",
+  },
+  {
+    id: "bleed",
+    title: "Bleed",
+    artist: "newyearsplace",
+    url: "https://soundcloud.com/newyearsplace/bleed",
+  },
+  {
+    id: "sideways",
+    title: "Sideways",
+    artist: "donovanfreer188",
+    url: "https://soundcloud.com/donovanfreer188/sideways",
+  },
+  {
+    id: "slide-on-me",
+    title: "Slide On Me",
+    artist: "donovanfreer188",
+    url: "https://soundcloud.com/donovanfreer188/slide-on-me",
+  },
+  {
+    id: "stuck-ft-lil-yachty",
+    title: "Stuck (ft. Lil Yachty)",
+    artist: "kencarson",
+    url: "https://soundcloud.com/kencarson/stuck-ft-lil-yachty",
+  },
+  {
+    id: "aap-yams-x-blaccmass-60-minute-expo",
+    title: "A$AP Yams x BlaccMass - 60 Minute Expo",
+    artist: "user-290523936",
+    url: "https://soundcloud.com/user-290523936/aap-yams-x-blaccmass-60-minute-expo",
+  },
+  {
+    id: "sosstapes-vol-1",
+    title: "SOS Tapes Vol. 1",
+    artist: "tlop444",
+    url: "https://soundcloud.com/tlop444/sosstapes-vol-1",
+  },
+  {
+    id: "u-n-i-t-y",
+    title: "U.N.I.T.Y",
+    artist: "donovanfreer188",
+    url: "https://soundcloud.com/donovanfreer188/u-n-i-t-y",
+  },
+  {
+    id: "gucci-mane-im-da-shit-wampire",
+    title: "Gucci Mane - I'm Da Shit (Wampire)",
+    artist: "starfucker_usa",
+    url: "https://soundcloud.com/starfucker_usa/gucci-mane-im-da-shit-wampire",
+  },
+  {
+    id: "mario-judah-bean-lean",
+    title: "Mario Judah - Bean & Lean",
+    artist: "mario-judah",
+    url: "https://soundcloud.com/mario-judah/mario-judah-bean-lean",
+  },
+  {
+    id: "thinkin-to-myself-prod-psoul",
+    title: "Thinkin To Myself (Prod. Psoul)",
+    artist: "madeintyo",
+    url: "https://soundcloud.com/madeintyo/thinkin-to-myself-prod-psoul",
+  },
+  {
+    id: "jam-with-brie",
+    title: "Jam With Brie",
+    artist: "notgoodcompany",
+    url: "https://soundcloud.com/notgoodcompany/jam-with-brie",
+  },
+  {
+    id: "get-down-feat-oncue",
+    title: "Get Down (feat. OnCue)",
+    artist: "chriswebby",
+    url: "https://soundcloud.com/chriswebby/get-down-feat-oncue",
+  },
+  {
+    id: "the-good-the-bad-the-ugly",
+    title: "The Good The Bad The Ugly",
+    artist: "kanyesfreshmanadjustments",
+    url: "https://soundcloud.com/kanyesfreshmanadjustments/the-good-the-bad-the-ugly",
+  },
+  {
+    id: "nina-chop",
+    title: "Nina Chop",
+    artist: "lowkeysus23",
+    url: "https://soundcloud.com/lowkeysus23/nina-chop",
+  },
+  {
+    id: "dennis-hook-me-up-with-some",
+    title: "Dennis Hook Me Up With Some",
+    artist: "dp16",
+    url: "https://soundcloud.com/dp16/dennis-hook-me-up-with-some",
+  },
+  {
+    id: "pierre-megamix-vol-1",
+    title: "Pierre Megamix Vol. 1",
+    artist: "tlop444",
+    url: "https://soundcloud.com/tlop444/pierre-megamix-vol-1",
+  },
+  {
+    id: "don-toliver-x-nav-recap-drillmix",
+    title: "Don Toliver x Nav - Recap (Drillmix)",
+    artist: "soldadoaudio",
+    url: "https://soundcloud.com/soldadoaudio/don-toliver-x-nav-recap-drillmix",
+  },
+  {
+    id: "ilovemakonnen-down-4-so-long-remix-ft-ezra-koenig-despot",
+    title: "iLoveMakonnen - Down 4 So Long (Remix ft. Ezra Koenig & Despot)",
+    artist: "thomas-nantes",
+    url: "https://soundcloud.com/thomas-nantes/ilovemakonnen-down-4-so-long-remix-ft-ezra-koenig-despot",
+  },
+  {
+    id: "depends-prod-madeintyo",
+    title: "Depends (Prod. MadeinTYO)",
+    artist: "madeintyo",
+    url: "https://soundcloud.com/madeintyo/depends-prod-madeintyo",
+  },
+  {
+    id: "3-eminem-its-ok",
+    title: "Eminem - It's OK",
+    artist: "dani-sleeuwits",
+    url: "https://soundcloud.com/dani-sleeuwits/3-eminem-its-ok",
+  },
+  {
+    id: "christian-dior-denim-flow-kanye-west",
+    title: "Christian Dior Denim Flow - Kanye West",
+    artist: "fdrny",
+    url: "https://soundcloud.com/fdrny/christian-dior-denim-flow-kanye-west",
+  },
+  {
+    id: "drake-you-know-you-know-prod-by-kanye-west",
+    title: "Drake - You Know You Know (Prod. by Kanye West)",
+    artist: "mr32_0",
+    url: "https://soundcloud.com/mr32_0/drake-you-know-you-know-prod-by-kanye-west",
+  },
+  {
+    id: "rolling-inthe-deep-ft-1",
+    title: "Rolling In The Deep",
+    artist: "forever-childish2",
+    url: "https://soundcloud.com/forever-childish2/rolling-inthe-deep-ft-1",
+  },
+  {
+    id: "j-cole-louis-vuitton",
+    title: "J. Cole - Louis Vuitton",
+    artist: "eating-hip-hop",
+    url: "https://soundcloud.com/eating-hip-hop/j-cole-louis-vuitton",
+  },
+  {
+    id: "caffeine-vitamins",
+    title: "Caffeine & Vitamins",
+    artist: "griffin-mcmahon",
+    url: "https://soundcloud.com/griffin-mcmahon/caffeine-vitamins",
+  },
+  {
+    id: "ily-1",
+    title: "ILY",
+    artist: "beldina",
+    url: "https://soundcloud.com/beldina/ily-1",
+  },
+  {
+    id: "molly-world",
+    title: "Molly World",
+    artist: "vaughnpm",
+    url: "https://soundcloud.com/vaughnpm/molly-world",
+  },
+  {
+    id: "5-bearbrick",
+    title: "Bearbrick",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/5-bearbrick",
+  },
+  {
+    id: "kelly-k-playboi-carti-og-version",
+    title: "Kelly K - Playboi Carti (OG Version)",
+    artist: "user-507721525-322786251",
+    url: "https://soundcloud.com/user-507721525-322786251/kelly-k-playboi-carti-og-version",
+  },
+  {
+    id: "kim-k-by-sweeterman",
+    title: "Kim K",
+    artist: "notgoodcompany",
+    url: "https://soundcloud.com/notgoodcompany/kim-k-by-sweeterman",
+  },
+  {
+    id: "act-1-eternal-sunshine-the-pledgeby-jay-electronica",
+    title: "Act 1: Eternal Sunshine (The Pledge) by Jay Electronica",
+    artist: "erykah-she-ill-badu",
+    url: "https://soundcloud.com/erykah-she-ill-badu/act-1-eternal-sunshine-the-pledgeby-jay-electronica",
+  },
+  {
+    id: "smash",
+    title: "Smash",
+    artist: "vaughnpm",
+    url: "https://soundcloud.com/vaughnpm/smash",
+  },
+  {
+    id: "lil-wayne-kobe-bryant",
+    title: "Lil Wayne - Kobe Bryant",
+    artist: "akajoe",
+    url: "https://soundcloud.com/akajoe/lil-wayne-kobe-bryant",
+  },
+  {
+    id: "7-03-no-quitter-go-getter",
+    title: "No Quitter Go Getter",
+    artist: "jason24do",
+    url: "https://soundcloud.com/jason24do/7-03-no-quitter-go-getter",
+  },
+  {
+    id: "aboogie-dtb",
+    title: "A Boogie - DTB",
+    artist: "anthony-eliopoulos",
+    url: "https://soundcloud.com/anthony-eliopoulos/aboogie-dtb",
+  },
+  {
+    id: "daft-punk-jay-z-computerized",
+    title: "Daft Punk & Jay-Z - Computerized",
+    artist: "karterfutur",
+    url: "https://soundcloud.com/karterfutur/daft-punk-jay-z-computerized",
+  },
+  {
+    id: "raindrop-droptop",
+    title: "Raindrop Droptop",
+    artist: "montebooker",
+    url: "https://soundcloud.com/montebooker/raindrop-droptop",
+  },
+  {
+    id: "hassi-case-closed-produced-by-louie-crack-simmy-auto",
+    title: "Hassi - Case Closed",
+    artist: "hassirv",
+    url: "https://soundcloud.com/hassirv/hassi-case-closed-produced-by-louie-crack-simmy-auto",
+  },
+  {
+    id: "pharrell-dj-drama-in-my-mind-prequel-2006-shit",
+    title: "Pharrell & DJ Drama - In My Mind Prequel",
+    artist: "elriohippie",
+    url: "https://soundcloud.com/elriohippie/pharrell-dj-drama-in-my-mind-prequel-2006-shit",
+  },
+  {
+    id: "looking-for-love-womack-rework-fat-larrys-band",
+    title: "Looking For Love (Womack Rework) - Fat Larry's Band",
+    artist: "womackreworks",
+    url: "https://soundcloud.com/womackreworks/looking-for-love-womack-rework-fat-larrys-band",
+  },
+  {
+    id: "pierre-bourne-my-bitch",
+    title: "Pierre Bourne - My Bitch",
+    artist: "user-679825602",
+    url: "https://soundcloud.com/user-679825602/pierre-bourne-my-bitch",
+  },
+  {
+    id: "madeintyo-uber-everywhere-scheffy-remix",
+    title: "MadeinTYO - Uber Everywhere (Scheffy Remix)",
+    artist: "user-417184272",
+    url: "https://soundcloud.com/user-417184272/madeintyo-uber-everywhere-scheffy-remix",
+  },
+  {
+    id: "childish-gambino-terrified-zikomo-remix",
+    title: "Childish Gambino - Terrified (Zikomo Remix)",
+    artist: "zikomo",
+    url: "https://soundcloud.com/zikomo/childish-gambino-terrified-zikomo-remix",
+  },
+  {
+    id: "trap-vacant",
+    title: "Trap Vacant",
+    artist: "frazier-trill",
+    url: "https://soundcloud.com/frazier-trill/trap-vacant",
+  },
+  {
+    id: "3-fiji",
+    title: "Fiji",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/3-fiji",
+  },
+  {
+    id: "whats-the-move-with-brie",
+    title: "What's The Move With Brie",
+    artist: "notgoodcompany",
+    url: "https://soundcloud.com/notgoodcompany/whats-the-move-with-brie",
+  },
+  {
+    id: "escondido-x-badco",
+    title: "Escondido x BadCo",
+    artist: "notgoodcompany",
+    url: "https://soundcloud.com/notgoodcompany/escondido-x-badco",
+  },
+  {
+    id: "cant-look-in-my-eyes-feat-kid-cudi",
+    title: "Can't Look In My Eyes (feat. Kid Cudi)",
+    artist: "cqcxof",
+    url: "https://soundcloud.com/cqcxof/cant-look-in-my-eyes-feat-kid-cudi",
+  },
+  {
+    id: "kanye-west-when-i-see-it-tell-your-friends-remix",
+    title: "Kanye West - When I See It (Tell Your Friends Remix)",
+    artist: "kanye-west-collective",
+    url: "https://soundcloud.com/kanye-west-collective/kanye-west-when-i-see-it-tell-your-friends-remix",
+  },
+  {
+    id: "young-thug-givenchy-rich-gang",
+    title: "Young Thug - Givenchy (Rich Gang)",
+    artist: "amance-hermes-viossi",
+    url: "https://soundcloud.com/amance-hermes-viossi/young-thug-givenchy-rich-gang",
+  },
+  {
+    id: "fake-as-hell",
+    title: "Fake As Hell",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/fake-as-hell",
+  },
+  {
+    id: "drake-sweeterman-explicit",
+    title: "Drake - Sweeterman",
+    artist: "chargedupdrake",
+    url: "https://soundcloud.com/chargedupdrake/drake-sweeterman-explicit",
+  },
+  {
+    id: "vsvsvs1",
+    title: "VSVSVS1",
+    artist: "2fourhrs",
+    url: "https://soundcloud.com/2fourhrs/vsvsvs1",
+  },
+  {
+    id: "drake-freak-in-you-partynextdoor-remix",
+    title: "Drake - Freak In You (PARTYNEXTDOOR Remix)",
+    artist: "datheat",
+    url: "https://soundcloud.com/datheat/drake-freak-in-you-partynextdoor-remix",
+  },
 ]
-
-// Spinner keyframes as a CSS string
-const spinnerCSS = `
-  @keyframes easter-egg-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  .easter-egg-spinner {
-    animation: easter-egg-spin 1s linear infinite;
-  }
-`
 
 export default function EasterEgg() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-
-  // SIMPLIFIED POSITIONING - Start in center, move predictably
   const [x, setX] = useState(300)
   const [y, setY] = useState(200)
   const [dx, setDx] = useState(2)
   const [dy, setDy] = useState(1.5)
-
   const intervalRef = useRef<NodeJS.Timeout>()
 
-  // Add CSS to document head
-  useEffect(() => {
-    const styleElement = document.createElement("style")
-    styleElement.textContent = spinnerCSS
-    document.head.appendChild(styleElement)
-
-    return () => {
-      document.head.removeChild(styleElement)
-    }
-  }, [])
-
-  // SIMPLE ANIMATION LOOP - No complex RAF, just setInterval
+  // Animation loop
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       setX((prevX) => {
         const newX = prevX + dx
         const maxX = window.innerWidth - 60
-
         if (newX <= 20 || newX >= maxX) {
           setDx(-dx)
           return Math.max(20, Math.min(maxX, newX))
@@ -183,15 +1255,14 @@ export default function EasterEgg() {
 
       setY((prevY) => {
         const newY = prevY + dy
-        const maxY = window.innerHeight - 100 // Leave room for taskbar
-
+        const maxY = window.innerHeight - 100
         if (newY <= 20 || newY >= maxY) {
           setDy(-dy)
           return Math.max(20, Math.min(maxY, newY))
         }
         return newY
       })
-    }, 16) // ~60fps
+    }, 16)
 
     return () => {
       if (intervalRef.current) {
@@ -199,17 +1270,6 @@ export default function EasterEgg() {
       }
     }
   }, [dx, dy])
-
-  // Reset position on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setX(Math.min(x, window.innerWidth - 60))
-      setY(Math.min(y, window.innerHeight - 100))
-    }
-
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [x, y])
 
   const loadRandomTrack = () => {
     setIsLoading(true)
@@ -231,16 +1291,13 @@ export default function EasterEgg() {
 
   return (
     <>
-      {/* MARIO BOX - SIMPLIFIED POSITIONING */}
+      {/* Mario Box */}
       <div
         onClick={handleClick}
+        className="fixed z-[9999] w-12 h-12 cursor-pointer select-none transition-transform hover:scale-110"
         style={{
-          position: "fixed",
           left: `${x}px`,
           top: `${y}px`,
-          zIndex: 9999, // MAXIMUM Z-INDEX
-          width: "50px",
-          height: "50px",
           background: "linear-gradient(135deg, #ffd700 0%, #ffb347 50%, #ffa500 100%)",
           border: "3px solid #8b4513",
           borderRadius: "6px",
@@ -249,182 +1306,67 @@ export default function EasterEgg() {
           justifyContent: "center",
           boxShadow:
             "inset 3px 3px 0px rgba(255, 255, 255, 0.6), inset -3px -3px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px rgba(0, 0, 0, 0.5)",
-          cursor: "pointer",
           fontSize: "28px",
           fontWeight: "900",
           color: "#8b4513",
           textShadow: "2px 2px 0px rgba(255, 255, 255, 0.8), -1px -1px 0px rgba(0, 0, 0, 0.3)",
-          userSelect: "none",
-          transition: "transform 0.1s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.1)"
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)"
         }}
       >
         ?
       </div>
 
-      {/* MODAL */}
+      {/* Modal */}
       {isModalOpen && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 10000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "16px",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-          }}
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black bg-opacity-70"
           onClick={() => setIsModalOpen(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: "#1f2937",
-              border: "1px solid #374151",
-              borderRadius: "8px",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              width: "100%",
-              maxWidth: "32rem",
-              maxHeight: "85vh",
-              overflowY: "auto",
-            }}
+            className="bg-gray-800 border border-gray-600 rounded-lg shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
           >
             {/* Header */}
-            <div
-              style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px",
-                backgroundColor: "#374151",
-                borderBottom: "1px solid #4b5563",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <span style={{ fontSize: "24px" }}>🎵</span>
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-gray-700 border-b border-gray-600">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎵</span>
                 <div>
-                  <h2 style={{ fontSize: "18px", fontWeight: "bold", color: "white", margin: 0 }}>
-                    Digging in the Crates
-                  </h2>
-                  <p style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}>
-                    RAF's SoundCloud Gems • {SOUNDCLOUD_TRACKS.length} tracks
-                  </p>
+                  <h2 className="text-lg font-bold text-white">Digging in the Crates</h2>
+                  <p className="text-sm text-gray-400">RAF's SoundCloud Gems • {SOUNDCLOUD_TRACKS.length} tracks</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                style={{
-                  padding: "8px",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  color: "#9ca3af",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#4b5563"
-                  e.currentTarget.style.color = "white"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent"
-                  e.currentTarget.style.color = "#9ca3af"
-                }}
+                className="p-2 hover:bg-gray-600 rounded-lg transition-colors text-gray-400 hover:text-white"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Content */}
-            <div style={{ padding: "16px" }}>
+            <div className="p-4">
               {isLoading ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "32px 0",
-                  }}
-                >
-                  <div
-                    className="easter-egg-spinner"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      border: "2px solid #06b6d4",
-                      borderTop: "2px solid transparent",
-                      borderRadius: "50%",
-                    }}
-                  ></div>
-                  <span style={{ marginLeft: "12px", color: "white" }}>Loading track...</span>
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-3 text-white">Loading track...</span>
                 </div>
               ) : currentTrack ? (
                 <>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: "16px",
-                    }}
-                  >
+                  <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: "600",
-                          color: "white",
-                          margin: "0 0 4px 0",
-                        }}
-                      >
-                        {currentTrack.title}
-                      </h3>
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: "#9ca3af",
-                          margin: 0,
-                        }}
-                      >
-                        {currentTrack.artist}
-                      </p>
+                      <h3 className="text-lg font-semibold text-white mb-1">{currentTrack.title}</h3>
+                      <p className="text-sm text-gray-400">{currentTrack.artist}</p>
                     </div>
                     <button
                       onClick={loadRandomTrack}
                       disabled={isLoading}
-                      style={{
-                        padding: "8px 16px",
-                        backgroundColor: "#06b6d4",
-                        color: "black",
-                        border: "none",
-                        borderRadius: "8px",
-                        fontWeight: "500",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#0891b2"
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#06b6d4"
-                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-black font-medium rounded-lg transition-colors"
                     >
                       <Shuffle size={16} />
                       Next Track
                     </button>
                   </div>
 
-                  <div style={{ width: "100%" }}>
+                  <div className="w-full">
                     <iframe
                       width="100%"
                       height="166"
@@ -432,71 +1374,30 @@ export default function EasterEgg() {
                       frameBorder="no"
                       allow="autoplay"
                       src={buildEmbedUrl(currentTrack)}
-                      style={{ width: "100%", borderRadius: "6px" }}
+                      className="w-full rounded-md"
                       key={currentTrack.id}
                     />
                   </div>
                 </>
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "32px 0",
-                  }}
-                >
+                <div className="flex items-center justify-center py-8">
                   <button
                     onClick={loadRandomTrack}
-                    style={{
-                      padding: "12px 24px",
-                      backgroundColor: "#06b6d4",
-                      color: "black",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontWeight: "500",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#0891b2"
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "#06b6d4"
-                    }}
+                    className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-medium rounded-lg transition-colors"
                   >
                     Start Discovery
                   </button>
                 </div>
               )}
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: "12px",
-                  color: "#6b7280",
-                  paddingTop: "8px",
-                  borderTop: "1px solid #374151",
-                  marginTop: "16px",
-                }}
-              >
+              <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-700 mt-4">
                 <span>Click outside to close • ESC to exit</span>
                 {currentTrack && (
                   <a
                     href={currentTrack.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      color: "#22d3ee",
-                      textDecoration: "underline",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = "#06b6d4"
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = "#22d3ee"
-                    }}
+                    className="text-cyan-400 hover:text-cyan-300 underline transition-colors"
                   >
                     View on SoundCloud →
                   </a>
