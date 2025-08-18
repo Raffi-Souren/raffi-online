@@ -1424,6 +1424,12 @@ export default function EasterEgg() {
     }
   }, [isModalOpen])
 
+  // Build SoundCloud embed URL
+  const buildEmbedUrl = (trackUrl: string) => {
+    const encodedUrl = encodeURIComponent(trackUrl)
+    return `https://w.soundcloud.com/player/?url=${encodedUrl}&color=%2300ffff&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=true`
+  }
+
   return (
     <>
       {/* Moving Yellow Mario Question Mark */}
@@ -1497,14 +1503,14 @@ export default function EasterEgg() {
 
             {/* SoundCloud Embed */}
             {currentTrack && !isLoading && (
-              <div className="relative w-full h-[400px] bg-black">
+              <div className="relative w-full h-[166px] bg-black">
                 <iframe
                   width="100%"
-                  height="100%"
+                  height="166"
                   scrolling="no"
                   frameBorder="no"
                   allow="autoplay"
-                  src={currentTrack.url}
+                  src={buildEmbedUrl(currentTrack.url)}
                   className="absolute inset-0"
                 />
               </div>
