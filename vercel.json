@@ -8,5 +8,13 @@
       "source": "/",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     }
-  ]
+  ],
+  "functions": {
+    "app/api/startup-feedback/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/startup-pitch/route.ts": {
+      "maxDuration": 30
+    }
+  }
 }
