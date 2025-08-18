@@ -40,6 +40,7 @@
   html,
   body {
     height: auto;
+    font-family: "MS Sans Serif", Tahoma, sans-serif;
   }
 
   body {
@@ -52,6 +53,13 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .xp-bg {
+    background-image: url("/wallpapers/xp-bliss.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
   }
 }
 
@@ -76,11 +84,12 @@
   }
 }
 
-/* Windows XP Desktop Styling */
+/* Windows XP Desktop Styling - v76 fonts restored */
 .window {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
   box-shadow: var(--shadow-win);
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 .window-title {
@@ -94,6 +103,7 @@
   letter-spacing: 1px;
   font-size: 10px;
   min-height: 32px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -109,6 +119,7 @@
   background: #000000;
   border: 3px solid #ffd700;
   box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 .yellow-window .window-title {
@@ -119,6 +130,7 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   font-size: 10px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -132,6 +144,7 @@
   background: #000000;
   color: #ffd700;
   padding: 8px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -146,6 +159,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   height: 100%;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
   /* Smooth scrolling */
   scroll-behavior: smooth;
   /* Better scrolling on mobile */
@@ -171,6 +185,7 @@
   cursor: pointer;
   padding: 2px;
   border-radius: 4px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -205,7 +220,7 @@
   }
 }
 
-/* v76 style desktop icon labels - black background */
+/* v76 style desktop icon labels - black background with MS Sans Serif */
 .desktop-icon-label {
   background: rgba(0, 0, 0, 0.8);
   padding: 2px 4px;
@@ -220,6 +235,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -239,6 +255,7 @@
   font-weight: bold;
   cursor: pointer;
   font-size: 10px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -270,6 +287,7 @@
   text-transform: uppercase;
   font-size: 8px;
   letter-spacing: 1px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -296,6 +314,7 @@
   display: flex;
   align-items: center;
   z-index: 100;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -315,6 +334,7 @@
   font-weight: bold;
   cursor: pointer;
   font-size: 9px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -340,6 +360,7 @@
   letter-spacing: 1px;
   color: #ffd700;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -354,6 +375,7 @@
   line-height: 1.6;
   color: #ffff99;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -362,49 +384,72 @@
   }
 }
 
-/* FIXED: Mario Question Mark Box - High z-index, explicit pointer events */
+/* v76 Mario Question Mark Box - Restored original styling */
 .mario-box {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb347 50%, #ffa500 100%);
   border: 3px solid #8b4513;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.5), inset -2px -2px 0px rgba(0, 0, 0, 0.3), 2px 2px 8px
-    rgba(0, 0, 0, 0.4);
-  transition: transform 0.1s ease;
+  box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.6), inset -3px -3px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
+    rgba(0, 0, 0, 0.5);
+  transition: all 0.15s ease;
   cursor: pointer;
-  z-index: 2000; /* FIXED: High z-index above everything */
-  pointer-events: auto; /* FIXED: Explicit pointer events */
+  z-index: 2000;
+  pointer-events: auto;
+  position: relative;
+  animation: mario-bounce 3s ease-in-out infinite;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 768px) {
   .mario-box {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 }
 
 .mario-box:hover {
-  transform: scale(1.1);
-  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.6), inset -2px -2px 0px rgba(0, 0, 0, 0.4), 3px 3px 12px
-    rgba(0, 0, 0, 0.5);
+  transform: scale(1.1) rotate(2deg);
+  box-shadow: inset 3px 3px 0px rgba(255, 255, 255, 0.7), inset -3px -3px 0px rgba(0, 0, 0, 0.5), 4px 4px 16px
+    rgba(0, 0, 0, 0.6);
+  background: linear-gradient(135deg, #ffed4e 0%, #ffc947 50%, #ff8c00 100%);
+  animation: none;
+}
+
+.mario-box:active {
+  transform: scale(0.95);
+  box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.4), inset -2px -2px 0px rgba(0, 0, 0, 0.6), 2px 2px 8px
+    rgba(0, 0, 0, 0.4);
 }
 
 .mario-box-inner {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 28px;
+  font-weight: 900;
   color: #8b4513;
-  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.8), -1px -1px 0px rgba(0, 0, 0, 0.3);
   user-select: none;
-  pointer-events: none; /* Let clicks pass through to parent */
+  pointer-events: none;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  line-height: 1;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 768px) {
   .mario-box-inner {
-    font-size: 24px;
+    font-size: 20px;
+  }
+}
+
+/* Add subtle animation to make it more Mario-like */
+@keyframes mario-bounce {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
   }
 }
 
