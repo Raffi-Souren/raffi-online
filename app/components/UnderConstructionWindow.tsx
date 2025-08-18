@@ -85,7 +85,7 @@ export default function UnderConstructionWindow({ title, onClose }: UnderConstru
           <button className="win-btn" onClick={onClose}>
             {WindowsIcons.Home} Back to Desktop
           </button>
-          <button className="win-btn" onClick={() => window.open("mailto:hello@raffi-souren.com", "_blank")}>
+          <button className="win-btn" onClick={() => window.open("mailto:raffi@notgoodcompany.com", "_blank")}>
             {WindowsIcons.Email} Get Notified
           </button>
         </div>

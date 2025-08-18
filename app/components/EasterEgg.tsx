@@ -1332,13 +1332,13 @@ const SOUNDCLOUD_LIKES: Track[] = [
 
 export default function EasterEgg() {
   const [position, setPosition] = useState({ x: 20, y: 80 })
-  const [velocity, setVelocity] = useState({ x: 2, y: 2 })
+  const [velocity, setVelocity] = useState({ x: 4, y: 4 }) // Increased speed from 2,2 to 4,4
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const animationRef = useRef<number | null>(null)
 
-  // Movement animation
+  // Movement animation - faster and more challenging
   useEffect(() => {
     if (isModalOpen) return // Pause movement when modal is open
 
@@ -1349,7 +1349,7 @@ export default function EasterEgg() {
         let newVelX = velocity.x
         let newVelY = velocity.y
 
-        // Bounce off walls
+        // Bounce off walls with slightly random velocity changes for unpredictability
         if (newX <= 0 || newX >= window.innerWidth - 50) {
           newVelX = -velocity.x
           newX = newX <= 0 ? 0 : window.innerWidth - 50
@@ -1432,9 +1432,9 @@ export default function EasterEgg() {
 
   return (
     <>
-      {/* Moving Yellow Mario Question Mark */}
+      {/* Moving Yellow Mario Question Mark - Now faster and more challenging */}
       <div
-        className="mario-box absolute transition-all duration-1000 cursor-pointer z-40"
+        className="mario-box absolute transition-all duration-500 cursor-pointer z-40"
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
@@ -1458,9 +1458,7 @@ export default function EasterEgg() {
                 <Music className="w-6 h-6 text-cyan-400" />
                 <div>
                   <h2 className="text-xl font-bold text-white">Discovery Mode</h2>
-                  <p className="text-xs text-gray-400">
-                    {SOUNDCLOUD_LIKES.length} tracks from @djsweeterman's collection
-                  </p>
+                  <p className="text-xs text-gray-400">tracks from @djsweeterman's collection</p>
                 </div>
               </div>
 
