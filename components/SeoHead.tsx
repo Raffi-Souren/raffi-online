@@ -15,6 +15,7 @@ export default function SeoHead({
 }: SeoHeadProps) {
   return (
     <Head>
+      {/* Basic Meta Tags */}
       <title>{title}</title>
       <meta name="description" content={description} />
 
