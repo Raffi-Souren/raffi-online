@@ -1,129 +1,93 @@
 "use client"
 
-import { useState } from "react"
+import WindowShell from "../../components/ui/WindowShell"
+
+interface BlogrollItem {
+  id: string
+  name: string
+  url: string
+  description: string
+  category: string
+  icon: string
+}
+
+const BLOGROLL_ITEMS: BlogrollItem[] = [
+  {
+    id: "poolsuite",
+    name: "Poolsuite",
+    url: "https://poolsuite.net/",
+    description: "Summer vibes and poolside aesthetics",
+    category: "Lifestyle",
+    icon: "🏊‍♂️",
+  },
+  {
+    id: "kidtakeover",
+    name: "KidTakeOver",
+    url: "https://kidtakeover.com/",
+    description: "Creative collective and cultural platform",
+    category: "Culture",
+    icon: "👶",
+  },
+  {
+    id: "bowery-showroom",
+    name: "Bowery Showroom",
+    url: "https://boweryshowroom.com/",
+    description: "NYC fashion and lifestyle destination",
+    category: "Fashion",
+    icon: "👗",
+  },
+]
 
 interface BlogrollWindowProps {
+  isOpen: boolean
   onClose: () => void
 }
 
-export default function BlogrollWindow({ onClose }: BlogrollWindowProps) {
-  const [activeEmbed, setActiveEmbed] = useState<string | null>(null)
-
-  const blogrollItems = [
-    {
-      id: "poolsuite",
-      name: "Poolsuite FM",
-      description: "Retro web radio for the summer internet",
-      url: "https://poolsuite.net/",
-      embedUrl: "https://poolsuite.net/",
-    },
-    {
-      id: "kidtakeover",
-      name: "KidTakeOver",
-      description: "Underground music collective",
-      url: "https://www.youtube.com/@KidsTakeOver",
-      embedUrl: "https://www.youtube.com/@KidsTakeOver",
-    },
-    {
-      id: "bowery-showroom",
-      name: "Bowery Showroom",
-      description: "NYC's premier underground venue",
-      url: "https://www.instagram.com/boweryshowroom/",
-      embedUrl: "https://www.instagram.com/boweryshowroom/",
-    },
-    {
-      id: "awge",
-      name: "AWGE",
-      description: "Creative collective and multimedia company",
-      url: "https://awge.com/",
-      embedUrl: "https://awge.com/",
-    },
-    {
-      id: "hypebeast",
-      name: "Hypebeast",
-      description: "Culture, fashion, and lifestyle platform",
-      url: "https://hypebeast.com/",
-      embedUrl: "https://hypebeast.com/",
-    },
-    {
-      id: "complex",
-      name: "Complex",
-      description: "Music, style, and pop culture magazine",
-      url: "https://complex.com/",
-      embedUrl: "https://complex.com/",
-    },
-    {
-      id: "fader",
-      name: "The Fader",
-      description: "Music and culture magazine",
-      url: "https://thefader.com/",
-      embedUrl: "https://thefader.com/",
-    },
-    {
-      id: "pitchfork",
-      name: "Pitchfork",
-      description: "Music reviews and cultural commentary",
-      url: "https://pitchfork.com/",
-      embedUrl: "https://pitchfork.com/",
-    },
-  ]
-
-  const handleOpenEmbed = (item: any) => {
-    window.open(item.embedUrl, "_blank")
-  }
-
-  const handleVisitSite = (item: any) => {
-    window.open(item.url, "_blank")
+export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps) {
+  const handleLinkClick = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer")
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="window w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div className="window-title bg-blue-600 text-white">
-          <span className="flex items-center gap-2">🌐 BLOGROLL</span>
-          <button className="ml-auto hover:bg-red-600 px-2 py-1 rounded text-white" onClick={onClose}>
-            ✕
-          </button>
+    <WindowShell id="blogroll" title="BLOGROLL - LINKS.HTM" isOpen={isOpen} onClose={onClose}>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="content-section">
+          <h2 className="section-title">Blogroll</h2>
+          <p className="text-xs text-gray-600">Curated links to inspiring websites and platforms</p>
         </div>
-        <div className="window-content flex-1 overflow-y-auto bg-gray-200">
-          <div className="text-center py-6">
-            <h1 className="text-2xl font-bold text-black mb-2">LIST OF BLOGS/APPS I'M USING IN 2025</h1>
-          </div>
 
-          <div className="space-y-4 px-4 pb-4">
-            {blogrollItems.map((item) => (
-              <div key={item.id} className="bg-white border border-gray-300 rounded p-4">
-                <div className="mb-4">
-                  <h3 className="font-bold text-lg text-black mb-2">{item.name}</h3>
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      onClick={() => handleOpenEmbed(item)}
-                      className="bg-gray-400 hover:bg-gray-500 text-black font-bold py-2 px-4 border border-gray-600"
-                    >
-                      OPEN EMBED
-                    </button>
-                    <button
-                      onClick={() => handleVisitSite(item)}
-                      className="bg-gray-400 hover:bg-gray-500 text-black font-bold py-2 px-4 border border-gray-600"
-                    >
-                      VISIT SITE
-                    </button>
+        {/* Links List */}
+        <div className="content-section">
+          <div className="space-y-3">
+            {BLOGROLL_ITEMS.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleLinkClick(item.url)}
+                className="link-item cursor-pointer p-3 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-xl">{item.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-gray-900">{item.name}</div>
+                    <div className="text-xs text-gray-600 mb-1">{item.url}</div>
+                    <div className="text-xs text-gray-500">{item.description}</div>
+                    <div className="inline-block px-2 py-1 bg-gray-100 text-xs rounded mt-2">{item.category}</div>
                   </div>
-                  <p className="text-gray-700 mb-2">{item.description}</p>
-                  <a
-                    href={item.url}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {item.url}
-                  </a>
+                  <div className="text-blue-500 text-xs">↗</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="content-section">
+          <div className="text-xs text-gray-600 text-center">
+            {BLOGROLL_ITEMS.length} curated links • Updated regularly
+          </div>
+        </div>
       </div>
-    </div>
+    </WindowShell>
   )
 }

@@ -2,24 +2,19 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import dynamic from "next/dynamic"
-import Counter from "./components/Counter"
 import GameSelector from "./components/GameSelector"
 import BlogrollWindow from "./components/BlogrollWindow"
-import NotesWindow from "./components/NotesWindow"
+import { NotesWindow } from "./components/NotesWindow"
+import AboutWindow from "./components/AboutWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
-import DesktopWindow from "../components/DesktopWindow"
-
-// Lazy load heavy features - don't ship on first paint
-const EasterEgg = dynamic(() => import("./components/EasterEgg"), {
-  ssr: false,
-  loading: () => null,
-})
+import { DesktopIcon } from "../components/ui/DesktopIcon"
+import StartMenu from "../components/ui/StartMenu"
+import QuestionBlock from "../components/easter/QuestionBlock"
+import DiggingInTheCrates from "./components/DiggingInTheCrates"
 
 export default function Home() {
   const [activeWindow, setActiveWindow] = useState<string | null>(null)
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false)
-  const [easterEggForceOpen, setEasterEggForceOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState("")
 
   // Update time every second
@@ -41,60 +36,14 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [])
 
-  // Working features first - v147 style with black labels
-  const workingIcons = [
-    {
-      icon: "👤",
-      label: "ABOUT\nRAF\nVINYL",
-      action: "about",
-    },
-    {
-      icon: "🌐",
-      label: "BLOGROLL\n2025",
-      action: "blogroll",
-    },
-    {
-      icon: "🎮",
-      label: "GAMES",
-      action: "games",
-    },
-    {
-      icon: "📝",
-      label: "MY\nNOTES",
-      action: "notes",
-    },
-  ]
-
-  // Coming soon features at bottom - v147 style with black labels
-  const comingSoonIcons = [
-    {
-      icon: "🎵",
-      label: 'DJ SETS\n12"\n(COMING\nSOON)',
-      action: "music",
-    },
-    {
-      icon: "📁",
-      label: "PROJECTS\n(COMING\nSOON)",
-      action: "projects",
-    },
-    {
-      icon: "💻",
-      label: "PITCH\nSTARTUP\n(COMING\nSOON)",
-      action: "terminal",
-    },
-  ]
-
-  // Working start menu items
-  const startMenuItems = [
-    { name: "About", icon: "👤", action: "about" },
-    { name: "Blogroll", icon: "🌐", action: "blogroll" },
-    { name: "Games", icon: "🎮", action: "games" },
-    { name: "My Notes", icon: "📝", action: "notes" },
-    { name: "Email", icon: "📧", action: "email" },
-    { name: "Digging in the Crates", icon: "💿", action: "easter-egg" },
-  ]
+  const openWindow = (windowId: string) => {
+    setActiveWindow(windowId)
+    setIsStartMenuOpen(false)
+  }
 
   const handleIconClick = (action: string) => {
+    setIsStartMenuOpen(false) // Close start menu when opening window
+
     if (action === "music" || action === "projects" || action === "terminal") {
       setActiveWindow(`construction-${action}`)
     } else if (action === "email") {
@@ -115,11 +64,6 @@ export default function Home() {
         // Fallback - show email in alert
         alert("Email: raffi@notgoodcompany.com")
       }
-      setIsStartMenuOpen(false)
-    } else if (action === "easter-egg") {
-      // Force open the easter egg popup
-      setEasterEggForceOpen(true)
-      setIsStartMenuOpen(false)
     } else {
       setActiveWindow(action)
     }
@@ -138,25 +82,16 @@ export default function Home() {
     }
   }
 
-  // Body scroll lock effect
-  useEffect(() => {
-    if (activeWindow) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
-
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [activeWindow])
+  const closeWindow = () => {
+    setActiveWindow(null)
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Windows 2000 Background */}
+      {/* Windows XP Background with priority to avoid flash */}
       <Image
-        src="/windows-2000-background.png"
-        alt=""
+        src="/windows-bg.jpg"
+        alt="Windows XP Background"
         fill
         priority
         fetchPriority="high"
@@ -165,205 +100,101 @@ export default function Home() {
         quality={85}
       />
 
-      {/* Desktop Icons */}
-      <div className="absolute inset-0 p-4 md:p-8">
+      {/* Desktop Icons Container with bottom padding for taskbar */}
+      <div className="absolute inset-0 p-4 md:p-8 pb-[72px] md:pb-0">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 h-full">
           {/* Top Row */}
           <div className="flex flex-col items-center">
-            <button onClick={() => handleIconClick("about")} className="desktop-icon group mb-2">
-              <div className="text-4xl md:text-5xl mb-2">👤</div>
-            </button>
-            <div className="desktop-label">ABOUT</div>
+            <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
           </div>
 
           <div className="flex flex-col items-center">
-            <button onClick={() => handleIconClick("blogroll")} className="desktop-icon group mb-2">
-              <div className="text-4xl md:text-5xl mb-2">🌐</div>
-            </button>
-            <div className="desktop-label">BLOGROLL 2025</div>
+            <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
           </div>
 
           <div className="flex flex-col items-center">
-            <button onClick={() => handleIconClick("games")} className="desktop-icon group mb-2">
-              <div className="text-4xl md:text-5xl mb-2">🎮</div>
-            </button>
-            <div className="desktop-label">GAMES</div>
+            <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
           </div>
 
           <div className="flex flex-col items-center">
-            <button onClick={() => handleIconClick("notes")} className="desktop-icon group mb-2">
-              <div className="text-4xl md:text-5xl mb-2">📝</div>
-            </button>
-            <div className="desktop-label">MY NOTES</div>
+            <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
           </div>
 
-          {/* Bottom Row - Positioned higher to avoid taskbar */}
-          <div className="flex flex-col items-center self-end mb-16 md:mb-20">
-            <button onClick={() => handleIconClick("music")} className="desktop-icon group mb-2">
-              <div className="text-4xl md:text-5xl mb-2">🎵</div>
-            </button>
-            <div className="desktop-label">DJ SETS 12" (COMING SOON)</div>
+          {/* Bottom Row - Hidden on mobile, positioned for desktop */}
+          <div className="hidden md:flex flex-col items-center self-end mb-16">
+            <DesktopIcon label="DJ SETS 12 INCH (COMING SOON)" icon="🎵" onClick={() => handleIconClick("music")} />
           </div>
 
-          <div className="flex flex-col items-center self-end mb-16 md:mb-20">
-            <button onClick={() => handleIconClick("projects")} className="desktop-icon group mb-2">
-              <div className="text-4xl md:text-5xl mb-2">📁</div>
-            </button>
-            <div className="desktop-label">PROJECTS (COMING SOON)</div>
-          </div>
-
-          <div className="flex flex-col items-center self-end mb-16 md:mb-20">
-            <button onClick={() => handleIconClick("terminal")} className="desktop-icon group mb-2">
-              <div className="text-4xl md:text-5xl mb-2">💻</div>
-            </button>
-            <div className="desktop-label">PITCH STARTUP (COMING SOON)</div>
+          <div className="hidden md:flex flex-col items-center self-end mb-16">
+            <DesktopIcon label="PROJECTS (COMING SOON)" icon="📁" onClick={() => handleIconClick("projects")} />
           </div>
         </div>
       </div>
 
+      {/* Question Block Easter Egg */}
+      <QuestionBlock onClick={() => openWindow("crate-digging")} />
+
       {/* About Me Window */}
-      <DesktopWindow title="ABOUT ME - RAF.TXT" isOpen={activeWindow === "about"} onClose={() => setActiveWindow(null)}>
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
-            <div className="w-16 h-16 md:w-20 md:h-20 bg-white flex items-center justify-center text-black font-bold text-sm md:text-base shrink-0">
-              RAF
-            </div>
-            <div className="text-center md:text-left">
-              <h1 className="pyrex-text mb-2">RAFFI SOURENKHATCHADOURIAN</h1>
-              <p className="canary-text mb-4">NYC-based AI architect and technology consultant</p>
-            </div>
-          </div>
-
-          {/* Bio Section */}
-          <div className="p-3 bg-black border border-yellow-400">
-            <h3 className="text-yellow-400 font-bold mb-3">BIO</h3>
-            <p className="text-white text-sm leading-relaxed mb-3">
-              Raffi is an NYC-based AI Architect driving generative AI transformations for IBM's enterprise clients
-              since 2016 - from early Watson solutions to today's large-scale automation initiatives. He's also an
-              entrepreneur and advisor @ Nameless Ventures, plus co-founder of Bad Company, a creative collective
-              managing partnerships at high-profile NYC venues.
-            </p>
-            <p className="text-white text-sm leading-relaxed">
-              Previously COO @ indify (music data startup through Thought Into Action incubator). Outside corporate
-              life, he's deep in NYC's creative scene - DJing across city venues, playing pick-up soccer in Brooklyn,
-              and crate-digging for vinyls with family.
-            </p>
-          </div>
-
-          {/* AI Summit Keynote Embed - Fixed responsive sizing */}
-          <div className="p-3 bg-black border border-yellow-400">
-            <h3 className="text-yellow-400 font-bold mb-3">🎤 AI SUMMIT KEYNOTE - BANKING ON AI AGENTS</h3>
-            <p className="text-white text-sm mb-3">Finance stage at Javits Center NYC - Dec 14, 2024</p>
-            <div className="w-full">
-              <iframe
-                className="w-full h-[250px] md:h-[300px] rounded-md border border-gray-700"
-                src="https://player.vimeo.com/video/1047612862?badge=0&autopause=0&player_id=0&app_id=58479"
-                loading="lazy"
-                decoding="async"
-                allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                title="Banking on AI Agents - Keynote @ AI Summit 12-14-24"
-              />
-            </div>
-          </div>
-
-          {/* Enhanced Counters Section */}
-          <div className="space-y-4">
-            <h3 className="text-yellow-400 font-bold text-center">BY THE NUMBERS</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Counter end={150} label="DJ Sets" icon="🎧" />
-              <Counter end={120} label="Events" icon="📅" />
-              <Counter end={30} label="AI Projects" icon="🤖" />
-            </div>
-          </div>
-        </div>
-      </DesktopWindow>
+      <AboutWindow isOpen={activeWindow === "about"} onClose={closeWindow} />
 
       {/* Games Window */}
-      <DesktopWindow title="RETRO GAMES" isOpen={activeWindow === "games"} onClose={() => setActiveWindow(null)}>
-        <GameSelector />
-      </DesktopWindow>
+      <GameSelector isOpen={activeWindow === "games"} onClose={closeWindow} />
+
+      {/* Crate Digging Window */}
+      <DiggingInTheCrates isOpen={activeWindow === "crate-digging"} onClose={closeWindow} />
 
       {/* Blogroll Window */}
-      {activeWindow === "blogroll" && <BlogrollWindow onClose={() => setActiveWindow(null)} />}
+      <BlogrollWindow isOpen={activeWindow === "blogroll"} onClose={closeWindow} />
 
       {/* Notes Window */}
-      {activeWindow === "notes" && <NotesWindow onClose={() => setActiveWindow(null)} />}
+      <NotesWindow isOpen={activeWindow === "notes"} onClose={closeWindow} />
 
       {/* Under Construction Windows */}
       {activeWindow?.startsWith("construction-") && (
         <UnderConstructionWindow
           title={getConstructionTitle(activeWindow.replace("construction-", ""))}
-          onClose={() => setActiveWindow(null)}
+          onClose={closeWindow}
         />
       )}
 
-      {/* Easter Egg - Always visible for bouncing question mark + force open capability */}
-      <EasterEgg forceOpen={easterEggForceOpen} onForceClose={() => setEasterEggForceOpen(false)} />
-
       {/* Taskbar */}
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-[1000] safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-[70] safe-area-inset-bottom">
         {/* Start Button */}
         <button
           onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"
+          aria-label="Open Start Menu"
         >
           <span className="text-lg">🏁</span>
           Start
         </button>
 
         {/* Active Window Indicator */}
-        {activeWindow && <div className="ml-2 px-3 py-1 bg-blue-500 text-white text-sm rounded">{activeWindow}</div>}
+        {activeWindow && (
+          <div className="ml-2 px-3 py-1 bg-blue-500 text-white text-sm rounded">
+            {activeWindow.replace("construction-", "").toUpperCase()}
+          </div>
+        )}
 
         {/* Time */}
         <div className="ml-auto text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
       </div>
 
-      {/* Enhanced Start Menu */}
-      {isStartMenuOpen && (
-        <div className="fixed bottom-12 left-0 start-menu z-[2000] safe-area-inset-bottom">
-          <div className="start-menu-header">
-            <span className="flex items-center gap-2">
-              <span>🏁</span> RAF OS v2.0
-            </span>
-          </div>
-          <div className="p-1">
-            <button onClick={() => handleIconClick("about")} className="start-menu-item w-full text-left">
-              <span className="text-base">👤</span>
-              <span>About Raf Vinyl</span>
-            </button>
-            <button onClick={() => handleIconClick("blogroll")} className="start-menu-item w-full text-left">
-              <span className="text-base">🌐</span>
-              <span>Blogroll 2025</span>
-            </button>
-            <button onClick={() => handleIconClick("games")} className="start-menu-item w-full text-left">
-              <span className="text-base">🎮</span>
-              <span>Games</span>
-            </button>
-            <button onClick={() => handleIconClick("notes")} className="start-menu-item w-full text-left">
-              <span className="text-base">📝</span>
-              <span>My Notes</span>
-            </button>
-            <div className="start-menu-separator"></div>
-            <button onClick={() => handleIconClick("easter-egg")} className="start-menu-item w-full text-left">
-              <span className="text-base">🎵</span>
-              <span>Digging in the Crates</span>
-            </button>
-            <button onClick={() => handleIconClick("email")} className="start-menu-item w-full text-left">
-              <span className="text-base">📧</span>
-              <span>Email Raffi</span>
-            </button>
-            <div className="start-menu-separator"></div>
-            <button onClick={() => handleIconClick("terminal")} className="start-menu-item w-full text-left">
-              <span className="text-base">💻</span>
-              <span>Pitch Me a Startup</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Start Menu */}
+      <StartMenu
+        isOpen={isStartMenuOpen}
+        onOpenAbout={() => handleIconClick("about")}
+        onOpenBlogroll={() => handleIconClick("blogroll")}
+        onOpenGames={() => handleIconClick("games")}
+        onOpenNotes={() => handleIconClick("notes")}
+        onOpenEasterEgg={() => openWindow("crate-digging")}
+        onOpenEmail={() => handleIconClick("email")}
+      />
 
       {/* Click outside to close start menu */}
-      {isStartMenuOpen && <div className="fixed inset-0 z-[1500]" onClick={() => setIsStartMenuOpen(false)} />}
+      {isStartMenuOpen && (
+        <div className="fixed inset-0 z-[65]" onClick={() => setIsStartMenuOpen(false)} aria-hidden="true" />
+      )}
     </div>
   )
 }

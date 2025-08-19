@@ -1,158 +1,179 @@
 "use client"
 
 import { useState } from "react"
-import { Card } from "@/components/ui/card"
-import { Smartphone, Music, Gamepad, Radio, Phone, Monitor } from "lucide-react"
+import WindowShell from "../../components/ui/WindowShell"
 
-type Device = "blackberry" | "ipod" | "webgames" | "psp" | "razor" | "desktop" | null
+interface Game {
+  id: string
+  name: string
+  platform: string
+  year: string
+  description: string
+  icon: string
+  category: string
+}
 
-const games = [
+const RETRO_GAMES: Game[] = [
   {
-    id: "blackberry",
-    name: "Blackberry",
-    url: "/games/brickbreaker",
-    description: "Play Brickbreaker",
+    id: "snake",
+    name: "Snake",
+    platform: "Nokia 3310",
+    year: "1997",
+    description: "Classic snake game from Nokia phones",
+    icon: "🐍",
+    category: "Arcade",
   },
   {
-    id: "ipod",
-    name: "iPod Classic",
-    url: "/games/parachute",
-    description: "Play Parachute",
+    id: "brickbreaker",
+    name: "Brick Breaker",
+    platform: "BlackBerry",
+    year: "2004",
+    description: "Addictive ball and paddle game",
+    icon: "🧱",
+    category: "Arcade",
   },
   {
-    id: "razor",
-    name: "Motorola Razr",
-    url: "/games/snake",
-    description: "Play Snake",
+    id: "parachute",
+    name: "Parachute",
+    platform: "iPod Classic",
+    year: "2006",
+    description: "Catch falling paratroopers",
+    icon: "🪂",
+    category: "Action",
   },
   {
-    id: "desktop",
-    name: "Desktop PC",
-    url: "/games/minesweeper",
-    description: "Play Minesweeper",
+    id: "minesweeper",
+    name: "Minesweeper",
+    platform: "Windows 95",
+    year: "1995",
+    description: "Classic mine detection puzzle",
+    icon: "💣",
+    category: "Puzzle",
   },
   {
-    id: "webgames",
-    name: "Web Games",
-    url: "/games/webgameshub",
-    description: "Classic Arcade Games",
+    id: "solitaire",
+    name: "Solitaire",
+    platform: "Windows 95",
+    year: "1995",
+    description: "Classic card game",
+    icon: "🃏",
+    category: "Card",
   },
   {
-    id: "psp",
-    name: "Emulator",
-    url: "/games/retroemulator",
-    description: "Retro Console Games",
+    id: "tetris",
+    name: "Tetris",
+    platform: "Game Boy",
+    year: "1989",
+    description: "Falling blocks puzzle game",
+    icon: "🟦",
+    category: "Puzzle",
   },
 ]
 
-export default function GameSelector() {
-  const [selectedGame, setSelectedGame] = useState<Device>(null)
+interface GameSelectorProps {
+  isOpen: boolean
+  onClose: () => void
+  onGameSelect?: (gameId: string) => void
+}
 
-  const devices = [
-    {
-      id: "blackberry",
-      name: "Blackberry",
-      icon: Smartphone,
-      description: "Play Brickbreaker",
-      color: "bg-gray-900",
-    },
-    {
-      id: "ipod",
-      name: "iPod Classic",
-      icon: Music,
-      description: "Play Parachute",
-      color: "bg-zinc-200",
-    },
-    {
-      id: "razor",
-      name: "Motorola Razr",
-      icon: Phone,
-      description: "Play Snake",
-      color: "bg-pink-600",
-    },
-    {
-      id: "desktop",
-      name: "Desktop PC",
-      icon: Monitor,
-      description: "Play Minesweeper",
-      color: "bg-blue-700",
-    },
-    {
-      id: "webgames",
-      name: "Web Games",
-      icon: Gamepad,
-      description: "Classic Arcade Games",
-      color: "bg-green-600",
-    },
-    {
-      id: "psp",
-      name: "Emulator",
-      icon: Radio,
-      description: "Retro Console Games",
-      color: "bg-blue-900",
-    },
-  ]
+export default function GameSelector({ isOpen, onClose, onGameSelect }: GameSelectorProps) {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("All")
 
-  if (selectedGame) {
-    const game = games.find((g) => g.id === selectedGame)
-    return (
-      <div className="game-container">
-        <div className="flex justify-between items-center mb-4 p-4 bg-gray-800 rounded-t-lg shrink-0">
-          <h2 className="text-xl font-bold text-white">{game?.name}</h2>
-          <button
-            onClick={() => setSelectedGame(null)}
-            className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-          >
-            Close
-          </button>
-        </div>
+  const categories = ["All", ...Array.from(new Set(RETRO_GAMES.map((game) => game.category)))]
 
-        <div className="game-content">
-          <div
-            className="relative w-full bg-white rounded-lg overflow-hidden"
-            style={{ aspectRatio: "4/3", minHeight: "400px" }}
-          >
-            <iframe
-              src={game?.url}
-              className="w-full h-full border-0"
-              loading="lazy"
-              title={game?.name}
-              tabIndex={0}
-              allow="fullscreen; gamepad; autoplay"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
+  const filteredGames = RETRO_GAMES.filter((game) => {
+    const matchesSearch =
+      game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      game.platform.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      game.description.toLowerCase().includes(searchTerm.toLowerCase())
 
-          <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
-            <p>
-              <strong>Game Info:</strong> {game?.description}. Games are embedded from their original sources. Click
-              inside the game area to ensure keyboard focus. Some games may require clicking "Play" or similar buttons
-              to start.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
+    const matchesCategory = selectedCategory === "All" || game.category === selectedCategory
+
+    return matchesSearch && matchesCategory
+  })
+
+  const handleGameClick = (gameId: string) => {
+    if (onGameSelect) {
+      onGameSelect(gameId)
+    }
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 max-w-3xl mx-auto">
-      {devices.map((device) => (
-        <Card
-          key={device.id}
-          className={`p-6 cursor-pointer transition-transform hover:scale-105 ${device.color} text-white`}
-          onClick={() => setSelectedGame(device.id as Device)}
-        >
-          <div className="flex flex-col items-center text-center space-y-4">
-            <device.icon size={48} />
-            <div>
-              <h3 className="font-bold text-lg">{device.name}</h3>
-              <p className="text-sm opacity-80">{device.description}</p>
+    <WindowShell id="retro-games" title="RETRO GAMES COLLECTION" isOpen={isOpen} onClose={onClose}>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="content-section">
+          <h2 className="section-title">Retro Games Collection</h2>
+          <p className="text-xs text-gray-600">Classic games from vintage devices and platforms</p>
+        </div>
+
+        {/* Filters */}
+        <div className="content-section">
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Search games..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="xp-input w-full"
+            />
+
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`xp-button text-xs ${
+                    selectedCategory === category ? "bg-blue-200 border-blue-400" : "bg-gray-100 hover:bg-gray-200"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
             </div>
           </div>
-        </Card>
-      ))}
-    </div>
+        </div>
+
+        {/* Games Grid */}
+        <div className="content-section">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredGames.map((game) => (
+              <div
+                key={game.id}
+                onClick={() => handleGameClick(game.id)}
+                className="game-card cursor-pointer p-3 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">{game.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-gray-900">{game.name}</div>
+                    <div className="text-xs text-gray-600">
+                      {game.platform} • {game.year}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{game.description}</div>
+                    <div className="inline-block px-2 py-1 bg-gray-100 text-xs rounded mt-2">{game.category}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredGames.length === 0 && (
+            <div className="text-center text-gray-500 py-8 text-xs">
+              <div className="text-2xl mb-2">🎮</div>
+              <p>No games found matching your criteria</p>
+            </div>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div className="content-section">
+          <div className="text-xs text-gray-600 text-center">
+            {filteredGames.length} of {RETRO_GAMES.length} games shown
+          </div>
+        </div>
+      </div>
+    </WindowShell>
   )
 }

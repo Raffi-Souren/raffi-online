@@ -1,17 +1,31 @@
 "use client"
 
-import { useEffect } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
-export default function useBodyScrollLock(isLocked: boolean) {
+export function useBodyScrollLock() {
+  const scrollPosition = useRef(0)
+
+  const lockScroll = useCallback(() => {
+    scrollPosition.current = window.pageYOffset
+    document.body.style.overflow = "hidden"
+    document.body.style.position = "fixed"
+    document.body.style.top = `-${scrollPosition.current}px`
+    document.body.style.width = "100%"
+  }, [])
+
+  const unlockScroll = useCallback(() => {
+    document.body.style.removeProperty("overflow")
+    document.body.style.removeProperty("position")
+    document.body.style.removeProperty("top")
+    document.body.style.removeProperty("width")
+    window.scrollTo(0, scrollPosition.current)
+  }, [])
+
   useEffect(() => {
-    if (isLocked) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
-
     return () => {
-      document.body.style.overflow = ""
+      unlockScroll()
     }
-  }, [isLocked])
+  }, [unlockScroll])
+
+  return { lockScroll, unlockScroll }
 }

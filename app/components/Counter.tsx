@@ -2,22 +2,45 @@
 
 import { useState, useEffect } from "react"
 
-export default function Counter({ end, label, icon }: { end: number; label: string; icon: string }) {
+interface CounterProps {
+  end: number
+  label: string
+  icon: string
+  duration?: number
+}
+
+export default function Counter({ end, label, icon, duration = 2000 }: CounterProps) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCount((c) => Math.min(c + 1, end))
-    }, 50)
+    let startTime: number
+    let animationFrame: number
 
-    return () => clearInterval(timer)
-  }, [end])
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const progress = Math.min((timestamp - startTime) / duration, 1)
+
+      setCount(Math.floor(progress * end))
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate)
+      }
+    }
+
+    animationFrame = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame)
+      }
+    }
+  }, [end, duration])
 
   return (
-    <div className="bg-gradient-to-b from-blue-600 to-blue-800 border-2 border-white rounded-lg p-4 text-center shadow-lg">
-      <div className="text-white mb-2 text-lg">{icon}</div>
-      <div className="text-3xl font-bold text-yellow-400 mb-1">{count}</div>
-      <div className="text-white text-sm font-semibold uppercase tracking-wide">{label}</div>
+    <div className="counter-card">
+      <div className="counter-icon">{icon}</div>
+      <div className="counter-number">{count}</div>
+      <div className="counter-label">{label}</div>
     </div>
   )
 }

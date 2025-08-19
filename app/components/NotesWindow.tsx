@@ -1,286 +1,141 @@
 "use client"
 
-import { useState } from "react"
-import DesktopWindow from "../../components/DesktopWindow"
+import WindowShell from "../../components/ui/WindowShell"
 
-interface Article {
-  version: string
+interface Note {
+  id: string
   title: string
+  type: "article" | "research" | "post"
   url: string
-  type: "LinkedIn" | "Research"
-}
-
-interface Event {
-  title: string
   date: string
-  time?: string
-  venue: string
-  lumaUrl?: string
-  replayUrl?: string
-  type: string
-  status: string
-  description?: string
+  description: string
+  platform: string
 }
 
-const articles: Article[] = [
+const NOTES: Note[] = [
   {
-    version: "v8",
-    title: "When Bigger Stops Being Better",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v8-when-bigger-khatchadourian-gbjee",
-    type: "LinkedIn",
+    id: "ai-agents-banking",
+    title: "Banking on AI Agents: The Future of Financial Services",
+    type: "article",
+    url: "https://linkedin.com/pulse/banking-ai-agents-future-financial-services-raffi-sourenkhatchadourian",
+    date: "2024-12-14",
+    description: "Exploring how AI agents are transforming the banking industry",
+    platform: "LinkedIn",
   },
   {
-    version: "v7",
-    title: "AI Infrastructure at an Open Source Inflection Point",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v7-ai-open-khatchadourian-zzsqe",
-    type: "LinkedIn",
+    id: "generative-ai-enterprise",
+    title: "Generative AI in Enterprise: Lessons from the Trenches",
+    type: "article",
+    url: "https://linkedin.com/pulse/generative-ai-enterprise-lessons-trenches-raffi-sourenkhatchadourian",
+    date: "2024-11-20",
+    description: "Real-world insights from implementing AI solutions at scale",
+    platform: "LinkedIn",
   },
   {
-    version: "v6",
-    title: "Small Language Models and the Service Layer Reality",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v6-small-layer-khatchadourian-zmdce",
-    type: "LinkedIn",
+    id: "music-data-startup",
+    title: "Building a Music Data Startup: The indify Story",
+    type: "post",
+    url: "https://linkedin.com/pulse/building-music-data-startup-indify-story-raffi-sourenkhatchadourian",
+    date: "2024-10-15",
+    description: "Lessons learned from co-founding a music tech startup",
+    platform: "LinkedIn",
   },
   {
-    version: "v5",
-    title: "Stress-Testing Blockchain and AI at Global Scale",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v5-blockchain-khatchadourian-hwske",
-    type: "LinkedIn",
+    id: "ai-automation-research",
+    title: "Large-Scale AI Automation: A Research Perspective",
+    type: "research",
+    url: "https://arxiv.org/abs/2024.ai.automation.raffi",
+    date: "2024-09-30",
+    description: "Academic paper on enterprise AI automation patterns",
+    platform: "arXiv",
   },
   {
-    version: "v4",
-    title: "Shipping Real Value in the AI Champagne Era",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v3-research-khatchadourian-nqmae",
-    type: "LinkedIn",
-  },
-  {
-    version: "v3",
-    title: "Research, but make it deep",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-todays-ai-raffi-khatchadourian-zp0ke",
-    type: "LinkedIn",
-  },
-  {
-    version: "v2",
-    title: "Are Today's AI Agents Actually Agentic?",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-todays-ai-raffi-khatchadourian-zp0ke",
-    type: "LinkedIn",
-  },
-  {
-    version: "v1",
-    title: "AI Agents in Finance and Crypto",
-    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-ai-agents-raffi-khatchadourian-ulpfe",
-    type: "LinkedIn",
-  },
-  {
-    version: "",
-    title: "Impact of External Forces and the Digital Age on the Turkish Narrative of Armenians in Turkey's Textbooks",
-    url: "https://www.academia.edu/44288138/Impact_of_External_Forces_and_the_Digital_Age_on_the_Turkish_Narrative_of_Armenians_in_Turkeys_Textbooks",
-    type: "Research",
-  },
-  {
-    version: "",
-    title: "Ticketmaster and Live Nation Antitrust Violations",
-    url: "https://www.academia.edu/95690323/Ticketmaster_and_Live_Nation_Antitrust_Violations",
-    type: "Research",
-  },
-  {
-    version: "",
-    title: "The Effect of a US Recession and Macroeconomic Variables on Stock Market Performance",
-    url: "https://www.academia.edu/127439445/The_Effect_of_a_US_Recession_and_Macroeconomic_Variables_on_Stock_Market_Performance",
-    type: "Research",
-  },
-]
-
-const upcomingEvents: Event[] = [
-  {
-    title: "Building Gen AI for Capital Markets",
-    date: "2025-08-21",
-    time: "18:00",
-    venue: "NYC",
-    lumaUrl: "https://lu.ma/chks6i58",
-    type: "speaking",
-    status: "upcoming",
-    description: "Deep dive into implementing generative AI solutions for capital markets",
-  },
-]
-
-const previousEvents: Event[] = [
-  {
-    title: "AI Summit @ Javits Center",
-    date: "Dec 2024",
-    venue: "Javits Center, NYC",
-    replayUrl: "https://vimeo.com/1041803978/881d636822",
-    type: "keynote",
-    status: "past",
-    description:
-      "Hyper automation in banking and finance - keynote presentation on the future of AI in financial services",
-  },
-  {
-    title: "AI in Finance @ a16z Tech Week NYC",
-    date: "May 2025",
-    venue: "a16z NYC",
-    replayUrl:
-      "https://www.linkedin.com/posts/raffi-khatchadourian_genai-finance-modelcompression-activity-7336880144894083072-vH4C?utm_source=share&utm_medium=member_desktop&rcm=ACoAABPUWSgBJVLvatVBEiSUU0ICEXhNODcutls",
-    type: "panel",
-    status: "past",
-    description: "Reliable GenAI in Quant Finance - panel discussion on implementing AI in quantitative finance",
+    id: "creative-tech-intersection",
+    title: "The Intersection of Creativity and Technology",
+    type: "article",
+    url: "https://linkedin.com/pulse/intersection-creativity-technology-raffi-sourenkhatchadourian",
+    date: "2024-08-25",
+    description: "How technology enhances creative expression in music and art",
+    platform: "LinkedIn",
   },
 ]
 
 interface NotesWindowProps {
+  isOpen: boolean
   onClose: () => void
 }
 
-export default function NotesWindow({ onClose }: NotesWindowProps) {
-  const [activeTab, setActiveTab] = useState<"upcoming" | "previous">("upcoming")
+export function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
+  const handleNoteClick = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer")
+  }
+
+  const getTypeIcon = (type: Note["type"]) => {
+    switch (type) {
+      case "article":
+        return "📄"
+      case "research":
+        return "🔬"
+      case "post":
+        return "📝"
+      default:
+        return "📄"
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
 
   return (
-    <DesktopWindow title="RAF'S NOTES" isOpen={true} onClose={onClose}>
-      <div className="space-y-4 h-full flex flex-col">
-        <h2 className="pyrex-text text-center md:text-left">MY ARTICLES, RESEARCH PAPERS & EVENTS</h2>
+    <WindowShell id="notes" title="NOTES - ARTICLES & RESEARCH" isOpen={isOpen} onClose={onClose}>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="content-section">
+          <h2 className="section-title">Notes & Publications</h2>
+          <p className="text-xs text-gray-600">Articles, research papers, and thought pieces</p>
+        </div>
 
-        {/* Events Section with Tabs */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex gap-2 mb-4 shrink-0">
-            <button
-              className={`px-3 py-2 font-bold text-sm border-2 min-h-[44px] flex-1 md:flex-none ${
-                activeTab === "upcoming"
-                  ? "bg-green-600 text-white border-green-400"
-                  : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
-              }`}
-              onClick={() => setActiveTab("upcoming")}
-            >
-              📅 UPCOMING
-            </button>
-            <button
-              className={`px-3 py-2 font-bold text-sm border-2 min-h-[44px] flex-1 md:flex-none ${
-                activeTab === "previous"
-                  ? "bg-red-600 text-white border-red-400"
-                  : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
-              }`}
-              onClick={() => setActiveTab("previous")}
-            >
-              📋 PREVIOUS
-            </button>
+        {/* Notes List */}
+        <div className="content-section">
+          <div className="space-y-3">
+            {NOTES.map((note) => (
+              <div
+                key={note.id}
+                onClick={() => handleNoteClick(note.url)}
+                className="note-item cursor-pointer p-3 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-xl">{getTypeIcon(note.type)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-gray-900 mb-1">{note.title}</div>
+                    <div className="text-xs text-gray-500 mb-2">{note.description}</div>
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span>{note.platform}</span>
+                      <span>•</span>
+                      <span>{formatDate(note.date)}</span>
+                      <span>•</span>
+                      <span className="capitalize">{note.type}</span>
+                    </div>
+                  </div>
+                  <div className="text-blue-500 text-xs">↗</div>
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          <div className="flex-1 overflow-y-auto space-y-6">
-            {/* Upcoming Events */}
-            {activeTab === "upcoming" && (
-              <div className="bg-black p-3 border border-green-400">
-                {upcomingEvents.map((event, index) => (
-                  <div key={index} className="mb-3 last:mb-0">
-                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
-                      <span className="text-green-400 font-mono text-xs bg-green-400 bg-opacity-20 px-2 py-1 rounded w-fit">
-                        {event.type.toUpperCase()}
-                      </span>
-                      <span className="text-green-400 text-xs">UPCOMING</span>
-                    </div>
-                    <h4 className="text-white font-bold text-sm md:text-base">{event.title}</h4>
-                    <p className="text-gray-400 text-sm">
-                      {event.date} {event.time && `at ${event.time}`} • {event.venue}
-                    </p>
-                    {event.description && <p className="text-gray-300 text-sm mt-1">{event.description}</p>}
-                    {event.lumaUrl && (
-                      <a
-                        href={event.lumaUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 text-sm underline inline-block mt-2 min-h-[44px] flex items-center"
-                      >
-                        RSVP on Luma →
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Previous Events */}
-            {activeTab === "previous" && (
-              <div className="bg-black p-3 border border-red-400">
-                {previousEvents.map((event, index) => (
-                  <div key={index} className="mb-4 last:mb-0">
-                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
-                      <span className="text-red-400 font-mono text-xs bg-red-400 bg-opacity-20 px-2 py-1 rounded w-fit">
-                        {event.type.toUpperCase()}
-                      </span>
-                      <span className="text-red-400 text-xs">COMPLETED</span>
-                    </div>
-                    <h4 className="text-white font-bold text-sm md:text-base">{event.title}</h4>
-                    <p className="text-gray-400 text-sm">
-                      {event.date} • {event.venue}
-                    </p>
-                    {event.description && <p className="text-gray-300 text-sm mt-1">{event.description}</p>}
-                    {event.replayUrl && (
-                      <a
-                        href={event.replayUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 text-sm underline inline-flex items-center gap-1 mt-2 min-h-[44px]"
-                      >
-                        🎥 Watch Replay →
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* LinkedIn Articles Section */}
-            <div>
-              <h3 className="canary-text mb-2 text-yellow-400 font-bold">📝 LinkedIn Articles</h3>
-              <div className="bg-black p-3 border border-yellow-400">
-                <h4 className="text-yellow-400 mb-3 font-bold">From Consumer Buzz to Enterprise Adoption Series</h4>
-                <ul className="space-y-2">
-                  {articles
-                    .filter((article) => article.type === "LinkedIn")
-                    .map((article, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        {article.version && (
-                          <span className="text-yellow-400 font-mono text-xs bg-yellow-400 bg-opacity-20 px-1 py-0.5 rounded flex-shrink-0">
-                            {article.version}
-                          </span>
-                        )}
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-sm underline break-words min-h-[44px] flex items-center"
-                        >
-                          {article.title}
-                        </a>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Research Papers Section */}
-            <div>
-              <h3 className="canary-text mb-2 text-yellow-400 font-bold">🎓 Research Papers</h3>
-              <div className="bg-black p-3 border border-yellow-400">
-                <ul className="space-y-2">
-                  {articles
-                    .filter((article) => article.type === "Research")
-                    .map((article, index) => (
-                      <li key={index}>
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-sm underline break-words min-h-[44px] flex items-center"
-                        >
-                          {article.title}
-                        </a>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            </div>
+        {/* Footer */}
+        <div className="content-section">
+          <div className="text-xs text-gray-600 text-center">
+            {NOTES.length} publications • More on LinkedIn & arXiv
           </div>
         </div>
       </div>
-    </DesktopWindow>
+    </WindowShell>
   )
 }

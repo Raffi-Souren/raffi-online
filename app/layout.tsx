@@ -1,19 +1,35 @@
 import type React from "react"
+import type { Metadata } from "next"
 import "./globals.css"
-import type { Metadata, Viewport } from "next"
-import Image from "next/image"
 
 export const metadata: Metadata = {
-  title: "Raffi Sourenkhatchadourian",
-  description: "NYC-based AI architect and technology consultant",
-  generator: "v0.app",
-}
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  maximumScale: 1,
+  title: "Raffi Sourenkhatchadourian - AI Architect & Technology Consultant",
+  description:
+    "NYC-based AI architect and technology consultant specializing in generative AI transformations, enterprise solutions, and creative technology partnerships.",
+  keywords:
+    "AI architect, technology consultant, generative AI, IBM, NYC, artificial intelligence, machine learning, enterprise solutions",
+  authors: [{ name: "Raffi Sourenkhatchadourian" }],
+  creator: "Raffi Sourenkhatchadourian",
+  publisher: "Raffi Sourenkhatchadourian",
+  robots: "index, follow",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://raffisourenkhatchadourian.com",
+    title: "Raffi Sourenkhatchadourian - AI Architect & Technology Consultant",
+    description:
+      "NYC-based AI architect and technology consultant specializing in generative AI transformations, enterprise solutions, and creative technology partnerships.",
+    siteName: "Raffi Sourenkhatchadourian",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Raffi Sourenkhatchadourian - AI Architect & Technology Consultant",
+    description:
+      "NYC-based AI architect and technology consultant specializing in generative AI transformations, enterprise solutions, and creative technology partnerships.",
+  },
+  viewport: "width=device-width, initial-scale=1",
+  themeColor: "#667eea",
+    generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -22,34 +38,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <head>
-        {/* Speed up third-party embeds */}
-        <link rel="preconnect" href="https://w.soundcloud.com" crossOrigin="" />
-        <link rel="preconnect" href="https://soundcloud.com" crossOrigin="" />
-        <link rel="preconnect" href="https://i1.sndcdn.com" crossOrigin="" />
-        <link rel="preconnect" href="https://cdn.emulatorjs.org" crossOrigin="" />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
-        <link rel="preconnect" href="https://player.vimeo.com" crossOrigin="" />
-        <link rel="preconnect" href="https://vimeo.com" crossOrigin="" />
-        <link rel="preconnect" href="https://poolsuite.net" crossOrigin="" />
-        {/* Preload wallpaper */}
-        <link rel="preload" as="image" href="/windows-2000-background.png" fetchPriority="high" />
-      </head>
-      <body className="bg-black text-white overflow-x-hidden">
-        {/* Critical wallpaper - render above the fold */}
-        <Image
-          src="/windows-2000-background.png"
-          alt=""
-          fill
-          priority
-          fetchPriority="high"
-          sizes="100vw"
-          className="object-cover object-center -z-10 pointer-events-none select-none"
-          quality={85}
-        />
-        <main>{children}</main>
-      </body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   )
 }
