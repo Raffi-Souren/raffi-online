@@ -63,6 +63,9 @@ export default function Home() {
       } catch (error) {
         alert("Email: raffi@notgoodcompany.com")
       }
+    } else if (action === "startup") {
+      // Open the ChatGPT link in a new tab
+      window.open("https://chatgpt.com/g/g-68a497212bfc81918b450e9ca7ee67ba-raf-os-terminal", "_blank")
     } else {
       openWindow(action)
     }
@@ -87,26 +90,54 @@ export default function Home() {
 
       {/* Desktop Icons Container */}
       <div className="absolute inset-0 p-4 md:p-8 pb-[72px] md:pb-0">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 h-full">
-          {/* Top Row */}
-          <div className="flex flex-col items-center">
+        {/* Mobile Layout - 2x3 Grid with Better Spacing */}
+        <div className="grid grid-cols-2 gap-8 h-full md:hidden">
+          {/* Row 1 */}
+          <div className="flex flex-col items-center justify-start pt-4">
             <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
           </div>
-
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center justify-start pt-4">
             <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
           </div>
 
-          <div className="flex flex-col items-center">
+          {/* Row 2 */}
+          <div className="flex flex-col items-center justify-start">
             <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
           </div>
-
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center justify-start">
             <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
           </div>
 
-          {/* Bottom Row - Hidden on mobile, removed "DIGGING IN THE CRATES" */}
-          <div className="hidden md:flex flex-col items-center self-end mb-16">
+          {/* Row 3 - PITCH STARTUP centered with more spacing */}
+          <div className="flex flex-col items-center justify-start col-span-2 pt-8">
+            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+          </div>
+        </div>
+
+        {/* Desktop Layout - Spread Out Icons with Ample Spacing */}
+        <div className="hidden md:block h-full relative">
+          {/* ABOUT - Top Left */}
+          <div className="absolute top-8 left-8">
+            <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
+          </div>
+
+          {/* BLOGROLL - Top Center */}
+          <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
+            <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
+          </div>
+
+          {/* GAMES - Top Center-Right */}
+          <div className="absolute top-8 right-1/3">
+            <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
+          </div>
+
+          {/* NOTES - Top Right */}
+          <div className="absolute top-8 right-8">
+            <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
+          </div>
+
+          {/* PITCH STARTUP - Bottom Left with Significant Spacing */}
+          <div className="absolute bottom-32 left-8">
             <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
           </div>
         </div>
@@ -158,8 +189,11 @@ export default function Home() {
           </div>
         )}
 
+        {/* Version Badge */}
+        <div className="ml-auto mr-2 text-white text-xs bg-blue-800 px-2 py-1 rounded font-mono">v203</div>
+
         {/* Time */}
-        <div className="ml-auto text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
+        <div className="text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
       </div>
     </div>
   )
