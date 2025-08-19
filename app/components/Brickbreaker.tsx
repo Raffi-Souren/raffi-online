@@ -104,14 +104,16 @@ export default function Brickbreaker() {
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
       const relativeX = e.clientX - rect.left
-      gameState.paddleX = Math.max(0, Math.min(CANVAS_WIDTH - PADDLE_WIDTH, relativeX - PADDLE_WIDTH / 2))
+      const scaleX = CANVAS_WIDTH / rect.width
+      gameState.paddleX = Math.max(0, Math.min(CANVAS_WIDTH - PADDLE_WIDTH, relativeX * scaleX - PADDLE_WIDTH / 2))
     }
 
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault()
       const rect = canvas.getBoundingClientRect()
       const relativeX = e.touches[0].clientX - rect.left
-      gameState.paddleX = Math.max(0, Math.min(CANVAS_WIDTH - PADDLE_WIDTH, relativeX - PADDLE_WIDTH / 2))
+      const scaleX = CANVAS_WIDTH / rect.width
+      gameState.paddleX = Math.max(0, Math.min(CANVAS_WIDTH - PADDLE_WIDTH, relativeX * scaleX - PADDLE_WIDTH / 2))
     }
 
     const drawBall = () => {
@@ -340,7 +342,8 @@ export default function Brickbreaker() {
               {gameOver || gameWon ? "Play Again" : "Start Game"}
             </button>
             <div className="text-white text-sm space-y-1">
-              <div>Use mouse/touch or arrow keys/A,D to control paddle</div>
+              <div className="md:block hidden">Use mouse/touch or arrow keys/A,D to control paddle</div>
+              <div className="md:hidden block">Touch and drag to control paddle</div>
               <div>Destroy all bricks to win!</div>
             </div>
           </div>

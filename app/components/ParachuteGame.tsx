@@ -259,6 +259,21 @@ export default function ParachuteGame() {
     }
   }, [gameStarted, gameOver, score, lives, update])
 
+  // Mobile controls
+  const moveLeft = useCallback(() => {
+    gameStateRef.current.keys["ArrowLeft"] = true
+    setTimeout(() => {
+      gameStateRef.current.keys["ArrowLeft"] = false
+    }, 100)
+  }, [])
+
+  const moveRight = useCallback(() => {
+    gameStateRef.current.keys["ArrowRight"] = true
+    setTimeout(() => {
+      gameStateRef.current.keys["ArrowRight"] = false
+    }, 100)
+  }, [])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       gameStateRef.current.keys[e.key] = true
@@ -318,6 +333,33 @@ export default function ParachuteGame() {
         className="w-full h-full object-contain"
         style={{ imageRendering: "pixelated" }}
       />
+
+      {/* Mobile Controls */}
+      {gameStarted && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 md:hidden">
+          <div className="flex gap-4 bg-black bg-opacity-50 p-3 rounded-lg">
+            <button
+              className="w-16 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+              onTouchStart={(e) => {
+                e.preventDefault()
+                moveLeft()
+              }}
+            >
+              ←
+            </button>
+            <button
+              className="w-16 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+              onTouchStart={(e) => {
+                e.preventDefault()
+                moveRight()
+              }}
+            >
+              →
+            </button>
+          </div>
+        </div>
+      )}
+
       {!gameStarted && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80">
           <div className="text-center space-y-2 p-2">
@@ -329,13 +371,14 @@ export default function ParachuteGame() {
               </>
             )}
             <button
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-xs"
+              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-xs min-h-[44px]"
               onClick={startGame}
             >
               {gameOver ? "Try Again" : "Start Mission"}
             </button>
             <div className="text-white text-xs space-y-1">
-              <div>Use iPod wheel to steer</div>
+              <div className="md:block hidden">Use iPod wheel to steer</div>
+              <div className="md:hidden block">Use on-screen controls to steer</div>
               <div>Avoid missiles and land safely!</div>
             </div>
           </div>

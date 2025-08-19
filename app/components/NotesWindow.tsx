@@ -21,7 +21,7 @@ interface Event {
   description: string
   url?: string
   status: "upcoming" | "previous"
-  type: "speaking" | "keynote" | "panel" | "dj" | "other"
+  type: "speaking" | "keynote" | "panel" | "dj" | "other" | "events"
 }
 
 interface PressItem {
@@ -136,13 +136,23 @@ const EVENTS: Event[] = [
     status: "previous",
     type: "other",
   },
+  {
+    title: "BADCO WORLD",
+    date: "2017-2024",
+    location: "NYC",
+    description:
+      "Events from 2017-2024 (highlights incl Ice Spice NYFW '23, Lil Keed NYFW '22, Drip or Drown pool party series on Arlo Wburg Hotel rooftop)",
+    url: "https://www.notgoodcompany.com/",
+    status: "previous",
+    type: "events",
+  },
 ]
 
 const PRESS: PressItem[] = [
   {
     title: "20-Year-Old Entrepreneur Is Using Data to Retune the Music Industry",
     publication: "General Assembly",
-    description: "Interview on indify startup with General Assembly",
+    description: "Interview on indify startup",
     url: "https://generalassemb.ly/blog/20-year-old-entrepreneur-is-using-data-to-retune-the-music-industry/",
   },
 ]
@@ -170,6 +180,8 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
         return "DJ SET"
       case "speaking":
         return "SPEAKING"
+      case "events":
+        return "EVENTS"
       default:
         return "EVENT"
     }
@@ -208,7 +220,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            🎓 Research Papers
+            🎓 Papers
           </button>
           <button
             onClick={() => setActiveTab("events")}
@@ -381,7 +393,12 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                               rel="noopener noreferrer"
                               className="text-blue-600 hover:underline font-medium text-sm"
                             >
-                              {event.type === "keynote" || event.type === "panel" ? "🎥 Watch Replay" : "View"} →
+                              {event.type === "keynote" || event.type === "panel"
+                                ? "🎥 Watch Replay"
+                                : event.type === "events"
+                                  ? "View Portfolio"
+                                  : "View"}{" "}
+                              →
                             </a>
                           )}
                         </div>

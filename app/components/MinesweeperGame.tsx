@@ -174,6 +174,26 @@ export default function MinesweeperGame() {
     [gameOver, gameWon, flagsLeft],
   )
 
+  const handleCellTouch = useCallback(
+    (e: React.TouchEvent, x: number, y: number) => {
+      e.preventDefault()
+      const touchDuration = Date.now() - (e.target as any).touchStartTime
+
+      if (touchDuration > 500) {
+        // Long press - flag/unflag
+        handleCellRightClick(e as any, x, y)
+      } else {
+        // Short press - reveal
+        handleCellClick(x, y)
+      }
+    },
+    [handleCellClick, handleCellRightClick],
+  )
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    ;(e.target as any).touchStartTime = Date.now()
+  }, [])
+
   const getCellContent = (cell: Cell) => {
     if (cell.state === "hidden") return ""
     if (cell.state === "flagged") return "🚩"
@@ -186,7 +206,7 @@ export default function MinesweeperGame() {
       "w-6 h-6 flex items-center justify-center border border-gray-400 text-xs font-bold cursor-pointer select-none min-h-[24px] "
 
     if (cell.state === "hidden") {
-      baseStyle += "bg-gray-300 hover:bg-gray-200 "
+      baseStyle += "bg-gray-300 hover:bg-gray-200 active:bg-gray-400 "
     } else if (cell.state === "flagged") {
       baseStyle += "bg-yellow-200 "
     } else if (cell.isMine) {
@@ -231,6 +251,8 @@ export default function MinesweeperGame() {
               className={getCellStyle(cell)}
               onClick={() => handleCellClick(x, y)}
               onContextMenu={(e) => handleCellRightClick(e, x, y)}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={(e) => handleCellTouch(e, x, y)}
               disabled={gameOver || gameWon}
             >
               {getCellContent(cell)}
@@ -253,7 +275,10 @@ export default function MinesweeperGame() {
         </div>
       )}
 
-      <div className="mt-4 text-xs text-gray-500 text-center">Left click to reveal • Right click to flag</div>
+      <div className="mt-4 text-xs text-gray-500 text-center">
+        <div className="md:block hidden">Left click to reveal • Right click to flag</div>
+        <div className="md:hidden block">Tap to reveal • Long press to flag</div>
+      </div>
     </div>
   )
 }

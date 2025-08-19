@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef, useCallback } from "react"
 
 const CANVAS_WIDTH = 220
@@ -96,6 +98,49 @@ export default function SnakeGame() {
     })
   }, [nextDirection, food, score, highScore, generateFood, gridWidth, gridHeight])
 
+  // Mobile touch controls
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault()
+      if (!gameStarted) {
+        startGame()
+        return
+      }
+    },
+    [gameStarted],
+  )
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault()
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault()
+  }, [])
+
+  // Mobile direction controls
+  const changeDirection = useCallback(
+    (newDirection: Direction) => {
+      if (!gameStarted) return
+
+      switch (newDirection) {
+        case "UP":
+          if (direction !== "DOWN") setNextDirection("UP")
+          break
+        case "DOWN":
+          if (direction !== "UP") setNextDirection("DOWN")
+          break
+        case "LEFT":
+          if (direction !== "RIGHT") setNextDirection("LEFT")
+          break
+        case "RIGHT":
+          if (direction !== "LEFT") setNextDirection("RIGHT")
+          break
+      }
+    },
+    [gameStarted, direction],
+  )
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!gameStarted) {
@@ -113,21 +158,25 @@ export default function SnakeGame() {
         case "ArrowUp":
         case "w":
         case "W":
+        case "2":
           if (direction !== "DOWN") setNextDirection("UP")
           break
         case "ArrowDown":
         case "s":
         case "S":
+        case "8":
           if (direction !== "UP") setNextDirection("DOWN")
           break
         case "ArrowLeft":
         case "a":
         case "A":
+        case "4":
           if (direction !== "RIGHT") setNextDirection("LEFT")
           break
         case "ArrowRight":
         case "d":
         case "D":
+        case "6":
           if (direction !== "LEFT") setNextDirection("RIGHT")
           break
         case " ":
@@ -240,7 +289,60 @@ export default function SnakeGame() {
         className="w-full h-full object-contain"
         style={{ imageRendering: "pixelated" }}
         tabIndex={0}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
+
+      {/* Mobile Controls */}
+      {gameStarted && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 md:hidden">
+          <div className="grid grid-cols-3 gap-2 bg-black bg-opacity-50 p-3 rounded-lg">
+            <div></div>
+            <button
+              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+              onTouchStart={(e) => {
+                e.preventDefault()
+                changeDirection("UP")
+              }}
+            >
+              ↑
+            </button>
+            <div></div>
+            <button
+              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+              onTouchStart={(e) => {
+                e.preventDefault()
+                changeDirection("LEFT")
+              }}
+            >
+              ←
+            </button>
+            <div></div>
+            <button
+              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+              onTouchStart={(e) => {
+                e.preventDefault()
+                changeDirection("RIGHT")
+              }}
+            >
+              →
+            </button>
+            <div></div>
+            <button
+              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+              onTouchStart={(e) => {
+                e.preventDefault()
+                changeDirection("DOWN")
+              }}
+            >
+              ↓
+            </button>
+            <div></div>
+          </div>
+        </div>
+      )}
+
       {!gameStarted && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90">
           <div className="text-center space-y-2 p-3">
@@ -254,13 +356,14 @@ export default function SnakeGame() {
               </>
             )}
             <button
-              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 font-bold text-xs"
+              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 font-bold text-xs min-h-[44px]"
               onClick={startGame}
             >
               {gameOver ? "Play Again" : "Start Game"}
             </button>
             <div className="text-white text-xs space-y-1">
-              <div>Use keypad: 2↑ 4← 6→ 8↓</div>
+              <div className="md:block hidden">Use keypad: 2↑ 4← 6→ 8↓</div>
+              <div className="md:hidden block">Tap to start, use on-screen controls</div>
               <div>Eat red food to grow!</div>
             </div>
           </div>
