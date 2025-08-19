@@ -1,62 +1,46 @@
 "use client"
 
-import WindowShell from "../../components/ui/WindowShell"
+import { useState } from "react"
+import { WindowShell } from "../../components/ui/WindowShell"
 
-interface Note {
-  id: string
+interface Event {
+  id: number
   title: string
-  type: "article" | "research" | "post"
-  url: string
   date: string
+  location: string
   description: string
-  platform: string
+  type: "speaking" | "upcoming"
+  status: "upcoming" | "previous"
 }
 
-const NOTES: Note[] = [
+const events: Event[] = [
   {
-    id: "ai-agents-banking",
-    title: "Banking on AI Agents: The Future of Financial Services",
-    type: "article",
-    url: "https://linkedin.com/pulse/banking-ai-agents-future-financial-services-raffi-sourenkhatchadourian",
-    date: "2024-12-14",
-    description: "Exploring how AI agents are transforming the banking industry",
-    platform: "LinkedIn",
+    id: 1,
+    title: "Building Gen AI for Capital Markets",
+    date: "2025-08-21 at 18:00",
+    location: "NYC",
+    description:
+      "Exploring the intersection of artificial intelligence and financial technology in modern capital markets.",
+    type: "speaking",
+    status: "upcoming",
   },
   {
-    id: "generative-ai-enterprise",
-    title: "Generative AI in Enterprise: Lessons from the Trenches",
-    type: "article",
-    url: "https://linkedin.com/pulse/generative-ai-enterprise-lessons-trenches-raffi-sourenkhatchadourian",
-    date: "2024-11-20",
-    description: "Real-world insights from implementing AI solutions at scale",
-    platform: "LinkedIn",
+    id: 2,
+    title: "AI Architecture Patterns Workshop",
+    date: "2025-09-15 at 14:00",
+    location: "San Francisco",
+    description: "Hands-on workshop covering scalable AI system design and implementation strategies.",
+    type: "upcoming",
+    status: "upcoming",
   },
   {
-    id: "music-data-startup",
-    title: "Building a Music Data Startup: The indify Story",
-    type: "post",
-    url: "https://linkedin.com/pulse/building-music-data-startup-indify-story-raffi-sourenkhatchadourian",
-    date: "2024-10-15",
-    description: "Lessons learned from co-founding a music tech startup",
-    platform: "LinkedIn",
-  },
-  {
-    id: "ai-automation-research",
-    title: "Large-Scale AI Automation: A Research Perspective",
-    type: "research",
-    url: "https://arxiv.org/abs/2024.ai.automation.raffi",
-    date: "2024-09-30",
-    description: "Academic paper on enterprise AI automation patterns",
-    platform: "arXiv",
-  },
-  {
-    id: "creative-tech-intersection",
-    title: "The Intersection of Creativity and Technology",
-    type: "article",
-    url: "https://linkedin.com/pulse/intersection-creativity-technology-raffi-sourenkhatchadourian",
-    date: "2024-08-25",
-    description: "How technology enhances creative expression in music and art",
-    platform: "LinkedIn",
+    id: 3,
+    title: "Future of Technology Consulting",
+    date: "2024-11-20 at 16:00",
+    location: "Boston",
+    description: "Panel discussion on emerging trends in technology consulting and digital transformation.",
+    type: "speaking",
+    status: "previous",
   },
 ]
 
@@ -66,74 +50,98 @@ interface NotesWindowProps {
 }
 
 export function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
-  const handleNoteClick = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer")
-  }
+  const [activeTab, setActiveTab] = useState<"upcoming" | "previous">("upcoming")
 
-  const getTypeIcon = (type: Note["type"]) => {
-    switch (type) {
-      case "article":
-        return "📄"
-      case "research":
-        return "🔬"
-      case "post":
-        return "📝"
-      default:
-        return "📄"
-    }
-  }
+  if (!isOpen) return null
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
+  const upcomingEvents = events.filter((event) => event.status === "upcoming")
+  const previousEvents = events.filter((event) => event.status === "previous")
 
   return (
-    <WindowShell id="notes" title="NOTES - ARTICLES & RESEARCH" isOpen={isOpen} onClose={onClose}>
+    <WindowShell title="NOTES" onClose={onClose}>
       <div className="space-y-4">
         {/* Header */}
-        <div className="content-section">
-          <h2 className="section-title">Notes & Publications</h2>
-          <p className="text-xs text-gray-600">Articles, research papers, and thought pieces</p>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">MY ARTICLES, RESEARCH PAPERS & EVENTS</h1>
+          <p className="text-gray-600 text-sm">Collection of writings, research, and speaking engagements</p>
         </div>
 
-        {/* Notes List */}
-        <div className="content-section">
-          <div className="space-y-3">
-            {NOTES.map((note) => (
-              <div
-                key={note.id}
-                onClick={() => handleNoteClick(note.url)}
-                className="note-item cursor-pointer p-3 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="text-xl">{getTypeIcon(note.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-900 mb-1">{note.title}</div>
-                    <div className="text-xs text-gray-500 mb-2">{note.description}</div>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <span>{note.platform}</span>
-                      <span>•</span>
-                      <span>{formatDate(note.date)}</span>
-                      <span>•</span>
-                      <span className="capitalize">{note.type}</span>
-                    </div>
-                  </div>
-                  <div className="text-blue-500 text-xs">↗</div>
-                </div>
+        {/* Tab Buttons */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab("upcoming")}
+            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "upcoming"
+                ? "border-blue-500 text-blue-600 bg-blue-50"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            📅 UPCOMING EVENTS
+          </button>
+          <button
+            onClick={() => setActiveTab("previous")}
+            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "previous"
+                ? "border-blue-500 text-blue-600 bg-blue-50"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            📋 PREVIOUS EVENTS
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          {activeTab === "upcoming" && (
+            <div>
+              <div className="text-lg font-semibold text-green-600 mb-4 border-b-2 border-green-400 pb-1 inline-block">
+                UPCOMING EVENTS
               </div>
-            ))}
-          </div>
+              <div className="space-y-3">
+                {upcomingEvents.map((event) => (
+                  <div key={event.id} className="bg-white border-l-4 border-green-500 rounded-lg p-4">
+                    <div className="flex gap-2 mb-2">
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">SPEAKING</span>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">UPCOMING</span>
+                    </div>
+                    <div className="font-semibold text-gray-900 mb-1">{event.title}</div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      {event.date} • {event.location}
+                    </div>
+                    <div className="text-sm text-gray-700">{event.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "previous" && (
+            <div>
+              <div className="text-lg font-semibold text-gray-600 mb-4 border-b-2 border-gray-400 pb-1 inline-block">
+                PREVIOUS EVENTS
+              </div>
+              <div className="space-y-3">
+                {previousEvents.map((event) => (
+                  <div key={event.id} className="bg-white border-l-4 border-gray-400 rounded-lg p-4">
+                    <div className="flex gap-2 mb-2">
+                      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">SPEAKING</span>
+                      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">COMPLETED</span>
+                    </div>
+                    <div className="font-semibold text-gray-900 mb-1">{event.title}</div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      {event.date} • {event.location}
+                    </div>
+                    <div className="text-sm text-gray-700">{event.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="content-section">
-          <div className="text-xs text-gray-600 text-center">
-            {NOTES.length} publications • More on LinkedIn & arXiv
-          </div>
+        <div className="text-center text-xs text-gray-500 pt-4 border-t">
+          For speaking inquiries and collaboration opportunities, please reach out via LinkedIn or email.
         </div>
       </div>
     </WindowShell>

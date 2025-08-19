@@ -6,41 +6,38 @@ interface CounterProps {
   end: number
   label: string
   icon: string
-  duration?: number
 }
 
-export default function Counter({ end, label, icon, duration = 2000 }: CounterProps) {
+export function Counter({ end, label, icon }: CounterProps) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    let startTime: number
-    let animationFrame: number
+    const duration = 2000
+    const steps = 60
+    const increment = end / steps
+    const stepDuration = duration / steps
 
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const progress = Math.min((timestamp - startTime) / duration, 1)
-
-      setCount(Math.floor(progress * end))
-
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate)
+    let current = 0
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= end) {
+        setCount(end)
+        clearInterval(timer)
+      } else {
+        setCount(Math.floor(current))
       }
-    }
+    }, stepDuration)
 
-    animationFrame = requestAnimationFrame(animate)
-
-    return () => {
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame)
-      }
-    }
-  }, [end, duration])
+    return () => clearInterval(timer)
+  }, [end])
 
   return (
-    <div className="counter-card">
-      <div className="counter-icon">{icon}</div>
-      <div className="counter-number">{count}</div>
-      <div className="counter-label">{label}</div>
+    <div className="text-center p-4 bg-white rounded-lg shadow-md">
+      <div className="text-2xl mb-2">{icon}</div>
+      <div className="text-3xl font-bold text-blue-600 mb-1">{count}</div>
+      <div className="text-sm text-gray-600">{label}</div>
     </div>
   )
 }
+
+export default Counter

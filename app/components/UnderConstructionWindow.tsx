@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import WindowShell from "../../components/ui/WindowShell"
+import { WindowShell } from "../../components/ui/WindowShell"
 
 interface UnderConstructionWindowProps {
-  title: string
+  isOpen: boolean
   onClose: () => void
+  title: string
 }
 
-export default function UnderConstructionWindow({ title, onClose }: UnderConstructionWindowProps) {
+export function UnderConstructionWindow({ isOpen, onClose, title }: UnderConstructionWindowProps) {
   const [dots, setDots] = useState("")
 
   useEffect(() => {
@@ -19,20 +20,25 @@ export default function UnderConstructionWindow({ title, onClose }: UnderConstru
     return () => clearInterval(interval)
   }, [])
 
+  if (!isOpen) return null
+
   return (
-    <WindowShell id="under-construction" title={`${title.toUpperCase()} - COMING SOON`} isOpen={true} onClose={onClose}>
-      <div className="content-section text-center py-12">
+    <WindowShell title={`${title.toUpperCase()} - COMING SOON`} onClose={onClose}>
+      <div className="text-center py-12">
         <div className="text-6xl mb-6">🚧</div>
-        <h2 className="section-title mb-4">Under Construction</h2>
-        <p className="text-sm text-gray-600 mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Under Construction</h2>
+        <p className="text-gray-600 mb-6">
           {title} is currently being built{dots}
         </p>
-        <div className="space-y-2 text-xs text-gray-500">
+        <div className="space-y-2 text-sm text-gray-500">
           <p>This feature will be available soon!</p>
           <p>Check back later for updates.</p>
         </div>
         <div className="mt-8">
-          <button onClick={onClose} className="xp-button bg-blue-100 hover:bg-blue-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
             Close
           </button>
         </div>

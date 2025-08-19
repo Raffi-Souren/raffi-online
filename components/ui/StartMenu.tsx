@@ -1,72 +1,42 @@
 "use client"
 
 interface StartMenuProps {
-  isOpen: boolean
-  onOpenAbout: () => void
-  onOpenBlogroll: () => void
-  onOpenGames: () => void
-  onOpenNotes: () => void
-  onOpenEasterEgg: () => void
-  onOpenEmail: () => void
+  onClose: () => void
+  onOpenWindow: (windowName: string) => void
 }
 
-export default function StartMenu({
-  isOpen,
-  onOpenAbout,
-  onOpenBlogroll,
-  onOpenGames,
-  onOpenNotes,
-  onOpenEasterEgg,
-  onOpenEmail,
-}: StartMenuProps) {
-  if (!isOpen) return null
+export function StartMenu({ onClose, onOpenWindow }: StartMenuProps) {
+  const menuItems = [
+    { icon: "ℹ️", label: "About", action: "about" },
+    { icon: "🎮", label: "Retro Games", action: "games" },
+    { icon: "🎵", label: "Digging in the Crates", action: "crates" },
+    { icon: "🔗", label: "Blogroll", action: "blogroll" },
+    { icon: "📝", label: "Notes", action: "notes" },
+    { icon: "💡", label: "Pitch Me a Startup", action: "startup" },
+    { icon: "🔢", label: "By the Numbers", action: "counter" },
+  ]
 
   return (
-    <div className="fixed bottom-12 left-2 z-[70] bg-gradient-to-b from-blue-100 to-blue-200 border border-blue-400 rounded-t-lg shadow-lg w-64">
-      {/* Start Menu Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-t-lg">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold">RAF</div>
-          <div className="text-sm font-bold">Raffi Sourenkhatchadourian</div>
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-20" onClick={onClose} />
+
+      {/* Menu */}
+      <div className="fixed bottom-10 left-2 z-30 bg-gray-800 rounded-lg shadow-2xl border border-gray-600 min-w-48">
+        <div className="p-2">
+          <div className="text-white text-sm font-bold mb-2 px-2 py-1 border-b border-gray-600">Start Menu</div>
+          {menuItems.map((item) => (
+            <button
+              key={item.action}
+              onClick={() => onOpenWindow(item.action)}
+              className="w-full flex items-center gap-3 px-2 py-2 text-white hover:bg-blue-600 rounded text-sm transition-colors"
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
-
-      {/* Menu Items */}
-      <div className="p-2">
-        <div className="space-y-1">
-          <button onClick={onOpenAbout} className="start-menu-item">
-            <span className="text-lg">👤</span>
-            <span>About</span>
-          </button>
-
-          <button onClick={onOpenBlogroll} className="start-menu-item">
-            <span className="text-lg">🌐</span>
-            <span>Blogroll</span>
-          </button>
-
-          <button onClick={onOpenGames} className="start-menu-item">
-            <span className="text-lg">🎮</span>
-            <span>Games</span>
-          </button>
-
-          <button onClick={onOpenNotes} className="start-menu-item">
-            <span className="text-lg">📝</span>
-            <span>Notes</span>
-          </button>
-
-          <div className="border-t border-blue-300 my-2"></div>
-
-          <button onClick={onOpenEasterEgg} className="start-menu-item">
-            <span className="text-lg">🎧</span>
-            <span>Digging in the Crates</span>
-          </button>
-
-          <button onClick={onOpenEmail} className="start-menu-item">
-            <span className="text-lg">📧</span>
-            <span>Contact</span>
-          </button>
-        </div>
-      </div>
-    </div>
+    </>
   )
 }

@@ -1,37 +1,28 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-
 interface SoundCloudEmbedProps {
-  url: string
-  title?: string
+  embedUrl: string
+  title: string
+  artist: string
   height?: number
-  color?: string
 }
 
-export function SoundCloudEmbed({ url, title, height = 166, color = "ff5500" }: SoundCloudEmbedProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-
-  useEffect(() => {
-    // Ensure iframe loads properly
-    if (iframeRef.current) {
-      iframeRef.current.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(
-        url,
-      )}&color=%23${color}&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`
-    }
-  }, [url, color])
-
+export function SoundCloudEmbed({ embedUrl, title, artist, height = 166 }: SoundCloudEmbedProps) {
   return (
     <div className="w-full">
+      <div className="mb-2">
+        <h4 className="font-semibold text-sm">{title}</h4>
+        <p className="text-xs text-gray-600">by {artist}</p>
+      </div>
       <iframe
-        ref={iframeRef}
         width="100%"
         height={height}
         scrolling="no"
         frameBorder="no"
         allow="autoplay"
-        title={title || "SoundCloud player"}
+        src={embedUrl}
         className="rounded-lg"
+        title={`${title} by ${artist}`}
       />
     </div>
   )

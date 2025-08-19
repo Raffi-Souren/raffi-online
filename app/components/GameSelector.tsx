@@ -1,177 +1,193 @@
 "use client"
 
 import { useState } from "react"
-import WindowShell from "../../components/ui/WindowShell"
+import { WindowShell } from "../../components/ui/WindowShell"
 
 interface Game {
   id: string
   name: string
-  platform: string
-  year: string
+  device: string
   description: string
   icon: string
-  category: string
+  available: boolean
+}
+
+interface GameSelectorProps {
+  isOpen: boolean
+  onClose: () => void
 }
 
 const RETRO_GAMES: Game[] = [
   {
     id: "snake",
     name: "Snake",
-    platform: "Nokia 3310",
-    year: "1997",
-    description: "Classic snake game from Nokia phones",
+    device: "Motorola Razr",
+    description: "Classic snake game with modern controls",
     icon: "🐍",
-    category: "Arcade",
-  },
-  {
-    id: "brickbreaker",
-    name: "Brick Breaker",
-    platform: "BlackBerry",
-    year: "2004",
-    description: "Addictive ball and paddle game",
-    icon: "🧱",
-    category: "Arcade",
+    available: true,
   },
   {
     id: "parachute",
     name: "Parachute",
-    platform: "iPod Classic",
-    year: "2006",
-    description: "Catch falling paratroopers",
+    device: "iPod Classic",
+    description: "Catch falling paratroopers in this arcade classic",
     icon: "🪂",
-    category: "Action",
+    available: true,
+  },
+  {
+    id: "brickbreaker",
+    name: "Brick Breaker",
+    device: "BlackBerry",
+    description: "Break bricks with your paddle and ball",
+    icon: "🧱",
+    available: true,
   },
   {
     id: "minesweeper",
     name: "Minesweeper",
-    platform: "Windows 95",
-    year: "1995",
-    description: "Classic mine detection puzzle",
+    device: "Desktop PC",
+    description: "Find all mines without triggering them",
     icon: "💣",
-    category: "Puzzle",
-  },
-  {
-    id: "solitaire",
-    name: "Solitaire",
-    platform: "Windows 95",
-    year: "1995",
-    description: "Classic card game",
-    icon: "🃏",
-    category: "Card",
+    available: true,
   },
   {
     id: "tetris",
     name: "Tetris",
-    platform: "Game Boy",
-    year: "1989",
-    description: "Falling blocks puzzle game",
+    device: "Game Boy",
+    description: "Arrange falling blocks to clear lines",
     icon: "🟦",
-    category: "Puzzle",
+    available: false,
+  },
+  {
+    id: "pong",
+    name: "Pong",
+    device: "Atari",
+    description: "The original arcade tennis game",
+    icon: "🏓",
+    available: false,
   },
 ]
 
-interface GameSelectorProps {
-  isOpen: boolean
-  onClose: () => void
-  onGameSelect?: (gameId: string) => void
-}
-
-export default function GameSelector({ isOpen, onClose, onGameSelect }: GameSelectorProps) {
+export function GameSelector({ isOpen, onClose }: GameSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [selectedDevice, setSelectedDevice] = useState("All")
 
-  const categories = ["All", ...Array.from(new Set(RETRO_GAMES.map((game) => game.category)))]
+  if (!isOpen) return null
+
+  const devices = ["All", ...Array.from(new Set(RETRO_GAMES.map((game) => game.device)))]
 
   const filteredGames = RETRO_GAMES.filter((game) => {
     const matchesSearch =
       game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      game.platform.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      game.device.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.description.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesCategory = selectedCategory === "All" || game.category === selectedCategory
-
-    return matchesSearch && matchesCategory
+    const matchesDevice = selectedDevice === "All" || game.device === selectedDevice
+    return matchesSearch && matchesDevice
   })
 
-  const handleGameClick = (gameId: string) => {
-    if (onGameSelect) {
-      onGameSelect(gameId)
-    }
-  }
+  const availableGames = filteredGames.filter((game) => game.available)
+  const comingSoonGames = filteredGames.filter((game) => !game.available)
 
   return (
-    <WindowShell id="retro-games" title="RETRO GAMES COLLECTION" isOpen={isOpen} onClose={onClose}>
+    <WindowShell title="RETRO GAMES" onClose={onClose}>
       <div className="space-y-4">
         {/* Header */}
-        <div className="content-section">
-          <h2 className="section-title">Retro Games Collection</h2>
-          <p className="text-xs text-gray-600">Classic games from vintage devices and platforms</p>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Retro Games Collection</h2>
+          <p className="text-gray-600 text-sm">Classic games from vintage devices and platforms</p>
         </div>
 
-        {/* Filters */}
-        <div className="content-section">
+        {/* Search and Filter */}
+        <div className="bg-gray-50 rounded-lg p-4">
           <div className="space-y-3">
             <input
               type="text"
-              placeholder="Search games..."
+              placeholder="Search games or devices..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="xp-input w-full"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
+            <div className="flex gap-2 flex-wrap">
+              {devices.map((device) => (
                 <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`xp-button text-xs ${
-                    selectedCategory === category ? "bg-blue-200 border-blue-400" : "bg-gray-100 hover:bg-gray-200"
+                  key={device}
+                  onClick={() => setSelectedDevice(device)}
+                  className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                    selectedDevice === device
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  {category}
+                  {device}
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Games Grid */}
-        <div className="content-section">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {filteredGames.map((game) => (
+        {/* Available Games */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-green-400 pb-1 inline-block">
+            AVAILABLE GAMES
+          </h2>
+
+          <div className="grid gap-3">
+            {availableGames.map((game) => (
               <div
                 key={game.id}
-                onClick={() => handleGameClick(game.id)}
-                className="game-card cursor-pointer p-3 bg-white rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="text-2xl">{game.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-900">{game.name}</div>
-                    <div className="text-xs text-gray-600">
-                      {game.platform} • {game.year}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900">{game.name}</h3>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{game.device}</span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">{game.description}</div>
-                    <div className="inline-block px-2 py-1 bg-gray-100 text-xs rounded mt-2">{game.category}</div>
+                    <p className="text-sm text-gray-600">{game.description}</p>
                   </div>
+                  <div className="text-green-500 text-sm font-semibold">PLAY</div>
                 </div>
               </div>
             ))}
           </div>
 
-          {filteredGames.length === 0 && (
-            <div className="text-center text-gray-500 py-8 text-xs">
-              <div className="text-2xl mb-2">🎮</div>
-              <p>No games found matching your criteria</p>
-            </div>
+          {availableGames.length === 0 && (
+            <div className="text-center text-gray-500 py-4">No available games found matching your criteria</div>
           )}
         </div>
 
-        {/* Stats */}
-        <div className="content-section">
-          <div className="text-xs text-gray-600 text-center">
-            {filteredGames.length} of {RETRO_GAMES.length} games shown
+        {/* Coming Soon */}
+        {comingSoonGames.length > 0 && (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-orange-400 pb-1 inline-block">
+              COMING SOON
+            </h2>
+
+            <div className="grid gap-3">
+              {comingSoonGames.map((game) => (
+                <div key={game.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 opacity-75">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl grayscale">{game.icon}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-700">{game.name}</h3>
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">{game.device}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">{game.description}</p>
+                    </div>
+                    <div className="text-orange-500 text-sm font-semibold">SOON</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Stats */}
+        <div className="text-center text-xs text-gray-500 pt-4 border-t">
+          {availableGames.length} available games • {comingSoonGames.length} coming soon
         </div>
       </div>
     </WindowShell>

@@ -1,6 +1,4 @@
 /** @type {import('tailwindcss').Config} */
-const defaultConfig = require("tailwindcss/defaultConfig")()
-
 module.exports = {
   darkMode: ["class"],
   content: [
@@ -10,7 +8,6 @@ module.exports = {
     "*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    ...defaultConfig.theme,
     extend: {
       colors: {
         // Poolsuite/AWGE inspired color palette
@@ -26,18 +23,8 @@ module.exports = {
           800: "#92400e",
           900: "#78350f",
         },
-        "poolsuite-blue": {
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
-        },
+        "canary-yellow": "#FFFF8F",
+        "poolsuite-blue": "#4A90E2",
         "awge-orange": {
           50: "#fff7ed",
           100: "#ffedd5",
@@ -62,6 +49,7 @@ module.exports = {
           800: "#6b21a8",
           900: "#581c87",
         },
+        "pyrex-orange": "#F97316",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -110,7 +98,8 @@ module.exports = {
           "Helvetica Neue",
           "sans-serif",
         ],
-        mono: ["SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Source Code Pro", "monospace"],
+        mono: ["SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Source Code Pro", "Courier New", "monospace"],
+        sans: ["Arial", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

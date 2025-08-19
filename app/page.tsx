@@ -2,20 +2,28 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import GameSelector from "./components/GameSelector"
-import BlogrollWindow from "./components/BlogrollWindow"
-import { NotesWindow } from "./components/NotesWindow"
-import AboutWindow from "./components/AboutWindow"
-import UnderConstructionWindow from "./components/UnderConstructionWindow"
+import { QuestionBlock } from "../components/easter/QuestionBlock"
 import { DesktopIcon } from "../components/ui/DesktopIcon"
-import StartMenu from "../components/ui/StartMenu"
-import QuestionBlock from "../components/easter/QuestionBlock"
-import DiggingInTheCrates from "./components/DiggingInTheCrates"
+import { StartMenu } from "../components/ui/StartMenu"
+import { AboutWindow } from "./components/AboutWindow"
+import { GameSelector } from "./components/GameSelector"
+import { DiggingInTheCrates } from "./components/DiggingInTheCrates"
+import { BlogrollWindow } from "./components/BlogrollWindow"
+import { NotesWindow } from "./components/NotesWindow"
+import { UnderConstructionWindow } from "./components/UnderConstructionWindow"
 
 export default function Home() {
-  const [activeWindow, setActiveWindow] = useState<string | null>(null)
-  const [isStartMenuOpen, setIsStartMenuOpen] = useState(false)
+  const [showStartMenu, setShowStartMenu] = useState(false)
   const [currentTime, setCurrentTime] = useState("")
+  const [openWindows, setOpenWindows] = useState<Record<string, boolean>>({
+    about: false,
+    games: false,
+    crates: false,
+    blogroll: false,
+    notes: false,
+    startup: false,
+    counter: false,
+  })
 
   // Update time every second
   useEffect(() => {
@@ -36,71 +44,44 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [])
 
-  const openWindow = (windowId: string) => {
-    setActiveWindow(windowId)
-    setIsStartMenuOpen(false)
+  const openWindow = (windowName: string) => {
+    setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
+    setShowStartMenu(false)
+  }
+
+  const closeWindow = (windowName: string) => {
+    setOpenWindows((prev) => ({ ...prev, [windowName]: false }))
   }
 
   const handleIconClick = (action: string) => {
-    setIsStartMenuOpen(false) // Close start menu when opening window
-
-    if (action === "music" || action === "projects" || action === "terminal") {
-      setActiveWindow(`construction-${action}`)
-    } else if (action === "email") {
-      // Fixed email handling
+    if (action === "email") {
       try {
         const email = "raffi@notgoodcompany.com"
         const subject = "Contact from Website"
         const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}`
-
-        // Try to open mailto, fallback to copying email
-        const link = document.createElement("a")
-        link.href = mailtoUrl
-        link.click()
-
-        // Also copy to clipboard as backup
-        navigator.clipboard.writeText(email).catch(() => {})
+        window.location.href = mailtoUrl
       } catch (error) {
-        // Fallback - show email in alert
         alert("Email: raffi@notgoodcompany.com")
       }
     } else {
-      setActiveWindow(action)
+      openWindow(action)
     }
-  }
-
-  const getConstructionTitle = (action: string) => {
-    switch (action) {
-      case "music":
-        return "DJ Sets"
-      case "projects":
-        return "Projects"
-      case "terminal":
-        return "Pitch Startup"
-      default:
-        return "Feature"
-    }
-  }
-
-  const closeWindow = () => {
-    setActiveWindow(null)
   }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Windows XP Background with priority to avoid flash */}
+      {/* Windows XP Background */}
       <Image
         src="/windows-bg.jpg"
         alt="Windows XP Background"
         fill
         priority
-        fetchPriority="high"
         sizes="100vw"
         className="object-cover object-center -z-10 pointer-events-none select-none"
         quality={85}
       />
 
-      {/* Desktop Icons Container with bottom padding for taskbar */}
+      {/* Desktop Icons Container */}
       <div className="absolute inset-0 p-4 md:p-8 pb-[72px] md:pb-0">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 h-full">
           {/* Top Row */}
@@ -120,81 +101,66 @@ export default function Home() {
             <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
           </div>
 
-          {/* Bottom Row - Hidden on mobile, positioned for desktop */}
+          {/* Bottom Row - Hidden on mobile */}
           <div className="hidden md:flex flex-col items-center self-end mb-16">
-            <DesktopIcon label="DJ SETS 12 INCH (COMING SOON)" icon="🎵" onClick={() => handleIconClick("music")} />
+            <DesktopIcon label="DIGGING IN THE CRATES" icon="🎵" onClick={() => handleIconClick("crates")} />
           </div>
 
           <div className="hidden md:flex flex-col items-center self-end mb-16">
-            <DesktopIcon label="PROJECTS (COMING SOON)" icon="📁" onClick={() => handleIconClick("projects")} />
+            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
           </div>
         </div>
       </div>
 
       {/* Question Block Easter Egg */}
-      <QuestionBlock onClick={() => openWindow("crate-digging")} />
+      <div className="fixed bottom-20 right-4 z-20">
+        <QuestionBlock />
+      </div>
 
-      {/* About Me Window */}
-      <AboutWindow isOpen={activeWindow === "about"} onClose={closeWindow} />
+      {/* Windows */}
+      <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />
+      <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />
+      <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />
+      <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />
+      <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />
+      <UnderConstructionWindow
+        isOpen={openWindows.startup}
+        onClose={() => closeWindow("startup")}
+        title="Pitch Me a Startup"
+      />
+      <UnderConstructionWindow
+        isOpen={openWindows.counter}
+        onClose={() => closeWindow("counter")}
+        title="By the Numbers"
+      />
 
-      {/* Games Window */}
-      <GameSelector isOpen={activeWindow === "games"} onClose={closeWindow} />
-
-      {/* Crate Digging Window */}
-      <DiggingInTheCrates isOpen={activeWindow === "crate-digging"} onClose={closeWindow} />
-
-      {/* Blogroll Window */}
-      <BlogrollWindow isOpen={activeWindow === "blogroll"} onClose={closeWindow} />
-
-      {/* Notes Window */}
-      <NotesWindow isOpen={activeWindow === "notes"} onClose={closeWindow} />
-
-      {/* Under Construction Windows */}
-      {activeWindow?.startsWith("construction-") && (
-        <UnderConstructionWindow
-          title={getConstructionTitle(activeWindow.replace("construction-", ""))}
-          onClose={closeWindow}
-        />
-      )}
+      {/* Start Menu */}
+      {showStartMenu && <StartMenu onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />}
 
       {/* Taskbar */}
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-[70] safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-30">
         {/* Start Button */}
         <button
-          onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
+          onClick={() => setShowStartMenu(!showStartMenu)}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"
-          aria-label="Open Start Menu"
         >
           <span className="text-lg">🏁</span>
           Start
         </button>
 
         {/* Active Window Indicator */}
-        {activeWindow && (
+        {Object.entries(openWindows).some(([, isOpen]) => isOpen) && (
           <div className="ml-2 px-3 py-1 bg-blue-500 text-white text-sm rounded">
-            {activeWindow.replace("construction-", "").toUpperCase()}
+            {Object.entries(openWindows)
+              .filter(([, isOpen]) => isOpen)
+              .map(([name]) => name.toUpperCase())
+              .join(", ")}
           </div>
         )}
 
         {/* Time */}
         <div className="ml-auto text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
       </div>
-
-      {/* Start Menu */}
-      <StartMenu
-        isOpen={isStartMenuOpen}
-        onOpenAbout={() => handleIconClick("about")}
-        onOpenBlogroll={() => handleIconClick("blogroll")}
-        onOpenGames={() => handleIconClick("games")}
-        onOpenNotes={() => handleIconClick("notes")}
-        onOpenEasterEgg={() => openWindow("crate-digging")}
-        onOpenEmail={() => handleIconClick("email")}
-      />
-
-      {/* Click outside to close start menu */}
-      {isStartMenuOpen && (
-        <div className="fixed inset-0 z-[65]" onClick={() => setIsStartMenuOpen(false)} aria-hidden="true" />
-      )}
     </div>
   )
 }

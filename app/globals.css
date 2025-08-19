@@ -32,6 +32,14 @@ a {
   text-decoration: none;
 }
 
+/* Custom styles for the retro aesthetic */
+@layer base {
+  body {
+    font-family: "Arial", sans-serif;
+    background-color: #f0f0f0;
+  }
+}
+
 /* Poolsuite/AWGE/Pyrex Inspired Design System */
 .pyrex-heading {
   font-family: var(--font-system);
@@ -657,17 +665,17 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: #f1f1f1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.3);
+  background: #c1c1c1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.5);
+  background: #a8a8a8;
 }
 
 /* Touch optimization */
@@ -691,4 +699,20 @@ html {
   .safe-area-inset-bottom {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
 }
