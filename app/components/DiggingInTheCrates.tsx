@@ -1,99 +1,170 @@
 "use client"
 
-import { useState } from "react"
-import { WindowShell } from "../../components/ui/WindowShell"
-import { SoundCloudEmbed } from "../../components/ui/SoundCloudEmbed"
-import { SOUNDCLOUD_TRACKS, type SoundCloudTrack } from "../../data/soundcloud-tracks"
+import { useState, useCallback } from "react"
+import { Shuffle, X } from "lucide-react"
+import WindowShell from "../../components/ui/WindowShell"
+
+interface Track {
+  id: string
+  title: string
+  artist: string
+  url: string
+}
+
+// SoundCloud tracks from your collection
+const SOUNDCLOUD_TRACKS: Track[] = [
+  {
+    id: "yukon-x-up-dj-hunny-bee-remix",
+    title: "Yukon X Up (DJ Hunny Bee Remix)",
+    artist: "djhunnybee",
+    url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-remix",
+  },
+  {
+    id: "four-tet-insect-near-piha-beach",
+    title: "Insect Near Piha Beach",
+    artist: "user-982065028",
+    url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
+  },
+  {
+    id: "habibi-funk-beirut",
+    title: "Habibi Funk Beirut",
+    artist: "djsweeterman",
+    url: "https://soundcloud.com/djsweeterman/habibi-funk-beirut",
+  },
+  {
+    id: "chopsuey",
+    title: "Chop Suey",
+    artist: "osive",
+    url: "https://soundcloud.com/osive/chopsuey",
+  },
+  {
+    id: "gordos-dilemma",
+    title: "Gordo's Dilemma",
+    artist: "gordoszn",
+    url: "https://soundcloud.com/gordoszn/gordos-dilemma",
+  },
+]
 
 interface DiggingInTheCratesProps {
   isOpen: boolean
   onClose: () => void
 }
 
-export function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
-  const [selectedTrack, setSelectedTrack] = useState<SoundCloudTrack | null>(SOUNDCLOUD_TRACKS[0] || null)
-  const [searchTerm, setSearchTerm] = useState("")
+export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
+  const [currentTrack, setCurrentTrack] = useState<Track>(SOUNDCLOUD_TRACKS[0])
+  const [embedError, setEmbedError] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const shuffleTrack = useCallback(() => {
+    setIsLoading(true)
+    setEmbedError(false)
+
+    const randomTrack = SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]
+    setCurrentTrack(randomTrack)
+
+    // Simulate loading time
+    setTimeout(() => {
+      setIsLoading(false)
+    }, 1000)
+  }, [])
+
+  const getEmbedUrl = (url: string) => {
+    if (!url) return null
+    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`
+  }
 
   if (!isOpen) return null
 
-  const filteredTracks = SOUNDCLOUD_TRACKS.filter(
-    (track) =>
-      track.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      track.artist.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const embedUrl = getEmbedUrl(currentTrack.url)
 
   return (
-    <WindowShell title="DIGGING IN THE CRATES - SOUNDCLOUD" onClose={onClose}>
-      <div className="space-y-4">
-        {/* Header */}
+    <WindowShell title="🎵 DIGGING IN THE CRATES" onClose={onClose}>
+      <div className="space-y-6">
         <div className="text-center">
-          <div className="text-4xl mb-3">🎧</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Digging in the Crates</h1>
-          <p className="text-gray-600 text-sm">Discover rare tracks and hidden gems from SoundCloud</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">🎵 CRATE DIGGING SESSION</h2>
+          <p className="text-gray-600 mb-4">Discover underground tracks and hidden gems from the vault</p>
         </div>
 
-        {/* Search */}
+        {/* SoundCloud Embed */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <input
-            type="text"
-            placeholder="Search tracks or artists..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Now Playing */}
-        {selectedTrack && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
-              NOW PLAYING
-            </h2>
-            <SoundCloudEmbed
-              embedUrl={selectedTrack.embedUrl}
-              title={selectedTrack.title}
-              artist={selectedTrack.artist}
-            />
-          </div>
-        )}
-
-        {/* Track List */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-green-400 pb-1 inline-block">
-            TRACK CRATES
-          </h2>
-
-          <div className="max-h-64 overflow-y-auto space-y-2">
-            {filteredTracks.map((track, index) => (
-              <div
-                key={track.id}
-                onClick={() => setSelectedTrack(track)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                  selectedTrack?.id === track.id
-                    ? "bg-blue-100 border-l-4 border-blue-500"
-                    : "bg-white hover:bg-gray-50 border border-gray-200"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="text-lg">{selectedTrack?.id === track.id ? "🎵" : "🎶"}</div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 text-sm">{track.title}</h4>
-                    <p className="text-xs text-gray-600">{track.artist}</p>
-                  </div>
-                  {selectedTrack?.id === track.id && <div className="text-blue-500 text-xs font-semibold">PLAYING</div>}
-                </div>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center text-2xl animate-spin">
+                🎵
               </div>
-            ))}
-          </div>
-
-          {filteredTracks.length === 0 && (
-            <div className="text-center text-gray-500 py-4">No tracks found matching your search</div>
+              <p className="text-gray-600">Loading track...</p>
+            </div>
+          ) : embedError || !embedUrl ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center text-2xl">
+                ❌
+              </div>
+              <p className="text-red-600 mb-4">Unable to load track</p>
+              <button onClick={shuffleTrack} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                Try Another Track
+              </button>
+            </div>
+          ) : (
+            <iframe
+              width="100%"
+              height="300"
+              scrolling="no"
+              frameBorder="no"
+              allow="autoplay"
+              src={embedUrl}
+              className="rounded-lg border border-gray-200"
+              title={`${currentTrack.title} by ${currentTrack.artist}`}
+              onError={() => setEmbedError(true)}
+            />
           )}
         </div>
 
-        {/* Stats */}
-        <div className="text-center text-xs text-gray-500 pt-4 border-t">
-          {filteredTracks.length} tracks available • Curated collection
+        {/* Now Playing Info */}
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+          <p className="text-blue-800 font-semibold mb-2">Now Playing:</p>
+          <p className="text-gray-900 font-bold text-lg mb-1">{currentTrack.title}</p>
+          <p className="text-gray-600">by {currentTrack.artist}</p>
+        </div>
+
+        {/* Controls */}
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={shuffleTrack}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            disabled={isLoading}
+          >
+            <Shuffle size={16} />
+            {isLoading ? "Loading..." : "Shuffle"}
+          </button>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+          >
+            <X size={16} />
+            Close
+          </button>
+        </div>
+
+        {/* Available Tracks Preview */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="font-semibold text-gray-900 mb-3">🎵 Available Tracks:</h3>
+          <div className="bg-blue-50 p-4 rounded-lg max-h-32 overflow-y-auto border border-blue-200">
+            <div className="space-y-2">
+              {SOUNDCLOUD_TRACKS.slice(0, 5).map((track, index) => (
+                <div key={track.id} className="flex items-center gap-2 text-sm">
+                  <div className="w-5 h-5 bg-blue-400 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                    {index + 1}
+                  </div>
+                  <span className="text-blue-800">
+                    {track.title} - {track.artist}
+                  </span>
+                </div>
+              ))}
+              <div className="text-center pt-2 border-t border-blue-200">
+                <span className="text-blue-600 font-semibold">...and {SOUNDCLOUD_TRACKS.length - 5} more tracks</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </WindowShell>

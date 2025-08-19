@@ -37,6 +37,7 @@ module.exports = {
           800: "#9a3412",
           900: "#7c2d12",
         },
+        "awge-purple": "#6B46C1",
         "pyrex-purple": {
           50: "#faf5ff",
           100: "#f3e8ff",
@@ -49,7 +50,8 @@ module.exports = {
           800: "#6b21a8",
           900: "#581c87",
         },
-        "pyrex-orange": "#F97316",
+        "pyrex-orange": "#FF6B35",
+        "awge-yellow": "#FFD700",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -100,6 +102,9 @@ module.exports = {
         ],
         mono: ["SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Source Code Pro", "Courier New", "monospace"],
         sans: ["Arial", "sans-serif"],
+        pyrex: ["Impact", "Arial Black", "sans-serif"],
+        poolsuite: ["Inter", "system-ui", "sans-serif"],
+        awge: ["Helvetica Neue", "Arial", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
@@ -112,6 +117,7 @@ module.exports = {
         "fade-in": "fadeIn 0.5s ease-in-out",
         "slide-up": "slideUp 0.3s ease-out",
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "bounce-slow": "bounce 2s infinite",
       },
       keyframes: {
         fadeIn: {

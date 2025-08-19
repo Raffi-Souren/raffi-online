@@ -1,7 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { WindowShell } from "../../components/ui/WindowShell"
+import WindowShell from "../../components/ui/WindowShell"
+import SnakeGame from "./SnakeGame"
+import ParachuteGame from "./ParachuteGame"
+import Brickbreaker from "./Brickbreaker"
+import MinesweeperGame from "./MinesweeperGame"
 
 interface Game {
   id: string
@@ -68,11 +72,33 @@ const RETRO_GAMES: Game[] = [
   },
 ]
 
-export function GameSelector({ isOpen, onClose }: GameSelectorProps) {
+export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDevice, setSelectedDevice] = useState("All")
+  const [activeGame, setActiveGame] = useState<string | null>(null)
 
   if (!isOpen) return null
+
+  // If a game is active, show the game component
+  if (activeGame) {
+    const GameComponent = {
+      snake: SnakeGame,
+      parachute: ParachuteGame,
+      brickbreaker: Brickbreaker,
+      minesweeper: MinesweeperGame,
+    }[activeGame]
+
+    if (GameComponent) {
+      return (
+        <WindowShell
+          title={`${RETRO_GAMES.find((g) => g.id === activeGame)?.name.toUpperCase()} - ${RETRO_GAMES.find((g) => g.id === activeGame)?.device}`}
+          onClose={() => setActiveGame(null)}
+        >
+          <GameComponent />
+        </WindowShell>
+      )
+    }
+  }
 
   const devices = ["All", ...Array.from(new Set(RETRO_GAMES.map((game) => game.device)))]
 
@@ -87,6 +113,10 @@ export function GameSelector({ isOpen, onClose }: GameSelectorProps) {
 
   const availableGames = filteredGames.filter((game) => game.available)
   const comingSoonGames = filteredGames.filter((game) => !game.available)
+
+  const handleGameClick = (gameId: string) => {
+    setActiveGame(gameId)
+  }
 
   return (
     <WindowShell title="RETRO GAMES" onClose={onClose}>
@@ -136,6 +166,7 @@ export function GameSelector({ isOpen, onClose }: GameSelectorProps) {
             {availableGames.map((game) => (
               <div
                 key={game.id}
+                onClick={() => handleGameClick(game.id)}
                 className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <div className="flex items-center gap-3">

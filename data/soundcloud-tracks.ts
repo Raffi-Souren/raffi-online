@@ -26,10 +26,10 @@ export const SOUNDCLOUD_TRACKS: SoundCloudTrack[] = [
   {
     id: "3",
     title: "Synthwave Dreams",
-    artist: "Various Artists",
+    artist: "Neon Nights",
     embedUrl:
       "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/295&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
-    url: "https://soundcloud.com/synthwave/dreams",
+    url: "https://soundcloud.com/neon-nights/synthwave-dreams",
   },
   {
     id: "4",
@@ -48,143 +48,43 @@ export const SOUNDCLOUD_TRACKS: SoundCloudTrack[] = [
     url: "https://soundcloud.com/daftpunk/digital-love",
   },
   {
-    id: "6",
-    title: "Vinyl Memories",
-    artist: "RJD2",
-    embedUrl: "",
-    url: "https://soundcloud.com/rjd2/vinyl-memories",
-  },
-  {
-    id: "7",
-    title: "Sunset Boulevard",
-    artist: "Thievery Corporation",
-    embedUrl: "",
-    url: "https://soundcloud.com/thievery-corporation/sunset-boulevard",
-  },
-  {
-    id: "8",
-    title: "Electric Pulse",
-    artist: "Pretty Lights",
-    embedUrl: "",
-    url: "https://soundcloud.com/prettylights/electric-pulse",
-  },
-  {
-    id: "9",
-    title: "Jazz Café",
-    artist: "GoGo Penguin",
-    embedUrl: "",
-    url: "https://soundcloud.com/gogopenguin/jazz-cafe",
-  },
-  {
-    id: "10",
-    title: "Analog Soul",
-    artist: "Gramatik",
-    embedUrl: "",
-    url: "https://soundcloud.com/gramatik/analog-soul",
-  },
-  {
-    id: "11",
-    title: "Moonlight Sonata Remix",
-    artist: "Ludovico Einaudi",
-    embedUrl: "",
-    url: "https://soundcloud.com/ludovico-einaudi/moonlight-sonata-remix",
-  },
-  {
-    id: "12",
-    title: "Street Symphony",
-    artist: "Blockhead",
-    embedUrl: "",
-    url: "https://soundcloud.com/blockhead/street-symphony",
-  },
-  {
-    id: "13",
-    title: "Ocean Waves",
-    artist: "Boards of Canada",
-    embedUrl: "",
-    url: "https://soundcloud.com/boardsofcanada/ocean-waves",
-  },
-  {
-    id: "14",
-    title: "City Lights",
-    artist: "Nightmares on Wax",
-    embedUrl: "",
-    url: "https://soundcloud.com/nightmaresonwax/city-lights",
-  },
-  {
-    id: "15",
-    title: "Retro Future",
-    artist: "Com Truise",
-    embedUrl: "",
-    url: "https://soundcloud.com/com-truise/retro-future",
-  },
-  {
-    id: "16",
-    title: "Halcyon On and On",
-    artist: "Orbital",
-    embedUrl: "",
-    url: "https://soundcloud.com/orbital/halcyon-on-and-on",
-  },
-  {
-    id: "17",
-    title: "Spastik",
-    artist: "Plastikman",
-    embedUrl: "",
-    url: "https://soundcloud.com/plastikman/spastik",
-  },
-  {
-    id: "18",
-    title: "Strings of Life",
-    artist: "Derrick May",
-    embedUrl: "",
-    url: "https://soundcloud.com/derrick-may/strings-of-life",
-  },
-  {
-    id: "19",
-    title: "Your Love",
-    artist: "Frankie Knuckles",
-    embedUrl: "",
-    url: "https://soundcloud.com/frankie-knuckles/your-love",
-  },
-  {
-    id: "20",
-    title: "French Kiss",
-    artist: "Lil Louis",
-    embedUrl: "",
-    url: "https://soundcloud.com/lil-louis/french-kiss",
-  },
-  {
     id: "yukon-x-up-dj-hunny-bee-remix",
     title: "Yukon X Up (DJ Hunny Bee Remix)",
     artist: "djhunnybee",
-    embedUrl: "",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-remix&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
     url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-remix",
   },
   {
     id: "four-tet-insect-near-piha-beach",
     title: "Insect Near Piha Beach",
     artist: "user-982065028",
-    embedUrl: "",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/user-982065028/four-tet-insect-near-piha-beach&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
     url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
   },
   {
     id: "habibi-funk-beirut",
     title: "Habibi Funk Beirut",
     artist: "djsweeterman",
-    embedUrl: "",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/djsweeterman/habibi-funk-beirut&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
     url: "https://soundcloud.com/djsweeterman/habibi-funk-beirut",
   },
   {
     id: "chopsuey",
     title: "Chop Suey",
     artist: "osive",
-    embedUrl: "",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/osive/chopsuey&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
     url: "https://soundcloud.com/osive/chopsuey",
   },
   {
     id: "gordos-dilemma",
     title: "Gordo's Dilemma",
     artist: "gordoszn",
-    embedUrl: "",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/gordoszn/gordos-dilemma&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
     url: "https://soundcloud.com/gordoszn/gordos-dilemma",
   },
   {
@@ -1626,7 +1526,8 @@ export const SOUNDCLOUD_TRACKS: SoundCloudTrack[] = [
     id: "poolside-vibes",
     title: "Poolside Vibes",
     artist: "Summer Collective",
-    embedUrl: "",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/295&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
     url: "https://soundcloud.com/summer-collective/poolside-vibes",
   },
   {
@@ -1654,7 +1555,8 @@ export const SOUNDCLOUD_TRACKS: SoundCloudTrack[] = [
     id: "retro-future",
     title: "Retro Future",
     artist: "Synthwave Masters",
-    embedUrl: "",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/296&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
     url: "https://soundcloud.com/synthwave-masters/retro-future",
   },
   {
@@ -1719,5 +1621,13 @@ export const SOUNDCLOUD_TRACKS: SoundCloudTrack[] = [
     artist: "Ambient Stars",
     embedUrl: "",
     url: "https://soundcloud.com/ambient-stars/starlight",
+  },
+  {
+    id: "ocean-drive",
+    title: "Ocean Drive",
+    artist: "Miami Nights",
+    embedUrl:
+      "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/297&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true",
+    url: "https://soundcloud.com/miami-nights/ocean-drive",
   },
 ]

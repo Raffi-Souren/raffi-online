@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { WindowShell } from "../../components/ui/WindowShell"
+import WindowShell from "../../components/ui/WindowShell"
 
 interface BlogrollItem {
   id: number
@@ -14,22 +14,22 @@ interface BlogrollItem {
 const blogrollItems: BlogrollItem[] = [
   {
     id: 1,
-    title: "Poolsuite FM",
-    description: "Retro web radio platform bringing back the golden age of summer vibes and poolside aesthetics.",
+    title: "Poolsuite",
+    description: "The ultimate summer soundtrack and lifestyle brand that captures the essence of poolside vibes.",
     url: "https://poolsuite.net/",
     category: "Music",
   },
   {
     id: 2,
     title: "KidTakeOver",
-    description: "Creative collective pushing boundaries in art, music, and digital culture.",
+    description: "Creative collective pushing boundaries in music, fashion, and digital culture.",
     url: "https://kidtakeover.com/",
     category: "Creative",
   },
   {
     id: 3,
     title: "Bowery Showroom",
-    description: "NYC underground venue showcasing emerging artists and experimental performances.",
+    description: "Curated fashion and lifestyle destination showcasing emerging and established brands.",
     url: "https://boweryshowroom.com/",
     category: "Venue",
   },
@@ -40,7 +40,7 @@ interface BlogrollWindowProps {
   onClose: () => void
 }
 
-export function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps) {
+export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
 
@@ -96,19 +96,19 @@ export function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps) {
 
         {/* Blogroll Items */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredItems.map((item) => (
               <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{item.title}</h3>
                   <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{item.category}</span>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                <p className="text-gray-600 mb-3">{item.description}</p>
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-blue-600 hover:underline font-medium"
                 >
                   {item.url} →
                 </a>
@@ -119,6 +119,19 @@ export function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps) {
           {filteredItems.length === 0 && (
             <div className="text-center text-gray-500 py-4">No sites found matching your criteria</div>
           )}
+        </div>
+
+        {/* Why These Sites */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
+            Why These Sites?
+          </h3>
+          <p className="text-gray-700">
+            Each of these destinations represents a different aspect of contemporary digital culture - from the
+            nostalgic summer vibes of Poolsuite to the cutting-edge creativity of KidTakeOver and the curated aesthetic
+            of Bowery Showroom. They all share a commitment to quality, creativity, and pushing boundaries in their
+            respective fields.
+          </p>
         </div>
 
         {/* Stats */}

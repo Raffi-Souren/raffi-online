@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { QuestionBlock } from "../components/easter/QuestionBlock"
-import { DesktopIcon } from "../components/ui/DesktopIcon"
-import { StartMenu } from "../components/ui/StartMenu"
-import { AboutWindow } from "./components/AboutWindow"
-import { GameSelector } from "./components/GameSelector"
-import { DiggingInTheCrates } from "./components/DiggingInTheCrates"
-import { BlogrollWindow } from "./components/BlogrollWindow"
-import { NotesWindow } from "./components/NotesWindow"
-import { UnderConstructionWindow } from "./components/UnderConstructionWindow"
+import QuestionBlock from "../components/easter/QuestionBlock"
+import DesktopIcon from "../components/ui/DesktopIcon"
+import StartMenu from "../components/ui/StartMenu"
+import AboutWindow from "./components/AboutWindow"
+import GameSelector from "./components/GameSelector"
+import DiggingInTheCrates from "./components/DiggingInTheCrates"
+import BlogrollWindow from "./components/BlogrollWindow"
+import NotesWindow from "./components/NotesWindow"
+import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
@@ -68,6 +68,10 @@ export default function Home() {
     }
   }
 
+  const handleEasterEggClick = () => {
+    openWindow("crates")
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Windows XP Background */}
@@ -101,11 +105,7 @@ export default function Home() {
             <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
           </div>
 
-          {/* Bottom Row - Hidden on mobile */}
-          <div className="hidden md:flex flex-col items-center self-end mb-16">
-            <DesktopIcon label="DIGGING IN THE CRATES" icon="🎵" onClick={() => handleIconClick("crates")} />
-          </div>
-
+          {/* Bottom Row - Hidden on mobile, removed "DIGGING IN THE CRATES" */}
           <div className="hidden md:flex flex-col items-center self-end mb-16">
             <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
           </div>
@@ -114,7 +114,7 @@ export default function Home() {
 
       {/* Question Block Easter Egg */}
       <div className="fixed bottom-20 right-4 z-20">
-        <QuestionBlock />
+        <QuestionBlock onClick={handleEasterEggClick} />
       </div>
 
       {/* Windows */}
