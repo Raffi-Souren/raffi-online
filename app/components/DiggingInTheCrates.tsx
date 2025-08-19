@@ -241,7 +241,6 @@ const SOUNDCLOUD_TRACKS: Track[] = [
   { id: "sheck-wes-lebron-james", title: "Sheck Wes - LeBron James", artist: "jessedemedeiross", url: "https://soundcloud.com/jessedemedeiross/sheck-wes-lebron-james" },
   { id: "untitledset", title: "Untitled Set", artist: "bakedgood", url: "https://soundcloud.com/bakedgood/untitledset" },
   { id: "yukon-x-up-dj-hunny-bee-mashup", title: "Yukon X Up (DJ Hunny Bee Mashup)", artist: "djhunnybee", url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-mashup" },
-  { id: "blaccmass-radio-one-night-only", title: "BlaccMass Radio - One Night Only", artist: "blaccmass", url: "https://soundcloud.com/blaccmass/blaccmass-radio-one-night-only" },
   { id: "four-tet-insect-near-piha-beach-oshee", title: "Four Tet - Insect Near Piha Beach", artist: "oshee", url: "https://soundcloud.com/oshee/four-tet-insect-near-piha-beach" },
   { id: "four-tet-caribou-jamie-xx-dj-set", title: "Four Tet, Caribou & Jamie XX DJ Set", artist: "hyakfm", url: "https://soundcloud.com/hyakfm/four-tet-caribou-jamie-xx-dj-set" },
   { id: "habibi-funk-plus", title: "Habibi Funk Plus", artist: "djsweeterman", url: "https://soundcloud.com/djsweeterman/habibi-funk-plus" },
@@ -303,9 +302,9 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         aria-modal="true"
         aria-labelledby="secret-title"
         tabIndex={-1}
-        className="w-full max-w-md overflow-hidden rounded-lg border-4 border-yellow-400 bg-yellow-100 shadow-2xl focus:outline-none"
+        className="w-full max-w-md overflow-hidden rounded-lg border-4 border-yellow-400 bg-white shadow-2xl focus:outline-none"
       >
-        {/* Title bar */}
+        {/* Title bar (kept yellow) */}
         <div className="flex items-center justify-between rounded-t-md bg-yellow-400 px-4 py-2">
           <div className="flex items-center gap-2">
             <span>🔔</span>
@@ -328,11 +327,11 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             <CheckCircle size={22} className="text-green-600" />
             <div>
               <p className="font-bold text-black">Congratulations!</p>
-              <p className="text-sm text-black">You&apos;ve found a secret track!</p>
+              <p className="text-sm text-black">You&apos;ve found a record from RAF's crate!</p>
             </div>
           </div>
 
-          {/* Player — wrapper clips borders; iframe uses exact 166px height to avoid white padding */}
+          {/* Player */}
           <div className="overflow-hidden rounded border border-gray-300 bg-white">
             {embedError ? (
               <div className="p-4 text-center">
@@ -348,7 +347,6 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               <iframe
                 title={`${currentTrack.title} by ${currentTrack.artist}`}
                 src={scEmbed(currentTrack.url)}
-                // Key line: exact native height for classic player
                 height={166}
                 width="100%"
                 className="block w-full"

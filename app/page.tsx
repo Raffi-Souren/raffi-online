@@ -75,8 +75,15 @@ export default function Home() {
     openWindow("crates")
   }
 
+  const handleStartMenuToggle = () => {
+    setShowStartMenu(!showStartMenu)
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Backdrop for Start Menu */}
+      {showStartMenu && <div className="fixed inset-0 z-30" onClick={() => setShowStartMenu(false)} />}
+
       {/* Windows XP Background */}
       <Image
         src="/windows-bg.jpg"
@@ -166,13 +173,13 @@ export default function Home() {
       />
 
       {/* Start Menu */}
-      {showStartMenu && <StartMenu onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />}
+      <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
 
       {/* Taskbar */}
       <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-30">
         {/* Start Button */}
         <button
-          onClick={() => setShowStartMenu(!showStartMenu)}
+          onClick={handleStartMenuToggle}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"
         >
           <span className="text-lg">🏁</span>
