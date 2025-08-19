@@ -2,14 +2,14 @@ export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-4xl mx-auto">
-        <h1 className="font-heading text-4xl font-bold mb-8 text-center">About Raffi Souren</h1>
+        <h1 className="font-heading text-4xl font-bold mb-8 text-center">About Raffi</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="glass-card p-6">
               <h2 className="font-heading text-2xl font-semibold mb-4 text-accent">Bio</h2>
               <p className="text-muted leading-relaxed mb-4">
-                Raffi Souren Khatchadourian is an AI architect and creative technologist based in New York City. By day,
+                Raffi is an AI architect and creative technologist based in New York City. By day,
                 he builds enterprise AI solutions at IBM, focusing on watsonx deployments and machine learning
                 infrastructure. By night, he crafts sonic experiences as a DJ and producer in NYC's underground
                 electronic music scene.
@@ -52,15 +52,15 @@ export default function AboutPage() {
               <p className="text-muted text-sm mb-4">
                 Available for DJ bookings, speaking engagements, and consulting projects.
               </p>
-              <p className="text-muted text-sm">Email: hello@raffi-souren.com</p>
+              <p className="text-muted text-sm">Email: raffi@notgoodcompany.com</p>
             </div>
 
             <div className="glass-card p-6">
               <h2 className="font-heading text-2xl font-semibold mb-4 text-accent">Contact</h2>
               <div className="space-y-2 text-sm text-muted">
-                <p>Professional inquiries: hello@raffi-souren.com</p>
-                <p>DJ bookings: bookings@raffi-souren.com</p>
-                <p>Press: press@raffi-souren.com</p>
+                <p>Professional inquiries: raffi@notgoodcompany.com</p>
+                <p>DJ bookings: raffi@notgoodcompany.com</p>
+                <p>Press: raffi@notgoodcompany.com</p>
               </div>
             </div>
           </div>
