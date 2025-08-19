@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useCallback } from "react"
 
 const GAME_WIDTH = 200
 const GAME_HEIGHT = 150
-const PLAYER_SIZE = 8
-const HELICOPTER_SIZE = 12
-const MISSILE_SIZE = 3
+const PLAYER_SIZE = 6
+const HELICOPTER_SIZE = 10
+const MISSILE_SIZE = 2
 
 interface Position {
   x: number
@@ -36,7 +36,6 @@ export default function ParachuteGame() {
   const [player, setPlayer] = useState<Position>({ x: GAME_WIDTH / 2, y: 20 })
   const [helicopters, setHelicopters] = useState<Helicopter[]>([])
   const [missiles, setMissiles] = useState<Missile[]>([])
-  const [clouds, setClouds] = useState<Position[]>([])
   const gameLoopRef = useRef<NodeJS.Timeout>()
   const [keys, setKeys] = useState<{ [key: string]: boolean }>({})
 
@@ -47,12 +46,6 @@ export default function ParachuteGame() {
     setPlayer({ x: GAME_WIDTH / 2, y: 20 })
     setHelicopters([])
     setMissiles([])
-    setClouds([
-      { x: 50, y: 30 },
-      { x: 120, y: 45 },
-      { x: 30, y: 60 },
-      { x: 150, y: 75 },
-    ])
   }, [])
 
   const startGame = useCallback(() => {
@@ -75,17 +68,17 @@ export default function ParachuteGame() {
       // Move player
       setPlayer((prev) => {
         let newX = prev.x
-        let newY = prev.y + 0.5 // Falling speed
+        let newY = prev.y + 0.8 // Falling speed
 
-        if (keys["ArrowLeft"] || keys["a"] || keys["A"]) {
-          newX = Math.max(0, prev.x - 1)
+        if (keys["ArrowLeft"] || keys["4"]) {
+          newX = Math.max(PLAYER_SIZE, prev.x - 1.5)
         }
-        if (keys["ArrowRight"] || keys["d"] || keys["D"]) {
-          newX = Math.min(GAME_WIDTH - PLAYER_SIZE, prev.x + 1)
+        if (keys["ArrowRight"] || keys["6"]) {
+          newX = Math.min(GAME_WIDTH - PLAYER_SIZE, prev.x + 1.5)
         }
 
         // Check if landed
-        if (newY >= GAME_HEIGHT - 20) {
+        if (newY >= GAME_HEIGHT - 15) {
           setScore((prev) => prev + 100)
           setAltitude(1000)
           newY = 20
@@ -96,17 +89,17 @@ export default function ParachuteGame() {
       })
 
       // Update altitude
-      setAltitude((prev) => Math.max(0, prev - 1))
+      setAltitude((prev) => Math.max(0, prev - 2))
 
       // Spawn helicopters
       setHelicopters((prev) => {
         const newHelicopters = [...prev]
 
-        if (Math.random() < 0.02 && newHelicopters.length < 3) {
+        if (Math.random() < 0.025 && newHelicopters.length < 2) {
           const side = Math.random() < 0.5 ? -HELICOPTER_SIZE : GAME_WIDTH
           newHelicopters.push({
             x: side,
-            y: Math.random() * (GAME_HEIGHT - 40) + 20,
+            y: Math.random() * (GAME_HEIGHT - 60) + 30,
             direction: side < 0 ? 1 : -1,
             lastShot: Date.now(),
           })
@@ -115,7 +108,7 @@ export default function ParachuteGame() {
         return newHelicopters
           .map((heli) => ({
             ...heli,
-            x: heli.x + heli.direction * 0.5,
+            x: heli.x + heli.direction * 0.8,
           }))
           .filter((heli) => heli.x > -HELICOPTER_SIZE && heli.x < GAME_WIDTH + HELICOPTER_SIZE)
       })
@@ -125,13 +118,13 @@ export default function ParachuteGame() {
         const newMissiles = [...prev]
 
         helicopters.forEach((heli) => {
-          if (Date.now() - heli.lastShot > 2000 && Math.random() < 0.1) {
+          if (Date.now() - heli.lastShot > 1800 && Math.random() < 0.15) {
             heli.lastShot = Date.now()
             newMissiles.push({
               x: heli.x + HELICOPTER_SIZE / 2,
               y: heli.y + HELICOPTER_SIZE,
-              vx: (Math.random() - 0.5) * 2,
-              vy: 2,
+              vx: (Math.random() - 0.5) * 1.5,
+              vy: 1.8,
             })
           }
         })
@@ -169,7 +162,7 @@ export default function ParachuteGame() {
 
         return currentMissiles.filter((_, index) => !hitMissiles.includes(index))
       })
-    }, 50)
+    }, 40)
 
     return () => {
       if (gameLoopRef.current) {
@@ -183,7 +176,10 @@ export default function ParachuteGame() {
     const handleKeyDown = (e: KeyboardEvent) => {
       setKeys((prev) => ({ ...prev, [e.key]: true }))
 
-      if (gameState === "start" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      if (
+        gameState === "start" &&
+        (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "4" || e.key === "6" || e.key === " ")
+      ) {
         startGame()
       }
     }
@@ -209,97 +205,87 @@ export default function ParachuteGame() {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Clear canvas with sky gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT)
-    gradient.addColorStop(0, "#87CEEB")
-    gradient.addColorStop(1, "#E0F6FF")
-    ctx.fillStyle = gradient
+    // Clear canvas with classic iPod green background
+    ctx.fillStyle = "#9BBB58"
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
     // Draw ground
-    ctx.fillStyle = "#8B4513"
-    ctx.fillRect(0, GAME_HEIGHT - 20, GAME_WIDTH, 20)
+    ctx.fillStyle = "#2D4A22"
+    ctx.fillRect(0, GAME_HEIGHT - 15, GAME_WIDTH, 15)
 
     if (gameState === "start") {
       ctx.fillStyle = "#000000"
-      ctx.font = "12px monospace"
+      ctx.font = "bold 14px monospace"
       ctx.textAlign = "center"
-      ctx.fillText("PARACHUTE", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20)
+      ctx.fillText("PARACHUTE", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 25)
       ctx.font = "8px monospace"
-      ctx.fillText("Use ← → arrows to steer", GAME_WIDTH / 2, GAME_HEIGHT / 2)
-      ctx.fillText("Avoid helicopters and missiles!", GAME_WIDTH / 2, GAME_HEIGHT / 2 + 15)
+      ctx.fillText("← → to steer", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 5)
+      ctx.fillText("Avoid helicopters!", GAME_WIDTH / 2, GAME_HEIGHT / 2 + 8)
+      ctx.fillText("Press ← → or SPACE", GAME_WIDTH / 2, GAME_HEIGHT / 2 + 25)
       return
     }
 
-    // Draw clouds
-    ctx.fillStyle = "#FFFFFF"
-    clouds.forEach((cloud) => {
-      ctx.beginPath()
-      ctx.arc(cloud.x, cloud.y, 8, 0, Math.PI * 2)
-      ctx.arc(cloud.x + 8, cloud.y, 10, 0, Math.PI * 2)
-      ctx.arc(cloud.x + 16, cloud.y, 8, 0, Math.PI * 2)
-      ctx.fill()
-    })
-
-    // Draw helicopters
-    ctx.fillStyle = "#333333"
+    // Draw helicopters (classic iPod style)
+    ctx.fillStyle = "#000000"
     helicopters.forEach((heli) => {
-      // Helicopter body
-      ctx.fillRect(heli.x, heli.y + 4, HELICOPTER_SIZE, 4)
-      // Rotor
-      ctx.fillRect(heli.x - 2, heli.y, HELICOPTER_SIZE + 4, 2)
+      // Helicopter body (simple rectangle)
+      ctx.fillRect(heli.x, heli.y + 3, HELICOPTER_SIZE, 3)
+      // Rotor (line)
+      ctx.fillRect(heli.x - 1, heli.y, HELICOPTER_SIZE + 2, 1)
       // Tail
-      ctx.fillRect(heli.x + HELICOPTER_SIZE, heli.y + 6, 4, 1)
+      ctx.fillRect(heli.x + HELICOPTER_SIZE, heli.y + 4, 3, 1)
     })
 
-    // Draw missiles
-    ctx.fillStyle = "#FF4500"
+    // Draw missiles (simple black dots)
+    ctx.fillStyle = "#000000"
     missiles.forEach((missile) => {
-      ctx.fillRect(missile.x, missile.y, MISSILE_SIZE, MISSILE_SIZE * 2)
+      ctx.fillRect(missile.x, missile.y, MISSILE_SIZE, MISSILE_SIZE)
     })
 
-    // Draw player with parachute
-    ctx.fillStyle = "#FF0000"
-    // Parachute canopy
+    // Draw player with parachute (classic iPod style)
+    ctx.fillStyle = "#000000"
+
+    // Parachute canopy (simple arc)
     ctx.beginPath()
-    ctx.arc(player.x + PLAYER_SIZE / 2, player.y - 5, 12, 0, Math.PI)
+    ctx.arc(player.x + PLAYER_SIZE / 2, player.y - 4, 8, 0, Math.PI)
     ctx.fill()
 
-    // Parachute lines
+    // Parachute lines (simple lines)
     ctx.strokeStyle = "#000000"
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(player.x + PLAYER_SIZE / 2 - 8, player.y - 5)
+    ctx.moveTo(player.x + PLAYER_SIZE / 2 - 6, player.y - 4)
     ctx.lineTo(player.x + PLAYER_SIZE / 2, player.y)
-    ctx.moveTo(player.x + PLAYER_SIZE / 2 + 8, player.y - 5)
+    ctx.moveTo(player.x + PLAYER_SIZE / 2 + 6, player.y - 4)
     ctx.lineTo(player.x + PLAYER_SIZE / 2, player.y)
     ctx.stroke()
 
-    // Player body
-    ctx.fillStyle = "#0000FF"
+    // Player body (simple rectangle)
+    ctx.fillStyle = "#000000"
     ctx.fillRect(player.x, player.y, PLAYER_SIZE, PLAYER_SIZE)
 
-    // Draw UI
+    // Draw UI (classic iPod style)
     ctx.fillStyle = "#000000"
-    ctx.font = "10px monospace"
+    ctx.font = "bold 8px monospace"
     ctx.textAlign = "left"
-    ctx.fillText(`Score: ${score}`, 5, 15)
-    ctx.fillText(`Lives: ${lives}`, 5, 25)
+    ctx.fillText(`${score}`, 5, 12)
+    ctx.fillText(`♥${lives}`, 5, 22)
     ctx.textAlign = "right"
-    ctx.fillText(`Alt: ${altitude}ft`, GAME_WIDTH - 5, 15)
+    ctx.fillText(`${altitude}ft`, GAME_WIDTH - 5, 12)
 
     if (gameState === "gameOver") {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.7)"
+      ctx.fillStyle = "rgba(0, 0, 0, 0.8)"
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
       ctx.fillStyle = "#FFFFFF"
-      ctx.font = "12px monospace"
+      ctx.font = "bold 12px monospace"
       ctx.textAlign = "center"
-      ctx.fillText("GAME OVER", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 10)
+      ctx.fillText("GAME OVER", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 15)
       ctx.font = "8px monospace"
-      ctx.fillText(`Final Score: ${score}`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 5)
+      ctx.fillText(`Score: ${score}`, GAME_WIDTH / 2, GAME_HEIGHT / 2)
+      ctx.fillText("Press ← → to restart", GAME_WIDTH / 2, GAME_HEIGHT / 2 + 15)
     }
-  }, [gameState, player, helicopters, missiles, clouds, score, lives, altitude])
+  }, [gameState, player, helicopters, missiles, score, lives, altitude])
 
   const handleMobileControl = (direction: "left" | "right") => {
     if (gameState === "start") {
