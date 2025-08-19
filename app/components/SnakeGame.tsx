@@ -263,42 +263,99 @@ export default function SnakeGame() {
         )}
       </div>
 
-      {/* Mobile Controls - Below Canvas */}
-      {gameStarted && !gameOver && (
-        <div className="flex justify-center py-2 md:hidden bg-gray-100">
-          <div className="grid grid-cols-3 gap-2 bg-black bg-opacity-50 p-3 rounded-lg">
-            <div></div>
-            <button
-              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
-              onTouchStart={(e) => handleTouchStart(e, { x: 0, y: -1 })}
-            >
-              ↑
-            </button>
-            <div></div>
-            <button
-              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
-              onTouchStart={(e) => handleTouchStart(e, { x: -1, y: 0 })}
-            >
-              ←
-            </button>
-            <div></div>
-            <button
-              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
-              onTouchStart={(e) => handleTouchStart(e, { x: 1, y: 0 })}
-            >
-              →
-            </button>
-            <div></div>
-            <button
-              className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
-              onTouchStart={(e) => handleTouchStart(e, { x: 0, y: 1 })}
-            >
-              ↓
-            </button>
-            <div></div>
+      {/* Mobile Controls - Always visible on mobile */}
+      <div className="flex justify-center py-2 md:hidden bg-gray-100">
+        <div className="grid grid-cols-3 gap-2 bg-black bg-opacity-50 p-3 rounded-lg">
+          <div></div>
+          <button
+            className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+            onTouchStart={(e) => handleTouchStart(e, { x: 0, y: -1 })}
+            onClick={() => {
+              if (!gameStarted && !gameOver) {
+                startGame()
+                setDirection({ x: 0, y: -1 })
+              } else if (gameStarted && !gameOver) {
+                changeDirection({ x: 0, y: -1 })
+              } else if (gameOver) {
+                resetGame()
+              }
+            }}
+          >
+            ↑
+          </button>
+          <div></div>
+          <button
+            className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+            onTouchStart={(e) => handleTouchStart(e, { x: -1, y: 0 })}
+            onClick={() => {
+              if (!gameStarted && !gameOver) {
+                startGame()
+                setDirection({ x: -1, y: 0 })
+              } else if (gameStarted && !gameOver) {
+                changeDirection({ x: -1, y: 0 })
+              } else if (gameOver) {
+                resetGame()
+              }
+            }}
+          >
+            ←
+          </button>
+          <div className="w-12 h-12 flex items-center justify-center">
+            {!gameStarted && !gameOver && (
+              <div className="text-white text-xs text-center">
+                TAP
+                <br />
+                TO
+                <br />
+                START
+              </div>
+            )}
+            {gameOver && (
+              <div className="text-white text-xs text-center">
+                TAP
+                <br />
+                TO
+                <br />
+                PLAY
+              </div>
+            )}
           </div>
+          <button
+            className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+            onTouchStart={(e) => handleTouchStart(e, { x: 1, y: 0 })}
+            onClick={() => {
+              if (!gameStarted && !gameOver) {
+                startGame()
+                setDirection({ x: 1, y: 0 })
+              } else if (gameStarted && !gameOver) {
+                changeDirection({ x: 1, y: 0 })
+              } else if (gameOver) {
+                resetGame()
+              }
+            }}
+          >
+            →
+          </button>
+          <div></div>
+          <button
+            className="w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center text-xl font-bold active:bg-gray-600"
+            onTouchStart={(e) => handleTouchStart(e, { x: 0, y: 1 })}
+            onClick={() => {
+              if (!gameStarted && !gameOver) {
+                startGame()
+                setDirection({ x: 0, y: 1 })
+              } else if (gameStarted && !gameOver) {
+                changeDirection({ x: 0, y: 1 })
+              } else if (gameOver) {
+                resetGame()
+              }
+            }}
+          >
+            ↓
+          </button>
+          <div></div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

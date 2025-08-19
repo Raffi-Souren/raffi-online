@@ -121,19 +121,6 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
           )}
         </div>
 
-        {/* Why These Sites */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
-            Why These Sites?
-          </h3>
-          <p className="text-gray-700">
-            Each of these destinations represents a different aspect of contemporary digital culture - from the
-            nostalgic summer vibes of Poolsuite to the cutting-edge creativity of KidTakeOver and the curated aesthetic
-            of Bowery Showroom. They all share a commitment to quality, creativity, and pushing boundaries in their
-            respective fields.
-          </p>
-        </div>
-
         {/* Stats */}
         <div className="text-center text-xs text-gray-500 pt-4 border-t">
           Showing {filteredItems.length} of {blogrollItems.length} sites
