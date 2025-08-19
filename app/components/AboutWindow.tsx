@@ -42,10 +42,10 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
           {/* Bio Section */}
           <div className="mb-8">
             <p className="text-gray-700 leading-relaxed mb-4">
-              Building the future of AI-powered applications for financial services - bridging cutting-edge research with practical enterprise solutions since the early Watson days. Helping businesses navigate the rapidly evolving technology landscape through large-scale automation and transformation.
+              Technology consultant and AI architect based in NYC. I help companies build and scale AI products at IBM, mostly working on watsonx for financial services clients. Also advising at Nameless Ventures and running Bad Company, a creative collective that throws events around the city.
             </p>
             <p className="text-gray-700 leading-relaxed">
-              When not architecting AI systems, exploring the intersection of technology, culture, and creativity - DJing & hosting events, playing pick-up soccer in Greenpoint, digging through vinyl crates with the fam.
+              When I'm not working on AI systems, or advising startups, I'm usually digging for vinyl with fam, DJing at a friends function, or playing pick-up soccer.
             </p>
           </div>
 
