@@ -21,6 +21,14 @@ interface Event {
   description: string
   url?: string
   status: "upcoming" | "previous"
+  type: "speaking" | "keynote" | "panel" | "dj" | "other"
+}
+
+interface PressItem {
+  title: string
+  publication: string
+  description: string
+  url: string
 }
 
 const ARTICLES: Article[] = [
@@ -79,10 +87,6 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
     title: "The Effect of a US Recession and Macroeconomic Variables on Stock Market Performance",
     url: "https://drive.google.com/file/d/1fJcGuypNM7N-oBu6caEDm0hJlokZfihB/view?usp=sharing",
   },
-   {
-    title: "Coming soon: Real-Time Automatic Prompt Generation Systems for Financial Services: Baynesian-Enhanced Econometric Framework",
-    url: "#",
-  },
 ]
 
 const EVENTS: Event[] = [
@@ -93,6 +97,53 @@ const EVENTS: Event[] = [
     description: "Deep dive into implementing generative AI solutions for capital markets",
     url: "https://lu.ma/chks6i58",
     status: "upcoming",
+    type: "speaking",
+  },
+  {
+    title: "AI Summit @ Javits Center",
+    date: "Dec 2024",
+    location: "Javits Center, NYC",
+    description:
+      "Hyper automation in banking and finance - keynote presentation on the future of AI in financial services",
+    url: "https://vimeo.com/1041803978/881d636822",
+    status: "previous",
+    type: "keynote",
+  },
+  {
+    title: "AI in Finance @ a16z Tech Week NYC",
+    date: "May 2025",
+    location: "a16z NYC",
+    description: "Reliable GenAI in Quant Finance - panel discussion on implementing AI in quantitative finance",
+    url: "https://www.linkedin.com/posts/raffi-khatchadourian_genai-finance-modelcompression-activity-7336880144894083072-vH4C",
+    status: "previous",
+    type: "panel",
+  },
+  {
+    title: "BoweryLand DJ Set",
+    date: "Summer 2024",
+    location: "NYC",
+    description: "DJ performance at BoweryLand event",
+    url: "https://x.com/DeadliestKhatch/status/1827123754347925770",
+    status: "previous",
+    type: "dj",
+  },
+  {
+    title: "BADCOMPANY F/W 21-22 CAPSULE",
+    date: "2022",
+    location: "NYC",
+    description: "Recap video from pop up",
+    url: "https://vimeo.com/647500740",
+    status: "previous",
+    type: "other",
+  },
+]
+
+const PRESS: PressItem[] = [
+  {
+    title: "20-Year-Old Entrepreneur Is Using Data to Retune the Music Industry",
+    publication: "General Assembly",
+    description: "Interview on indify startup with General Assembly",
+    url: "https://generalassemb.ly/blog/20-year-old-entrepreneur-is-using-data-to-retune-the-music-industry/",
   },
 ]
 
@@ -108,6 +159,25 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
   const upcomingEvents = EVENTS.filter((event) => event.status === "upcoming")
   const previousEvents = EVENTS.filter((event) => event.status === "previous")
+
+  const getEventTypeLabel = (type: string) => {
+    switch (type) {
+      case "keynote":
+        return "KEYNOTE"
+      case "panel":
+        return "PANEL"
+      case "dj":
+        return "DJ SET"
+      case "speaking":
+        return "SPEAKING"
+      default:
+        return "EVENT"
+    }
+  }
+
+  const getEventStatusLabel = (status: string) => {
+    return status === "upcoming" ? "UPCOMING" : "COMPLETED"
+  }
 
   return (
     <WindowShell title="NOTES" onClose={onClose}>
@@ -128,7 +198,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            📝 LinkedIn Articles
+            📝 Articles
           </button>
           <button
             onClick={() => setActiveTab("research")}
@@ -155,34 +225,65 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
         {/* Tab Content */}
         <div className="bg-gray-50 rounded-lg p-6">
           {activeTab === "articles" && (
-            <div>
-              <div className="text-lg font-semibold text-blue-600 mb-4 border-b-2 border-blue-400 pb-1 inline-block">
-                📝 LinkedIn Articles
-              </div>
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-900 mb-2">From Consumer Buzz to Enterprise Adoption Series</h3>
-              </div>
-              <div className="space-y-3">
-                {ARTICLES.map((article) => (
-                  <div key={article.version} className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                          {article.version}
-                        </span>
-                        <h4 className="font-semibold text-gray-900">{article.title}</h4>
+            <div className="space-y-6">
+              {/* LinkedIn Articles Section */}
+              <div>
+                <div className="text-lg font-semibold text-blue-600 mb-4 border-b-2 border-blue-400 pb-1 inline-block">
+                  📝 LinkedIn Articles
+                </div>
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">From Consumer Buzz to Enterprise Adoption Series</h3>
+                </div>
+                <div className="space-y-3">
+                  {ARTICLES.map((article) => (
+                    <div key={article.version} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                            {article.version}
+                          </span>
+                          <h4 className="font-semibold text-gray-900">{article.title}</h4>
+                        </div>
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline font-medium text-sm"
+                        >
+                          Read →
+                        </a>
                       </div>
-                      <a
-                        href={article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline font-medium text-sm"
-                      >
-                        Read →
-                      </a>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              {/* Press Section */}
+              <div>
+                <div className="text-lg font-semibold text-green-600 mb-4 border-b-2 border-green-400 pb-1 inline-block">
+                  📰 Press
+                </div>
+                <div className="space-y-3">
+                  {PRESS.map((item, index) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
+                          <p className="text-sm text-gray-600 mb-1">{item.publication}</p>
+                          <p className="text-sm text-gray-700">{item.description}</p>
+                        </div>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:underline font-medium text-sm whitespace-nowrap ml-4"
+                        >
+                          Read →
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -224,8 +325,12 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                     {upcomingEvents.map((event, index) => (
                       <div key={index} className="bg-white border-l-4 border-green-500 rounded-lg p-4">
                         <div className="flex gap-2 mb-2">
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">SPEAKING</span>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">UPCOMING</span>
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            {getEventTypeLabel(event.type)}
+                          </span>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            {getEventStatusLabel(event.status)}
+                          </span>
                         </div>
                         <div className="font-semibold text-gray-900 mb-1">{event.title}</div>
                         <div className="text-sm text-gray-600 mb-2">
@@ -257,14 +362,28 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                       {previousEvents.map((event, index) => (
                         <div key={index} className="bg-white border-l-4 border-gray-400 rounded-lg p-4">
                           <div className="flex gap-2 mb-2">
-                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">SPEAKING</span>
-                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">COMPLETED</span>
+                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                              {getEventTypeLabel(event.type)}
+                            </span>
+                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                              {getEventStatusLabel(event.status)}
+                            </span>
                           </div>
                           <div className="font-semibold text-gray-900 mb-1">{event.title}</div>
                           <div className="text-sm text-gray-600 mb-2">
                             {event.date} • {event.location}
                           </div>
-                          <div className="text-sm text-gray-700">{event.description}</div>
+                          <div className="text-sm text-gray-700 mb-3">{event.description}</div>
+                          {event.url && (
+                            <a
+                              href={event.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline font-medium text-sm"
+                            >
+                              {event.type === "keynote" || event.type === "panel" ? "🎥 Watch Replay" : "View"} →
+                            </a>
+                          )}
                         </div>
                       ))}
                     </div>
