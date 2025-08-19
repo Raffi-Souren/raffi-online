@@ -1,6 +1,7 @@
 "use client"
 
 import WindowShell from "../../components/ui/WindowShell"
+import Image from "next/image"
 
 interface AboutWindowProps {
   isOpen: boolean
@@ -14,8 +15,8 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
     <WindowShell title="ABOUT ME - RAF.TXT" onClose={onClose}>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shrink-0">
-            RAF
+          <div className="w-20 h-20 shrink-0">
+            <Image src="/RAF-logo.png" alt="RAF Logo" width={80} height={80} className="w-full h-full object-contain" />
           </div>
           <div className="text-center md:text-left">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">RAFFI KHATCHADOURIAN</h1>
@@ -28,15 +29,10 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
           <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b-2 border-blue-400 pb-1 inline-block">BIO</h3>
           <div className="space-y-4 text-gray-700">
             <p>
-              Raffi is an NYC-based AI Architect driving generative AI transformations for IBM's enterprise clients
-              since 2016 - from early Watson solutions to today's large-scale automation initiatives. He's also an
-              entrepreneur and advisor @ Nameless Ventures, plus co-founder of Bad Company, a creative collective
-              managing partnerships at high-profile NYC venues.
+              AI architect @ IBM watsonx. Advisor @ Nameless Ventures. Co-founder Bad Company creative collective. Ex-COO indify. Mathematical Economics, Colgate.
             </p>
             <p>
-              Previously COO @ indify (music data startup through Thought Into Action incubator). Outside corporate
-              life, he's deep in NYC's creative scene - DJing across city venues, playing pick-up soccer in Brooklyn,
-              and crate-digging for vinyls with family.
+              Building at the intersection of enterprise AI and NYC creative culture. DJing, soccer, vinyl.
             </p>
           </div>
         </div>
