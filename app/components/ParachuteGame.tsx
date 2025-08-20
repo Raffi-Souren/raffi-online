@@ -92,6 +92,37 @@ export default function ParachuteGame() {
     setMobileControls((prev) => ({ ...prev, right: pressed }))
   }
 
+  // Touch handlers for canvas
+  const updateMobileControlsFromTouch = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 0) return
+    const touch = e.touches[0]
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const touchX = touch.clientX - rect.left
+    const isLeft = touchX < CANVAS_WIDTH / 2
+    setMobileControls({ left: isLeft, right: !isLeft })
+  }, [])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    if (gameState !== "PLAYING") {
+      startGame()
+      return
+    }
+    updateMobileControlsFromTouch(e)
+  }, [gameState, startGame, updateMobileControlsFromTouch])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    if (gameState !== "PLAYING") return
+    updateMobileControlsFromTouch(e)
+  }, [gameState, updateMobileControlsFromTouch])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    setMobileControls({ left: false, right: false })
+  }, [])
+
   // Spawn helicopters
   useEffect(() => {
     if (gameState !== "PLAYING") return
@@ -301,7 +332,12 @@ export default function ParachuteGame() {
           imageRendering: "pixelated",
           transform: "scale(1.2)",
           transformOrigin: "center",
+          touchAction: "none",
         }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       />
 
       {/* Mobile Controls */}

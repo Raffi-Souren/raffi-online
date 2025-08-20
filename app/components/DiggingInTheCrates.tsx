@@ -253,7 +253,6 @@ const SOUNDCLOUD_TRACKS: Track[] = [
   { id: "gosh", title: "Gosh", artist: "jamie-xx", url: "https://soundcloud.com/jamie-xx/gosh" },
   { id: "a-walk", title: "A Walk", artist: "tycho", url: "https://soundcloud.com/tycho/a-walk" },
   { id: "a-new-error", title: "A New Error", artist: "moderat-official", url: "https://soundcloud.com/moderat-official/a-new-error" },
-  { id: "glue", title: "Glue", artist: "bicep-music", url: "https://soundcloud.com/bicep-music/glue" },
   { id: "odessa", title: "Odessa", artist: "caribouband", url: "https://soundcloud.com/caribouband/odessa" }
 ];
 
