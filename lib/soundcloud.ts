@@ -1,5 +1,4 @@
 import axios from "axios"
-import * as cheerio from "cheerio"
 
 export interface Track {
   id: string
@@ -10,8 +9,8 @@ export interface Track {
 }
 
 /**
- * Fetch the likes page and extract canonical track URLs.
- * Uses cheerio to parse the JS-disabled HTML.
+ * Fetch the likes page and extract canonical track URLs using regex parsing.
+ * This avoids cheerio/undici compatibility issues with Next.js 14.
  */
 export async function fetchLikedTrackUrls(username: string): Promise<Track[]> {
   const url = `https://soundcloud.com/${username}/likes`
@@ -19,22 +18,25 @@ export async function fetchLikedTrackUrls(username: string): Promise<Track[]> {
     headers: { "User-Agent": "Mozilla/5.0" },
   })
 
-  const $ = cheerio.load(html)
   const trackLinks = new Set<string>()
-
-  // Each liked track appears as a heading with an anchor; extract hrefs like `/artist/slug`
-  $("a").each((_, el) => {
-    const href = $(el).attr("href")
+  
+  // Match href attributes in anchor tags
+  const hrefRegex = /href=["']([^"']+)["']/g
+  let match
+  
+  while ((match = hrefRegex.exec(html)) !== null) {
+    const href = match[1]
+    // Only /artist/track style links
     if (
       href &&
-      /^\/[^/]+\/[^/]+$/.test(href) && // only /artist/track style links
+      /^\/[^/]+\/[^/]+$/.test(href) &&
       !href.includes("/sets/") &&
       !href.endsWith("/likes") &&
       !href.endsWith("/reposts")
     ) {
       trackLinks.add(`https://soundcloud.com${href}`)
     }
-  })
+  }
 
   let counter = 1
   return Array.from(trackLinks).map((url) => ({
