@@ -24,11 +24,7 @@ export default function Home() {
     startup: false,
     counter: false,
   })
-  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Update time every second
   useEffect(() => {
@@ -82,10 +78,6 @@ export default function Home() {
 
   const handleStartMenuToggle = () => {
     setShowStartMenu(!showStartMenu)
-  }
-
-  if (!mounted) {
-    return null
   }
 
   return (
