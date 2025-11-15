@@ -25,11 +25,7 @@ export default function Home() {
     counter: false,
   })
 
-  useEffect(() => {
-    console.log("[v0] Home component mounted")
-    console.log("[v0] OpenWindows state:", openWindows)
-  }, [])
-
+  
   // Update time every second
   useEffect(() => {
     const updateTime = () => {
