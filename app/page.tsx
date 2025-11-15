@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import QuestionBlock from "@/components/easter/QuestionBlock"
-import DesktopIcon from "@/components/ui/DesktopIcon"
-import StartMenu from "@/components/ui/StartMenu"
+import QuestionBlock from "../components/easter/QuestionBlock"
+import DesktopIcon from "../components/ui/DesktopIcon"
+import StartMenu from "../components/ui/StartMenu"
 import AboutWindow from "./components/AboutWindow"
 import GameSelector from "./components/GameSelector"
 import DiggingInTheCrates from "./components/DiggingInTheCrates"
@@ -24,7 +24,6 @@ export default function Home() {
     startup: false,
     counter: false,
   })
-
 
   // Update time every second
   useEffect(() => {

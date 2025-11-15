@@ -33,16 +33,6 @@ interface PressItem {
 
 const ARTICLES: Article[] = [
   {
-    version: "v10",
-    title: "When 27B Beats 400B: The Specialization Inflection (and Where Frontier Still Wins)",
-    url: "https://www.linkedin.com/pulse/when-27b-beats-400b-specialization-inflection-where-khatchadourian-wicee/",
-  },
-  {
-    version: "v9",
-    title: "Deterministic AI & System Design: Why 'Same Input, Same Output' Wins in 2025",
-    url: "https://www.linkedin.com/pulse/deterministic-ai-system-design-why-same-input-output-khatchadourian-gjtge?trackingId=5qB7ijaFT%2F%2BxvZ5nY5ihCw%3D%3D&lipi=urn%3Ali%3Apage%3Ad_flagship3_detail_base%3BwGOJNykqTpaunCewTRczMA%3D%3D",
-  },
-  {
     version: "v8",
     title: "When Bigger Stops Being Better",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v8-when-bigger-khatchadourian-gbjee",
@@ -86,10 +76,6 @@ const ARTICLES: Article[] = [
 
 const RESEARCH_PAPERS: ResearchPaper[] = [
   {
-    title: "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows",
-    url: "https://arxiv.org/abs/2511.07585",
-  },
-  {
     title: "Impact of External Forces and the Digital Age on the Turkish Narrative of Armenians in Turkey's Textbooks",
     url: "https://www.academia.edu/44288138/Impact_of_External_Forces_and_the_Digital_Age_on_the_Turkish_Narrative_of_Armenians_in_Turkeys_Textbooks?source=swp_share",
   },
@@ -105,21 +91,12 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
 
 const EVENTS: Event[] = [
   {
-    title: "AI4F @ ACM ICAIF",
-    date: "Nov 15, 2025",
-    location: "Singapore",
-    description: "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows",
-    url: "https://vimeo.com/1137311394?fl=pl&fe=sh",
-    status: "previous",
-    type: "keynote",
-  },
-  {
     title: "Building Gen AI for Capital Markets",
     date: "2025-08-21 at 18:00",
     location: "NYC",
     description: "Deep dive into implementing generative AI solutions for capital markets",
     url: "https://lu.ma/chks6i58",
-    status: "previous",
+    status: "upcoming",
     type: "speaking",
   },
   {
