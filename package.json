@@ -11,8 +11,6 @@
   "dependencies": {
     "@pinecone-database/pinecone": "latest",
     "@radix-ui/react-slot": "latest",
-    "axios": "latest",
-    "cheerio": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "csv-parse": "latest",

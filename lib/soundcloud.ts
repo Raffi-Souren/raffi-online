@@ -1,6 +1,3 @@
-import axios from "axios"
-import * as cheerio from "cheerio"
-
 export interface Track {
   id: string
   title?: string
@@ -11,20 +8,23 @@ export interface Track {
 
 /**
  * Fetch the likes page and extract canonical track URLs.
- * Uses cheerio to parse the JS-disabled HTML.
+ * Uses simple regex matching instead of cheerio to avoid webpack issues.
  */
 export async function fetchLikedTrackUrls(username: string): Promise<Track[]> {
   const url = `https://soundcloud.com/${username}/likes`
-  const { data: html } = await axios.get<string>(url, {
+  const response = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0" },
   })
+  const html = await response.text()
 
-  const $ = cheerio.load(html)
   const trackLinks = new Set<string>()
-
-  // Each liked track appears as a heading with an anchor; extract hrefs like `/artist/slug`
-  $("a").each((_, el) => {
-    const href = $(el).attr("href")
+  
+  // Extract href attributes from anchor tags that match track URL patterns
+  const hrefRegex = /href="(\/[^/]+\/[^/"]+)"/g
+  let match
+  
+  while ((match = hrefRegex.exec(html)) !== null) {
+    const href = match[1]
     if (
       href &&
       /^\/[^/]+\/[^/]+$/.test(href) && // only /artist/track style links
@@ -34,7 +34,7 @@ export async function fetchLikedTrackUrls(username: string): Promise<Track[]> {
     ) {
       trackLinks.add(`https://soundcloud.com${href}`)
     }
-  })
+  }
 
   let counter = 1
   return Array.from(trackLinks).map((url) => ({
@@ -49,9 +49,10 @@ export async function fetchLikedTrackUrls(username: string): Promise<Track[]> {
  */
 export async function resolveOEmbed(url: string) {
   try {
-    const { data } = await axios.get<{ html: string }>("https://soundcloud.com/oembed", {
-      params: { url, format: "json", maxheight: 166 },
-    })
+    const response = await fetch(
+      `https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json&maxheight=166`
+    )
+    const data = await response.json()
     return { ok: true, html: data.html }
   } catch {
     return { ok: false }
