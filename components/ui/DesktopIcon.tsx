@@ -7,6 +7,8 @@ interface DesktopIconProps {
 }
 
 export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) {
+  console.log("[v0] DesktopIcon rendering:", label, icon)
+  
   return (
     <div
       onClick={onClick}
