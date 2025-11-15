@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import QuestionBlock from "../components/easter/QuestionBlock"
-import DesktopIcon from "../components/ui/DesktopIcon"
-import StartMenu from "../components/ui/StartMenu"
+import QuestionBlock from "@/components/easter/QuestionBlock"
+import DesktopIcon from "@/components/ui/DesktopIcon"
+import StartMenu from "@/components/ui/StartMenu"
 import AboutWindow from "./components/AboutWindow"
 import GameSelector from "./components/GameSelector"
 import DiggingInTheCrates from "./components/DiggingInTheCrates"
@@ -24,6 +24,11 @@ export default function Home() {
     startup: false,
     counter: false,
   })
+
+  useEffect(() => {
+    console.log("[v0] Home component mounted")
+    console.log("[v0] OpenWindows state:", openWindows)
+  }, [])
 
   // Update time every second
   useEffect(() => {
@@ -45,15 +50,18 @@ export default function Home() {
   }, [])
 
   const openWindow = (windowName: string) => {
+    console.log("[v0] Opening window:", windowName)
     setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
     setShowStartMenu(false)
   }
 
   const closeWindow = (windowName: string) => {
+    console.log("[v0] Closing window:", windowName)
     setOpenWindows((prev) => ({ ...prev, [windowName]: false }))
   }
 
   const handleIconClick = (action: string) => {
+    console.log("[v0] Icon clicked:", action)
     if (action === "email") {
       try {
         const email = "raffi@notgoodcompany.com"
@@ -72,12 +80,16 @@ export default function Home() {
   }
 
   const handleEasterEggClick = () => {
+    console.log("[v0] Easter egg clicked")
     openWindow("crates")
   }
 
   const handleStartMenuToggle = () => {
+    console.log("[v0] Start menu toggled")
     setShowStartMenu(!showStartMenu)
   }
+
+  console.log("[v0] Rendering Home with showStartMenu:", showStartMenu)
 
   return (
     <div className="min-h-screen relative overflow-hidden">
