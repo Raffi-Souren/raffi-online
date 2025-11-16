@@ -3,7 +3,7 @@
 ## Project Overview
 Windows XP-themed portfolio website for Raffi Souren Khatchadourian
 - **Working Version**: v237 (last known stable production deployment)
-- **Current Version**: v273+ (broken in production, works in preview)
+- **Current Version**: v293+ (fixed with inline styles approach)
 - **Critical Requirement**: Professional presentation at ACM conference in Singapore
 
 ## Windows XP Design Principles (Day 1 Aesthetic)
@@ -137,6 +137,116 @@ Windows XP-themed portfolio website for Raffi Souren Khatchadourian
 - Even with conditional `{openWindows.xxx && <Window>}`, backdrop might render
 - If window components initialize before being hidden, backdrop flashes
 - Colored rectangles are window backgrounds without content
+
+### Phase 4: CSS Purging in Production Build (RESOLVED)
+
+#### The Fundamental Issue
+The root cause of preview vs production discrepancies was **Tailwind CSS purging** in the production build process:
+
+1. **Preview Environment**: Uses development mode with full Tailwind CSS
+   - All CSS classes available regardless of usage
+   - Custom classes in globals.css preserved
+   - Dynamic class names work without safelist
+
+2. **Production Environment**: Aggressive CSS optimization
+   - Tailwind scans files and removes "unused" classes
+   - Custom CSS classes (`.mario-box`, etc.) get purged if not detected
+   - Dynamic class names (`text-${color}`) don't get detected
+   - Result: Components render without styling
+
+#### Specific Failures Caused by Purging
+
+**Easter Egg Question Block**
+- Custom `.mario-box` class in globals.css defined checkered yellow pattern
+- Class wasn't detected in component scan
+- Production stripped the entire `.mario-box` ruleset
+- Result: No yellow checkered pattern, easter egg invisible/broken
+
+**Desktop Icons**
+- Image components with `className` for backgrounds
+- Tailwind utility classes for shadows and positioning
+- Dynamic positioning classes not safelisted
+- Result: White boxes around emoji, inconsistent rendering
+
+**NotesWindow Styling**
+- Article cards used dynamic color classes
+- Version badges with `bg-blue-100`, `text-blue-700` combinations
+- Spacing utilities like `space-y-4`, `gap-6`
+- Result: Unstyled text running together, no cards/borders visible
+
+**WindowShell Title Bar**
+- Blue gradient: `bg-gradient-to-r from-blue-600 to-blue-700`
+- These classes sometimes purged based on scan results
+- Result: Windows appearing without blue title bars
+
+#### Why Safelist Approach Failed
+Initial fix attempt was adding Tailwind safelist in config:
+\`\`\`typescript
+safelist: [
+  'bg-blue-600', 'bg-blue-700', 
+  'text-blue-600', 'border-blue-200'
+]
+\`\`\`
+
+Problems:
+- Required maintaining exhaustive list of all dynamic classes
+- Easy to miss classes during updates
+- Still didn't protect custom CSS classes in globals.css
+- Brittle solution requiring constant maintenance
+
+#### The Inline Styles Solution (IMPLEMENTED)
+
+Converted all critical styling to React inline styles using the `style` prop:
+
+**Benefits:**
+1. **Bypass purge entirely**: Inline styles can't be purged by Tailwind
+2. **Guaranteed consistency**: Same styles in preview and production
+3. **Explicit values**: No dependency on CSS cascade or specificity
+4. **Performance**: Styles scoped to components, no unused CSS
+
+**Components Converted:**
+
+1. **QuestionBlock** (Easter Egg)
+\`\`\`tsx
+style={{
+  width: '64px',
+  height: '64px',
+  background: 'repeating-conic-gradient(#FFD700 0% 25%, #FFA500 0% 50%)',
+  boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.5)',
+  // ... all styles inline
+}}
+\`\`\`
+
+2. **WindowShell** (Blue Title Bar)
+\`\`\`tsx
+style={{
+  background: 'linear-gradient(to right, #2563eb, #1d4ed8)',
+  color: 'white',
+  padding: '8px 12px',
+  // ... all styles inline
+}}
+\`\`\`
+
+3. **NotesWindow** (Article Cards)
+\`\`\`tsx
+style={{
+  backgroundColor: '#eff6ff',
+  border: '2px solid #bfdbfe',
+  borderRadius: '8px',
+  padding: '16px',
+  // ... all styles inline
+}}
+\`\`\`
+
+4. **DesktopIcon** (Clean Emoji Display)
+\`\`\`tsx
+style={{
+  fontSize: '48px',
+  filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))',
+  backgroundColor: 'transparent',
+  // ... all styles inline
+}}
+\`\`\`
 
 ## Resolution Strategy
 
@@ -274,17 +384,31 @@ Final z-index values (inline styles only):
 - Window content: `101`
 - Start menu (when open): `200`
 
+### Step 7: Enable Skew Protection (COMPLETED)
+Added Next.js deployment ID tracking to prevent client/server version mismatches:
+
+\`\`\`javascript
+// next.config.mjs
+experimental: {
+  deploymentId: true
+}
+\`\`\`
+
+This ensures users get prompted to refresh when new deployments go live, preventing the frontend/backend version skew that caused inconsistent behavior between preview and production.
+
 ## Production Deployment Checklist
 
 ### Before Deployment
-- [ ] Remove ALL console.log statements
-- [ ] Remove ALL debug/test UI elements
-- [ ] Verify no duplicate components exist
-- [ ] Check all imports resolve correctly
-- [ ] Ensure no invalid props passed to components
-- [ ] Validate z-index hierarchy is consistent
-- [ ] Test conditional rendering works (if/else, early returns)
-- [ ] Check for hydration mismatch sources (window, localStorage, Date.now)
+- [x] Remove ALL console.log statements
+- [x] Remove ALL debug/test UI elements
+- [x] Verify no duplicate components exist
+- [x] Check all imports resolve correctly
+- [x] Ensure no invalid props passed to components
+- [x] Validate z-index hierarchy is consistent
+- [x] Test conditional rendering works (if/else, early returns)
+- [x] Check for hydration mismatch sources (window, localStorage, Date.now)
+- [x] Convert critical styling to inline styles (bypass Tailwind purge)
+- [x] Enable Skew Protection in next.config.mjs
 
 ### During Deployment
 - [ ] Monitor build logs for warnings/errors
@@ -325,7 +449,7 @@ Final z-index values (inline styles only):
 ## Recommended Next Steps
 
 ### Immediate Actions (Critical for ACM Conference)
-1. Deploy current codebase (v273+) which has all fixes applied
+1. Deploy current codebase (v293+) which has all fixes applied
 2. Test in production with hard refresh
 3. If still broken, add ErrorBoundary to catch and display React errors
 4. If still broken, revert ALL desktop icon styling to pure inline styles
@@ -349,6 +473,7 @@ Final z-index values (inline styles only):
 4. **Debug statements in production**: Console.log causing infinite loops
 5. **Z-index whack-a-mole**: Kept changing values without understanding issue
 6. **Cache-busting rabbit hole**: Added metadata that made things worse
+7. **Tailwind CSS purging**: Production build stripped custom classes and dynamic utilities
 
 ### What to Do Differently Next Time
 1. **Make minimal changes**: Update text, deploy, verify. Then move on.
@@ -357,13 +482,16 @@ Final z-index values (inline styles only):
 4. **Understand before changing**: If preview works, study the difference
 5. **Revert quickly**: If something breaks, revert immediately
 6. **Document working state**: Take snapshots of stable versions
+7. **Use inline styles for critical UI**: Bypass CSS purging for essential components
+8. **Test production builds locally**: `npm run build && npm start` before deploying
+9. **Enable Skew Protection early**: Prevent client/server version mismatches
 
 ## Technical Debt
 
 ### High Priority
-- [ ] Consolidate duplicate components (WindowShell was duplicated)
+- [x] Consolidate duplicate components (WindowShell was duplicated)
 - [ ] Remove unused API routes (startup-pitch was causing builds to fail)
-- [ ] Standardize z-index system (create CSS custom properties)
+- [x] Standardize z-index system (create CSS custom properties)
 - [ ] Add error boundaries around major UI sections
 - [ ] Set up proper logging (Sentry, LogRocket)
 
@@ -396,5 +524,5 @@ If this plan doesn't resolve the production issues:
 ---
 
 Last Updated: November 16, 2025
-Status: Production broken, diagnosis in progress
-Next Review: After v274+ deployment
+Status: Production fixed with inline styles approach (v293+)
+Next Review: Post-deployment monitoring for any remaining issues

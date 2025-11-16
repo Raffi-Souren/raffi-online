@@ -214,76 +214,108 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
     return status === "upcoming" ? "UPCOMING" : "COMPLETED"
   }
 
+  const tabButtonStyle = (isActive: boolean) => ({
+    flex: 1,
+    padding: '0.5rem 1rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    borderBottom: isActive ? '2px solid #3b82f6' : '2px solid transparent',
+    color: isActive ? '#3b82f6' : '#6b7280',
+    backgroundColor: isActive ? '#eff6ff' : 'transparent',
+    transition: 'all 0.2s',
+    cursor: 'pointer',
+    border: 'none',
+    outline: 'none'
+  })
+
+  const cardStyle = {
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.5rem',
+    padding: '1rem',
+  }
+
   return (
     <WindowShell title="NOTES" onClose={onClose}>
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">MY ARTICLES, RESEARCH PAPERS & EVENTS</h1>
-          <p className="text-gray-600 text-sm">Collection of writings, research, and speaking engagements</p>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
+            MY ARTICLES, RESEARCH PAPERS & EVENTS
+          </h1>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            Collection of writings, research, and speaking engagements
+          </p>
         </div>
 
         {/* Tab Buttons */}
-        <div className="flex border-b border-gray-200">
+        <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
           <button
             onClick={() => setActiveTab("articles")}
-            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "articles"
-                ? "border-blue-500 text-blue-600 bg-blue-50"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+            style={tabButtonStyle(activeTab === "articles")}
           >
             📝 Articles
           </button>
           <button
             onClick={() => setActiveTab("research")}
-            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "research"
-                ? "border-blue-500 text-blue-600 bg-blue-50"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+            style={tabButtonStyle(activeTab === "research")}
           >
             🎓 Papers
           </button>
           <button
             onClick={() => setActiveTab("events")}
-            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "events"
-                ? "border-blue-500 text-blue-600 bg-blue-50"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+            style={tabButtonStyle(activeTab === "events")}
           >
             📅 Events
           </button>
         </div>
 
         {/* Tab Content */}
-        <div className="bg-gray-50 rounded-lg p-6">
+        <div style={{ backgroundColor: '#f9fafb', borderRadius: '0.5rem', padding: '1.5rem' }}>
           {activeTab === "articles" && (
-            <div className="space-y-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {/* LinkedIn Articles Section */}
               <div>
-                <div className="text-lg font-semibold text-blue-600 mb-4 border-b-2 border-blue-400 pb-1 inline-block">
+                <div style={{ 
+                  fontSize: '1.125rem', 
+                  fontWeight: '600', 
+                  color: '#2563eb', 
+                  marginBottom: '1rem',
+                  borderBottom: '2px solid #60a5fa',
+                  paddingBottom: '0.25rem',
+                  display: 'inline-block'
+                }}>
                   📝 LinkedIn Articles
                 </div>
-                <div className="mb-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">From Consumer Buzz to Enterprise Adoption Series</h3>
+                <div style={{ marginBottom: '1rem' }}>
+                  <h3 style={{ fontWeight: '600', color: '#111827', marginBottom: '0.5rem' }}>
+                    From Consumer Buzz to Enterprise Adoption Series
+                  </h3>
                 </div>
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {ARTICLES.map((article) => (
-                    <div key={article.version} className="bg-white border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                    <div key={article.version} style={cardStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ 
+                            fontSize: '0.875rem', 
+                            fontWeight: 'bold', 
+                            color: '#2563eb',
+                            backgroundColor: '#dbeafe',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem'
+                          }}>
                             {article.version}
                           </span>
-                          <h4 className="font-semibold text-gray-900">{article.title}</h4>
+                          <h4 style={{ fontWeight: '600', color: '#111827' }}>{article.title}</h4>
                         </div>
                         <a
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline font-medium text-sm"
+                          style={{ color: '#2563eb', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
+                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                         >
                           Read →
                         </a>
@@ -295,23 +327,33 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
               {/* Press Section */}
               <div>
-                <div className="text-lg font-semibold text-green-600 mb-4 border-b-2 border-green-400 pb-1 inline-block">
+                <div style={{ 
+                  fontSize: '1.125rem', 
+                  fontWeight: '600', 
+                  color: '#16a34a', 
+                  marginBottom: '1rem',
+                  borderBottom: '2px solid #4ade80',
+                  paddingBottom: '0.25rem',
+                  display: 'inline-block'
+                }}>
                   📰 Press
                 </div>
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {PRESS.map((item, index) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
-                          <p className="text-sm text-gray-600 mb-1">{item.publication}</p>
-                          <p className="text-sm text-gray-700">{item.description}</p>
+                    <div key={index} style={cardStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>{item.title}</h4>
+                          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>{item.publication}</p>
+                          <p style={{ fontSize: '0.875rem', color: '#374151' }}>{item.description}</p>
                         </div>
                         <a
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-green-600 hover:underline font-medium text-sm whitespace-nowrap ml-4"
+                          style={{ color: '#16a34a', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none', whiteSpace: 'nowrap', marginLeft: '1rem' }}
+                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                         >
                           Read →
                         </a>
@@ -325,19 +367,29 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
           {activeTab === "research" && (
             <div>
-              <div className="text-lg font-semibold text-purple-600 mb-4 border-b-2 border-purple-400 pb-1 inline-block">
+              <div style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '600', 
+                color: '#9333ea', 
+                marginBottom: '1rem',
+                borderBottom: '2px solid #c084fc',
+                paddingBottom: '0.25rem',
+                display: 'inline-block'
+              }}>
                 🎓 Research Papers
               </div>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {RESEARCH_PAPERS.map((paper, index) => (
-                  <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-gray-900 flex-1 pr-4">{paper.title}</h4>
+                  <div key={index} style={cardStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h4 style={{ fontWeight: '600', color: '#111827', flex: 1, paddingRight: '1rem' }}>{paper.title}</h4>
                       <a
                         href={paper.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-purple-600 hover:underline font-medium text-sm whitespace-nowrap"
+                        style={{ color: '#9333ea', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                       >
                         View →
                       </a>
@@ -350,34 +402,56 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
           {activeTab === "events" && (
             <div>
-              <div className="space-y-6">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {/* Upcoming Events */}
                 <div>
-                  <div className="text-lg font-semibold text-green-600 mb-4 border-b-2 border-green-400 pb-1 inline-block">
+                  <div style={{ 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
+                    color: '#16a34a', 
+                    marginBottom: '1rem',
+                    borderBottom: '2px solid #4ade80',
+                    paddingBottom: '0.25rem',
+                    display: 'inline-block'
+                  }}>
                     📅 UPCOMING
                   </div>
-                  <div className="space-y-3">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {upcomingEvents.map((event, index) => (
-                      <div key={index} className="bg-white border-l-4 border-green-500 rounded-lg p-4">
-                        <div className="flex gap-2 mb-2">
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                      <div key={index} style={{ ...cardStyle, borderLeft: '4px solid #22c55e' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <span style={{ 
+                            fontSize: '0.75rem',
+                            backgroundColor: '#d1fae5',
+                            color: '#166534',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem'
+                          }}>
                             {getEventTypeLabel(event.type)}
                           </span>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          <span style={{ 
+                            fontSize: '0.75rem',
+                            backgroundColor: '#dbeafe',
+                            color: '#1e40af',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem'
+                          }}>
                             {getEventStatusLabel(event.status)}
                           </span>
                         </div>
-                        <div className="font-semibold text-gray-900 mb-1">{event.title}</div>
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div style={{ fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>{event.title}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
                           {event.date} • {event.location}
                         </div>
-                        <div className="text-sm text-gray-700 mb-3">{event.description}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.75rem' }}>{event.description}</div>
                         {event.url && (
                           <a
                             href={event.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline font-medium text-sm"
+                            style={{ color: '#2563eb', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
+                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                           >
                             RSVP on Luma →
                           </a>
@@ -390,31 +464,53 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 {/* Previous Events */}
                 {previousEvents.length > 0 && (
                   <div>
-                    <div className="text-lg font-semibold text-gray-600 mb-4 border-b-2 border-gray-400 pb-1 inline-block">
+                    <div style={{ 
+                      fontSize: '1.125rem', 
+                      fontWeight: '600', 
+                      color: '#6b7280', 
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #9ca3af',
+                      paddingBottom: '0.25rem',
+                      display: 'inline-block'
+                    }}>
                       📋 PREVIOUS
                     </div>
-                    <div className="space-y-3">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {previousEvents.map((event, index) => (
-                        <div key={index} className="bg-white border-l-4 border-gray-400 rounded-lg p-4">
-                          <div className="flex gap-2 mb-2">
-                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                        <div key={index} style={{ ...cardStyle, borderLeft: '4px solid #9ca3af' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <span style={{ 
+                              fontSize: '0.75rem',
+                              backgroundColor: '#f3f4f6',
+                              color: '#374151',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.25rem'
+                            }}>
                               {getEventTypeLabel(event.type)}
                             </span>
-                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                            <span style={{ 
+                              fontSize: '0.75rem',
+                              backgroundColor: '#f3f4f6',
+                              color: '#374151',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.25rem'
+                            }}>
                               {getEventStatusLabel(event.status)}
                             </span>
                           </div>
-                          <div className="font-semibold text-gray-900 mb-1">{event.title}</div>
-                          <div className="text-sm text-gray-600 mb-2">
+                          <div style={{ fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>{event.title}</div>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
                             {event.date} • {event.location}
                           </div>
-                          <div className="text-sm text-gray-700 mb-3">{event.description}</div>
+                          <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.75rem' }}>{event.description}</div>
                           {event.url && (
                             <a
                               href={event.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline font-medium text-sm"
+                              style={{ color: '#2563eb', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
+                              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                             >
                               {event.type === "keynote" || event.type === "panel"
                                 ? "🎥 Watch Replay"
