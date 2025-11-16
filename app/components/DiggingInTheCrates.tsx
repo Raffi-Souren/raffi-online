@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Shuffle, X, CheckCircle } from "lucide-react";
+import { Shuffle, X, CheckCircle } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -292,50 +292,105 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 50,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      padding: '1rem'
+    }}>
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="secret-title"
         tabIndex={-1}
-        className="w-full max-w-md overflow-hidden rounded-lg border-4 border-yellow-400 bg-white shadow-2xl focus:outline-none"
+        style={{
+          width: '100%',
+          maxWidth: '28rem',
+          overflow: 'hidden',
+          borderRadius: '0.5rem',
+          border: '4px solid #FBBF24',
+          backgroundColor: 'white',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        }}
       >
-        {/* Title bar (kept yellow) */}
-        <div className="flex items-center justify-between rounded-t-md bg-yellow-400 px-4 py-2">
-          <div className="flex items-center gap-2">
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'linear-gradient(to right, #FBBF24, #F59E0B)',
+          padding: '0.5rem 1rem',
+          borderTopLeftRadius: '0.375rem',
+          borderTopRightRadius: '0.375rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span>🔔</span>
-            <h2 id="secret-title" className="font-bold text-black">
+            <h2 id="secret-title" style={{ fontWeight: 'bold', color: '#000000', margin: 0 }}>
               SECRET FOUND!
             </h2>
           </div>
           <button
             aria-label="Close"
             onClick={onClose}
-            className="rounded p-1 text-black hover:bg-yellow-500"
+            style={{
+              borderRadius: '0.25rem',
+              padding: '0.25rem',
+              color: '#000000',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F59E0B'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="space-y-4 p-6">
-          <div className="mb-2 flex items-center gap-3">
-            <CheckCircle size={22} className="text-green-600" />
+        <div style={{ padding: '1.5rem' }}>
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <CheckCircle size={22} style={{ color: '#10B981', flexShrink: 0 }} />
             <div>
-              <p className="font-bold text-black">Congratulations!</p>
-              <p className="text-sm text-black">You&apos;ve found a record from RAF's crate!</p>
+              <p style={{ fontWeight: 'bold', color: '#000000', margin: 0, marginBottom: '0.25rem' }}>
+                Congratulations!
+              </p>
+              <p style={{ fontSize: '0.875rem', color: '#000000', margin: 0 }}>
+                You&apos;ve found a record from RAF's crate!
+              </p>
             </div>
           </div>
 
-          {/* Player */}
-          <div className="overflow-hidden rounded border border-gray-300 bg-white">
+          <div style={{
+            overflow: 'hidden',
+            borderRadius: '0.25rem',
+            border: '1px solid #D1D5DB',
+            backgroundColor: 'white',
+            marginBottom: '1rem'
+          }}>
             {embedError ? (
-              <div className="p-4 text-center">
-                <p className="mb-2 text-sm text-red-600">Can&apos;t load this one. Try Shuffle.</p>
+              <div style={{ padding: '1rem', textAlign: 'center' }}>
+                <p style={{ marginBottom: '0.5rem', fontSize: '0.875rem', color: '#DC2626' }}>
+                  Can&apos;t load this one. Try Shuffle.
+                </p>
                 <button
                   onClick={shuffleTrack}
-                  className="rounded bg-blue-500 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-600"
+                  style={{
+                    borderRadius: '0.25rem',
+                    backgroundColor: '#3B82F6',
+                    padding: '0.25rem 0.75rem',
+                    fontSize: '0.875rem',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
                 >
                   Shuffle
                 </button>
@@ -346,7 +401,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                 src={scEmbed(currentTrack.url)}
                 height={166}
                 width="100%"
-                className="block w-full"
+                style={{ display: 'block', width: '100%' }}
                 frameBorder={0}
                 allow="autoplay"
                 onError={() => setEmbedError(true)}
@@ -354,22 +409,51 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             )}
           </div>
 
-          <div className="text-center">
-            <p className="text-sm font-semibold text-black">{currentTrack.title}</p>
-            <p className="text-xs text-gray-700">by {currentTrack.artist}</p>
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#000000', margin: 0, marginBottom: '0.25rem' }}>
+              {currentTrack.title}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#374151', margin: 0 }}>
+              by {currentTrack.artist}
+            </p>
           </div>
 
-          <div className="flex justify-center gap-2 pt-2">
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', paddingTop: '0.5rem' }}>
             <button
               onClick={shuffleTrack}
-              className="flex items-center gap-1 rounded bg-blue-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-600"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                borderRadius: '0.25rem',
+                backgroundColor: '#3B82F6',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
             >
               <Shuffle size={14} />
               Shuffle
             </button>
             <button
               onClick={onClose}
-              className="rounded bg-gray-500 px-4 py-2 text-sm text-white transition-colors hover:bg-gray-600"
+              style={{
+                borderRadius: '0.25rem',
+                backgroundColor: '#6B7280',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6B7280'}
             >
               OK
             </button>
