@@ -13,6 +13,8 @@ import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
 export default function Home() {
+  console.log("[v0] Home component rendering")
+  
   const [showStartMenu, setShowStartMenu] = useState(false)
   const [currentTime, setCurrentTime] = useState("")
   const [openWindows, setOpenWindows] = useState<Record<string, boolean>>({
@@ -25,8 +27,11 @@ export default function Home() {
     counter: false,
   })
 
+  console.log("[v0] State initialized:", { showStartMenu, openWindows })
+
   // Update time every second
   useEffect(() => {
+    console.log("[v0] Clock useEffect mounted")
     const updateTime = () => {
       const now = new Date()
       setCurrentTime(
@@ -45,15 +50,18 @@ export default function Home() {
   }, [])
 
   const openWindow = (windowName: string) => {
+    console.log("[v0] Opening window:", windowName)
     setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
     setShowStartMenu(false)
   }
 
   const closeWindow = (windowName: string) => {
+    console.log("[v0] Closing window:", windowName)
     setOpenWindows((prev) => ({ ...prev, [windowName]: false }))
   }
 
   const handleIconClick = (action: string) => {
+    console.log("[v0] Icon clicked:", action)
     if (action === "email") {
       try {
         const email = "raffi@notgoodcompany.com"
@@ -72,18 +80,24 @@ export default function Home() {
   }
 
   const handleEasterEggClick = () => {
+    console.log("[v0] Easter egg clicked")
     openWindow("crates")
   }
 
   const handleStartMenuToggle = () => {
+    console.log("[v0] Start menu toggled")
     setShowStartMenu(!showStartMenu)
   }
 
+  console.log("[v0] About to render JSX")
+
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {console.log("[v0] Rendering main container")}
+      
       {/* Backdrop for Start Menu */}
       {showStartMenu && <div className="fixed inset-0 z-30" onClick={() => setShowStartMenu(false)} />}
-
+      
       {/* Windows XP Background */}
       <Image
         src="/windows-bg.jpg"
@@ -97,6 +111,8 @@ export default function Home() {
 
       {/* Desktop Icons Container */}
       <div className="absolute inset-0 p-4 md:p-8 pb-[72px] md:pb-0">
+        {console.log("[v0] Rendering desktop icons container")}
+        
         {/* Mobile Layout - 2x3 Grid with Better Spacing */}
         <div className="grid grid-cols-2 gap-8 h-full md:hidden">
           {/* Row 1 */}
@@ -152,10 +168,12 @@ export default function Home() {
 
       {/* Question Block Easter Egg */}
       <div className="fixed bottom-20 right-4 z-20">
+        {console.log("[v0] Rendering QuestionBlock")}
         <QuestionBlock onClick={handleEasterEggClick} />
       </div>
 
       {/* Windows */}
+      {console.log("[v0] About to render windows. OpenWindows state:", openWindows)}
       <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />
       <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />
       <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />

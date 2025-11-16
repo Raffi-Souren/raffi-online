@@ -186,9 +186,13 @@ interface NotesWindowProps {
 }
 
 export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
+  console.log("[v0] NotesWindow render called. isOpen:", isOpen)
+  
   const [activeTab, setActiveTab] = useState<"articles" | "research" | "events">("articles")
 
   if (!isOpen) return null
+
+  console.log("[v0] NotesWindow rendering content")
 
   const upcomingEvents = EVENTS.filter((event) => event.status === "upcoming")
   const previousEvents = EVENTS.filter((event) => event.status === "previous")
