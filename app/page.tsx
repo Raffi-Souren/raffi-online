@@ -14,7 +14,7 @@ import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
-  const [currentTime, setCurrentTime] = useState("")
+  const [currentTime, setCurrentTime] = useState("12:00 AM")
   const [openWindows, setOpenWindows] = useState<Record<string, boolean>>({
     about: false,
     games: false,
@@ -84,12 +84,11 @@ export default function Home() {
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center"
-        style={{ zIndex: -1 }}
+        className="object-cover object-center -z-10"
         quality={85}
       />
 
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+      <div className="absolute inset-0 z-10 pointer-events-none">
         <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden pointer-events-auto">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
@@ -118,7 +117,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="fixed bottom-20 left-4 pointer-events-auto" style={{ zIndex: 20 }}>
+        <div className="fixed bottom-20 left-4 z-20 pointer-events-auto">
           <QuestionBlock onClick={handleEasterEggClick} />
         </div>
       </div>
