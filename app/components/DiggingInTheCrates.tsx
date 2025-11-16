@@ -300,7 +300,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      padding: '1rem'
+      padding: '0.5rem'
     }}>
       <div
         ref={dialogRef}
@@ -311,7 +311,8 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         style={{
           width: '100%',
           maxWidth: '28rem',
-          overflow: 'hidden',
+          maxHeight: '90vh',
+          overflow: 'auto',
           borderRadius: '0.5rem',
           border: '4px solid #FBBF24',
           backgroundColor: 'white',
@@ -329,7 +330,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span>🔔</span>
-            <h2 id="secret-title" style={{ fontWeight: 'bold', color: '#000000', margin: 0 }}>
+            <h2 id="secret-title" style={{ fontWeight: 'bold', color: '#000000', margin: 0, fontSize: '1rem' }}>
               SECRET FOUND!
             </h2>
           </div>
@@ -338,12 +339,17 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             onClick={onClose}
             style={{
               borderRadius: '0.25rem',
-              padding: '0.25rem',
+              padding: '0.5rem',
               color: '#000000',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F59E0B'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -352,14 +358,14 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
           </button>
         </div>
 
-        <div style={{ padding: '1.5rem' }}>
-          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <CheckCircle size={22} style={{ color: '#10B981', flexShrink: 0 }} />
+        <div style={{ padding: '1rem' }}>
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <CheckCircle size={22} style={{ color: '#10B981', flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <p style={{ fontWeight: 'bold', color: '#000000', margin: 0, marginBottom: '0.25rem' }}>
+              <p style={{ fontWeight: 'bold', color: '#000000', margin: 0, marginBottom: '0.25rem', fontSize: '0.875rem' }}>
                 Congratulations!
               </p>
-              <p style={{ fontSize: '0.875rem', color: '#000000', margin: 0 }}>
+              <p style={{ fontSize: '0.8125rem', color: '#000000', margin: 0 }}>
                 You&apos;ve found a record from RAF's crate!
               </p>
             </div>
@@ -370,7 +376,8 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             borderRadius: '0.25rem',
             border: '1px solid #D1D5DB',
             backgroundColor: 'white',
-            marginBottom: '1rem'
+            marginBottom: '1rem',
+            minHeight: '166px'
           }}>
             {embedError ? (
               <div style={{ padding: '1rem', textAlign: 'center' }}>
@@ -382,12 +389,13 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                   style={{
                     borderRadius: '0.25rem',
                     backgroundColor: '#3B82F6',
-                    padding: '0.25rem 0.75rem',
+                    padding: '0.5rem 1rem',
                     fontSize: '0.875rem',
                     color: 'white',
                     border: 'none',
                     cursor: 'pointer',
-                    transition: 'background-color 0.2s'
+                    transition: 'background-color 0.2s',
+                    minHeight: '44px'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
@@ -401,7 +409,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                 src={scEmbed(currentTrack.url)}
                 height={166}
                 width="100%"
-                style={{ display: 'block', width: '100%' }}
+                style={{ display: 'block', width: '100%', border: 'none' }}
                 frameBorder={0}
                 allow="autoplay"
                 onError={() => setEmbedError(true)}
@@ -418,26 +426,29 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             </p>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', paddingTop: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', paddingTop: '0.5rem', flexWrap: 'wrap' }}>
             <button
               onClick={shuffleTrack}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.25rem',
+                justifyContent: 'center',
+                gap: '0.5rem',
                 borderRadius: '0.25rem',
                 backgroundColor: '#3B82F6',
-                padding: '0.5rem 1rem',
+                padding: '0.625rem 1.25rem',
                 fontSize: '0.875rem',
                 color: 'white',
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'background-color 0.2s'
+                transition: 'background-color 0.2s',
+                minHeight: '44px',
+                minWidth: '120px'
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
             >
-              <Shuffle size={14} />
+              <Shuffle size={16} />
               Shuffle
             </button>
             <button
@@ -445,12 +456,14 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               style={{
                 borderRadius: '0.25rem',
                 backgroundColor: '#6B7280',
-                padding: '0.5rem 1rem',
+                padding: '0.625rem 1.25rem',
                 fontSize: '0.875rem',
                 color: 'white',
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'background-color 0.2s'
+                transition: 'background-color 0.2s',
+                minHeight: '44px',
+                minWidth: '100px'
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6B7280'}

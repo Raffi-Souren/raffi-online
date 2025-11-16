@@ -34,7 +34,11 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
         cursor: 'pointer',
         pointerEvents: 'auto',
         background: 'transparent',
-        border: 'none'
+        border: 'none',
+        minWidth: '80px',
+        minHeight: '90px',
+        width: '100%',
+        maxWidth: '100px'
       }}
       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'}
       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -43,8 +47,8 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
       {/* Icon Container */}
       <div 
         style={{
-          width: '64px',
-          height: '64px',
+          width: '48px',
+          height: '48px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -54,7 +58,7 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
       >
         <span 
           style={{
-            fontSize: '3rem',
+            fontSize: '2.5rem',
             userSelect: 'none',
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
             background: 'transparent'
@@ -68,12 +72,13 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
       <span 
         style={{
           color: 'white',
-          fontSize: '0.875rem',
+          fontSize: '0.75rem',
           fontWeight: 'bold',
           textAlign: 'center',
-          lineHeight: '1.25',
+          lineHeight: '1.2',
           padding: '0 0.25rem',
           maxWidth: '80px',
+          wordBreak: 'break-word',
           textShadow: '1px 1px 2px rgba(0,0,0,0.9), -1px -1px 2px rgba(0,0,0,0.9), 1px -1px 2px rgba(0,0,0,0.9), -1px 1px 2px rgba(0,0,0,0.9)'
         }}
       >
