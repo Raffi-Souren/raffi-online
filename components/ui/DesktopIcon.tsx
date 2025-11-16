@@ -8,19 +8,16 @@ interface DesktopIconProps {
 
 export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) {
   return (
-    <div
+    <button
       onClick={onClick}
-      className="flex flex-col items-center cursor-pointer group p-2 rounded hover:bg-white hover:bg-opacity-20 transition-all duration-200 relative"
-      style={{
-        minWidth: '80px',
-        minHeight: '80px',
-        zIndex: 10,
-      }}
+      className="flex flex-col items-center justify-center gap-2 p-3 rounded hover:bg-white/20 transition-colors cursor-pointer min-w-[80px] min-h-[90px] z-10 relative"
+      type="button"
+      aria-label={label}
     >
-      <div className="text-4xl md:text-5xl mb-2 group-hover:scale-110 transition-transform duration-200">{icon}</div>
-      <span className="text-white text-xs md:text-sm font-medium text-center leading-tight drop-shadow-lg max-w-20 md:max-w-24">
+      <span className="text-4xl md:text-5xl select-none">{icon}</span>
+      <span className="text-white text-xs md:text-sm font-semibold text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-tight max-w-[90px]">
         {label}
       </span>
-    </div>
+    </button>
   )
 }

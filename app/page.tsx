@@ -12,7 +12,7 @@ import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
-const APP_VERSION = "v268-ICON-FIX"
+const APP_VERSION = "v269"
 const BUILD_TIME = new Date().toISOString()
 
 export default function Home() {
@@ -83,9 +83,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Backdrop for Start Menu */}
-      {showStartMenu && <div className="fixed inset-0 z-30" onClick={() => setShowStartMenu(false)} />}
-      
       {/* Windows XP Background */}
       <Image
         src="/windows-bg.jpg"
@@ -98,7 +95,7 @@ export default function Home() {
       />
 
       {/* Desktop Icons - Mobile Layout */}
-      <div className="grid grid-cols-2 gap-8 p-4 pb-20 md:hidden">
+      <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden z-10 relative">
         <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
         <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
         <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
@@ -109,20 +106,20 @@ export default function Home() {
       </div>
 
       {/* Desktop Icons - Desktop Layout */}
-      <div className="hidden md:block">
-        <div className="absolute top-8 left-8">
+      <div className="hidden md:block pointer-events-none">
+        <div className="absolute top-8 left-8 pointer-events-auto z-10">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
         </div>
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-auto z-10">
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
         </div>
-        <div className="absolute top-8 right-1/3">
+        <div className="absolute top-8 right-1/3 pointer-events-auto z-10">
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
         </div>
-        <div className="absolute top-8 right-8">
+        <div className="absolute top-8 right-8 pointer-events-auto z-10">
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
         </div>
-        <div className="absolute bottom-32 left-8">
+        <div className="absolute bottom-32 left-8 pointer-events-auto z-10">
           <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
         </div>
       </div>
@@ -154,10 +151,15 @@ export default function Home() {
       )}
 
       {/* Start Menu */}
-      <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
+      {showStartMenu && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setShowStartMenu(false)} />
+          <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
+        </>
+      )}
 
       {/* Taskbar */}
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-30">
+      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-40">
         <button
           onClick={handleStartMenuToggle}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"
@@ -175,8 +177,8 @@ export default function Home() {
           </div>
         )}
 
-        <div className="ml-auto mr-2 text-white text-xs bg-red-600 px-2 py-1 rounded font-mono font-bold">
-          {APP_VERSION}
+        <div className="ml-auto mr-2 text-white text-xs bg-blue-500 px-2 py-1 rounded font-mono">
+          v269
         </div>
 
         <div className="text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
