@@ -12,6 +12,9 @@ import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
+const APP_VERSION = "v263-PRODUCTION-FIX"
+const BUILD_TIME = new Date().toISOString()
+
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
   const [currentTime, setCurrentTime] = useState("")
@@ -24,6 +27,31 @@ export default function Home() {
     startup: false,
     counter: false,
   })
+
+  useEffect(() => {
+    console.log("=".repeat(60))
+    console.log("🔍 PRODUCTION VERSION CHECK")
+    console.log("=".repeat(60))
+    console.log("App Version:", APP_VERSION)
+    console.log("Build Time:", BUILD_TIME)
+    console.log("Environment:", process.env.NODE_ENV)
+    console.log("Window Location:", window.location.href)
+    console.log("User Agent:", navigator.userAgent)
+    console.log("=".repeat(60))
+    
+    // Log to document for visibility
+    const versionDiv = document.createElement("div")
+    versionDiv.style.cssText = "position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font-family:monospace;font-size:12px;z-index:99999;border:2px solid #0f0;"
+    versionDiv.innerHTML = `
+      <div><strong>VERSION: ${APP_VERSION}</strong></div>
+      <div>Build: ${BUILD_TIME}</div>
+      <div>Env: ${process.env.NODE_ENV}</div>
+    `
+    document.body.appendChild(versionDiv)
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => versionDiv.remove(), 5000)
+  }, [])
 
   // Update time every second
   useEffect(() => {
@@ -196,8 +224,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* Version Badge */}
-        <div className="ml-auto mr-2 text-white text-xs bg-blue-800 px-2 py-1 rounded font-mono">v261</div>
+        <div className="ml-auto mr-2 text-white text-xs bg-red-600 px-2 py-1 rounded font-mono font-bold">
+          {APP_VERSION}
+        </div>
 
         {/* Time */}
         <div className="text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>

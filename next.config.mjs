@@ -23,18 +23,34 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
           },
           {
-            key: 'X-Build-Id',
-            value: `v261-${Date.now()}`,
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Build-Version',
+            value: `v263-production-fix-${Date.now()}`,
+          },
+          {
+            key: 'X-Deploy-Time',
+            value: new Date().toISOString(),
           },
         ],
       },
     ]
   },
   generateBuildId: async () => {
-    return `v261-build-${Date.now()}`
+    return `v263-${Date.now()}-${Math.random().toString(36).substring(7)}`
   },
 }
 
