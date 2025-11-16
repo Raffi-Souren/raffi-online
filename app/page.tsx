@@ -197,7 +197,7 @@ export default function Home() {
         )}
 
         {/* Version Badge */}
-        <div className="ml-auto mr-2 text-white text-xs bg-blue-800 px-2 py-1 rounded font-mono">v203</div>
+        <div className="ml-auto mr-2 text-white text-xs bg-blue-800 px-2 py-1 rounded font-mono">v261</div>
 
         {/* Time */}
         <div className="text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>

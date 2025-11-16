@@ -16,6 +16,26 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+          {
+            key: 'X-Build-Id',
+            value: `v261-${Date.now()}`,
+          },
+        ],
+      },
+    ]
+  },
+  generateBuildId: async () => {
+    return `v261-build-${Date.now()}`
+  },
 }
 
 export default nextConfig

@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter } from 'next/font/google'
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -28,6 +28,10 @@ export const metadata: Metadata = {
     description: "AI Architect & Technology Consultant based in New York City.",
     images: ["/windows-2000-background.png"],
   },
+  other: {
+    'build-timestamp': new Date().toISOString(),
+    'version': 'v261-clean'
+  },
     generator: 'v0.app'
 }
 
@@ -38,6 +42,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Build: v261 - {new Date().toISOString()} */}
+      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
