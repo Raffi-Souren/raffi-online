@@ -1,6 +1,6 @@
 "use client"
 
-import { X } from "lucide-react"
+import { X } from 'lucide-react'
 
 interface StartMenuProps {
   isOpen: boolean
@@ -25,33 +25,96 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
   ]
 
   return (
-    <div className="fixed bottom-12 left-2 z-40">
-      <div className="bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400 rounded-t-lg shadow-2xl w-64">
+    <div style={{
+      position: 'fixed',
+      bottom: '3rem',
+      left: '0.5rem',
+      zIndex: 91
+    }}>
+      <div style={{
+        background: 'linear-gradient(to bottom, #3b82f6, #1d4ed8)',
+        border: '2px solid #60a5fa',
+        borderTopLeftRadius: '0.5rem',
+        borderTopRightRadius: '0.5rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        width: '16rem'
+      }}>
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 flex items-center justify-between rounded-t-md">
-          <span className="text-white font-bold text-sm">Start Menu</span>
-          <button onClick={onClose} className="text-white hover:bg-blue-700 rounded p-1">
+        <div style={{
+          background: 'linear-gradient(to right, #2563eb, #1e40af)',
+          padding: '0.5rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTopLeftRadius: '0.375rem',
+          borderTopRightRadius: '0.375rem'
+        }}>
+          <span style={{
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '0.875rem'
+          }}>Start Menu</span>
+          <button 
+            onClick={onClose}
+            style={{
+              color: 'white',
+              borderRadius: '0.25rem',
+              padding: '0.25rem',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
             <X size={16} />
           </button>
         </div>
 
         {/* Menu Items */}
-        <div className="p-2">
+        <div style={{ padding: '0.5rem' }}>
           {menuItems.map((item, index) => (
             <button
               key={index}
               onClick={item.action}
-              className="w-full flex items-center gap-3 px-3 py-2 text-white hover:bg-blue-600 rounded transition-colors text-left"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.5rem 0.75rem',
+                color: 'white',
+                borderRadius: '0.25rem',
+                transition: 'background-color 0.2s',
+                textAlign: 'left',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <span className="text-lg">{item.icon}</span>
-              <span className="text-sm font-medium">{item.label}</span>
+              <span style={{ fontSize: '1.125rem' }}>{item.icon}</span>
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="bg-blue-800 px-4 py-2 rounded-b-md">
-          <div className="text-white text-xs text-center">v203</div>
+        <div style={{
+          backgroundColor: '#1e40af',
+          padding: '0.5rem 1rem',
+          borderBottomLeftRadius: '0.375rem',
+          borderBottomRightRadius: '0.375rem'
+        }}>
+          <div style={{
+            color: 'white',
+            fontSize: '0.75rem',
+            textAlign: 'center'
+          }}>v303</div>
         </div>
       </div>
     </div>

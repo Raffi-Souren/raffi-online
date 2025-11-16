@@ -292,187 +292,204 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 50,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      padding: '0.5rem'
-    }}>
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="secret-title"
-        tabIndex={-1}
+    <>
+      <div 
         style={{
-          width: '100%',
-          maxWidth: '28rem',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          borderRadius: '0.5rem',
-          border: '4px solid #FBBF24',
-          backgroundColor: 'white',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)'
         }}
-      >
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'linear-gradient(to right, #FBBF24, #F59E0B)',
-          padding: '0.5rem 1rem',
-          borderTopLeftRadius: '0.375rem',
-          borderTopRightRadius: '0.375rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>🔔</span>
-            <h2 id="secret-title" style={{ fontWeight: 'bold', color: '#000000', margin: 0, fontSize: '1rem' }}>
-              SECRET FOUND!
-            </h2>
-          </div>
-          <button
-            aria-label="Close"
-            onClick={onClose}
-            style={{
-              borderRadius: '0.25rem',
-              padding: '0.5rem',
-              color: '#000000',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-              minWidth: '44px',
-              minHeight: '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F59E0B'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div style={{ padding: '1rem' }}>
-          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-            <CheckCircle size={22} style={{ color: '#10B981', flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <p style={{ fontWeight: 'bold', color: '#000000', margin: 0, marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-                Congratulations!
-              </p>
-              <p style={{ fontSize: '0.8125rem', color: '#000000', margin: 0 }}>
-                You&apos;ve found a record from RAF's crate!
-              </p>
-            </div>
-          </div>
-
-          <div style={{
-            overflow: 'hidden',
-            borderRadius: '0.25rem',
-            border: '1px solid #D1D5DB',
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 101,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0.5rem',
+        pointerEvents: 'none'
+      }}>
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="secret-title"
+          tabIndex={-1}
+          style={{
+            width: '100%',
+            maxWidth: '28rem',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            borderRadius: '0.5rem',
+            border: '4px solid #FBBF24',
             backgroundColor: 'white',
-            marginBottom: '1rem',
-            minHeight: '166px'
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            pointerEvents: 'auto'
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'linear-gradient(to right, #FBBF24, #F59E0B)',
+            padding: '0.75rem 1rem',
+            borderTopLeftRadius: '0.375rem',
+            borderTopRightRadius: '0.375rem'
           }}>
-            {embedError ? (
-              <div style={{ padding: '1rem', textAlign: 'center' }}>
-                <p style={{ marginBottom: '0.5rem', fontSize: '0.875rem', color: '#DC2626' }}>
-                  Can&apos;t load this one. Try Shuffle.
-                </p>
-                <button
-                  onClick={shuffleTrack}
-                  style={{
-                    borderRadius: '0.25rem',
-                    backgroundColor: '#3B82F6',
-                    padding: '0.5rem 1rem',
-                    fontSize: '0.875rem',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s',
-                    minHeight: '44px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
-                >
-                  Shuffle
-                </button>
-              </div>
-            ) : (
-              <iframe
-                title={`${currentTrack.title} by ${currentTrack.artist}`}
-                src={scEmbed(currentTrack.url)}
-                height={166}
-                width="100%"
-                style={{ display: 'block', width: '100%', border: 'none' }}
-                frameBorder={0}
-                allow="autoplay"
-                onError={() => setEmbedError(true)}
-              />
-            )}
-          </div>
-
-          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#000000', margin: 0, marginBottom: '0.25rem' }}>
-              {currentTrack.title}
-            </p>
-            <p style={{ fontSize: '0.75rem', color: '#374151', margin: 0 }}>
-              by {currentTrack.artist}
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', paddingTop: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.125rem' }}>🔔</span>
+              <h2 id="secret-title" style={{ fontWeight: 'bold', color: '#000000', margin: 0, fontSize: '1rem' }}>
+                SECRET FOUND!
+              </h2>
+            </div>
             <button
-              onClick={shuffleTrack}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                borderRadius: '0.25rem',
-                backgroundColor: '#3B82F6',
-                padding: '0.625rem 1.25rem',
-                fontSize: '0.875rem',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                minHeight: '44px',
-                minWidth: '120px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
-            >
-              <Shuffle size={16} />
-              Shuffle
-            </button>
-            <button
+              aria-label="Close"
               onClick={onClose}
               style={{
                 borderRadius: '0.25rem',
-                backgroundColor: '#6B7280',
-                padding: '0.625rem 1.25rem',
-                fontSize: '0.875rem',
-                color: 'white',
+                padding: '0.5rem',
+                color: '#000000',
+                background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'background-color 0.2s',
+                minWidth: '44px',
                 minHeight: '44px',
-                minWidth: '100px'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6B7280'}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F59E0B'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              OK
+              <X size={18} />
             </button>
+          </div>
+
+          <div style={{ padding: '1.25rem' }}>
+            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <CheckCircle size={22} style={{ color: '#10B981', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontWeight: 'bold', color: '#000000', margin: 0, marginBottom: '0.25rem', fontSize: '0.9375rem' }}>
+                  Congratulations!
+                </p>
+                <p style={{ fontSize: '0.875rem', color: '#374151', margin: 0 }}>
+                  You&apos;ve found a record from RAF's crate!
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              overflow: 'hidden',
+              borderRadius: '0.375rem',
+              border: '2px solid #E5E7EB',
+              backgroundColor: 'white',
+              marginBottom: '1rem',
+              minHeight: '166px'
+            }}>
+              {embedError ? (
+                <div style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p style={{ marginBottom: '0.75rem', fontSize: '0.875rem', color: '#DC2626' }}>
+                    Can&apos;t load this one. Try Shuffle.
+                  </p>
+                  <button
+                    onClick={shuffleTrack}
+                    style={{
+                      borderRadius: '0.375rem',
+                      backgroundColor: '#3B82F6',
+                      padding: '0.625rem 1.25rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                      minHeight: '44px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
+                  >
+                    Shuffle
+                  </button>
+                </div>
+              ) : (
+                <iframe
+                  title={`${currentTrack.title} by ${currentTrack.artist}`}
+                  src={scEmbed(currentTrack.url)}
+                  height={166}
+                  width="100%"
+                  style={{ display: 'block', width: '100%', border: 'none' }}
+                  frameBorder={0}
+                  allow="autoplay"
+                  onError={() => setEmbedError(true)}
+                />
+              )}
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#000000', margin: 0, marginBottom: '0.25rem' }}>
+                {currentTrack.title}
+              </p>
+              <p style={{ fontSize: '0.8125rem', color: '#6B7280', margin: 0 }}>
+                by {currentTrack.artist}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', paddingTop: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={shuffleTrack}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  borderRadius: '0.375rem',
+                  backgroundColor: '#3B82F6',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  minHeight: '44px',
+                  minWidth: '120px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
+              >
+                <Shuffle size={16} />
+                Shuffle
+              </button>
+              <button
+                onClick={onClose}
+                style={{
+                  borderRadius: '0.375rem',
+                  backgroundColor: '#6B7280',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  minHeight: '44px',
+                  minWidth: '100px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6B7280'}
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

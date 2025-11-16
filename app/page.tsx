@@ -97,31 +97,39 @@ export default function Home() {
         zIndex: 10,
         padding: '1rem',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-        gridTemplateRows: 'repeat(auto-fit, minmax(100px, auto))',
-        gap: '0.5rem',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gridAutoRows: 'min-content',
+        gap: '1rem',
         alignContent: 'start',
         maxWidth: '100%'
-      }}>
-        {/* Mobile: stacked in grid, Desktop: positioned absolutely */}
-        <div className="md:!absolute md:!top-8 md:!left-8" style={{ gridColumn: '1', gridRow: '1' }}>
+      }}
+      className="md:!grid-cols-1"
+      >
+        <div className="md:!absolute md:!top-8 md:!left-8">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
         </div>
-        <div className="md:!absolute md:!top-8 md:!left-1/2 md:!-translate-x-1/2" style={{ gridColumn: '2', gridRow: '1' }}>
+        <div className="md:!absolute md:!top-8 md:!left-1/2 md:!-translate-x-1/2">
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
         </div>
-        <div className="md:!absolute md:!top-8 md:!right-1/3" style={{ gridColumn: '3', gridRow: '1' }}>
+        <div className="md:!absolute md:!top-8 md:!right-1/3">
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
         </div>
-        <div className="md:!absolute md:!top-8 md:!right-8" style={{ gridColumn: '1', gridRow: '2' }}>
+        <div className="md:!absolute md:!top-8 md:!right-8">
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
         </div>
-        <div className="md:!absolute md:!bottom-32 md:!left-8" style={{ gridColumn: '2', gridRow: '2' }}>
+        <div className="md:!absolute md:!bottom-32 md:!left-8">
           <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
         </div>
       </div>
 
-      <div className="fixed bottom-20 left-4 md:bottom-20 md:left-4 z-20">
+      <div style={{ 
+        position: 'fixed', 
+        bottom: '5rem', 
+        left: '1rem', 
+        zIndex: 20 
+      }}
+      className="md:bottom-20"
+      >
         <QuestionBlock onClick={handleEasterEggClick} />
       </div>
 
@@ -147,13 +155,10 @@ export default function Home() {
         <div className="ml-auto text-white text-xs md:text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
       </div>
 
-      {/* Start Menu - z-90 */}
       {showStartMenu && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setShowStartMenu(false)} />
-          <div style={{ zIndex: 91 }}>
-            <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
-          </div>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 90, backgroundColor: 'transparent' }} onClick={() => setShowStartMenu(false)} />
+          <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
         </>
       )}
 
