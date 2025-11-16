@@ -85,10 +85,11 @@ export default function Home() {
         priority
         sizes="100vw"
         className="object-cover object-center"
+        style={{ zIndex: -1 }}
         quality={85}
       />
 
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
         <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden pointer-events-auto">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
@@ -117,7 +118,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="fixed bottom-20 left-4 pointer-events-auto">
+        <div className="fixed bottom-20 left-4 pointer-events-auto" style={{ zIndex: 20 }}>
           <QuestionBlock onClick={handleEasterEggClick} />
         </div>
       </div>
