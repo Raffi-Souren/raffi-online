@@ -12,9 +12,6 @@ import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
-const APP_VERSION = "v269"
-const BUILD_TIME = new Date().toISOString()
-
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
   const [currentTime, setCurrentTime] = useState("")
@@ -28,7 +25,6 @@ export default function Home() {
     counter: false,
   })
 
-  // Update time every second
   useEffect(() => {
     const updateTime = () => {
       const now = new Date()
@@ -36,7 +32,6 @@ export default function Home() {
         now.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
-          second: "2-digit",
           hour12: true,
         }),
       )
@@ -90,76 +85,77 @@ export default function Home() {
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center -z-10 pointer-events-none select-none"
+        className="object-cover object-center -z-10"
         quality={85}
       />
 
-      {/* Desktop Icons - Mobile Layout */}
-      <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden z-10 relative">
-        <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-        <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-        <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-        <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-        <div className="col-span-2 flex justify-center">
-          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-        </div>
-      </div>
-
-      {/* Desktop Icons - Desktop Layout */}
-      <div className="hidden md:block pointer-events-none">
-        <div className="absolute top-8 left-8 pointer-events-auto z-10">
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+        {/* Desktop Icons - Mobile Layout */}
+        <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden pointer-events-auto">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-        </div>
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-auto z-10">
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-        </div>
-        <div className="absolute top-8 right-1/3 pointer-events-auto z-10">
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-        </div>
-        <div className="absolute top-8 right-8 pointer-events-auto z-10">
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
+          <div className="col-span-2 flex justify-center">
+            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+          </div>
         </div>
-        <div className="absolute bottom-32 left-8 pointer-events-auto z-10">
-          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+
+        {/* Desktop Icons - Desktop Layout */}
+        <div className="hidden md:block">
+          <div className="absolute top-8 left-8 pointer-events-auto">
+            <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
+          </div>
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-auto">
+            <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
+          </div>
+          <div className="absolute top-8 right-1/3 pointer-events-auto">
+            <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
+          </div>
+          <div className="absolute top-8 right-8 pointer-events-auto">
+            <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
+          </div>
+          <div className="absolute bottom-32 left-8 pointer-events-auto">
+            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+          </div>
+        </div>
+
+        {/* Question Block Easter Egg */}
+        <div className="fixed bottom-20 left-4 pointer-events-auto">
+          <QuestionBlock onClick={handleEasterEggClick} />
         </div>
       </div>
 
-      {/* Question Block Easter Egg */}
-      <div className="fixed bottom-20 left-4 z-20">
-        <QuestionBlock onClick={handleEasterEggClick} />
+      <div style={{ zIndex: 10 }}>
+        {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
+        {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
+        {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
+        {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
+        {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
+        {openWindows.startup && (
+          <UnderConstructionWindow
+            isOpen={openWindows.startup}
+            onClose={() => closeWindow("startup")}
+            title="Pitch Me a Startup"
+          />
+        )}
+        {openWindows.counter && (
+          <UnderConstructionWindow
+            isOpen={openWindows.counter}
+            onClose={() => closeWindow("counter")}
+            title="By the Numbers"
+          />
+        )}
       </div>
 
-      {/* Windows */}
-      {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
-      {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
-      {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
-      {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
-      {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
-      {openWindows.startup && (
-        <UnderConstructionWindow
-          isOpen={openWindows.startup}
-          onClose={() => closeWindow("startup")}
-          title="Pitch Me a Startup"
-        />
-      )}
-      {openWindows.counter && (
-        <UnderConstructionWindow
-          isOpen={openWindows.counter}
-          onClose={() => closeWindow("counter")}
-          title="By the Numbers"
-        />
-      )}
-
-      {/* Start Menu */}
       {showStartMenu && (
-        <>
-          <div className="fixed inset-0 z-30" onClick={() => setShowStartMenu(false)} />
+        <div style={{ zIndex: 30 }}>
+          <div className="fixed inset-0" onClick={() => setShowStartMenu(false)} />
           <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
-        </>
+        </div>
       )}
 
-      {/* Taskbar */}
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-40">
+      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2" style={{ zIndex: 40 }}>
         <button
           onClick={handleStartMenuToggle}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"
@@ -177,11 +173,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="ml-auto mr-2 text-white text-xs bg-blue-500 px-2 py-1 rounded font-mono">
-          v269
-        </div>
-
-        <div className="text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
+        <div className="ml-auto text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
       </div>
     </div>
   )
