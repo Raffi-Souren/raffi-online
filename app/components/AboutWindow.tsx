@@ -23,34 +23,34 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
             className="rounded-lg border border-gray-200"
           />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">RAFFI</h1>
-            <p className="text-gray-600">Entrepreneur | Field CTO and Technology Leader | DJ</p>
+            <h1 className="text-2xl font-bold text-gray-900" style={{ color: '#111827' }}>RAFFI</h1>
+            <p className="text-gray-600" style={{ color: '#4B5563' }}>Entrepreneur | Field CTO and Technology Leader | DJ</p>
           </div>
         </div>
 
         {/* Bio Section */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             😎 ABOUT
           </h2>
-          <p className="text-gray-700 leading-relaxed">
+          <p className="text-gray-700 leading-relaxed" style={{ color: '#374151' }}>
             Field CTO and Technology Leader at IBM, helping companies build and scale AI products. Advisor at Nameless Ventures and End of Love, co-founder of Bad Company and indify. Based in NYC, usually digging for vinyl, DJing at a friends function, or experimenting with new tech.
           </p>
         </div>
 
         {/* Contact Section */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             📧 CONTACT
           </h2>
           <div className="space-y-2">
-            <p className="text-gray-700">
+            <p className="text-gray-700" style={{ color: '#374151' }}>
               <span className="font-semibold">Email:</span>{" "}
               <a href="mailto:raffi@notgoodcompany.com" className="text-blue-600 hover:underline">
                 raffi@notgoodcompany.com
               </a>
             </p>
-            <p className="text-gray-700">
+            <p className="text-gray-700" style={{ color: '#374151' }}>
               <span className="font-semibold">Location:</span> Brooklyn, New York
             </p>
           </div>
@@ -58,11 +58,11 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
 
         {/* ACM ICAIF Keynote Embed */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             🎓 ACM ICAIF KEYNOTE - LLM OUTPUT DRIFT
           </h3>
-          <p className="text-gray-600 mb-3">Nov 15, 2025 • Singapore</p>
-          <p className="text-gray-700 mb-3">LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows</p>
+          <p className="text-gray-600 mb-3" style={{ color: '#4B5563' }}>Nov 15, 2025 • Singapore</p>
+          <p className="text-gray-700 mb-3" style={{ color: '#374151' }}>LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows</p>
           <div className="w-full">
             <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
               <iframe
@@ -79,10 +79,10 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
 
         {/* AI Summit Keynote Embed */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             🌀 AI SUMMIT KEYNOTE - BANKING ON AI AGENTS
           </h3>
-          <p className="text-gray-600 mb-3">Finance stage at Javits Center NYC - Dec 14, 2024</p>
+          <p className="text-gray-600 mb-3" style={{ color: '#4B5563' }}>Finance stage at Javits Center NYC - Dec 14, 2024</p>
           <div className="w-full">
             <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
               <iframe
@@ -99,10 +99,10 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
 
         {/* BADCO F/W Capsule Embed */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             🎨 BADCO F/W CAPSULE - SCREENPRINTING AND HOSTING POP-UPS
           </h3>
-          <p className="text-gray-600 mb-3">Bowery Showroom 2021-2023</p>
+          <p className="text-gray-600 mb-3" style={{ color: '#4B5563' }}>Bowery Showroom 2021-2023</p>
           <div className="w-full">
             <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
               <iframe

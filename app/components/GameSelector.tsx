@@ -123,8 +123,8 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
       <div className="space-y-4">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Retro Games Collection</h2>
-          <p className="text-gray-600 text-sm">Classic games from vintage devices and platforms</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ color: '#111827' }}>Retro Games Collection</h2>
+          <p className="text-gray-600 text-sm" style={{ color: '#4B5563' }}>Classic games from vintage devices and platforms</p>
         </div>
 
         {/* Search and Filter */}
@@ -136,6 +136,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ color: '#111827' }}
             />
 
             <div className="flex gap-2 flex-wrap">
@@ -148,6 +149,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
+                  style={{ color: selectedDevice === device ? '#FFFFFF' : '#374151' }}
                 >
                   {device}
                 </button>
@@ -158,7 +160,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
 
         {/* Available Games */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-green-400 pb-1 inline-block">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-green-400 pb-1 inline-block" style={{ color: '#111827' }}>
             AVAILABLE GAMES
           </h2>
 
@@ -173,10 +175,10 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                   <div className="text-2xl">{game.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">{game.name}</h3>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{game.device}</span>
+                      <h3 className="font-semibold text-gray-900" style={{ color: '#111827' }}>{game.name}</h3>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" style={{ color: '#1E40AF' }}>{game.device}</span>
                     </div>
-                    <p className="text-sm text-gray-600">{game.description}</p>
+                    <p className="text-sm text-gray-600" style={{ color: '#4B5563' }}>{game.description}</p>
                   </div>
                   <div className="text-green-500 text-sm font-semibold">PLAY</div>
                 </div>
@@ -185,14 +187,14 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
           </div>
 
           {availableGames.length === 0 && (
-            <div className="text-center text-gray-500 py-4">No available games found matching your criteria</div>
+            <div className="text-center text-gray-500 py-4" style={{ color: '#6B7280' }}>No available games found matching your criteria</div>
           )}
         </div>
 
         {/* Coming Soon */}
         {comingSoonGames.length > 0 && (
           <div className="bg-gray-50 rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-orange-400 pb-1 inline-block">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-orange-400 pb-1 inline-block" style={{ color: '#111827' }}>
               COMING SOON
             </h2>
 
@@ -203,10 +205,10 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                     <div className="text-2xl grayscale">{game.icon}</div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-700">{game.name}</h3>
-                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">{game.device}</span>
+                        <h3 className="font-semibold text-gray-700" style={{ color: '#374151' }}>{game.name}</h3>
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded" style={{ color: '#4B5563' }}>{game.device}</span>
                       </div>
-                      <p className="text-sm text-gray-500">{game.description}</p>
+                      <p className="text-sm text-gray-500" style={{ color: '#6B7280' }}>{game.description}</p>
                     </div>
                     <div className="text-orange-500 text-sm font-semibold">SOON</div>
                   </div>
@@ -217,7 +219,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
         )}
 
         {/* Stats */}
-        <div className="text-center text-xs text-gray-500 pt-4 border-t">
+        <div className="text-center text-xs text-gray-500 pt-4 border-t" style={{ color: '#6B7280' }}>
           {availableGames.length} available games • {comingSoonGames.length} coming soon
         </div>
       </div>
