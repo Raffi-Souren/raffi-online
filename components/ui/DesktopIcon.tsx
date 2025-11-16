@@ -17,7 +17,7 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
     "💡": "/icons/lightbulb.jpg",
   }
 
-  const iconSrc = iconMap[icon] || icon
+  const iconSrc = iconMap[icon]
 
   return (
     <button
@@ -26,19 +26,48 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
       style={{ pointerEvents: 'auto' }}
       type="button"
     >
-      <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center">
-        <span 
-          className="text-4xl md:text-5xl select-none"
-          style={{
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))'
-          }}
-        >
-          {icon}
-        </span>
+      <div 
+        style={{
+          width: '64px',
+          height: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative'
+        }}
+      >
+        {iconSrc ? (
+          <Image
+            src={iconSrc || "/placeholder.svg"}
+            alt={label}
+            width={64}
+            height={64}
+            style={{
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+              objectFit: 'contain'
+            }}
+          />
+        ) : (
+          <span 
+            style={{
+              fontSize: '3rem',
+              userSelect: 'none',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))'
+            }}
+          >
+            {icon}
+          </span>
+        )}
       </div>
       <span 
-        className="text-white text-xs md:text-sm font-bold text-center leading-tight px-1 max-w-[80px]"
         style={{
+          color: 'white',
+          fontSize: '0.875rem',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          lineHeight: '1.25',
+          padding: '0 0.25rem',
+          maxWidth: '80px',
           textShadow: '1px 1px 2px rgba(0,0,0,0.9), -1px -1px 2px rgba(0,0,0,0.9), 1px -1px 2px rgba(0,0,0,0.9), -1px 1px 2px rgba(0,0,0,0.9)'
         }}
       >

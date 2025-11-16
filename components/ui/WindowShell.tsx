@@ -15,29 +15,94 @@ export default function WindowShell({ title, onClose, children, className = "", 
   return (
     <>
       <div 
-        className="fixed inset-0 z-[100] bg-black/50" 
+        style={{
+          position: 'fixed',
+          inset: '0',
+          zIndex: 100,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)'
+        }}
         onClick={onClose}
         aria-hidden="true"
       />
       
-      <div className="fixed inset-0 z-[101] flex items-center justify-center p-2 pointer-events-none">
+      <div 
+        style={{
+          position: 'fixed',
+          inset: '0',
+          zIndex: 101,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0.5rem',
+          pointerEvents: 'none'
+        }}
+      >
         <div
-          className={`bg-white rounded-lg shadow-2xl w-full h-full md:max-w-4xl md:w-full md:max-h-[90vh] md:h-auto flex flex-col pointer-events-auto ${className}`}
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '0.5rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            width: '100%',
+            height: '100%',
+            maxWidth: '56rem',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            pointerEvents: 'auto'
+          }}
+          className={className}
         >
           {/* Blue Title Bar */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-4 py-3 md:py-2 flex items-center justify-between rounded-t-lg">
-            <h2 className="font-bold text-sm md:text-sm truncate pr-2">{title}</h2>
+          <div 
+            style={{
+              background: 'linear-gradient(to right, #2563eb, #1d4ed8)',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTopLeftRadius: '0.5rem',
+              borderTopRightRadius: '0.5rem'
+            }}
+          >
+            <h2 
+              style={{
+                fontWeight: 'bold',
+                fontSize: '0.875rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                paddingRight: '0.5rem'
+              }}
+            >
+              {title}
+            </h2>
             <button
               onClick={onClose}
-              className="hover:bg-blue-800 p-2 md:p-1 rounded transition-colors flex-shrink-0 touch-manipulation"
+              style={{
+                padding: '0.25rem',
+                borderRadius: '0.25rem',
+                transition: 'background-color 0.2s',
+                flexShrink: 0
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               aria-label="Close window"
             >
-              <X size={18} className="md:w-4 md:h-4" />
+              <X size={16} />
             </button>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">{children}</div>
+          <div 
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1.5rem'
+            }}
+          >
+            {children}
+          </div>
         </div>
       </div>
     </>
