@@ -78,7 +78,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Windows XP Background */}
       <Image
         src="/windows-bg.jpg"
         alt="Windows XP Background"
@@ -86,14 +85,11 @@ export default function Home() {
         priority
         sizes="100vw"
         className="object-cover object-center"
-        style={{ zIndex: 0 }}
         quality={85}
       />
 
-      {/* Desktop Icons Container */}
-      <div className="absolute inset-0" style={{ zIndex: 10, pointerEvents: 'none' }}>
-        {/* Desktop Icons - Mobile Layout */}
-        <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden" style={{ pointerEvents: 'auto' }}>
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden pointer-events-auto">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
@@ -103,64 +99,57 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Desktop Icons - Desktop Layout */}
         <div className="hidden md:block">
-          <div className="absolute top-8 left-8" style={{ pointerEvents: 'auto' }}>
+          <div className="absolute top-8 left-8 pointer-events-auto">
             <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
           </div>
-          <div className="absolute top-8 left-1/2 -translate-x-1/2" style={{ pointerEvents: 'auto' }}>
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-auto">
             <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
           </div>
-          <div className="absolute top-8 right-1/3" style={{ pointerEvents: 'auto' }}>
+          <div className="absolute top-8 right-1/3 pointer-events-auto">
             <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
           </div>
-          <div className="absolute top-8 right-8" style={{ pointerEvents: 'auto' }}>
+          <div className="absolute top-8 right-8 pointer-events-auto">
             <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
           </div>
-          <div className="absolute bottom-32 left-8" style={{ pointerEvents: 'auto' }}>
+          <div className="absolute bottom-32 left-8 pointer-events-auto">
             <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
           </div>
         </div>
 
-        {/* Question Block Easter Egg */}
-        <div className="fixed bottom-20 left-4" style={{ pointerEvents: 'auto' }}>
+        <div className="fixed bottom-20 left-4 pointer-events-auto">
           <QuestionBlock onClick={handleEasterEggClick} />
         </div>
       </div>
 
-      {/* Windows Layer */}
-      <div style={{ zIndex: 50 }}>
-        {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
-        {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
-        {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
-        {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
-        {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
-        {openWindows.startup && (
-          <UnderConstructionWindow
-            isOpen={openWindows.startup}
-            onClose={() => closeWindow("startup")}
-            title="Pitch Me a Startup"
-          />
-        )}
-        {openWindows.counter && (
-          <UnderConstructionWindow
-            isOpen={openWindows.counter}
-            onClose={() => closeWindow("counter")}
-            title="By the Numbers"
-          />
-        )}
-      </div>
-
-      {/* Start Menu Layer */}
-      {showStartMenu && (
-        <div style={{ zIndex: 100 }}>
-          <div className="fixed inset-0" onClick={() => setShowStartMenu(false)} />
-          <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
-        </div>
+      {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
+      {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
+      {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
+      {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
+      {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
+      {openWindows.startup && (
+        <UnderConstructionWindow
+          isOpen={openWindows.startup}
+          onClose={() => closeWindow("startup")}
+          title="Pitch Me a Startup"
+        />
+      )}
+      {openWindows.counter && (
+        <UnderConstructionWindow
+          isOpen={openWindows.counter}
+          onClose={() => closeWindow("counter")}
+          title="By the Numbers"
+        />
       )}
 
-      {/* Taskbar - Always on top */}
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2" style={{ zIndex: 200 }}>
+      {showStartMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowStartMenu(false)} />
+          <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
+        </>
+      )}
+
+      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-50">
         <button
           onClick={handleStartMenuToggle}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"

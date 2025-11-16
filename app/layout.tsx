@@ -6,8 +6,6 @@ import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
-const buildTimestamp = new Date().toISOString()
-
 export const metadata: Metadata = {
   title: "Raffi WW Web",
   description: "AI Architect & Technology Consultant based in New York City.",
@@ -30,11 +28,6 @@ export const metadata: Metadata = {
     description: "AI Architect & Technology Consultant based in New York City.",
     images: ["/windows-2000-background.png"],
   },
-  other: {
-    'build-timestamp': buildTimestamp,
-    'version': 'v263-production-fix',
-    'cache-bust': Date.now().toString(),
-  },
     generator: 'v0.app'
 }
 
@@ -45,11 +38,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        {/* BUILD VERSION: v263-PRODUCTION-FIX | Time: {buildTimestamp} | Cache-Bust: {Date.now()} */}
-        <meta name="build-version" content="v263-production-fix" />
-        <meta name="build-time" content={buildTimestamp} />
-      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
