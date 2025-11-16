@@ -84,11 +84,13 @@ export default function Home() {
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center -z-10"
+        className="object-cover object-center"
+        style={{ zIndex: -10 }}
         quality={85}
       />
 
-      <div className="absolute inset-0 z-10 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
+        {/* Mobile layout */}
         <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden pointer-events-auto">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
@@ -99,6 +101,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Desktop layout */}
         <div className="hidden md:block">
           <div className="absolute top-8 left-8 pointer-events-auto">
             <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
@@ -117,11 +120,12 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="fixed bottom-20 left-4 z-20 pointer-events-auto">
+        <div className="fixed bottom-20 left-4 pointer-events-auto" style={{ zIndex: 20 }}>
           <QuestionBlock onClick={handleEasterEggClick} />
         </div>
       </div>
 
+      {/* Windows - only render when open */}
       {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
       {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
       {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
@@ -142,14 +146,15 @@ export default function Home() {
         />
       )}
 
+      {/* Start Menu */}
       {showStartMenu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowStartMenu(false)} />
+          <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowStartMenu(false)} />
           <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
         </>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2 z-50">
+      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2" style={{ zIndex: 50 }}>
         <button
           onClick={handleStartMenuToggle}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"

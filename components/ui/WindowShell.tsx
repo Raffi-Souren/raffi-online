@@ -13,9 +13,10 @@ interface WindowShellProps {
 
 export default function WindowShell({ title, onClose, children, className = "", id }: WindowShellProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 md:p-4" style={{ zIndex: 100 }}>
       <div
         className={`bg-white rounded-lg shadow-2xl w-full h-full md:max-w-4xl md:w-full md:max-h-[90vh] md:h-auto flex flex-col ${className}`}
+        style={{ zIndex: 101 }}
       >
         {/* Blue Title Bar */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-4 py-3 md:py-2 flex items-center justify-between rounded-t-lg">
