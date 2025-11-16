@@ -12,7 +12,7 @@ import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 
-const APP_VERSION = "v263-PRODUCTION-FIX"
+const APP_VERSION = "v267-VISIBILITY-TEST"
 const BUILD_TIME = new Date().toISOString()
 
 export default function Home() {
@@ -27,30 +27,11 @@ export default function Home() {
     startup: false,
     counter: false,
   })
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    console.log("=".repeat(60))
-    console.log("🔍 PRODUCTION VERSION CHECK")
-    console.log("=".repeat(60))
-    console.log("App Version:", APP_VERSION)
-    console.log("Build Time:", BUILD_TIME)
-    console.log("Environment:", process.env.NODE_ENV)
-    console.log("Window Location:", window.location.href)
-    console.log("User Agent:", navigator.userAgent)
-    console.log("=".repeat(60))
-    
-    // Log to document for visibility
-    const versionDiv = document.createElement("div")
-    versionDiv.style.cssText = "position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font-family:monospace;font-size:12px;z-index:99999;border:2px solid #0f0;"
-    versionDiv.innerHTML = `
-      <div><strong>VERSION: ${APP_VERSION}</strong></div>
-      <div>Build: ${BUILD_TIME}</div>
-      <div>Env: ${process.env.NODE_ENV}</div>
-    `
-    document.body.appendChild(versionDiv)
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => versionDiv.remove(), 5000)
+    setMounted(true)
+    console.log("✅ Component mounted, setting mounted=true")
   }, [])
 
   // Update time every second
@@ -82,6 +63,7 @@ export default function Home() {
   }
 
   const handleIconClick = (action: string) => {
+    console.log("🖱️ Icon clicked:", action)
     if (action === "email") {
       try {
         const email = "raffi@notgoodcompany.com"
@@ -92,7 +74,6 @@ export default function Home() {
         alert("Email: raffi@notgoodcompany.com")
       }
     } else if (action === "startup") {
-      // Open the ChatGPT link in a new tab
       window.open("https://chatgpt.com/g/g-68a497212bfc81918b450e9ca7ee67ba-raf-os-terminal", "_blank")
     } else {
       openWindow(action)
@@ -106,6 +87,27 @@ export default function Home() {
   const handleStartMenuToggle = () => {
     setShowStartMenu(!showStartMenu)
   }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <Image
+          src="/windows-bg.jpg"
+          alt="Windows XP Background"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center -z-10 pointer-events-none select-none"
+          quality={85}
+        />
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-2xl font-bold bg-black bg-opacity-75 p-8 rounded">
+          Loading...
+        </div>
+      </div>
+    )
+  }
+
+  console.log("🎨 Rendering Home component with mounted=true")
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -123,8 +125,12 @@ export default function Home() {
         quality={85}
       />
 
+      <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black px-8 py-4 rounded-lg font-bold text-2xl z-50 border-4 border-black">
+        🔴 VISIBILITY TEST - If you see this, rendering works!
+      </div>
+
       {/* Desktop Icons Container */}
-      <div className="absolute inset-0 p-4 md:p-8 pb-[72px] md:pb-0">
+      <div className="absolute inset-0 p-4 md:p-8 pb-[72px] md:pb-0 z-10">
         {/* Mobile Layout - 2x3 Grid with Better Spacing */}
         <div className="grid grid-cols-2 gap-8 h-full md:hidden">
           {/* Row 1 */}
@@ -184,21 +190,25 @@ export default function Home() {
       </div>
 
       {/* Windows */}
-      <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />
-      <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />
-      <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />
-      <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />
-      <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />
-      <UnderConstructionWindow
-        isOpen={openWindows.startup}
-        onClose={() => closeWindow("startup")}
-        title="Pitch Me a Startup"
-      />
-      <UnderConstructionWindow
-        isOpen={openWindows.counter}
-        onClose={() => closeWindow("counter")}
-        title="By the Numbers"
-      />
+      {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
+      {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
+      {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
+      {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
+      {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
+      {openWindows.startup && (
+        <UnderConstructionWindow
+          isOpen={openWindows.startup}
+          onClose={() => closeWindow("startup")}
+          title="Pitch Me a Startup"
+        />
+      )}
+      {openWindows.counter && (
+        <UnderConstructionWindow
+          isOpen={openWindows.counter}
+          onClose={() => closeWindow("counter")}
+          title="By the Numbers"
+        />
+      )}
 
       {/* Start Menu */}
       <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
