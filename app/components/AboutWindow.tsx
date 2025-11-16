@@ -8,11 +8,7 @@ interface AboutWindowProps {
 }
 
 export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
-  console.log("[v0] AboutWindow render called. isOpen:", isOpen)
-  
   if (!isOpen) return null
-
-  console.log("[v0] AboutWindow rendering content")
 
   return (
     <WindowShell id="about" title="ABOUT ME - RAF.TXT" onClose={onClose}>

@@ -12,8 +12,6 @@ interface WindowShellProps {
 }
 
 export default function WindowShell({ title, onClose, children, className = "", id }: WindowShellProps) {
-  console.log("[v0] WindowShell rendering. Title:", title, "ID:", id)
-  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
       <div
