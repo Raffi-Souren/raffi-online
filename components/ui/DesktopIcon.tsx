@@ -33,7 +33,8 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative'
+          position: 'relative',
+          background: 'transparent'
         }}
       >
         {iconSrc ? (
@@ -44,15 +45,18 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
             height={64}
             style={{
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-              objectFit: 'contain'
+              objectFit: 'contain',
+              backgroundColor: 'transparent'
             }}
+            unoptimized
           />
         ) : (
           <span 
             style={{
               fontSize: '3rem',
               userSelect: 'none',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))'
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+              background: 'transparent'
             }}
           >
             {icon}
