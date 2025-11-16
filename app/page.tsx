@@ -78,83 +78,45 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      
+      {/* Background - behind everything */}
       <Image
         src="/windows-bg.jpg"
         alt="Windows XP Background"
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center"
         style={{ zIndex: -10 }}
+        className="object-cover object-center"
         quality={85}
       />
 
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
-        {/* Mobile layout */}
-        <div className="grid grid-cols-2 gap-4 p-4 pb-20 md:hidden pointer-events-auto">
+      {/* Desktop Icons Container - z-10 */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
+        </div>
+        <div style={{ position: 'absolute', top: '2rem', left: '50%', transform: 'translateX(-50%)' }}>
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
+        </div>
+        <div style={{ position: 'absolute', top: '2rem', right: '33%' }}>
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
+        </div>
+        <div style={{ position: 'absolute', top: '2rem', right: '2rem' }}>
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-          <div className="col-span-2 flex justify-center">
-            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-          </div>
         </div>
-
-        {/* Desktop layout */}
-        <div className="hidden md:block">
-          <div className="absolute top-8 left-8 pointer-events-auto">
-            <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-          </div>
-          <div className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-auto">
-            <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-          </div>
-          <div className="absolute top-8 right-1/3 pointer-events-auto">
-            <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-          </div>
-          <div className="absolute top-8 right-8 pointer-events-auto">
-            <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-          </div>
-          <div className="absolute bottom-32 left-8 pointer-events-auto">
-            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-          </div>
-        </div>
-
-        <div className="fixed bottom-20 left-4 pointer-events-auto" style={{ zIndex: 20 }}>
-          <QuestionBlock onClick={handleEasterEggClick} />
+        <div style={{ position: 'absolute', bottom: '8rem', left: '2rem' }}>
+          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
         </div>
       </div>
 
-      {/* Windows - only render when open */}
-      {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
-      {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
-      {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
-      {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
-      {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
-      {openWindows.startup && (
-        <UnderConstructionWindow
-          isOpen={openWindows.startup}
-          onClose={() => closeWindow("startup")}
-          title="Pitch Me a Startup"
-        />
-      )}
-      {openWindows.counter && (
-        <UnderConstructionWindow
-          isOpen={openWindows.counter}
-          onClose={() => closeWindow("counter")}
-          title="By the Numbers"
-        />
-      )}
+      {/* Question Block Easter Egg - z-20 */}
+      <div style={{ position: 'fixed', bottom: '5rem', left: '1rem', zIndex: 20 }}>
+        <QuestionBlock onClick={handleEasterEggClick} />
+      </div>
 
-      {/* Start Menu */}
-      {showStartMenu && (
-        <>
-          <div className="fixed inset-0" style={{ zIndex: 90 }} onClick={() => setShowStartMenu(false)} />
-          <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
-        </>
-      )}
-
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2" style={{ zIndex: 50 }}>
+      {/* Taskbar - z-50 */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '3rem', zIndex: 50 }} className="bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2">
         <button
           onClick={handleStartMenuToggle}
           className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"
@@ -174,6 +136,37 @@ export default function Home() {
 
         <div className="ml-auto text-white text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
       </div>
+
+      {/* Start Menu - z-90 */}
+      {showStartMenu && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setShowStartMenu(false)} />
+          <div style={{ zIndex: 91 }}>
+            <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
+          </div>
+        </>
+      )}
+
+      {/* Windows - z-100/101 via WindowShell */}
+      {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
+      {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
+      {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
+      {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
+      {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
+      {openWindows.startup && (
+        <UnderConstructionWindow
+          isOpen={openWindows.startup}
+          onClose={() => closeWindow("startup")}
+          title="Pitch Me a Startup"
+        />
+      )}
+      {openWindows.counter && (
+        <UnderConstructionWindow
+          isOpen={openWindows.counter}
+          onClose={() => closeWindow("counter")}
+          title="By the Numbers"
+        />
+      )}
     </div>
   )
 }

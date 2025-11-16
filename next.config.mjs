@@ -16,6 +16,9 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
+  experimental: {
+    deploymentId: true,
+  },
 }
 
 export default nextConfig
