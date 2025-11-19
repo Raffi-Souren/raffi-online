@@ -1,18 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Shuffle, X, CheckCircle } from 'lucide-react';
-
-interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  url: string;
-}
+import { Shuffle, X, CheckCircle, Play, Pause } from 'lucide-react';
+import { useAudio, Track } from "../context/AudioContext";
 
 interface DiggingInTheCratesProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 // 🔊 SC embed helper — classic player, no visual cover (prevents white padding)
@@ -257,10 +251,16 @@ const SOUNDCLOUD_TRACKS: Track[] = [
 ];
 
 export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
-  const [currentTrack, setCurrentTrack] = useState<Track>(() => SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]);
-  const [embedError, setEmbedError] = useState(false);
+  const { playTrack, pauseTrack, resumeTrack, currentTrack: globalTrack, isPlaying: isGlobalPlaying } = useAudio();
+  const [localTrack, setLocalTrack] = useState<Track>(() => SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]);
   const dialogRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (globalTrack && isOpen) {
+      setLocalTrack(globalTrack);
+    }
+  }, [globalTrack, isOpen]);
 
   // Focus management
   useEffect(() => {
@@ -281,19 +281,36 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   }, [isOpen, onClose]);
 
   const shuffleTrack = useCallback(() => {
-    setEmbedError(false);
     let t: Track;
     do {
       t = SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)];
-    } while (t.id === currentTrack.id && SOUNDCLOUD_TRACKS.length > 1);
-    setCurrentTrack(t);
-  }, [currentTrack.id]);
+    } while (t.id === localTrack.id && SOUNDCLOUD_TRACKS.length > 1);
+    setLocalTrack(t);
+    // Optional: Auto-play on shuffle? Let's keep it manual for now, or auto-play if already playing.
+    if (isGlobalPlaying) {
+      playTrack(t);
+    }
+  }, [localTrack.id, isGlobalPlaying, playTrack]);
+
+  const handlePlayPause = () => {
+    if (globalTrack?.id === localTrack.id) {
+      if (isGlobalPlaying) {
+        pauseTrack();
+      } else {
+        resumeTrack();
+      }
+    } else {
+      playTrack(localTrack);
+    }
+  };
+
+  const isCurrentTrackPlaying = globalTrack?.id === localTrack.id && isGlobalPlaying;
 
   if (!isOpen) return null;
 
   return (
     <>
-      <div 
+      <div
         style={{
           position: 'fixed',
           inset: 0,
@@ -303,7 +320,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         onClick={onClose}
         aria-hidden="true"
       />
-      
+
       <div style={{
         position: 'fixed',
         inset: 0,
@@ -388,56 +405,37 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               overflow: 'hidden',
               borderRadius: '0.375rem',
               border: '2px solid #E5E7EB',
-              backgroundColor: 'white',
+              backgroundColor: '#F3F4F6',
               marginBottom: '1rem',
-              minHeight: '166px'
+              minHeight: '166px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem'
             }}>
-              {embedError ? (
-                <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-                  <p style={{ marginBottom: '0.75rem', fontSize: '0.875rem', color: '#DC2626' }}>
-                    Can&apos;t load this one. Try Shuffle.
-                  </p>
-                  <button
-                    onClick={shuffleTrack}
-                    style={{
-                      borderRadius: '0.375rem',
-                      backgroundColor: '#3B82F6',
-                      padding: '0.625rem 1.25rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: 'white',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s',
-                      minHeight: '44px'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}
-                  >
-                    Shuffle
-                  </button>
-                </div>
-              ) : (
-                <iframe
-                  title={`${currentTrack.title} by ${currentTrack.artist}`}
-                  src={scEmbed(currentTrack.url)}
-                  height={166}
-                  width="100%"
-                  style={{ display: 'block', width: '100%', border: 'none' }}
-                  frameBorder={0}
-                  allow="autoplay"
-                  onError={() => setEmbedError(true)}
-                />
-              )}
-            </div>
+              {/* Custom Player UI Replacement */}
+              <div className="text-center px-4">
+                <h3 className="font-bold text-lg text-gray-900 mb-1">{localTrack.title}</h3>
+                <p className="text-sm text-gray-600">{localTrack.artist}</p>
+              </div>
 
-            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#000000', margin: 0, marginBottom: '0.25rem' }}>
-                {currentTrack.title}
-              </p>
-              <p style={{ fontSize: '0.8125rem', color: '#6B7280', margin: 0 }}>
-                by {currentTrack.artist}
-              </p>
+              <button
+                onClick={handlePlayPause}
+                className="flex items-center justify-center w-16 h-16 rounded-full bg-[#FF5500] hover:bg-[#FF3300] text-white transition-colors shadow-lg"
+                aria-label={isCurrentTrackPlaying ? "Pause" : "Play"}
+              >
+                {isCurrentTrackPlaying ? (
+                  <Pause size={32} fill="currentColor" />
+                ) : (
+                  <Play size={32} fill="currentColor" className="ml-1" />
+                )}
+              </button>
+
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-[#FF5500]"></span>
+                SoundCloud
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', paddingTop: '0.5rem', flexWrap: 'wrap' }}>

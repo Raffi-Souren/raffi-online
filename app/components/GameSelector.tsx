@@ -188,18 +188,17 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                 key={game.id}
                 onClick={() => handleGameClick(game.id)}
                 className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{game.icon}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900" style={{ color: '#111827' }}>{game.name}</h3>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" style={{ color: '#1E40AF' }}>{game.device}</span>
-                    </div>
-                    <p className="text-sm text-gray-600" style={{ color: '#4B5563' }}>{game.description}</p>
+                <div className="text-2xl flex-shrink-0">{game.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="font-semibold text-gray-900" style={{ color: '#111827' }}>{game.name}</h3>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded whitespace-nowrap" style={{ color: '#1E40AF', backgroundColor: '#DBEAFE' }}>{game.device}</span>
                   </div>
-                  <div className="text-green-500 text-sm font-semibold">PLAY</div>
+                  <p className="text-sm text-gray-600 truncate" style={{ color: '#4B5563' }}>{game.description}</p>
                 </div>
+                <div className="text-green-600 text-sm font-bold px-3 py-1 rounded border border-green-200 bg-green-50 flex-shrink-0" style={{ color: '#059669', backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }}>PLAY</div>
               </div>
             ))}
           </div>
@@ -218,18 +217,16 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
 
             <div className="grid gap-3">
               {comingSoonGames.map((game) => (
-                <div key={game.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 opacity-75">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl grayscale">{game.icon}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-700" style={{ color: '#374151' }}>{game.name}</h3>
-                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded" style={{ color: '#4B5563' }}>{game.device}</span>
-                      </div>
-                      <p className="text-sm text-gray-500" style={{ color: '#6B7280' }}>{game.description}</p>
+                <div key={game.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 opacity-75" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="text-2xl grayscale flex-shrink-0">{game.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-semibold text-gray-700" style={{ color: '#374151' }}>{game.name}</h3>
+                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded whitespace-nowrap" style={{ color: '#4B5563', backgroundColor: '#E5E7EB' }}>{game.device}</span>
                     </div>
-                    <div className="text-orange-500 text-sm font-semibold">SOON</div>
+                    <p className="text-sm text-gray-500 truncate" style={{ color: '#6B7280' }}>{game.description}</p>
                   </div>
+                  <div className="text-orange-500 text-sm font-semibold px-2 flex-shrink-0" style={{ color: '#F97316' }}>SOON</div>
                 </div>
               ))}
             </div>

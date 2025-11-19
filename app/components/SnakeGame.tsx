@@ -23,6 +23,7 @@ export default function SnakeGame() {
   const [food, setFood] = useState<Position>({ x: 100, y: 100 })
   const [direction, setDirection] = useState<Direction>("RIGHT")
   const gameLoopRef = useRef<NodeJS.Timeout>()
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   // Load high score from localStorage
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function SnakeGame() {
 
   // Start game
   const startGame = useCallback(
-    (initialDirection: Direction) => {
+    (initialDirection: Direction = "RIGHT") => {
       setGameState("PLAYING")
       setScore(0)
       setSnake([{ x: 200, y: 200 }])
@@ -56,53 +57,29 @@ export default function SnakeGame() {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (gameState === "START" || gameState === "GAME_OVER") {
-        // Start game with arrow keys
-        switch (e.key) {
-          case "ArrowUp":
-          case "8":
-          case "2":
-            e.preventDefault()
-            startGame("UP")
-            break
-          case "ArrowDown":
-            e.preventDefault()
-            startGame("DOWN")
-            break
-          case "ArrowLeft":
-          case "4":
-            e.preventDefault()
-            startGame("LEFT")
-            break
-          case "ArrowRight":
-          case "6":
-            e.preventDefault()
-            startGame("RIGHT")
-            break
-          case " ":
-            e.preventDefault()
-            startGame("RIGHT")
-            break
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Enter"].includes(e.key)) {
+          e.preventDefault()
+          startGame()
         }
       } else if (gameState === "PLAYING") {
-        // Control snake during game
         switch (e.key) {
           case "ArrowUp":
-          case "8":
-          case "2":
+          case "w":
             e.preventDefault()
             if (direction !== "DOWN") setDirection("UP")
             break
           case "ArrowDown":
+          case "s":
             e.preventDefault()
             if (direction !== "UP") setDirection("DOWN")
             break
           case "ArrowLeft":
-          case "4":
+          case "a":
             e.preventDefault()
             if (direction !== "RIGHT") setDirection("LEFT")
             break
           case "ArrowRight":
-          case "6":
+          case "d":
             e.preventDefault()
             if (direction !== "LEFT") setDirection("RIGHT")
             break
@@ -114,21 +91,45 @@ export default function SnakeGame() {
     return () => window.removeEventListener("keydown", handleKeyPress)
   }, [gameState, direction, startGame])
 
-  // Mobile controls
-  const handleMobileControl = (newDirection: Direction) => {
-    if (gameState === "START" || gameState === "GAME_OVER") {
-      startGame(newDirection)
-    } else if (gameState === "PLAYING") {
-      // Prevent reverse direction
-      if (
-        (newDirection === "UP" && direction !== "DOWN") ||
-        (newDirection === "DOWN" && direction !== "UP") ||
-        (newDirection === "LEFT" && direction !== "RIGHT") ||
-        (newDirection === "RIGHT" && direction !== "LEFT")
-      ) {
-        setDirection(newDirection)
+  // Touch controls (Swipe)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+
+    const touchEnd = {
+      x: e.changedTouches[0].clientX,
+      y: e.changedTouches[0].clientY,
+    }
+
+    const dx = touchEnd.x - touchStartRef.current.x
+    const dy = touchEnd.y - touchStartRef.current.y
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal swipe
+      if (Math.abs(dx) > 30) { // Threshold
+        if (dx > 0 && direction !== "LEFT") setDirection("RIGHT")
+        else if (dx < 0 && direction !== "RIGHT") setDirection("LEFT")
+      }
+    } else {
+      // Vertical swipe
+      if (Math.abs(dy) > 30) {
+        if (dy > 0 && direction !== "UP") setDirection("DOWN")
+        else if (dy < 0 && direction !== "DOWN") setDirection("UP")
       }
     }
+    
+    // Tap to start
+    if (gameState !== "PLAYING" && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      startGame()
+    }
+
+    touchStartRef.current = null
   }
 
   // Game loop
@@ -180,7 +181,7 @@ export default function SnakeGame() {
 
         return newSnake
       })
-    }, 150)
+    }, 100) // Slightly faster
 
     return () => {
       if (gameLoopRef.current) {
@@ -205,119 +206,77 @@ export default function SnakeGame() {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Clear canvas
-    ctx.fillStyle = "#000"
+    // Clear canvas - Nokia Green Background
+    ctx.fillStyle = "#9BBB58"
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
+    // Draw grid dots (subtle)
+    ctx.fillStyle = "#8DAA4B"
+    for(let i=0; i<CANVAS_WIDTH; i+=GRID_SIZE) {
+      for(let j=0; j<CANVAS_HEIGHT; j+=GRID_SIZE) {
+        ctx.fillRect(i, j, 1, 1)
+      }
+    }
+
     if (gameState === "START") {
-      // Draw start screen
-      ctx.fillStyle = "#0f0"
+      ctx.fillStyle = "#000"
       ctx.font = "bold 24px monospace"
       ctx.textAlign = "center"
-      ctx.fillText("Snake", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40)
-
-      ctx.font = "14px monospace"
-      ctx.fillText("Press any arrow key to start", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
-      ctx.fillText("Use keypad: 2↑ 4← 6→ 8↓", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20)
-      ctx.fillText("Eat red food to grow!", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40)
+      ctx.fillText("SNAKE", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40)
+      ctx.font = "16px monospace"
+      ctx.fillText("Swipe or Arrows to Move", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
+      ctx.fillText("Tap to Start", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 30)
     } else if (gameState === "GAME_OVER") {
-      // Draw game over screen
-      ctx.fillStyle = "#f00"
+      ctx.fillStyle = "#000"
       ctx.font = "bold 24px monospace"
       ctx.textAlign = "center"
-      ctx.fillText("Game Over", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40)
-
-      ctx.fillStyle = "#fff"
+      ctx.fillText("GAME OVER", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40)
       ctx.font = "16px monospace"
       ctx.fillText(`Score: ${score}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
-      ctx.fillText(`High Score: ${highScore}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20)
-
-      ctx.font = "14px monospace"
-      ctx.fillText("Press any arrow key to play again", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 50)
+      ctx.fillText(`High: ${highScore}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20)
+      ctx.fillText("Tap to Play Again", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 50)
     } else {
       // Draw snake
-      ctx.fillStyle = "#0f0"
+      ctx.fillStyle = "#000"
       snake.forEach((segment) => {
-        ctx.fillRect(segment.x, segment.y, GRID_SIZE - 2, GRID_SIZE - 2)
+        ctx.fillRect(segment.x, segment.y, GRID_SIZE - 1, GRID_SIZE - 1)
       })
 
       // Draw food
-      ctx.fillStyle = "#f00"
-      ctx.fillRect(food.x, food.y, GRID_SIZE - 2, GRID_SIZE - 2)
+      ctx.fillStyle = "#000"
+      ctx.beginPath()
+      ctx.arc(food.x + GRID_SIZE/2, food.y + GRID_SIZE/2, GRID_SIZE/2 - 2, 0, Math.PI*2)
+      ctx.fill()
     }
 
     // Draw score
-    ctx.fillStyle = "#0f0"
+    ctx.fillStyle = "#000"
     ctx.font = "16px monospace"
     ctx.textAlign = "left"
-    ctx.fillText(`Score: ${score}`, 10, 25)
-    ctx.fillText(`High: ${highScore}`, 10, 45)
+    ctx.fillText(`${score}`, 10, 25)
   }, [gameState, snake, food, score, highScore])
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
-        className="border-2 border-gray-400 bg-black"
-        style={{ imageRendering: "pixelated" }}
-      />
-
-      {/* Mobile Controls */}
-      <div className="md:hidden">
-        <div className="grid grid-cols-3 gap-2 w-48">
-          <div></div>
-          <button
-            onTouchStart={() => handleMobileControl("UP")}
-            onClick={() => handleMobileControl("UP")}
-            className="bg-gray-700 hover:bg-gray-600 active:bg-gray-600 text-white p-3 rounded touch-manipulation"
-          >
-            ↑
-          </button>
-          <div></div>
-          <button
-            onTouchStart={() => handleMobileControl("LEFT")}
-            onClick={() => handleMobileControl("LEFT")}
-            className="bg-gray-700 hover:bg-gray-600 active:bg-gray-600 text-white p-3 rounded touch-manipulation"
-          >
-            ←
-          </button>
-          <div className="flex items-center justify-center">
-            <div className="text-xs text-gray-600 text-center">
-              {gameState === "START" && "TAP TO START"}
-              {gameState === "PLAYING" && "PLAYING"}
-              {gameState === "GAME_OVER" && "TAP TO PLAY"}
-            </div>
-          </div>
-          <button
-            onTouchStart={() => handleMobileControl("RIGHT")}
-            onClick={() => handleMobileControl("RIGHT")}
-            className="bg-gray-700 hover:bg-gray-600 active:bg-gray-600 text-white p-3 rounded touch-manipulation"
-          >
-            →
-          </button>
-          <div></div>
-          <button
-            onTouchStart={() => handleMobileControl("DOWN")}
-            onClick={() => handleMobileControl("DOWN")}
-            className="bg-gray-700 hover:bg-gray-600 active:bg-gray-600 text-white p-3 rounded touch-manipulation"
-          >
-            ↓
-          </button>
-          <div></div>
-        </div>
+    <div className="flex flex-col items-center space-y-4 w-full max-w-md mx-auto">
+      <div className="relative w-full aspect-square bg-[#9BBB58] border-8 border-gray-800 rounded-xl shadow-xl overflow-hidden">
+        {/* Screen Bezel Effect */}
+        <div className="absolute inset-0 border-4 border-[#8DAA4B]/50 pointer-events-none z-10 rounded-lg"></div>
+        
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_WIDTH}
+          height={CANVAS_HEIGHT}
+          className="w-full h-full"
+          style={{ imageRendering: "pixelated", touchAction: "none" }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        />
       </div>
 
-      {/* Desktop Start Button */}
-      {(gameState === "START" || gameState === "GAME_OVER") && (
-        <button
-          onClick={() => startGame("RIGHT")}
-          className="hidden md:block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-semibold"
-        >
-          {gameState === "START" ? "Start Game" : "Play Again"}
-        </button>
-      )}
+      <div className="text-sm text-gray-600 font-mono text-center">
+        <span className="hidden md:inline">Use Arrow Keys to Move</span>
+        <span className="md:hidden">Swipe to Change Direction</span>
+      </div>
     </div>
   )
 }

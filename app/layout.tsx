@@ -3,6 +3,8 @@ import type { Metadata } from "next"
 import { Inter } from 'next/font/google'
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { AudioProvider } from "./context/AudioContext"
+import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -28,7 +30,7 @@ export const metadata: Metadata = {
     description: "AI Architect & Technology Consultant based in New York City.",
     images: ["/windows-2000-background.png"],
   },
-    generator: 'v0.app'
+  generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -40,7 +42,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
+          <AudioProvider>
+            <GlobalAudioPlayer />
+            {children}
+          </AudioProvider>
         </ThemeProvider>
       </body>
     </html>
