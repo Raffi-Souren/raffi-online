@@ -2,6 +2,11 @@
 
 import { useState } from "react"
 import WindowShell from "../../components/ui/WindowShell"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { Search, ExternalLink } from 'lucide-react'
 
 interface BlogrollItem {
   id: number
@@ -58,73 +63,78 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
 
   return (
     <WindowShell title="BLOGROLL" onClose={onClose}>
-      <div className="space-y-4">
+      <div className="space-y-6 p-1">
         {/* Header */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ color: '#111827' }}>Blogroll</h2>
-          <p className="text-gray-600 text-sm" style={{ color: '#4B5563' }}>Curated links to inspiring websites and resources</p>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">Blogroll</h2>
+          <p className="text-gray-500 text-sm">Curated links to inspiring websites and resources</p>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="space-y-3">
-            <input
+        <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
               type="text"
               placeholder="Search sites..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ color: '#111827' }}
+              className="pl-9 bg-white"
             />
+          </div>
 
-            <div className="flex gap-2 flex-wrap">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                    selectedCategory === category
-                      ? "bg-blue-500 text-white border-blue-500"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                  style={{ color: selectedCategory === category ? '#FFFFFF' : '#374151' }}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-2 flex-wrap">
+            {categories.map((category) => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category)}
+                className={`text-xs ${selectedCategory === category ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-gray-50"}`}
+              >
+                {category}
+              </Button>
+            ))}
           </div>
         </div>
 
         {/* Blogroll Items */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="space-y-4">
-            {filteredItems.map((item) => (
-              <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="space-y-4">
+          {filteredItems.map((item) => (
+            <Card key={item.id} className="group hover:shadow-md transition-all duration-200 border-gray-200">
+              <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900" style={{ color: '#111827' }}>{item.title}</h3>
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" style={{ color: '#1E40AF' }}>{item.category}</span>
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    {item.title}
+                  </h3>
+                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                    {item.category}
+                  </Badge>
                 </div>
-                <p className="text-gray-600 mb-3" style={{ color: '#4B5563' }}>{item.description}</p>
+                <p className="text-gray-600 text-sm mb-3 leading-relaxed">
+                  {item.description}
+                </p>
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-medium"
+                  className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline gap-1"
                 >
-                  {item.url} →
+                  Visit Site <ExternalLink className="h-3 w-3" />
                 </a>
-              </div>
-            ))}
-          </div>
+              </CardContent>
+            </Card>
+          ))}
 
           {filteredItems.length === 0 && (
-            <div className="text-center text-gray-500 py-4" style={{ color: '#6B7280' }}>No sites found matching your criteria</div>
+            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+              <p>No sites found matching your criteria</p>
+            </div>
           )}
         </div>
 
         {/* Stats */}
-        <div className="text-center text-xs text-gray-500 pt-4 border-t" style={{ color: '#6B7280' }}>
+        <div className="text-center text-xs text-gray-400 pt-4 border-t border-gray-100">
           Showing {filteredItems.length} of {blogrollItems.length} sites
         </div>
       </div>
