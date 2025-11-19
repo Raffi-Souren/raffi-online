@@ -32,7 +32,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const playTrack = useCallback((track: Track) => {
     setCurrentTrack(track)
-    setTimeout(() => setIsPlaying(true), 50)
+    // Increased timeout to ensure player is ready and prevent race conditions
+    setTimeout(() => setIsPlaying(true), 100)
   }, [])
 
   const pauseTrack = useCallback(() => {

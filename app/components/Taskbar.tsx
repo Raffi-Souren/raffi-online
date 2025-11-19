@@ -24,7 +24,10 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
       )
     }
 
+    // Initial update
     updateTime()
+    
+    // Sync with seconds to update exactly on the minute change if possible, otherwise just every second
     const interval = setInterval(updateTime, 1000)
     return () => clearInterval(interval)
   }, [])
@@ -88,21 +91,24 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
       <div className="flex items-center gap-1 mr-2 px-2 border-r border-[#1846A0] shadow-[1px_0px_0px_rgba(255,255,255,0.2)]">
         <button
           onClick={() => onWindowClick("crates")}
-          className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors"
+          className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
+          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer" }}
           title="Digging in the Crates"
         >
           <Disc size={20} className="text-white drop-shadow-md" />
         </button>
         <button
           onClick={() => onWindowClick("games")}
-          className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors"
+          className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
+          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer" }}
           title="Games"
         >
           <Gamepad2 size={20} className="text-white drop-shadow-md" />
         </button>
         <button
           onClick={() => onWindowClick("about")}
-          className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors"
+          className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
+          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer" }}
           title="About"
         >
           <User size={20} className="text-white drop-shadow-md" />
@@ -126,6 +132,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
 
       <div
         className={`ml-auto flex items-center bg-[#0F9DDE] px-3 py-1 rounded border border-[#0B76A8] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)] text-white text-xs font-sans`}
+        suppressHydrationWarning
       >
         <span className="mr-2">🔈</span>
         {currentTime}

@@ -15,14 +15,14 @@ export default function GlobalAudioPlayer() {
   if (!mounted) return null
 
   return (
-    <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }}>
+    <div style={{ position: 'fixed', bottom: 0, right: 0, width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
       {/* Removed key prop to prevent unmounting on track change, which caused "media removed" errors */}
       <ReactPlayer
         url={currentTrack?.url || ""}
         playing={!!currentTrack && isPlaying}
         volume={1}
-        width="0"
-        height="0"
+        width="100%"
+        height="100%"
         onEnded={nextTrack}
         onError={(e) => {
           console.error("[v0] Audio error:", e)
