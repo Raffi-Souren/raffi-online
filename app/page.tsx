@@ -13,7 +13,7 @@ import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import NowPlaying from "./components/NowPlaying"
 import { useAudio } from "./context/AudioContext"
-import { Play, Pause } from 'lucide-react'
+import { Play, Pause, Disc, Gamepad2, User } from 'lucide-react'
 
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
@@ -174,6 +174,31 @@ export default function Home() {
 
         <div className="w-[2px] h-[28px] bg-[#1846A0] mx-2 shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"></div>
 
+        {/* Added Quick Launch section with pinned apps (Crates, Games, About) */}
+        <div className="flex items-center gap-1 mr-2 px-2 border-r border-[#1846A0] shadow-[1px_0px_0px_rgba(255,255,255,0.2)]">
+          <button
+            onClick={() => openWindow("crates")}
+            className="p-1 hover:bg-[#3E80F1] rounded group relative"
+            title="Digging in the Crates"
+          >
+            <Disc size={20} className="text-white drop-shadow-md" />
+          </button>
+          <button
+            onClick={() => openWindow("games")}
+            className="p-1 hover:bg-[#3E80F1] rounded group relative"
+            title="Games"
+          >
+            <Gamepad2 size={20} className="text-white drop-shadow-md" />
+          </button>
+          <button
+            onClick={() => openWindow("about")}
+            className="p-1 hover:bg-[#3E80F1] rounded group relative"
+            title="About"
+          >
+            <User size={20} className="text-white drop-shadow-md" />
+          </button>
+        </div>
+
         {Object.entries(openWindows).some(([, isOpen]) => isOpen) && (
           <div className="flex gap-1 overflow-x-auto mr-2">
             {Object.entries(openWindows)
@@ -185,7 +210,6 @@ export default function Home() {
               ))}
           </div>
         )}
-
 
         <div className={`ml-auto flex items-center bg-[#0F9DDE] px-3 py-1 rounded border border-[#0B76A8] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)] text-white text-xs font-sans`}>
           <span className="mr-2">🔈</span>
