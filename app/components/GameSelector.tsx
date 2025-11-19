@@ -6,6 +6,7 @@ import SnakeGame from "./SnakeGame"
 import ParachuteGame from "./ParachuteGame"
 import Brickbreaker from "./Brickbreaker"
 import MinesweeperGame from "./MinesweeperGame"
+import DoomGame from "./DoomGame"
 
 interface Game {
   id: string
@@ -72,11 +73,11 @@ const RETRO_GAMES: Game[] = [
   },
   {
     id: "doom",
-    name: "DOOM",
-    device: "MS-DOS",
-    description: "Rip and tear until it is done",
+    name: "DOOM Captcha",
+    device: "Vercel Edge",
+    description: "Prove you're human by slaying demons",
     icon: "😈",
-    available: false,
+    available: true,
   },
   {
     id: "solitaire",
@@ -98,6 +99,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
   // If a game is active, show the game component
   if (activeGame) {
     const GameComponent = {
+      doom: DoomGame,
       snake: SnakeGame,
       parachute: ParachuteGame,
       brickbreaker: Brickbreaker,

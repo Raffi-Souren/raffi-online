@@ -241,7 +241,9 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
     backgroundColor: isActive ? '#eff6ff' : 'transparent',
     transition: 'all 0.2s',
     cursor: 'pointer',
-    border: 'none',
+    borderTop: 'none',
+    borderLeft: 'none',
+    borderRight: 'none',
     outline: 'none'
   })
 

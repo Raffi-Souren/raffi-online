@@ -24,6 +24,7 @@ export default function Home() {
     startup: false,
     counter: false,
   })
+  const [isDesktop, setIsDesktop] = useState(false)
 
   useEffect(() => {
     const updateTime = () => {
@@ -40,6 +41,13 @@ export default function Home() {
     updateTime()
     const interval = setInterval(updateTime, 1000)
     return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768)
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
   }, [])
 
   const openWindow = (windowName: string) => {
@@ -91,35 +99,35 @@ export default function Home() {
         quality={85}
       />
 
-      {/* Desktop Layout - Hidden on mobile, visible on md+ */}
-      <div className="hidden md:block absolute inset-0 z-10">
-        <div className="absolute top-8 left-8">
+      {isDesktop ? (
+        <div className="absolute inset-0 z-10">
+          <div className="absolute top-8 left-8">
+            <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
+          </div>
+          <div className="absolute top-8 left-1/2 -translate-x-1/2">
+            <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
+          </div>
+          <div className="absolute top-8 right-32">
+            <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
+          </div>
+          <div className="absolute top-8 right-8">
+            <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
+          </div>
+          <div className="absolute bottom-32 left-8">
+            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+          </div>
+        </div>
+      ) : (
+        <div className="absolute inset-0 z-10 p-4 grid grid-cols-2 gap-4 content-start">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-        </div>
-        <div className="absolute top-8 left-1/2 -translate-x-1/2">
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-        </div>
-        <div className="absolute top-8 right-32">
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-        </div>
-        <div className="absolute top-8 right-8">
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
+          <div className="col-span-2 mt-8">
+            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+          </div>
         </div>
-        <div className="absolute bottom-32 left-8">
-          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-        </div>
-      </div>
-
-      {/* Mobile Layout - Grid, hidden on desktop */}
-      <div className="md:hidden absolute inset-0 z-10 p-4 grid grid-cols-2 gap-4 content-start">
-        <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-        <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-        <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-        <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-        <div className="col-span-2 mt-8">
-          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-        </div>
-      </div>
+      )}
 
       <div style={{ 
         position: 'fixed', 
@@ -139,11 +147,19 @@ export default function Home() {
       >
         <button
           onClick={handleStartMenuToggle}
-          className="flex items-center gap-2 px-2 py-1 bg-gradient-to-b from-[#3E9C4D] to-[#236F30] hover:brightness-110 text-white rounded-r-lg rounded-tl-lg rounded-bl-lg shadow-[inset_1px_1px_0px_rgba(255,255,255,0.4)] transition-all active:translate-y-px"
+          className="flex items-center gap-2 px-2 py-1 !bg-gradient-to-b !from-[#3E9C4D] !to-[#236F30] hover:brightness-110 !text-white rounded-r-lg rounded-tl-lg rounded-bl-lg shadow-[inset_1px_1px_0px_rgba(255,255,255,0.4)] transition-all active:translate-y-px"
           style={{
-            boxShadow: '2px 2px 5px rgba(0,0,0,0.5), inset 1px 1px 0px rgba(255,255,255,0.3)'
+            boxShadow: '2px 2px 5px rgba(0,0,0,0.5), inset 1px 1px 0px rgba(255,255,255,0.3)',
+            background: 'linear-gradient(to bottom, #3E9C4D, #236F30)',
+            color: 'white',
+            border: 'none'
           }}
         >
+          <div className="italic font-bold text-lg pr-1 not-italic">
+            <svg width="18" height="18" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
+              <path d="M0 12.402L35.454 7.613V41.89H0V12.402ZM46.567 5.99L88 0V41.804H46.567V5.99ZM0 49.938H35.454V84.134L0 79.433V49.938ZM46.567 49.938H88V88L46.567 82.093V49.938Z" fill="white"/>
+            </svg>
+          </div>
           <span className="text-lg drop-shadow-md italic font-bold pr-1">Start</span>
         </button>
 
