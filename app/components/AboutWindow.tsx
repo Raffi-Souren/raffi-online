@@ -29,7 +29,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
         </div>
 
         {/* Bio Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm" style={{ backgroundColor: '#ffffff' }}>
           <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             😎 ABOUT
           </h2>
@@ -39,7 +39,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
         </div>
 
         {/* Contact Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm" style={{ backgroundColor: '#ffffff' }}>
           <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             📧 CONTACT
           </h2>
@@ -57,7 +57,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
         </div>
 
         {/* ACM ICAIF Keynote Embed */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm" style={{ backgroundColor: '#ffffff' }}>
           <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block" style={{ color: '#111827' }}>
             🎓 ACM ICAIF KEYNOTE - LLM OUTPUT DRIFT
           </h3>

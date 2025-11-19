@@ -71,7 +71,7 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-4">
+        <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-4" style={{ backgroundColor: '#f9fafb' }}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -80,6 +80,7 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 bg-white"
+              style={{ backgroundColor: '#ffffff' }}
             />
           </div>
 
@@ -101,7 +102,7 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
         {/* Blogroll Items */}
         <div className="space-y-4">
           {filteredItems.map((item) => (
-            <Card key={item.id} className="group hover:shadow-md transition-all duration-200 border-gray-200">
+            <Card key={item.id} className="group hover:shadow-md transition-all duration-200 border-gray-200" style={{ backgroundColor: '#ffffff' }}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
