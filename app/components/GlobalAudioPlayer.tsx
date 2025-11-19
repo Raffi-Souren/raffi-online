@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import ReactPlayer from 'react-player'
-import { useAudio } from '../context/AudioContext'
+import { useEffect, useState } from "react"
+import ReactPlayer from "react-player"
+import { useAudio } from "../context/AudioContext"
 
 export default function GlobalAudioPlayer() {
   const { currentTrack, isPlaying, nextTrack, pauseTrack } = useAudio()
@@ -16,20 +16,18 @@ export default function GlobalAudioPlayer() {
 
   if (!mounted) return null
 
-  if (!currentTrack) return null
-
   return (
-    <div className="hidden">
+    <div style={{ display: "none" }}>
       <ReactPlayer
-        url={currentTrack.url}
-        playing={isPlaying}
+        url={currentTrack?.url || ""}
+        playing={!!currentTrack && isPlaying}
         width="0"
         height="0"
         onEnded={nextTrack}
         onError={(e) => {
           console.error("Audio playback error:", e)
-          // Optional: try next track on error
-          // nextTrack() 
+          // Prevent crash on error, maybe pause or try next
+          // pauseTrack()
         }}
         onReady={() => setIsReady(true)}
         config={{
@@ -47,8 +45,8 @@ export default function GlobalAudioPlayer() {
               show_user: false,
               show_reposts: false,
               hide_related: true,
-            }
-          }
+            },
+          },
         }}
       />
     </div>

@@ -15,7 +15,6 @@ import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import NowPlaying from "./components/NowPlaying"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer" // Import GlobalAudioPlayer
 import { useAudio } from "./context/AudioContext"
-import { Play, Pause, Disc, Gamepad2, User } from 'lucide-react'
 
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
@@ -34,8 +33,8 @@ export default function Home() {
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768)
     checkDesktop()
-    window.addEventListener('resize', checkDesktop)
-    return () => window.removeEventListener('resize', checkDesktop)
+    window.addEventListener("resize", checkDesktop)
+    return () => window.removeEventListener("resize", checkDesktop)
   }, [])
 
   const openWindow = (windowName: string) => {
@@ -74,7 +73,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      
       {/* Background - behind everything */}
       <Image
         src="/windows-bg.jpg"
@@ -117,13 +115,14 @@ export default function Home() {
         </div>
       )}
 
-      <div style={{ 
-        position: 'fixed', 
-        bottom: '5rem', 
-        left: '1rem', 
-        zIndex: 20 
-      }}
-      className="md:bottom-20"
+      <div
+        style={{
+          position: "fixed",
+          bottom: "5rem",
+          left: "1rem",
+          zIndex: 20,
+        }}
+        className="md:bottom-20"
       >
         <QuestionBlock onClick={handleEasterEggClick} />
       </div>
@@ -135,15 +134,16 @@ export default function Home() {
       <GlobalAudioPlayer />
 
       {/* Taskbar - z-50 */}
-      <Taskbar 
-        onStartClick={handleStartMenuToggle}
-        onWindowClick={openWindow}
-        openWindows={openWindows}
-      />
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9999 }}>
+        <Taskbar onStartClick={handleStartMenuToggle} onWindowClick={openWindow} openWindows={openWindows} />
+      </div>
 
       {showStartMenu && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 90, backgroundColor: 'transparent' }} onClick={() => setShowStartMenu(false)} />
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 90, backgroundColor: "transparent" }}
+            onClick={() => setShowStartMenu(false)}
+          />
           <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
         </>
       )}
