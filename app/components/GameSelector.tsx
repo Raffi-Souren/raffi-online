@@ -70,6 +70,22 @@ const RETRO_GAMES: Game[] = [
     icon: "🏓",
     available: false,
   },
+  {
+    id: "doom",
+    name: "DOOM",
+    device: "MS-DOS",
+    description: "Rip and tear until it is done",
+    icon: "😈",
+    available: false,
+  },
+  {
+    id: "solitaire",
+    name: "Solitaire",
+    device: "Windows 98",
+    description: "The classic card game",
+    icon: "🃏",
+    available: false,
+  },
 ]
 
 export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {

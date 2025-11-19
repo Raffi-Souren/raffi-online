@@ -91,33 +91,32 @@ export default function Home() {
         quality={85}
       />
 
-      <div style={{ 
-        position: 'absolute', 
-        inset: 0, 
-        zIndex: 10,
-        padding: '1rem',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gridAutoRows: 'min-content',
-        gap: '1rem',
-        alignContent: 'start',
-        maxWidth: '100%'
-      }}
-      className="md:!grid-cols-1"
-      >
-        <div className="md:!absolute md:!top-8 md:!left-8">
+      {/* Desktop Layout - Hidden on mobile, visible on md+ */}
+      <div className="hidden md:block absolute inset-0 z-10">
+        <div className="absolute top-8 left-8">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
         </div>
-        <div className="md:!absolute md:!top-8 md:!left-1/2 md:!-translate-x-1/2">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2">
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
         </div>
-        <div className="md:!absolute md:!top-8 md:!right-1/3">
+        <div className="absolute top-8 right-32">
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
         </div>
-        <div className="md:!absolute md:!top-8 md:!right-8">
+        <div className="absolute top-8 right-8">
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
         </div>
-        <div className="md:!absolute md:!bottom-32 md:!left-8">
+        <div className="absolute bottom-32 left-8">
+          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+        </div>
+      </div>
+
+      {/* Mobile Layout - Grid, hidden on desktop */}
+      <div className="md:hidden absolute inset-0 z-10 p-4 grid grid-cols-2 gap-4 content-start">
+        <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
+        <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
+        <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
+        <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
+        <div className="col-span-2 mt-8">
           <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
         </div>
       </div>
@@ -134,25 +133,38 @@ export default function Home() {
       </div>
 
       {/* Taskbar - z-50 */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '3rem', zIndex: 50 }} className="bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500 flex items-center px-2">
+      <div 
+        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '40px', zIndex: 50 }} 
+        className="bg-[#245DDA] border-t-2 border-[#3E80F1] flex items-center px-2 shadow-md"
+      >
         <button
           onClick={handleStartMenuToggle}
-          className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors"
+          className="flex items-center gap-2 px-2 py-1 bg-gradient-to-b from-[#3E9C4D] to-[#236F30] hover:brightness-110 text-white rounded-r-lg rounded-tl-lg rounded-bl-lg shadow-[inset_1px_1px_0px_rgba(255,255,255,0.4)] transition-all active:translate-y-px"
+          style={{
+            boxShadow: '2px 2px 5px rgba(0,0,0,0.5), inset 1px 1px 0px rgba(255,255,255,0.3)'
+          }}
         >
-          <span className="text-lg">🏁</span>
-          Start
+          <span className="text-lg drop-shadow-md italic font-bold pr-1">Start</span>
         </button>
 
+        <div className="w-[2px] h-[28px] bg-[#1846A0] mx-2 shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"></div>
+
         {Object.entries(openWindows).some(([, isOpen]) => isOpen) && (
-          <div className="ml-2 px-3 py-1 bg-blue-500 text-white text-sm rounded truncate max-w-[150px] md:max-w-none">
+          <div className="flex gap-1 overflow-x-auto">
             {Object.entries(openWindows)
               .filter(([, isOpen]) => isOpen)
-              .map(([name]) => name.toUpperCase())
-              .join(", ")}
+              .map(([name]) => (
+                <div key={name} className="px-4 py-1 bg-[#1F50B8] hover:bg-[#2860D6] text-white text-xs rounded shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] cursor-pointer transition-colors min-w-[100px] truncate border-b-2 border-[#153885]">
+                  {name.toUpperCase()}
+                </div>
+              ))}
           </div>
         )}
 
-        <div className="ml-auto text-white text-xs md:text-sm font-mono bg-blue-800 px-2 py-1 rounded">{currentTime}</div>
+        <div className="ml-auto flex items-center bg-[#0F9DDE] px-3 py-1 rounded border border-[#0B76A8] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)] text-white text-xs font-sans">
+          <span className="mr-2">🔈</span>
+          {currentTime}
+        </div>
       </div>
 
       {showStartMenu && (

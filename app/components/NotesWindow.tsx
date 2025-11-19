@@ -7,6 +7,7 @@ interface Article {
   version: string
   title: string
   url: string
+  platform?: "linkedin" | "substack"
 }
 
 interface ResearchPaper {
@@ -33,54 +34,70 @@ interface PressItem {
 
 const ARTICLES: Article[] = [
   {
+    version: "v1",
+    title: "Variables - A series bridging academic & professional",
+    url: "https://open.substack.com/pub/raf94/p/variables-a-series-bridging-academic?r=1vmhm5&utm_campaign=post&utm_medium=web",
+    platform: "substack",
+  },
+  {
     version: "v10",
     title: "When 27B Beats 400B: The Specialization Inflection (and Where Frontier Still Wins)",
     url: "https://www.linkedin.com/pulse/when-27b-beats-400b-specialization-inflection-where-khatchadourian-wicee/",
+    platform: "linkedin",
   },
   {
     version: "v9",
     title: "Deterministic AI & System Design: Why 'Same Input, Same Output' Wins in 2025",
     url: "https://www.linkedin.com/pulse/deterministic-ai-system-design-why-same-input-output-khatchadourian-gjtge?trackingId=5qB7ijaFT%2F%2BxvZ5nY5ihCw%3D%3D&lipi=urn%3Ali%3Apage%3Ad_flagship3_detail_base%3BwGOJNykqTpaunCewTRczMA%3D%3D",
+    platform: "linkedin",
   },
   {
     version: "v8",
     title: "When Bigger Stops Being Better",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v8-when-bigger-khatchadourian-gbjee",
+    platform: "linkedin",
   },
   {
     version: "v7",
     title: "AI Infrastructure at an Open Source Inflection Point",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v7-ai-open-khatchadourian-zzsqe",
+    platform: "linkedin",
   },
   {
     version: "v6",
     title: "Small Language Models and the Service Layer Reality",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v6-small-layer-khatchadourian-zmdce",
+    platform: "linkedin",
   },
   {
     version: "v5",
     title: "Stress-Testing Blockchain and AI at Global Scale",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v5-blockchain-khatchadourian-hwske",
+    platform: "linkedin",
   },
   {
     version: "v4",
     title: "Shipping Real Value in the AI Champagne Era",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v4-shipping-khatchadourian-nqmae",
+    platform: "linkedin",
   },
   {
     version: "v3",
     title: "Research, but make it deep",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v3-research-khatchadourian-nqmae",
+    platform: "linkedin",
   },
   {
     version: "v2",
     title: "Are Today's AI Agents Actually Agentic?",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-todays-ai-raffi-khatchadourian-zp0ke",
+    platform: "linkedin",
   },
   {
     version: "v1",
     title: "AI Agents in Finance and Crypto",
     url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-ai-agents-raffi-khatchadourian-ulpfe",
+    platform: "linkedin",
   },
 ]
 
@@ -274,6 +291,53 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
         <div style={{ backgroundColor: '#f9fafb', borderRadius: '0.5rem', padding: '1.5rem' }}>
           {activeTab === "articles" && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              
+              {/* Substack Section */}
+              <div>
+                <div style={{ 
+                  fontSize: '1.125rem', 
+                  fontWeight: '600', 
+                  color: '#FF6719', 
+                  marginBottom: '1rem',
+                  borderBottom: '2px solid #FF6719',
+                  paddingBottom: '0.25rem',
+                  display: 'inline-block'
+                }}>
+                  🧡 Substack
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {ARTICLES.filter(a => a.platform === "substack").map((article) => (
+                    <div key={article.url} style={cardStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ 
+                            fontSize: '0.875rem', 
+                            fontWeight: 'bold', 
+                            color: '#FF6719',
+                            backgroundColor: '#FFF0E5',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem'
+                          }}>
+                            {article.version}
+                          </span>
+                          <h4 style={{ fontWeight: '600', color: '#111827' }}>{article.title}</h4>
+                        </div>
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#FF6719', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
+                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                        >
+                          Read →
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* LinkedIn Articles Section */}
               <div>
                 <div style={{ 
@@ -293,7 +357,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                   </h3>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {ARTICLES.map((article) => (
+                  {ARTICLES.filter(a => a.platform !== "substack").map((article) => (
                     <div key={article.version} style={cardStyle}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
