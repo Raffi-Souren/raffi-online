@@ -60,6 +60,8 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
           color: "white",
           paddingRight: "10px",
           paddingLeft: "6px",
+          height: "32px", // Enforced height to ensure consistency
+          minWidth: "80px", // Enforced min-width to prevent shrinking
         }}
       >
         <div className="italic font-bold text-lg not-italic drop-shadow-sm">
@@ -92,7 +94,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         <button
           onClick={() => onWindowClick("crates")}
           className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
-          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer" }}
+          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center" }} // Enforced transparent background and sizing
           title="Digging in the Crates"
         >
           <Disc size={20} className="text-white drop-shadow-md" />
@@ -100,7 +102,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         <button
           onClick={() => onWindowClick("games")}
           className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
-          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer" }}
+          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center" }} // Enforced transparent background and sizing
           title="Games"
         >
           <Gamepad2 size={20} className="text-white drop-shadow-md" />
@@ -108,7 +110,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         <button
           onClick={() => onWindowClick("about")}
           className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
-          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer" }}
+          style={{ backgroundColor: "transparent", border: "none", cursor: "pointer", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center" }} // Enforced transparent background and sizing
           title="About"
         >
           <User size={20} className="text-white drop-shadow-md" />
