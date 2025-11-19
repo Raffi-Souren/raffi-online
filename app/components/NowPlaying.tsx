@@ -12,9 +12,18 @@ export default function NowPlaying() {
 
   return (
     <div 
-      className="fixed bottom-12 right-4 z-[60] bg-gradient-to-r from-[#FF5500] to-[#FF3300] text-white rounded-lg shadow-2xl p-3 max-w-[320px] animate-slide-in"
+      className="fixed bottom-12 right-4 z-50 bg-gradient-to-r from-[#FF5500] to-[#FF3300] text-white rounded-lg shadow-2xl p-3 max-w-[320px]"
       style={{
-        animation: 'slideIn 0.3s ease-out'
+        position: 'fixed',
+        bottom: '48px',
+        right: '16px',
+        zIndex: 50,
+        background: 'linear-gradient(to right, #FF5500, #FF3300)',
+        color: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        padding: '12px',
+        maxWidth: '320px',
       }}
     >
       <style jsx>{`
@@ -30,12 +39,13 @@ export default function NowPlaying() {
         }
       `}</style>
       
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
         <button 
           onClick={previousTrack}
           disabled={!hasPlaylist}
           className="flex-shrink-0 hover:scale-110 transition-transform mt-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           aria-label="Previous track"
+          style={{ background: 'none', border: 'none', color: 'white', cursor: hasPlaylist ? 'pointer' : 'not-allowed', padding: 0, marginTop: '4px' }}
         >
           <SkipBack size={18} fill="currentColor" />
         </button>
@@ -44,6 +54,7 @@ export default function NowPlaying() {
           onClick={togglePlay}
           className="flex-shrink-0 hover:scale-110 transition-transform mt-1 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#FF5500] rounded-full"
           aria-label={isPlaying ? "Pause" : "Play"}
+          style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, marginTop: '4px' }}
         >
           {isPlaying ? (
             <Pause size={20} fill="currentColor" />
@@ -57,20 +68,21 @@ export default function NowPlaying() {
           disabled={!hasPlaylist}
           className="flex-shrink-0 hover:scale-110 transition-transform mt-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
           aria-label="Next track"
+          style={{ background: 'none', border: 'none', color: 'white', cursor: hasPlaylist ? 'pointer' : 'not-allowed', padding: 0, marginTop: '4px' }}
         >
           <SkipForward size={18} fill="currentColor" />
         </button>
         
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-bold mb-0.5 truncate">
+        <div className="flex-1 min-w-0" style={{ flex: 1, minWidth: 0 }}>
+          <div className="text-xs font-bold mb-0.5 truncate" style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {currentTrack.title}
           </div>
-          <div className="text-[10px] opacity-90 truncate">
+          <div className="text-[10px] opacity-90 truncate" style={{ fontSize: '10px', opacity: 0.9, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {currentTrack.artist}
           </div>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-            <span className="text-[9px] opacity-75">Now Playing</span>
+          <div className="flex items-center gap-1 mt-1" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'white', display: 'inline-block' }}></span>
+            <span className="text-[9px] opacity-75" style={{ fontSize: '9px', opacity: 0.75 }}>Now Playing</span>
           </div>
         </div>
         
@@ -78,6 +90,7 @@ export default function NowPlaying() {
           onClick={stopTrack}
           className="flex-shrink-0 hover:scale-110 transition-transform opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#FF5500] rounded"
           aria-label="Stop"
+          style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.7, padding: 0 }}
         >
           <X size={16} />
         </button>

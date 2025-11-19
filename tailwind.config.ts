@@ -32,6 +32,27 @@ const config: Config = {
     'border-gray-400',
     'border-purple-400',
     'border-l-4',
+    // NowPlaying widget classes
+    'bg-orange-500',
+    'bg-orange-600',
+    'from-[#FF5500]',
+    'to-[#FF3300]',
+    'bottom-4',
+    'bottom-12',
+    'right-4',
+    'z-50',
+    'z-[60]',
+    'rounded-lg',
+    'shadow-2xl',
+    'max-w-[320px]',
+    // Grid and layout classes
+    'grid-cols-1',
+    'grid-cols-2',
+    'grid-cols-3',
+    'grid-cols-4',
+    'gap-4',
+    'gap-6',
+    'gap-8',
   ],
   theme: {
     extend: {
