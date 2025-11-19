@@ -31,10 +31,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<Track[]>([])
 
   const playTrack = useCallback((track: Track) => {
+    console.log("[v0] Triggering play for:", track.url)
     setIsPlaying(false)
     setCurrentTrack(track)
     // Increased timeout to ensure player is ready and prevent race conditions
-    setTimeout(() => setIsPlaying(true), 200)
+    setTimeout(() => {
+      console.log("[v0] Setting isPlaying to true")
+      setIsPlaying(true)
+    }, 200)
   }, [])
 
   const pauseTrack = useCallback(() => {

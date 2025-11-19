@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Search, ExternalLink } from "lucide-react"
+import { Search, ExternalLink } from 'lucide-react'
 
 interface BlogrollItem {
   id: number
@@ -63,23 +63,24 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
 
   return (
     <WindowShell title="BLOGROLL" onClose={onClose}>
-      <div className="space-y-6 p-1">
+      <div className="space-y-6 p-1 text-black" style={{ color: '#111827' }}>
         {/* Header */}
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900">Blogroll</h2>
-          <p className="text-gray-500 text-sm">Curated links to inspiring websites and resources</p>
+          <h2 className="text-2xl font-bold" style={{ color: '#111827' }}>Blogroll</h2>
+          <p className="text-sm" style={{ color: '#6b7280' }}>Curated links to inspiring websites and resources</p>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white rounded-xl p-4 border border-gray-100 space-y-4">
+        <div className="rounded-xl p-4 border space-y-4" style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: '#9ca3af' }} />
             <Input
               type="text"
               placeholder="Search sites..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-white"
+              className="pl-9"
+              style={{ backgroundColor: '#ffffff', color: '#111827', border: '1px solid #d1d5db' }}
             />
           </div>
 
@@ -90,7 +91,12 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category)}
-                className={`text-xs ${selectedCategory === category ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-gray-50"}`}
+                style={{
+                  fontSize: '0.75rem',
+                  backgroundColor: selectedCategory === category ? '#2563eb' : '#ffffff',
+                  color: selectedCategory === category ? '#ffffff' : '#111827',
+                  border: selectedCategory === category ? 'none' : '1px solid #e5e7eb'
+                }}
               >
                 {category}
               </Button>
@@ -103,24 +109,25 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
           {filteredItems.map((item) => (
             <Card
               key={item.id}
-              className="group hover:shadow-md transition-all duration-200 border-gray-200"
-              style={{ backgroundColor: "#ffffff" }}
+              className="group hover:shadow-md transition-all duration-200"
+              style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-4" style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors" style={{ color: '#111827' }}>
                     {item.title}
                   </h3>
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                  <Badge variant="secondary" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8' }}>
                     {item.category}
                   </Badge>
                 </div>
-                <p className="text-gray-600 text-sm mb-3 leading-relaxed">{item.description}</p>
+                <p className="text-sm mb-3 leading-relaxed" style={{ color: '#4b5563' }}>{item.description}</p>
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline gap-1"
+                  className="inline-flex items-center text-sm font-medium hover:underline gap-1"
+                  style={{ color: '#2563eb' }}
                 >
                   Visit Site <ExternalLink className="h-3 w-3" />
                 </a>
@@ -129,14 +136,14 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
           ))}
 
           {filteredItems.length === 0 && (
-            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+            <div className="text-center py-8 rounded-lg border border-dashed" style={{ color: '#6b7280', backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}>
               <p>No sites found matching your criteria</p>
             </div>
           )}
         </div>
 
         {/* Stats */}
-        <div className="text-center text-xs text-gray-400 pt-4 border-t border-gray-100">
+        <div className="text-center text-xs pt-4 border-t" style={{ color: '#9ca3af', borderColor: '#f3f4f6' }}>
           Showing {filteredItems.length} of {blogrollItems.length} sites
         </div>
       </div>

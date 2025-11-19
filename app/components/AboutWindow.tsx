@@ -12,7 +12,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
 
   return (
     <WindowShell id="about" title="ABOUT ME - RAF.TXT" onClose={onClose}>
-      <div className="space-y-6">
+      <div className="space-y-6 text-black" style={{ color: '#111827' }}>
         {/* Header with RAF Logo */}
         <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
           <Image

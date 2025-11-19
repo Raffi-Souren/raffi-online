@@ -39,13 +39,16 @@ export default function WindowShell({ title, onClose, children, className = "", 
       >
         <div
           style={{
-            backgroundColor: 'white',
+            backgroundColor: '#ffffff',
+            color: '#111827',
             borderRadius: '0.5rem',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             width: '100%',
             height: '100%',
             maxWidth: '56rem',
             maxHeight: '90vh',
+            minWidth: '300px',
+            minHeight: '200px',
             display: 'flex',
             flexDirection: 'column',
             pointerEvents: 'auto'
@@ -98,7 +101,9 @@ export default function WindowShell({ title, onClose, children, className = "", 
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '1.5rem'
+              padding: '1.5rem',
+              backgroundColor: '#ffffff',
+              color: '#111827'
             }}
           >
             {children}

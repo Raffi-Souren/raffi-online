@@ -256,7 +256,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
   return (
     <WindowShell title="NOTES" onClose={onClose}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', color: '#111827' }} className="text-black">
         {/* Header */}
         <div style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
@@ -446,7 +446,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {RESEARCH_PAPERS.map((paper, index) => (
-                  <div key={index} style={cardStyle}>
+                  <div key={index} style={{ ...cardStyle, borderLeft: '4px solid #22c55e' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <h4 style={{ fontWeight: '600', color: '#111827', flex: 1, paddingRight: '1rem' }}>{paper.title}</h4>
                       <a
