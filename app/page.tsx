@@ -13,6 +13,7 @@ import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import NowPlaying from "./components/NowPlaying"
+import GlobalAudioPlayer from "./components/GlobalAudioPlayer" // Import GlobalAudioPlayer
 import { useAudio } from "./context/AudioContext"
 import { Play, Pause, Disc, Gamepad2, User } from 'lucide-react'
 
@@ -129,6 +130,9 @@ export default function Home() {
 
       {/* Now Playing Component */}
       <NowPlaying />
+
+      {/* GlobalAudioPlayer to handle actual audio playback */}
+      <GlobalAudioPlayer />
 
       {/* Taskbar - z-50 */}
       <Taskbar 
