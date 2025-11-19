@@ -32,6 +32,20 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
   return (
     <div
       className="fixed bottom-0 left-0 right-0 h-10 z-[9999] bg-[#245DDA] border-t-2 border-[#3E80F1] flex items-center px-2 shadow-md select-none"
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: "40px",
+        zIndex: 9999,
+        backgroundColor: "#245DDA",
+        borderTop: "2px solid #3E80F1",
+        display: "flex",
+        alignItems: "center",
+        paddingLeft: "8px",
+        paddingRight: "8px",
+      }}
     >
       <button
         onClick={onStartClick}

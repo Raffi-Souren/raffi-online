@@ -16,9 +16,8 @@ export default function GlobalAudioPlayer() {
 
   return (
     <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }}>
-      {/* Use track ID as key to force remount on track change, preventing AbortError */}
+      {/* Removed key prop to prevent unmounting on track change, which caused "media removed" errors */}
       <ReactPlayer
-        key={currentTrack?.id || 'no-track'}
         url={currentTrack?.url || ""}
         playing={!!currentTrack && isPlaying}
         volume={1}
