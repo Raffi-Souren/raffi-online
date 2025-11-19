@@ -134,9 +134,7 @@ export default function Home() {
       <GlobalAudioPlayer />
 
       {/* Taskbar - z-50 */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9999 }}>
-        <Taskbar onStartClick={handleStartMenuToggle} onWindowClick={openWindow} openWindows={openWindows} />
-      </div>
+      <Taskbar onStartClick={handleStartMenuToggle} onWindowClick={openWindow} openWindows={openWindows} />
 
       {showStartMenu && (
         <>

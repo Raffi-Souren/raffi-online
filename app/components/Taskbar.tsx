@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Disc, Gamepad2, User } from "lucide-react"
+import { Disc, Gamepad2, User } from 'lucide-react'
 
 interface TaskbarProps {
   onStartClick: () => void
@@ -31,16 +31,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
 
   return (
     <div
-      style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: "40px",
-        zIndex: 9999,
-        display: "flex",
-      }}
-      className="bg-[#245DDA] border-t-2 border-[#3E80F1] flex items-center px-2 shadow-md select-none z-[9999]"
+      className="fixed bottom-0 left-0 right-0 h-10 z-[9999] bg-[#245DDA] border-t-2 border-[#3E80F1] flex items-center px-2 shadow-md select-none"
     >
       <button
         onClick={onStartClick}

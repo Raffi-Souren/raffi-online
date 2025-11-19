@@ -32,7 +32,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const playTrack = useCallback((track: Track) => {
     setCurrentTrack(track)
-    setIsPlaying(true)
+    setTimeout(() => setIsPlaying(true), 50)
   }, [])
 
   const pauseTrack = useCallback(() => {
@@ -62,9 +62,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const currentIndex = playlist.findIndex(track => track.id === currentTrack.id)
     const nextIndex = (currentIndex + 1) % playlist.length
     
-    setCurrentTrack(playlist[nextIndex])
-    setIsPlaying(true)
-  }, [currentTrack, playlist])
+    playTrack(playlist[nextIndex])
+  }, [currentTrack, playlist, playTrack])
 
   const previousTrack = useCallback(() => {
     if (!currentTrack || playlist.length === 0) return
@@ -72,9 +71,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const currentIndex = playlist.findIndex(track => track.id === currentTrack.id)
     const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length
     
-    setCurrentTrack(playlist[prevIndex])
-    setIsPlaying(true)
-  }, [currentTrack, playlist])
+    playTrack(playlist[prevIndex])
+  }, [currentTrack, playlist, playTrack])
 
   return (
     <AudioContext.Provider

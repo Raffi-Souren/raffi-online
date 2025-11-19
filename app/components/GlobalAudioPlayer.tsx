@@ -5,11 +5,9 @@ import ReactPlayer from "react-player"
 import { useAudio } from "../context/AudioContext"
 
 export default function GlobalAudioPlayer() {
-  const { currentTrack, isPlaying, nextTrack, pauseTrack } = useAudio()
-  const [isReady, setIsReady] = useState(false)
-
-  // Handle hydration mismatch
+  const { currentTrack, isPlaying, nextTrack } = useAudio()
   const [mounted, setMounted] = useState(false)
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -17,19 +15,19 @@ export default function GlobalAudioPlayer() {
   if (!mounted) return null
 
   return (
-    <div style={{ display: "none" }}>
+    <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }}>
+      {/* Use track ID as key to force remount on track change, preventing AbortError */}
       <ReactPlayer
+        key={currentTrack?.id || 'no-track'}
         url={currentTrack?.url || ""}
         playing={!!currentTrack && isPlaying}
+        volume={1}
         width="0"
         height="0"
         onEnded={nextTrack}
         onError={(e) => {
-          console.error("Audio playback error:", e)
-          // Prevent crash on error, maybe pause or try next
-          // pauseTrack()
+          console.error("[v0] Audio error:", e)
         }}
-        onReady={() => setIsReady(true)}
         config={{
           soundcloud: {
             options: {
