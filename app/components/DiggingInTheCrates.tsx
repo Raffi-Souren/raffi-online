@@ -251,10 +251,16 @@ const SOUNDCLOUD_TRACKS: Track[] = [
 ];
 
 export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
-  const { playTrack, pauseTrack, resumeTrack, currentTrack: globalTrack, isPlaying: isGlobalPlaying } = useAudio();
+  const { playTrack, pauseTrack, resumeTrack, currentTrack: globalTrack, isPlaying: isGlobalPlaying, setPlaylist } = useAudio();
   const [localTrack, setLocalTrack] = useState<Track>(() => SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]);
   const dialogRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPlaylist(SOUNDCLOUD_TRACKS);
+    }
+  }, [isOpen, setPlaylist]);
 
   useEffect(() => {
     if (globalTrack && isOpen) {

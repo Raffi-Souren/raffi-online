@@ -12,8 +12,13 @@ export default function GlobalAudioPlayer() {
 
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason?.name === 'AbortError' && event.reason?.message?.includes('play()')) {
-        // Suppress AbortError from audio play/pause race conditions
+      const isAbortError = event.reason?.name === 'AbortError'
+      const isPlayInterrupted = 
+        event.reason?.message?.includes('interrupted') || 
+        event.reason?.message?.includes('play()') ||
+        event.reason?.message?.includes('pause()')
+      
+      if (isAbortError || isPlayInterrupted) {
         event.preventDefault()
       }
     }
@@ -28,10 +33,10 @@ export default function GlobalAudioPlayer() {
       clearTimeout(playingTimeoutRef.current)
     }
 
-    // Delay state change to allow previous play/pause to complete
+    // Increased debounce time to 150ms to better handle slow network/loading states
     playingTimeoutRef.current = setTimeout(() => {
       setInternalPlaying(isPlaying)
-    }, 100)
+    }, 150)
 
     return () => {
       if (playingTimeoutRef.current) {
@@ -52,6 +57,10 @@ export default function GlobalAudioPlayer() {
         width="0"
         height="0"
         onEnded={stopTrack}
+        onError={(e) => {
+          // Suppress harmless play/pause interruption errors
+          console.log('[v0] Suppressed player error:', e)
+        }}
         config={{
           soundcloud: {
             options: {

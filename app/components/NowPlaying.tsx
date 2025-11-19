@@ -1,16 +1,18 @@
 "use client"
 
 import { useAudio } from '../context/AudioContext'
-import { Pause, Play, X } from 'lucide-react'
+import { Pause, Play, X, SkipBack, SkipForward } from 'lucide-react'
 
 export default function NowPlaying() {
-  const { currentTrack, isPlaying, togglePlay, stopTrack } = useAudio()
+  const { currentTrack, isPlaying, togglePlay, stopTrack, nextTrack, previousTrack, playlist } = useAudio()
 
   if (!currentTrack) return null
 
+  const hasPlaylist = playlist.length > 0
+
   return (
     <div 
-      className="fixed bottom-12 right-4 z-40 bg-gradient-to-r from-[#FF5500] to-[#FF3300] text-white rounded-lg shadow-2xl p-3 max-w-[280px] animate-slide-in"
+      className="fixed bottom-12 right-4 z-[60] bg-gradient-to-r from-[#FF5500] to-[#FF3300] text-white rounded-lg shadow-2xl p-3 max-w-[320px] animate-slide-in"
       style={{
         animation: 'slideIn 0.3s ease-out'
       }}
@@ -30,8 +32,17 @@ export default function NowPlaying() {
       
       <div className="flex items-start gap-3">
         <button 
+          onClick={previousTrack}
+          disabled={!hasPlaylist}
+          className="flex-shrink-0 hover:scale-110 transition-transform mt-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+          aria-label="Previous track"
+        >
+          <SkipBack size={18} fill="currentColor" />
+        </button>
+
+        <button 
           onClick={togglePlay}
-          className="flex-shrink-0 hover:scale-110 transition-transform mt-1"
+          className="flex-shrink-0 hover:scale-110 transition-transform mt-1 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#FF5500] rounded-full"
           aria-label={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? (
@@ -39,6 +50,15 @@ export default function NowPlaying() {
           ) : (
             <Play size={20} fill="currentColor" className="ml-0.5" />
           )}
+        </button>
+
+        <button 
+          onClick={nextTrack}
+          disabled={!hasPlaylist}
+          className="flex-shrink-0 hover:scale-110 transition-transform mt-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+          aria-label="Next track"
+        >
+          <SkipForward size={18} fill="currentColor" />
         </button>
         
         <div className="flex-1 min-w-0">
@@ -56,7 +76,7 @@ export default function NowPlaying() {
         
         <button
           onClick={stopTrack}
-          className="flex-shrink-0 hover:scale-110 transition-transform opacity-70 hover:opacity-100"
+          className="flex-shrink-0 hover:scale-110 transition-transform opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#FF5500] rounded"
           aria-label="Stop"
         >
           <X size={16} />
