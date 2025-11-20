@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { useAudio } from "../context/AudioContext"
 
-const ReactPlayer = dynamic(() => import("react-player/soundcloud"), { ssr: false })
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false })
 
 export default function GlobalAudioPlayer() {
   const { currentTrack, isPlaying, nextTrack, setCurrentTime, setDuration, setLoading, setError } = useAudio()
