@@ -114,29 +114,15 @@ export default function GlobalAudioPlayer() {
   console.log("[v0] Rendering - playing:", isPlaying)
 
   return (
-    <div
-      className="sc-audio-wrapper"
-      style={{
-        position: "fixed",
-        bottom: 0,
-        right: 0,
-        width: "1px",
-        height: "1px",
-        overflow: "hidden",
-        pointerEvents: "none",
-        zIndex: -9999,
-        opacity: 0,
-      }}
-      aria-hidden="true"
-    >
+    <div className="sc-audio-wrapper" aria-hidden="true">
       <ReactPlayer
         key={currentTrack.url}
         ref={playerRef}
         url={currentTrack.url}
         playing={isPlaying}
         volume={1}
-        width="100%"
-        height="100%"
+        width="100%" // Allow iframe to render at full wrapper width
+        height="166px" // Standard SoundCloud height for proper initialization
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}

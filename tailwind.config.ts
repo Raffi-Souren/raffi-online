@@ -78,6 +78,7 @@ const config: Config = {
     "max-w-5xl",
     "max-w-6xl",
     "max-w-7xl",
+    "sc-audio-wrapper",
     // Grid and layout classes
     "grid-cols-1",
     "grid-cols-2",
