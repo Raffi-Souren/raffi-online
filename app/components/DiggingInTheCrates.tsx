@@ -1586,11 +1586,15 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                   )}
                 </button>
 
-                {/* Time Display */}
+                {/* Time Display with proper spacing */}
                 {isCurrentTrackPlaying && !isCurrentTrackLoading && (
                   <div
-                    className="text-sm font-mono text-gray-500"
-                    style={{ color: "#6B7280", fontFamily: "monospace", fontSize: "14px" }}
+                    style={{
+                      color: "#6B7280",
+                      fontFamily: "monospace",
+                      fontSize: "14px",
+                      marginTop: "8px" /* Added spacing */,
+                    }}
                   >
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </div>

@@ -398,11 +398,6 @@ html {
 
 /* Removed aggressive opacity rules that prevent iframe event firing */
 /* Hide react-player canvas visually but keep iframe functional for event firing */
-[aria-hidden="true"] canvas {
-  display: none !important;
-}
-
-/* Ensure react-player container is off-screen but iframe remains functional */
 .react-player-hidden {
   position: fixed !important;
   bottom: 0 !important;
@@ -412,17 +407,28 @@ html {
   overflow: hidden !important;
   pointer-events: none !important;
   z-index: -9999 !important;
-  clip-path: inset(100%) !important;
 }
 
-/* Only hide canvas elements, NOT iframes - iframe needs to be "visible" for events */
-.react-player-hidden canvas {
+/* Added comprehensive selectors to hide all canvas and visual elements */
+.react-player-hidden canvas,
+.react-player-hidden canvas[style],
+.react-player-hidden div[style*="canvas"],
+[aria-hidden="true"] canvas,
+div[style*="width: 1px"] canvas,
+div[style*="height: 1px"] canvas {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
 }
 
-/* Keep iframe minimized but visible for event firing */
+/* Keep iframe at 1px size but don't hide it completely */
 .react-player-hidden iframe {
   width: 1px !important;
   height: 1px !important;
   pointer-events: none !important;
+  /* iframe MUST remain visible (no opacity: 0 or visibility: hidden) for events to fire */
 }

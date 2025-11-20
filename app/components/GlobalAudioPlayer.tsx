@@ -124,8 +124,8 @@ export default function GlobalAudioPlayer() {
         height: "1px",
         pointerEvents: "none",
         zIndex: -9999,
-        clipPath: "inset(100%)",
-        overflow: "hidden",
+        overflow: "hidden", // Clip canvas elements that leak out
+        opacity: 0.01, // Keep barely visible for browser to process events
       }}
       aria-hidden="true"
     >
