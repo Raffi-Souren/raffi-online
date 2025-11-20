@@ -74,16 +74,18 @@ export default function Home() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background - behind everything */}
-      <Image
-        src="/windows-bg.jpg"
-        alt="Windows XP Background"
-        fill
-        priority
-        sizes="100vw"
-        style={{ zIndex: -10 }}
-        className="object-cover object-center"
-        quality={85}
-      />
+      <div style={{ position: "fixed", inset: 0, zIndex: -10, height: "100vh", width: "100vw" }}>
+        <Image
+          src="/windows-bg.jpg"
+          alt="Windows XP Background"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+          quality={85}
+          style={{ objectFit: "cover", objectPosition: "center", width: "100%", height: "100%" }}
+        />
+      </div>
 
       {isDesktop ? (
         <div className="absolute inset-0 z-10">

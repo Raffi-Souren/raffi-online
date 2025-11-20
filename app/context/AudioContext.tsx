@@ -13,6 +13,8 @@ interface AudioContextType {
   isPlaying: boolean
   currentTrack: Track | null
   playlist: Track[]
+  duration: number
+  currentTime: number
   playTrack: (track: Track) => void
   pauseTrack: () => void
   resumeTrack: () => void
@@ -21,6 +23,8 @@ interface AudioContextType {
   nextTrack: () => void
   previousTrack: () => void
   setPlaylist: (tracks: Track[]) => void
+  setDuration: (duration: number) => void
+  setCurrentTime: (time: number) => void
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined)
@@ -29,6 +33,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [playlist, setPlaylist] = useState<Track[]>([])
+  const [duration, setDuration] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
 
   const playTrack = useCallback(
     (track: Track) => {
@@ -38,16 +44,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // For a new track, pause first, set the track, then play after a delay
-      setIsPlaying(false)
+      // For a new track, set it immediately
       setCurrentTrack(track)
-
-      // Use requestAnimationFrame for smoother state transitions
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setIsPlaying(true)
-        }, 150)
-      })
+      setIsPlaying(true)
+      setCurrentTime(0)
+      setDuration(0)
     },
     [currentTrack],
   )
@@ -97,6 +98,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         isPlaying,
         currentTrack,
         playlist,
+        duration,
+        currentTime,
         playTrack,
         pauseTrack,
         resumeTrack,
@@ -105,6 +108,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         nextTrack,
         previousTrack,
         setPlaylist,
+        setDuration,
+        setCurrentTime,
       }}
     >
       {children}
