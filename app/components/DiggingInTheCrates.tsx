@@ -1278,6 +1278,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   )
   const dialogRef = useRef<HTMLDivElement>(null)
   const prevFocusRef = useRef<HTMLElement | null>(null)
+  const isHandlingClick = useRef(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -1322,26 +1323,44 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
     }
   }, [localTrack.id, isGlobalPlaying, playTrack, clearError])
 
-  const handlePlayPause = () => {
-    console.log("[DiggingInTheCrates] Play/Pause clicked")
+  const handlePlayPause = useCallback(
+    (e?: React.MouseEvent) => {
+      // Prevent event bubbling and default actions
+      e?.stopPropagation()
+      e?.preventDefault()
 
-    if (globalTrack?.id === localTrack.id) {
-      if (isGlobalPlaying) {
-        pauseTrack()
-      } else {
-        resumeTrack()
+      // Prevent double-clicks within 500ms
+      if (isHandlingClick.current) {
+        console.log("[DiggingInTheCrates] Ignoring rapid click")
+        return
       }
-    } else {
-      console.log("[DiggingInTheCrates] Starting new track:", localTrack.title, localTrack.url)
-      playTrack(localTrack)
-    }
-  }
 
-  const handleRetry = () => {
+      isHandlingClick.current = true
+      setTimeout(() => {
+        isHandlingClick.current = false
+      }, 500)
+
+      console.log("[DiggingInTheCrates] Play/Pause clicked")
+
+      if (globalTrack?.id === localTrack.id) {
+        if (isGlobalPlaying) {
+          pauseTrack()
+        } else {
+          resumeTrack()
+        }
+      } else {
+        console.log("[DiggingInTheCrates] Starting new track:", localTrack.title, localTrack.url)
+        playTrack(localTrack)
+      }
+    },
+    [globalTrack, localTrack, isGlobalPlaying, pauseTrack, resumeTrack, playTrack],
+  )
+
+  const handleRetry = useCallback(() => {
     console.log("[DiggingInTheCrates] Retry clicked")
     clearError()
     playTrack(localTrack)
-  }
+  }, [clearError, playTrack, localTrack])
 
   const isCurrentTrackPlaying = globalTrack?.id === localTrack.id && isGlobalPlaying
   const isCurrentTrackLoading = globalTrack?.id === localTrack.id && isLoading
