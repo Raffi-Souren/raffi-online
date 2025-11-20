@@ -121,8 +121,8 @@ export default function GlobalAudioPlayer() {
         url={currentTrack.url}
         playing={isPlaying}
         volume={1}
-        width="100%" // Allow iframe to render at full wrapper width
-        height="166px" // Standard SoundCloud height for proper initialization
+        width="100%"
+        height="100%"
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}
