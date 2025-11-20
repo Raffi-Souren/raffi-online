@@ -396,15 +396,13 @@ html {
   background: #357abd;
 }
 
-/* Hide react-player canvas and iframes visually but keep them functional */
-/* Simplified CSS rules - removed conflicting visibility rules */
-[aria-hidden="true"] iframe,
+/* Removed aggressive opacity rules that prevent iframe event firing */
+/* Hide react-player canvas visually but keep iframe functional for event firing */
 [aria-hidden="true"] canvas {
-  opacity: 0 !important;
-  pointer-events: none !important;
+  display: none !important;
 }
 
-/* Ensure react-player container is visually hidden but functionally active */
+/* Ensure react-player container is off-screen but iframe remains functional */
 .react-player-hidden {
   position: fixed !important;
   bottom: 0 !important;
@@ -414,12 +412,17 @@ html {
   overflow: hidden !important;
   pointer-events: none !important;
   z-index: -9999 !important;
-  opacity: 0 !important;
   clip-path: inset(100%) !important;
 }
 
-/* Hide all visual elements from SoundCloud widget */
-.react-player-hidden * {
-  opacity: 0 !important;
+/* Only hide canvas elements, NOT iframes - iframe needs to be "visible" for events */
+.react-player-hidden canvas {
+  display: none !important;
+}
+
+/* Keep iframe minimized but visible for event firing */
+.react-player-hidden iframe {
+  width: 1px !important;
+  height: 1px !important;
   pointer-events: none !important;
 }

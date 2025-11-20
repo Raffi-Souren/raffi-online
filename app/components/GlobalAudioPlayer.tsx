@@ -122,7 +122,6 @@ export default function GlobalAudioPlayer() {
         right: 0,
         width: "1px",
         height: "1px",
-        opacity: 0,
         pointerEvents: "none",
         zIndex: -9999,
         clipPath: "inset(100%)",
