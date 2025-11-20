@@ -15,29 +15,34 @@ export default function GlobalAudioPlayer() {
   const playerRef = useRef<any>(null)
   const retryCountRef = useRef(0)
   const maxRetries = 2
+  const playAttemptRef = useRef(0)
 
   useEffect(() => {
     setMounted(true)
+    console.log("🎵 [GlobalAudioPlayer] Component mounted")
   }, [])
 
   // Reset ready state when track changes
   useEffect(() => {
     if (currentTrack?.url) {
-      console.log("[GlobalAudioPlayer] Track changed to:", currentTrack.title)
+      console.log("🎵 [GlobalAudioPlayer] Track changed to:", currentTrack.title, currentTrack.url)
       setIsReady(false)
       setHasStarted(false)
       setInternalPlaying(false)
       retryCountRef.current = 0
+      playAttemptRef.current = 0
     }
   }, [currentTrack?.url])
 
   // Sync playing state - trigger play on user interaction
   useEffect(() => {
     if (isPlaying && isReady && !internalPlaying) {
-      console.log("[GlobalAudioPlayer] Starting playback after ready state")
+      playAttemptRef.current++
+      console.log(`🎵 [GlobalAudioPlayer] Attempt #${playAttemptRef.current} - Starting playback after ready state`)
+      console.log("🎵 [GlobalAudioPlayer] Player ref exists:", !!playerRef.current)
       setInternalPlaying(true)
     } else if (!isPlaying && internalPlaying) {
-      console.log("[GlobalAudioPlayer] Pausing playback")
+      console.log("⏸️ [GlobalAudioPlayer] Pausing playback")
       setInternalPlaying(false)
     }
   }, [isPlaying, isReady, internalPlaying])
@@ -45,7 +50,7 @@ export default function GlobalAudioPlayer() {
   // Handle loading state
   useEffect(() => {
     if (isPlaying && !isReady && !hasStarted) {
-      console.log("[GlobalAudioPlayer] Track is playing but not ready yet - showing loading")
+      console.log("⏳ [GlobalAudioPlayer] Track is playing but not ready yet - showing loading")
       setLoading(true)
     } else if (isReady || !isPlaying) {
       setLoading(false)
@@ -54,12 +59,13 @@ export default function GlobalAudioPlayer() {
 
   const handleError = useCallback(
     (error: any) => {
-      console.error("[GlobalAudioPlayer] Player error:", error)
+      console.error("❌ [GlobalAudioPlayer] Player error:", error)
+      console.error("❌ [GlobalAudioPlayer] Error type:", typeof error, error?.message)
 
       // Retry logic for transient errors
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++
-        console.log(`[GlobalAudioPlayer] Retrying... (${retryCountRef.current}/${maxRetries})`)
+        console.log(`🔄 [GlobalAudioPlayer] Retrying... (${retryCountRef.current}/${maxRetries})`)
 
         // Force a reload by toggling ready state
         setIsReady(false)
@@ -70,7 +76,7 @@ export default function GlobalAudioPlayer() {
       } else {
         // Give up after max retries
         const errorMessage = "Unable to play this track. It may be unavailable or region-restricted."
-        console.error("[GlobalAudioPlayer] Max retries reached. Error:", errorMessage)
+        console.error("❌ [GlobalAudioPlayer] Max retries reached. Error:", errorMessage)
         setError(errorMessage)
         setLoading(false)
       }
@@ -79,28 +85,34 @@ export default function GlobalAudioPlayer() {
   )
 
   const handleReady = useCallback(() => {
-    console.log("[GlobalAudioPlayer] Player ready")
+    console.log("✅ [GlobalAudioPlayer] Player ready event fired")
+    console.log("🎵 [GlobalAudioPlayer] Player ref:", playerRef.current)
+    console.log("🎵 [GlobalAudioPlayer] Should be playing:", isPlaying)
     setIsReady(true)
     setLoading(false)
 
     // Get duration
     if (playerRef.current) {
-      const d = playerRef.current.getDuration()
-      console.log("[GlobalAudioPlayer] Duration:", d)
-      if (d && d !== Number.POSITIVE_INFINITY && !isNaN(d)) {
-        setDuration(d)
+      try {
+        const d = playerRef.current.getDuration()
+        console.log("⏱️ [GlobalAudioPlayer] Duration from player:", d)
+        if (d && d !== Number.POSITIVE_INFINITY && !isNaN(d)) {
+          setDuration(d)
+        }
+      } catch (e) {
+        console.error("❌ [GlobalAudioPlayer] Error getting duration:", e)
       }
     }
 
     // If we should be playing, trigger play now
     if (isPlaying && !internalPlaying) {
-      console.log("[GlobalAudioPlayer] Auto-starting playback after ready")
+      console.log("▶️ [GlobalAudioPlayer] Auto-starting playback after ready")
       setInternalPlaying(true)
     }
   }, [setDuration, setLoading, isPlaying, internalPlaying])
 
   const handleStart = useCallback(() => {
-    console.log("[GlobalAudioPlayer] ✅ Playback started successfully!")
+    console.log("✅✅✅ [GlobalAudioPlayer] PLAYBACK STARTED SUCCESSFULLY!")
     setHasStarted(true)
     setLoading(false)
     retryCountRef.current = 0 // Reset retry count on successful start
@@ -108,6 +120,11 @@ export default function GlobalAudioPlayer() {
 
   const handleProgress = useCallback(
     (progress: { playedSeconds: number; played: number; loadedSeconds: number; loaded: number }) => {
+      // Log first few progress updates
+      if (progress.playedSeconds < 5) {
+        console.log("📊 [GlobalAudioPlayer] Progress:", progress.playedSeconds.toFixed(2), "seconds")
+      }
+
       // Update current time
       if (progress.playedSeconds !== undefined && !isNaN(progress.playedSeconds)) {
         setCurrentTime(progress.playedSeconds)
@@ -125,23 +142,21 @@ export default function GlobalAudioPlayer() {
   )
 
   const handleEnded = useCallback(() => {
-    console.log("[GlobalAudioPlayer] Track ended, playing next")
+    console.log("🏁 [GlobalAudioPlayer] Track ended, playing next")
     setHasStarted(false)
     setInternalPlaying(false)
     nextTrack()
   }, [nextTrack])
 
   if (!mounted) {
-    console.log("[GlobalAudioPlayer] Not mounted yet")
     return null
   }
 
   if (!currentTrack?.url) {
-    console.log("[GlobalAudioPlayer] No current track")
     return null
   }
 
-  console.log("[GlobalAudioPlayer] Rendering player - isPlaying:", isPlaying, "internalPlaying:", internalPlaying, "ready:", isReady, "url:", currentTrack.url)
+  console.log("🎵 [GlobalAudioPlayer] RENDER - isPlaying:", isPlaying, "internalPlaying:", internalPlaying, "ready:", isReady, "hasStarted:", hasStarted)
 
   return (
     <div
@@ -157,7 +172,7 @@ export default function GlobalAudioPlayer() {
       aria-hidden="true"
     >
       <ReactPlayer
-        key={currentTrack.url} // Force new player instance on track change
+        key={currentTrack.url}
         ref={playerRef}
         url={currentTrack.url}
         playing={internalPlaying}
@@ -168,12 +183,12 @@ export default function GlobalAudioPlayer() {
         onReady={handleReady}
         onStart={handleStart}
         onPlay={() => {
-          console.log("[GlobalAudioPlayer] ▶️ onPlay event fired")
+          console.log("▶️▶️▶️ [GlobalAudioPlayer] onPlay event fired!")
           setHasStarted(true)
         }}
-        onPause={() => console.log("[GlobalAudioPlayer] ⏸️ onPause event fired")}
-        onBuffer={() => console.log("[GlobalAudioPlayer] Buffering...")}
-        onBufferEnd={() => console.log("[GlobalAudioPlayer] Buffer end")}
+        onPause={() => console.log("⏸️ [GlobalAudioPlayer] onPause event fired")}
+        onBuffer={() => console.log("⏳ [GlobalAudioPlayer] Buffering...")}
+        onBufferEnd={() => console.log("✅ [GlobalAudioPlayer] Buffer end")}
         onProgress={handleProgress}
         onEnded={handleEnded}
         onError={handleError}
