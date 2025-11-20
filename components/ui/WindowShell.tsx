@@ -27,17 +27,16 @@ export default function WindowShell({ title, onClose, children, className = "", 
       />
 
       <div
-        className="fixed inset-0 z-[101] flex items-center justify-center p-2 pointer-events-none"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] flex flex-col p-2 pointer-events-none"
         style={{
           // Backup inline styles for production
           position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 101,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          flexDirection: "column",
           padding: "0.5rem",
         }}
       >

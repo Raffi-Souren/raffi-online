@@ -115,17 +115,12 @@ export default function GlobalAudioPlayer() {
 
   return (
     <div
-      className="react-player-hidden"
+      className="sc-audio-wrapper relative w-[1px] h-[1px] opacity-[0.01]"
       style={{
-        position: "fixed",
-        bottom: 0,
-        right: 0,
-        width: "1px",
-        height: "1px",
         pointerEvents: "none",
-        zIndex: -9999,
-        overflow: "hidden", // Clip canvas elements that leak out
-        opacity: 0.01, // Keep barely visible for browser to process events
+        position: "fixed",
+        top: "-2000px",
+        left: "-2000px",
       }}
       aria-hidden="true"
     >
