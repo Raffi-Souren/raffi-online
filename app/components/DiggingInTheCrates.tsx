@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useCallback, useEffect, useRef } from "react"
 import { Shuffle, X, CheckCircle, Play, Pause, Loader2, AlertCircle } from "lucide-react"
 import { useAudio, type Track } from "../context/AudioContext"
@@ -1310,6 +1312,15 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
     return () => window.removeEventListener("keydown", onKey)
   }, [isOpen, onClose])
 
+  useEffect(() => {
+    return () => {
+      if (isGlobalPlaying) {
+        console.log("[DiggingInTheCrates] Modal closing, pausing playback")
+        pauseTrack()
+      }
+    }
+  }, [isGlobalPlaying, pauseTrack])
+
   const shuffleTrack = useCallback(() => {
     let t: Track
     do {
@@ -1522,9 +1533,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                 >
                   <AlertCircle size={18} style={{ color: "#DC2626", flexShrink: 0, marginTop: "2px" }} />
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: "0.875rem", color: "#7F1D1D", margin: 0, marginBottom: "0.5rem" }}>
-                      {error}
-                    </p>
+                    <p style={{ fontSize: "0.875rem", color: "#7F1D1D", margin: 0, marginBottom: "0.5rem" }}>{error}</p>
                     <button
                       onClick={handleRetry}
                       style={{

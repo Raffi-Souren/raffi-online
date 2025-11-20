@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
 import { AudioProvider } from "./context/AudioContext"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 
@@ -27,7 +26,7 @@ export const metadata: Metadata = {
     description: "IBM CTO and entrepreneur based in NYC",
     images: ["/windows-2000-background.png"],
   },
-  generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -37,13 +36,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased" style={{ fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AudioProvider>
-            <GlobalAudioPlayer />
-            {children}
-          </AudioProvider>
-        </ThemeProvider>
+      <body
+        className="font-sans antialiased"
+        style={{
+          fontFamily:
+            'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
+        <AudioProvider>
+          <GlobalAudioPlayer />
+          {children}
+        </AudioProvider>
       </body>
     </html>
   )
