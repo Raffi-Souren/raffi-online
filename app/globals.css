@@ -403,6 +403,14 @@ html {
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Ensure iframe stays at 1x1 but visible to browser for event firing */
+.sc-audio-wrapper iframe {
+  max-width: 1px !important;
+  max-height: 1px !important;
+  border: none !important;
 }
 
 /* Prevent theme resets from causing visible blocks */
@@ -410,4 +418,24 @@ html {
 .sc-audio-wrapper * {
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Ensure modal scrolling works in production */
+/* Force scrollbar styling for modal content */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #4a90e2;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #357abd;
 }

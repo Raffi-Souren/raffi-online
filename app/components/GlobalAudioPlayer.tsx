@@ -115,12 +115,17 @@ export default function GlobalAudioPlayer() {
 
   return (
     <div
-      className="sc-audio-wrapper relative w-[1px] h-[1px] opacity-[0.01]"
+      className="sc-audio-wrapper"
       style={{
-        pointerEvents: "none",
         position: "fixed",
-        top: "-2000px",
-        left: "-2000px",
+        bottom: 0,
+        right: 0,
+        width: "1px",
+        height: "1px",
+        overflow: "hidden",
+        pointerEvents: "none",
+        zIndex: -9999,
+        opacity: 0,
       }}
       aria-hidden="true"
     >
@@ -130,8 +135,8 @@ export default function GlobalAudioPlayer() {
         url={currentTrack.url}
         playing={isPlaying}
         volume={1}
-        width="1px"
-        height="1px"
+        width="100%"
+        height="100%"
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}
