@@ -1,21 +1,18 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from 'next/font/google'
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AudioProvider } from "./context/AudioContext"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 
-const inter = Inter({ subsets: ["latin"] })
-
 export const metadata: Metadata = {
   title: "Raffi WW Web",
-  description: "AI Architect & Technology Consultant based in New York City.",
+  description: "IBM CTO and entrepreneur based in NYC",
   openGraph: {
     type: "website",
     url: "https://raffi-souren.vercel.app/",
     title: "Raffi Web",
-    description: "AI Architect & Technology Consultant based in New York City.",
+    description: "IBM CTO and entrepreneur based in NYC",
     images: [
       {
         url: "/windows-2000-background.png",
@@ -27,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Raffi Web",
-    description: "AI Architect & Technology Consultant based in New York City.",
+    description: "IBM CTO and entrepreneur based in NYC",
     images: ["/windows-2000-background.png"],
   },
   generator: 'v0.app'
@@ -40,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="font-sans antialiased" style={{ fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AudioProvider>
             <GlobalAudioPlayer />
