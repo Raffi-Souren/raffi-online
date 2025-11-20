@@ -397,42 +397,29 @@ html {
 }
 
 /* Hide react-player canvas and iframes visually but keep them functional */
-/* Remove display:none rules that break audio playback */
+/* Simplified CSS rules - removed conflicting visibility rules */
 [aria-hidden="true"] iframe,
 [aria-hidden="true"] canvas {
-  visibility: hidden !important;
   opacity: 0 !important;
-  width: 1px !important;
-  height: 1px !important;
-  position: absolute !important;
-  left: -9999px !important;
-  top: -9999px !important;
   pointer-events: none !important;
-  z-index: -9999 !important;
 }
 
 /* Ensure react-player container is visually hidden but functionally active */
 .react-player-hidden {
   position: fixed !important;
-  left: -9999px !important;
-  top: -9999px !important;
+  bottom: 0 !important;
+  right: 0 !important;
   width: 1px !important;
   height: 1px !important;
   overflow: hidden !important;
   pointer-events: none !important;
   z-index: -9999 !important;
-  opacity: 0.001 !important;
+  opacity: 0 !important;
+  clip-path: inset(100%) !important;
 }
 
-/* Hide only canvas elements, not iframes which are needed for audio */
-.react-player-hidden canvas {
-  display: none !important;
-  visibility: hidden !important;
-}
-
-/* Keep iframes functional but invisible */
-.react-player-hidden iframe {
-  visibility: hidden !important;
+/* Hide all visual elements from SoundCloud widget */
+.react-player-hidden * {
   opacity: 0 !important;
   pointer-events: none !important;
 }
