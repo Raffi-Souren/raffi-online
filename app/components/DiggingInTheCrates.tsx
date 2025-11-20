@@ -1312,14 +1312,16 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
     return () => window.removeEventListener("keydown", onKey)
   }, [isOpen, onClose])
 
-  useEffect(() => {
-    return () => {
-      if (isGlobalPlaying) {
-        console.log("[DiggingInTheCrates] Modal closing, pausing playback")
-        pauseTrack()
-      }
-    }
-  }, [isGlobalPlaying, pauseTrack])
+  // This was causing the double-pause and AbortError
+  // The audio should continue playing even when modal is closed
+  // useEffect(() => {
+  //   return () => {
+  //     if (isGlobalPlaying) {
+  //       console.log("[DiggingInTheCrates] Modal closing, pausing playback")
+  //       pauseTrack()
+  //     }
+  //   }
+  // }, [isGlobalPlaying, pauseTrack])
 
   const shuffleTrack = useCallback(() => {
     let t: Track

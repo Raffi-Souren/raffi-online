@@ -122,12 +122,10 @@ export default function GlobalAudioPlayer() {
         right: 0,
         width: "1px",
         height: "1px",
-        opacity: 0,
+        opacity: 0.001,
         pointerEvents: "none",
         zIndex: -9999,
         overflow: "hidden",
-        visibility: "hidden",
-        display: "none",
       }}
       aria-hidden="true"
     >
