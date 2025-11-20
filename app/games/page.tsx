@@ -7,7 +7,7 @@ export default function GamesPage() {
 
         <div className="glass-card p-8">
           <p className="text-muted">Games section coming soon. Will feature:</p>
-          <ul className="text-left text-muted mt-4 space-y-2">
+          <ul className="text-center text-muted mt-4 space-y-2">
             <li>• Working 2048, Tetris, Snake implementations</li>
             <li>• Hextris and Pac-Man embeds</li>
             <li>• High score tracking</li>
