@@ -1,9 +1,19 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Clock, Tag } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import articlesData from "@/data/articles.json"
+
+export const metadata: Metadata = {
+  title: "Writing - Raffi Web",
+  description: "Articles and insights on AI implementation in enterprise environments",
+  openGraph: {
+    title: "Writing - Raffi Web",
+    description: "Articles and insights on AI implementation in enterprise environments",
+  },
+}
 
 export default function WritingPage() {
   const { articles } = articlesData
