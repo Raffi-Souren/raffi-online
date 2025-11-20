@@ -86,6 +86,10 @@ const config: Config = {
     "gap-4",
     "gap-6",
     "gap-8",
+    "bg-white",
+    "bg-gray-50",
+    "bg-gray-100",
+    "bg-gray-200",
   ],
   theme: {
     extend: {

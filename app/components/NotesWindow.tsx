@@ -125,7 +125,8 @@ const EVENTS: Event[] = [
     title: "AI4F @ ACM ICAIF",
     date: "Nov 15, 2025",
     location: "Singapore",
-    description: "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows - Keynote presentation on AI research for finance",
+    description:
+      "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows - Keynote presentation on AI research for finance",
     url: "https://player.vimeo.com/video/1137311394?h=f943914abd",
     status: "previous",
     type: "keynote",
@@ -233,104 +234,107 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
   const tabButtonStyle = (isActive: boolean) => ({
     flex: 1,
-    padding: '0.5rem 1rem',
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    borderBottom: isActive ? '2px solid #3b82f6' : '2px solid transparent',
-    color: isActive ? '#3b82f6' : '#6b7280',
-    backgroundColor: isActive ? '#eff6ff' : 'transparent',
-    transition: 'all 0.2s',
-    cursor: 'pointer',
-    borderTop: 'none',
-    borderLeft: 'none',
-    borderRight: 'none',
-    outline: 'none'
+    padding: "0.5rem 1rem",
+    fontSize: "0.875rem",
+    fontWeight: "500",
+    borderBottom: isActive ? "2px solid #3b82f6" : "2px solid transparent",
+    color: isActive ? "#3b82f6" : "#6b7280",
+    backgroundColor: isActive ? "#eff6ff" : "transparent",
+    transition: "all 0.2s",
+    cursor: "pointer",
+    borderTop: "none",
+    borderLeft: "none",
+    borderRight: "none",
+    outline: "none",
   })
 
   const cardStyle = {
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '0.5rem',
-    padding: '1rem',
+    backgroundColor: "white",
+    border: "1px solid #e5e7eb",
+    borderRadius: "0.5rem",
+    padding: "1rem",
   }
 
   return (
     <WindowShell title="NOTES" onClose={onClose}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', color: '#111827' }} className="text-black">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "1.5rem",
+          backgroundColor: "#ffffff",
+          color: "#111827",
+        }}
+        className="text-black"
+      >
         {/* Header */}
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827", marginBottom: "0.5rem" }}>
             MY ARTICLES, RESEARCH PAPERS & EVENTS
           </h1>
-          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+          <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
             Collection of writings, research, and speaking engagements
           </p>
         </div>
 
         {/* Tab Buttons */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
-          <button
-            onClick={() => setActiveTab("articles")}
-            style={tabButtonStyle(activeTab === "articles")}
-          >
+        <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb" }}>
+          <button onClick={() => setActiveTab("articles")} style={tabButtonStyle(activeTab === "articles")}>
             📝 Articles
           </button>
-          <button
-            onClick={() => setActiveTab("research")}
-            style={tabButtonStyle(activeTab === "research")}
-          >
+          <button onClick={() => setActiveTab("research")} style={tabButtonStyle(activeTab === "research")}>
             🎓 Papers
           </button>
-          <button
-            onClick={() => setActiveTab("events")}
-            style={tabButtonStyle(activeTab === "events")}
-          >
+          <button onClick={() => setActiveTab("events")} style={tabButtonStyle(activeTab === "events")}>
             📅 Events
           </button>
         </div>
 
         {/* Tab Content */}
-        <div style={{ backgroundColor: '#f9fafb', borderRadius: '0.5rem', padding: '1.5rem' }}>
+        <div style={{ backgroundColor: "#f9fafb", borderRadius: "0.5rem", padding: "1.5rem" }}>
           {activeTab === "articles" && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {/* Substack Section */}
               <div>
-                <div style={{ 
-                  fontSize: '1.125rem', 
-                  fontWeight: '600', 
-                  color: '#FF6719', 
-                  marginBottom: '1rem',
-                  borderBottom: '2px solid #FF6719',
-                  paddingBottom: '0.25rem',
-                  display: 'inline-block'
-                }}>
+                <div
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: "600",
+                    color: "#FF6719",
+                    marginBottom: "1rem",
+                    borderBottom: "2px solid #FF6719",
+                    paddingBottom: "0.25rem",
+                    display: "inline-block",
+                  }}
+                >
                   🧡 Substack
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {ARTICLES.filter(a => a.platform === "substack").map((article) => (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {ARTICLES.filter((a) => a.platform === "substack").map((article) => (
                     <div key={article.url} style={cardStyle}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span style={{ 
-                            fontSize: '0.875rem', 
-                            fontWeight: 'bold', 
-                            color: '#FF6719',
-                            backgroundColor: '#FFF0E5',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem'
-                          }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <span
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: "bold",
+                              color: "#FF6719",
+                              backgroundColor: "#FFF0E5",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "0.25rem",
+                            }}
+                          >
                             {article.version}
                           </span>
-                          <h4 style={{ fontWeight: '600', color: '#111827' }}>{article.title}</h4>
+                          <h4 style={{ fontWeight: "600", color: "#111827" }}>{article.title}</h4>
                         </div>
                         <a
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#FF6719', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
-                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                          style={{ color: "#FF6719", fontWeight: "500", fontSize: "0.875rem", textDecoration: "none" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                         >
                           Read →
                         </a>
@@ -342,46 +346,50 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
               {/* LinkedIn Articles Section */}
               <div>
-                <div style={{ 
-                  fontSize: '1.125rem', 
-                  fontWeight: '600', 
-                  color: '#2563eb', 
-                  marginBottom: '1rem',
-                  borderBottom: '2px solid #60a5fa',
-                  paddingBottom: '0.25rem',
-                  display: 'inline-block'
-                }}>
+                <div
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: "600",
+                    color: "#2563eb",
+                    marginBottom: "1rem",
+                    borderBottom: "2px solid #60a5fa",
+                    paddingBottom: "0.25rem",
+                    display: "inline-block",
+                  }}
+                >
                   📝 LinkedIn Articles
                 </div>
-                <div style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ fontWeight: '600', color: '#111827', marginBottom: '0.5rem' }}>
+                <div style={{ marginBottom: "1rem" }}>
+                  <h3 style={{ fontWeight: "600", color: "#111827", marginBottom: "0.5rem" }}>
                     From Consumer Buzz to Enterprise Adoption Series
                   </h3>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {ARTICLES.filter(a => a.platform !== "substack").map((article) => (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {ARTICLES.filter((a) => a.platform !== "substack").map((article) => (
                     <div key={article.version} style={cardStyle}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span style={{ 
-                            fontSize: '0.875rem', 
-                            fontWeight: 'bold', 
-                            color: '#2563eb',
-                            backgroundColor: '#dbeafe',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem'
-                          }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <span
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: "bold",
+                              color: "#2563eb",
+                              backgroundColor: "#dbeafe",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "0.25rem",
+                            }}
+                          >
                             {article.version}
                           </span>
-                          <h4 style={{ fontWeight: '600', color: '#111827' }}>{article.title}</h4>
+                          <h4 style={{ fontWeight: "600", color: "#111827" }}>{article.title}</h4>
                         </div>
                         <a
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#2563eb', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
-                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                          style={{ color: "#2563eb", fontWeight: "500", fontSize: "0.875rem", textDecoration: "none" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                         >
                           Read →
                         </a>
@@ -393,33 +401,44 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
               {/* Press Section */}
               <div>
-                <div style={{ 
-                  fontSize: '1.125rem', 
-                  fontWeight: '600', 
-                  color: '#16a34a', 
-                  marginBottom: '1rem',
-                  borderBottom: '2px solid #4ade80',
-                  paddingBottom: '0.25rem',
-                  display: 'inline-block'
-                }}>
+                <div
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: "600",
+                    color: "#16a34a",
+                    marginBottom: "1rem",
+                    borderBottom: "2px solid #4ade80",
+                    paddingBottom: "0.25rem",
+                    display: "inline-block",
+                  }}
+                >
                   📰 Press
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {PRESS.map((item, index) => (
                     <div key={index} style={cardStyle}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div style={{ flex: 1 }}>
-                          <h4 style={{ fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>{item.title}</h4>
-                          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>{item.publication}</p>
-                          <p style={{ fontSize: '0.875rem', color: '#374151' }}>{item.description}</p>
+                          <h4 style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>{item.title}</h4>
+                          <p style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+                            {item.publication}
+                          </p>
+                          <p style={{ fontSize: "0.875rem", color: "#374151" }}>{item.description}</p>
                         </div>
                         <a
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#16a34a', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none', whiteSpace: 'nowrap', marginLeft: '1rem' }}
-                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                          style={{
+                            color: "#16a34a",
+                            fontWeight: "500",
+                            fontSize: "0.875rem",
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                            marginLeft: "1rem",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                         >
                           Read →
                         </a>
@@ -433,29 +452,39 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
           {activeTab === "research" && (
             <div>
-              <div style={{ 
-                fontSize: '1.125rem', 
-                fontWeight: '600', 
-                color: '#9333ea', 
-                marginBottom: '1rem',
-                borderBottom: '2px solid #c084fc',
-                paddingBottom: '0.25rem',
-                display: 'inline-block'
-              }}>
+              <div
+                style={{
+                  fontSize: "1.125rem",
+                  fontWeight: "600",
+                  color: "#9333ea",
+                  marginBottom: "1rem",
+                  borderBottom: "2px solid #c084fc",
+                  paddingBottom: "0.25rem",
+                  display: "inline-block",
+                }}
+              >
                 🎓 Research Papers
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 {RESEARCH_PAPERS.map((paper, index) => (
-                  <div key={index} style={{ ...cardStyle, borderLeft: '4px solid #22c55e' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <h4 style={{ fontWeight: '600', color: '#111827', flex: 1, paddingRight: '1rem' }}>{paper.title}</h4>
+                  <div key={index} style={{ ...cardStyle, borderLeft: "4px solid #22c55e" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <h4 style={{ fontWeight: "600", color: "#111827", flex: 1, paddingRight: "1rem" }}>
+                        {paper.title}
+                      </h4>
                       <a
                         href={paper.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#9333ea', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none', whiteSpace: 'nowrap' }}
-                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                        style={{
+                          color: "#9333ea",
+                          fontWeight: "500",
+                          fontSize: "0.875rem",
+                          textDecoration: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                        onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                       >
                         View →
                       </a>
@@ -468,56 +497,71 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
 
           {activeTab === "events" && (
             <div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 {/* Upcoming Events */}
                 <div>
-                  <div style={{ 
-                    fontSize: '1.125rem', 
-                    fontWeight: '600', 
-                    color: '#16a34a', 
-                    marginBottom: '1rem',
-                    borderBottom: '2px solid #4ade80',
-                    paddingBottom: '0.25rem',
-                    display: 'inline-block'
-                  }}>
+                  <div
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: "600",
+                      color: "#16a34a",
+                      marginBottom: "1rem",
+                      borderBottom: "2px solid #4ade80",
+                      paddingBottom: "0.25rem",
+                      display: "inline-block",
+                    }}
+                  >
                     📅 UPCOMING
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                     {upcomingEvents.map((event, index) => (
-                      <div key={index} style={{ ...cardStyle, borderLeft: '4px solid #22c55e' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <span style={{ 
-                            fontSize: '0.75rem',
-                            backgroundColor: '#d1fae5',
-                            color: '#166534',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem'
-                          }}>
+                      <div key={index} style={{ ...cardStyle, borderLeft: "4px solid #22c55e" }}>
+                        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              backgroundColor: "#d1fae5",
+                              color: "#166534",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "0.25rem",
+                            }}
+                          >
                             {getEventTypeLabel(event.type)}
                           </span>
-                          <span style={{ 
-                            fontSize: '0.75rem',
-                            backgroundColor: '#dbeafe',
-                            color: '#1e40af',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem'
-                          }}>
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              backgroundColor: "#dbeafe",
+                              color: "#1e40af",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "0.25rem",
+                            }}
+                          >
                             {getEventStatusLabel(event.status)}
                           </span>
                         </div>
-                        <div style={{ fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>{event.title}</div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        <div style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>
+                          {event.title}
+                        </div>
+                        <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
                           {event.date} • {event.location}
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.75rem' }}>{event.description}</div>
+                        <div style={{ fontSize: "0.875rem", color: "#374151", marginBottom: "0.75rem" }}>
+                          {event.description}
+                        </div>
                         {event.url && (
                           <a
                             href={event.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ color: '#2563eb', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
-                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                            style={{
+                              color: "#2563eb",
+                              fontWeight: "500",
+                              fontSize: "0.875rem",
+                              textDecoration: "none",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                           >
                             RSVP on Luma →
                           </a>
@@ -530,53 +574,68 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 {/* Previous Events */}
                 {previousEvents.length > 0 && (
                   <div>
-                    <div style={{ 
-                      fontSize: '1.125rem', 
-                      fontWeight: '600', 
-                      color: '#6b7280', 
-                      marginBottom: '1rem',
-                      borderBottom: '2px solid #9ca3af',
-                      paddingBottom: '0.25rem',
-                      display: 'inline-block'
-                    }}>
+                    <div
+                      style={{
+                        fontSize: "1.125rem",
+                        fontWeight: "600",
+                        color: "#6b7280",
+                        marginBottom: "1rem",
+                        borderBottom: "2px solid #9ca3af",
+                        paddingBottom: "0.25rem",
+                        display: "inline-block",
+                      }}
+                    >
                       📋 PREVIOUS
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       {previousEvents.map((event, index) => (
-                        <div key={index} style={{ ...cardStyle, borderLeft: '4px solid #9ca3af' }}>
-                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <span style={{ 
-                              fontSize: '0.75rem',
-                              backgroundColor: '#f3f4f6',
-                              color: '#374151',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem'
-                            }}>
+                        <div key={index} style={{ ...cardStyle, borderLeft: "4px solid #9ca3af" }}>
+                          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                backgroundColor: "#f3f4f6",
+                                color: "#374151",
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "0.25rem",
+                              }}
+                            >
                               {getEventTypeLabel(event.type)}
                             </span>
-                            <span style={{ 
-                              fontSize: '0.75rem',
-                              backgroundColor: '#f3f4f6',
-                              color: '#374151',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem'
-                            }}>
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                backgroundColor: "#f3f4f6",
+                                color: "#374151",
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "0.25rem",
+                              }}
+                            >
                               {getEventStatusLabel(event.status)}
                             </span>
                           </div>
-                          <div style={{ fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>{event.title}</div>
-                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                          <div style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>
+                            {event.title}
+                          </div>
+                          <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
                             {event.date} • {event.location}
                           </div>
-                          <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.75rem' }}>{event.description}</div>
+                          <div style={{ fontSize: "0.875rem", color: "#374151", marginBottom: "0.75rem" }}>
+                            {event.description}
+                          </div>
                           {event.url && (
                             <a
                               href={event.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ color: '#2563eb', fontWeight: '500', fontSize: '0.875rem', textDecoration: 'none' }}
-                              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                              style={{
+                                color: "#2563eb",
+                                fontWeight: "500",
+                                fontSize: "0.875rem",
+                                textDecoration: "none",
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                             >
                               {event.type === "keynote" || event.type === "panel"
                                 ? "🎥 Watch Replay"
