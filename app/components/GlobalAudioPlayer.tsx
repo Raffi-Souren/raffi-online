@@ -34,7 +34,6 @@ export default function GlobalAudioPlayer() {
 
   const handleError = useCallback(
     (error: any) => {
-      // Ignore AbortErrors during unmount (expected behavior)
       if (isUnmountingRef.current && (error?.name === "AbortError" || error?.message?.includes("interrupted"))) {
         console.log("🎵 [GlobalAudioPlayer] Ignoring AbortError during unmount")
         return
@@ -116,16 +115,16 @@ export default function GlobalAudioPlayer() {
 
   return (
     <div
+      className="react-player-hidden"
       style={{
-        position: "fixed",
-        bottom: 0,
-        right: 0,
-        width: "1px",
+        position: "absolute",
+        clip: "rect(0 0 0 0)",
+        clipPath: "inset(50%)",
         height: "1px",
-        opacity: 0.001,
-        pointerEvents: "none",
-        zIndex: -9999,
+        width: "1px",
         overflow: "hidden",
+        whiteSpace: "nowrap",
+        pointerEvents: "none",
       }}
       aria-hidden="true"
     >
@@ -159,7 +158,7 @@ export default function GlobalAudioPlayer() {
               show_user: false,
               show_reposts: false,
               hide_related: true,
-              visual: true,
+              visual: false,
             },
           },
         }}

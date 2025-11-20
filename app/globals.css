@@ -395,3 +395,34 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #357abd;
 }
+
+/* Hide react-player canvas and iframes completely */
+[aria-hidden="true"] iframe,
+[aria-hidden="true"] canvas,
+div[style*="clip"] iframe,
+div[style*="clip"] canvas {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  pointer-events: none !important;
+}
+
+/* Ensure react-player container is completely removed from layout */
+.react-player-hidden {
+  position: absolute !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  height: 1px !important;
+  width: 1px !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+.react-player-hidden * {
+  display: none !important;
+}
