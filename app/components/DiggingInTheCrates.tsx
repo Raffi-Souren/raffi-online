@@ -1,19 +1,13 @@
 "use client"
 
 import { useState, useCallback, useEffect, useRef } from "react"
-import { Shuffle, X, CheckCircle, Play, Pause } from "lucide-react"
+import { Shuffle, X, CheckCircle, Play, Pause, Loader2, AlertCircle } from "lucide-react"
 import { useAudio, type Track } from "../context/AudioContext"
 
 interface DiggingInTheCratesProps {
   isOpen: boolean
   onClose?: () => void
 }
-
-// 🔊 SC embed helper — classic player, no visual cover (prevents white padding)
-// const scEmbed = (u: string) =>
-//   `https://w.soundcloud.com/player/?url=${encodeURIComponent(
-//     u
-//   )}&auto_play=false&show_teaser=true&show_user=true&visual=false`;
 
 const SOUNDCLOUD_TRACKS: Track[] = [
   {
@@ -1272,6 +1266,9 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
     resumeTrack,
     currentTrack: globalTrack,
     isPlaying: isGlobalPlaying,
+    isLoading,
+    error,
+    clearError,
     setPlaylist,
     currentTime,
     duration,
@@ -1307,7 +1304,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   // Close on ESC
   useEffect(() => {
     if (!isOpen) return
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose?.()
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [isOpen, onClose])
@@ -1318,13 +1315,16 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
       t = SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]
     } while (t.id === localTrack.id && SOUNDCLOUD_TRACKS.length > 1)
     setLocalTrack(t)
-    // Optional: Auto-play on shuffle? Let's keep it manual for now, or auto-play if already playing.
+    clearError() // Clear any previous errors when shuffling
+    // Auto-play on shuffle if already playing
     if (isGlobalPlaying) {
       playTrack(t)
     }
-  }, [localTrack.id, isGlobalPlaying, playTrack])
+  }, [localTrack.id, isGlobalPlaying, playTrack, clearError])
 
   const handlePlayPause = () => {
+    console.log("[DiggingInTheCrates] Play/Pause clicked")
+
     if (globalTrack?.id === localTrack.id) {
       if (isGlobalPlaying) {
         pauseTrack()
@@ -1332,16 +1332,23 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         resumeTrack()
       }
     } else {
-      console.log("[v0] Triggering play for:", localTrack.url)
+      console.log("[DiggingInTheCrates] Starting new track:", localTrack.title, localTrack.url)
       playTrack(localTrack)
     }
   }
 
+  const handleRetry = () => {
+    console.log("[DiggingInTheCrates] Retry clicked")
+    clearError()
+    playTrack(localTrack)
+  }
+
   const isCurrentTrackPlaying = globalTrack?.id === localTrack.id && isGlobalPlaying
+  const isCurrentTrackLoading = globalTrack?.id === localTrack.id && isLoading
 
   // Format time helper
   const formatTime = (seconds: number) => {
-    if (!seconds) return "0:00"
+    if (!seconds || isNaN(seconds)) return "0:00"
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`
@@ -1390,7 +1397,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             backgroundColor: "white",
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             pointerEvents: "auto",
-            color: "#111827", // Force text color
+            color: "#111827",
           }}
         >
           <div
@@ -1462,12 +1469,13 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                 border: "2px solid #E5E7EB",
                 backgroundColor: "#F3F4F6",
                 marginBottom: "1rem",
-                minHeight: "166px",
+                minHeight: "200px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "1rem",
+                padding: "1.5rem",
               }}
             >
               <div className="text-center px-4">
@@ -1479,15 +1487,53 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                 </p>
               </div>
 
+              {/* Error Display */}
+              {error && (
+                <div
+                  style={{
+                    backgroundColor: "#FEE2E2",
+                    border: "1px solid #FCA5A5",
+                    borderRadius: "0.375rem",
+                    padding: "0.75rem",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "0.5rem",
+                    width: "100%",
+                  }}
+                >
+                  <AlertCircle size={18} style={{ color: "#DC2626", flexShrink: 0, marginTop: "2px" }} />
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: "0.875rem", color: "#7F1D1D", margin: 0, marginBottom: "0.5rem" }}>
+                      {error}
+                    </p>
+                    <button
+                      onClick={handleRetry}
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#DC2626",
+                        textDecoration: "underline",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div
                 className="flex flex-col items-center gap-4"
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}
               >
                 <button
                   onClick={handlePlayPause}
-                  aria-label={isCurrentTrackPlaying ? "Pause" : "Play"}
+                  disabled={isCurrentTrackLoading}
+                  aria-label={isCurrentTrackLoading ? "Loading..." : isCurrentTrackPlaying ? "Pause" : "Play"}
                   style={{
-                    backgroundColor: "#FF5500",
+                    backgroundColor: isCurrentTrackLoading ? "#9CA3AF" : "#FF5500",
                     color: "white",
                     width: "64px",
                     height: "64px",
@@ -1496,25 +1542,33 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                     alignItems: "center",
                     justifyContent: "center",
                     border: "none",
-                    cursor: "pointer",
+                    cursor: isCurrentTrackLoading ? "not-allowed" : "pointer",
                     boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                    transition: "background-color 0.2s",
                   }}
                 >
-                  {isCurrentTrackPlaying ? (
+                  {isCurrentTrackLoading ? (
+                    <Loader2 size={32} className="animate-spin" />
+                  ) : isCurrentTrackPlaying ? (
                     <Pause size={32} fill="currentColor" />
                   ) : (
                     <Play size={32} fill="currentColor" className="ml-1" />
                   )}
                 </button>
 
-                {/* Added Time Display */}
-                {isCurrentTrackPlaying && (
+                {/* Time Display */}
+                {isCurrentTrackPlaying && !isCurrentTrackLoading && (
                   <div
                     className="text-sm font-mono text-gray-500"
                     style={{ color: "#6B7280", fontFamily: "monospace", fontSize: "14px" }}
                   >
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </div>
+                )}
+
+                {/* Loading indicator */}
+                {isCurrentTrackLoading && (
+                  <p style={{ fontSize: "0.875rem", color: "#6B7280", margin: 0 }}>Loading track...</p>
                 )}
 
                 <div

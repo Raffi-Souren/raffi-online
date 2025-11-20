@@ -15,6 +15,8 @@ interface AudioContextType {
   playlist: Track[]
   duration: number
   currentTime: number
+  isLoading: boolean
+  error: string | null
   playTrack: (track: Track) => void
   pauseTrack: () => void
   resumeTrack: () => void
@@ -25,6 +27,9 @@ interface AudioContextType {
   setPlaylist: (tracks: Track[]) => void
   setDuration: (duration: number) => void
   setCurrentTime: (time: number) => void
+  setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  clearError: () => void
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined)
@@ -35,16 +40,30 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<Track[]>([])
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
 
   const playTrack = useCallback(
     (track: Track) => {
+      console.log("[AudioContext] playTrack called:", track.title, track.url)
+
+      // Clear any previous errors
+      setError(null)
+
       // If it's the same track, just resume
       if (currentTrack?.id === track.id) {
+        console.log("[AudioContext] Same track, resuming")
         setIsPlaying(true)
         return
       }
 
-      // For a new track, set it immediately
+      // For a new track, set loading state
+      console.log("[AudioContext] New track, setting loading state")
+      setIsLoading(true)
       setCurrentTrack(track)
       setIsPlaying(true)
       setCurrentTime(0)
@@ -54,11 +73,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   )
 
   const pauseTrack = useCallback(() => {
+    console.log("[AudioContext] pauseTrack called")
     setIsPlaying(false)
   }, [])
 
   const resumeTrack = useCallback(() => {
+    console.log("[AudioContext] resumeTrack called")
     if (currentTrack) {
+      setError(null)
       setIsPlaying(true)
     }
   }, [currentTrack])
@@ -70,8 +92,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [currentTrack])
 
   const stopTrack = useCallback(() => {
+    console.log("[AudioContext] stopTrack called")
     setIsPlaying(false)
     setCurrentTrack(null)
+    setIsLoading(false)
+    setError(null)
   }, [])
 
   const nextTrack = useCallback(() => {
@@ -100,6 +125,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         playlist,
         duration,
         currentTime,
+        isLoading,
+        error,
         playTrack,
         pauseTrack,
         resumeTrack,
@@ -110,6 +137,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setPlaylist,
         setDuration,
         setCurrentTime,
+        setLoading,
+        setError,
+        clearError,
       }}
     >
       {children}
