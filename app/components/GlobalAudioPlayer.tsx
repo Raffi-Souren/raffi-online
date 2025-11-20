@@ -117,14 +117,13 @@ export default function GlobalAudioPlayer() {
     <div
       className="react-player-hidden"
       style={{
-        position: "absolute",
-        clip: "rect(0 0 0 0)",
-        clipPath: "inset(50%)",
-        height: "1px",
+        position: "fixed",
+        left: "-9999px",
+        top: "-9999px",
         width: "1px",
-        overflow: "hidden",
-        whiteSpace: "nowrap",
-        pointerEvents: "none",
+        height: "1px",
+        zIndex: -9999,
+        opacity: 0.001,
       }}
       aria-hidden="true"
     >
@@ -134,8 +133,8 @@ export default function GlobalAudioPlayer() {
         url={currentTrack.url}
         playing={isPlaying}
         volume={1}
-        width="0"
-        height="0"
+        width="100%"
+        height="100%"
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}

@@ -396,33 +396,43 @@ html {
   background: #357abd;
 }
 
-/* Hide react-player canvas and iframes completely */
+/* Hide react-player canvas and iframes visually but keep them functional */
+/* Remove display:none rules that break audio playback */
 [aria-hidden="true"] iframe,
-[aria-hidden="true"] canvas,
-div[style*="clip"] iframe,
-div[style*="clip"] canvas {
-  display: none !important;
+[aria-hidden="true"] canvas {
   visibility: hidden !important;
   opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
   position: absolute !important;
   left: -9999px !important;
+  top: -9999px !important;
   pointer-events: none !important;
+  z-index: -9999 !important;
 }
 
-/* Ensure react-player container is completely removed from layout */
+/* Ensure react-player container is visually hidden but functionally active */
 .react-player-hidden {
-  position: absolute !important;
-  clip: rect(0 0 0 0) !important;
-  clip-path: inset(50%) !important;
-  height: 1px !important;
+  position: fixed !important;
+  left: -9999px !important;
+  top: -9999px !important;
   width: 1px !important;
+  height: 1px !important;
   overflow: hidden !important;
-  white-space: nowrap !important;
   pointer-events: none !important;
+  z-index: -9999 !important;
+  opacity: 0.001 !important;
 }
 
-.react-player-hidden * {
+/* Hide only canvas elements, not iframes which are needed for audio */
+.react-player-hidden canvas {
   display: none !important;
+  visibility: hidden !important;
+}
+
+/* Keep iframes functional but invisible */
+.react-player-hidden iframe {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
