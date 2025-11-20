@@ -11,6 +11,7 @@ export default function GlobalAudioPlayer() {
   const [mounted, setMounted] = useState(false)
   const [isReady, setIsReady] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
+  const [internalPlaying, setInternalPlaying] = useState(false)
   const playerRef = useRef<any>(null)
   const retryCountRef = useRef(0)
   const maxRetries = 2
@@ -25,9 +26,21 @@ export default function GlobalAudioPlayer() {
       console.log("[GlobalAudioPlayer] Track changed to:", currentTrack.title)
       setIsReady(false)
       setHasStarted(false)
+      setInternalPlaying(false)
       retryCountRef.current = 0
     }
   }, [currentTrack?.url])
+
+  // Sync playing state - trigger play on user interaction
+  useEffect(() => {
+    if (isPlaying && isReady && !internalPlaying) {
+      console.log("[GlobalAudioPlayer] Starting playback after ready state")
+      setInternalPlaying(true)
+    } else if (!isPlaying && internalPlaying) {
+      console.log("[GlobalAudioPlayer] Pausing playback")
+      setInternalPlaying(false)
+    }
+  }, [isPlaying, isReady, internalPlaying])
 
   // Handle loading state
   useEffect(() => {
@@ -50,6 +63,7 @@ export default function GlobalAudioPlayer() {
 
         // Force a reload by toggling ready state
         setIsReady(false)
+        setInternalPlaying(false)
         setTimeout(() => {
           setIsReady(true)
         }, 1000)
@@ -77,10 +91,16 @@ export default function GlobalAudioPlayer() {
         setDuration(d)
       }
     }
-  }, [setDuration, setLoading])
+
+    // If we should be playing, trigger play now
+    if (isPlaying && !internalPlaying) {
+      console.log("[GlobalAudioPlayer] Auto-starting playback after ready")
+      setInternalPlaying(true)
+    }
+  }, [setDuration, setLoading, isPlaying, internalPlaying])
 
   const handleStart = useCallback(() => {
-    console.log("[GlobalAudioPlayer] Playback started")
+    console.log("[GlobalAudioPlayer] ✅ Playback started successfully!")
     setHasStarted(true)
     setLoading(false)
     retryCountRef.current = 0 // Reset retry count on successful start
@@ -107,6 +127,7 @@ export default function GlobalAudioPlayer() {
   const handleEnded = useCallback(() => {
     console.log("[GlobalAudioPlayer] Track ended, playing next")
     setHasStarted(false)
+    setInternalPlaying(false)
     nextTrack()
   }, [nextTrack])
 
@@ -120,35 +141,37 @@ export default function GlobalAudioPlayer() {
     return null
   }
 
-  console.log("[GlobalAudioPlayer] Rendering player - playing:", isPlaying, "ready:", isReady, "url:", currentTrack.url)
+  console.log("[GlobalAudioPlayer] Rendering player - isPlaying:", isPlaying, "internalPlaying:", internalPlaying, "ready:", isReady, "url:", currentTrack.url)
 
   return (
     <div
       style={{
         position: "fixed",
-        bottom: "-200px",
-        left: "-200px",
-        width: "400px",
-        height: "200px",
-        pointerEvents: "none",
-        overflow: "hidden",
-        zIndex: -1,
-        visibility: "hidden",
+        top: "-9999px",
+        left: "-9999px",
+        width: "100%",
+        maxWidth: "600px",
+        height: "300px",
+        zIndex: -9999,
       }}
+      aria-hidden="true"
     >
       <ReactPlayer
         key={currentTrack.url} // Force new player instance on track change
         ref={playerRef}
         url={currentTrack.url}
-        playing={isPlaying}
+        playing={internalPlaying}
         volume={1}
         width="100%"
         height="100%"
-        progressInterval={1000}
+        progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}
-        onPlay={() => console.log("[GlobalAudioPlayer] onPlay event")}
-        onPause={() => console.log("[GlobalAudioPlayer] onPause event")}
+        onPlay={() => {
+          console.log("[GlobalAudioPlayer] ▶️ onPlay event fired")
+          setHasStarted(true)
+        }}
+        onPause={() => console.log("[GlobalAudioPlayer] ⏸️ onPause event fired")}
         onBuffer={() => console.log("[GlobalAudioPlayer] Buffering...")}
         onBufferEnd={() => console.log("[GlobalAudioPlayer] Buffer end")}
         onProgress={handleProgress}
