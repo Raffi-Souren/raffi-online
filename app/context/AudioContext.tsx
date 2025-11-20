@@ -137,7 +137,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setPlaylist,
         setDuration,
         setCurrentTime,
-        setLoading,
+        setLoading: setIsLoading,
         setError,
         clearError,
       }}
