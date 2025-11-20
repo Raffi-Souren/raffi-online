@@ -126,14 +126,14 @@ export default function GlobalAudioPlayer() {
     <div
       style={{
         position: "fixed",
-        bottom: 0,
-        right: 0,
-        width: "1px",
-        height: "1px",
-        opacity: 0.001,
+        bottom: "-200px",
+        left: "-200px",
+        width: "400px",
+        height: "200px",
         pointerEvents: "none",
         overflow: "hidden",
         zIndex: -1,
+        visibility: "hidden",
       }}
     >
       <ReactPlayer
