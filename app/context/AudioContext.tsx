@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 
 export interface Track {
   id: string
@@ -30,16 +30,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [playlist, setPlaylist] = useState<Track[]>([])
 
-  const playTrack = useCallback((track: Track) => {
-    console.log("[v0] Triggering play for:", track.url)
-    setIsPlaying(false)
-    setCurrentTrack(track)
-    // Increased timeout to ensure player is ready and prevent race conditions
-    setTimeout(() => {
-      console.log("[v0] Setting isPlaying to true")
-      setIsPlaying(true)
-    }, 200)
-  }, [])
+  const playTrack = useCallback(
+    (track: Track) => {
+      // If it's the same track, just resume
+      if (currentTrack?.id === track.id) {
+        setIsPlaying(true)
+        return
+      }
+
+      // For a new track, pause first, set the track, then play after a delay
+      setIsPlaying(false)
+      setCurrentTrack(track)
+
+      // Use requestAnimationFrame for smoother state transitions
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setIsPlaying(true)
+        }, 150)
+      })
+    },
+    [currentTrack],
+  )
 
   const pauseTrack = useCallback(() => {
     setIsPlaying(false)
@@ -53,7 +64,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const togglePlay = useCallback(() => {
     if (currentTrack) {
-      setIsPlaying(prev => !prev)
+      setIsPlaying((prev) => !prev)
     }
   }, [currentTrack])
 
@@ -64,19 +75,19 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const nextTrack = useCallback(() => {
     if (!currentTrack || playlist.length === 0) return
-    
-    const currentIndex = playlist.findIndex(track => track.id === currentTrack.id)
+
+    const currentIndex = playlist.findIndex((track) => track.id === currentTrack.id)
     const nextIndex = (currentIndex + 1) % playlist.length
-    
+
     playTrack(playlist[nextIndex])
   }, [currentTrack, playlist, playTrack])
 
   const previousTrack = useCallback(() => {
     if (!currentTrack || playlist.length === 0) return
-    
-    const currentIndex = playlist.findIndex(track => track.id === currentTrack.id)
+
+    const currentIndex = playlist.findIndex((track) => track.id === currentTrack.id)
     const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length
-    
+
     playTrack(playlist[prevIndex])
   }, [currentTrack, playlist, playTrack])
 
@@ -104,7 +115,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 export function useAudio() {
   const context = useContext(AudioContext)
   if (context === undefined) {
-    throw new Error('useAudio must be used within an AudioProvider')
+    throw new Error("useAudio must be used within an AudioProvider")
   }
   return context
 }

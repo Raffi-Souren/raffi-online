@@ -10,10 +10,10 @@ interface DiggingInTheCratesProps {
 }
 
 // 🔊 SC embed helper — classic player, no visual cover (prevents white padding)
-const scEmbed = (u: string) =>
-  `https://w.soundcloud.com/player/?url=${encodeURIComponent(
-    u
-  )}&auto_play=false&show_teaser=true&show_user=true&visual=false`;
+// const scEmbed = (u: string) =>
+//   `https://w.soundcloud.com/player/?url=${encodeURIComponent(
+//     u
+//   )}&auto_play=false&show_teaser=true&show_user=true&visual=false`;
 
 const SOUNDCLOUD_TRACKS: Track[] = [
   { id: "yukon-x-up-dj-hunny-bee-remix", title: "Yukon X Up (DJ Hunny Bee Remix)", artist: "djhunnybee", url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-remix" },
@@ -306,6 +306,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         resumeTrack();
       }
     } else {
+      console.log("[v0] Triggering play for:", localTrack.url);
       playTrack(localTrack);
     }
   };
@@ -420,7 +421,6 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               justifyContent: 'center',
               gap: '1rem'
             }}>
-              {/* Custom Player UI Replacement */}
               <div className="text-center px-4">
                 <h3 className="font-bold text-lg text-gray-900 mb-1">{localTrack.title}</h3>
                 <p className="text-sm text-gray-600">{localTrack.artist}</p>
