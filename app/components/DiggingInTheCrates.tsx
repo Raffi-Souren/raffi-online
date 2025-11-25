@@ -30,7 +30,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "djsweeterman",
     url: "https://soundcloud.com/djsweeterman/habibi-funk-beirut",
   },
-  { id: "chopsuey", title: "Chop Suey", artist: "osive", url: "https://soundcloud.com/osive/chopsuey" },
+  {
+    id: "chopsuey",
+    title: "Chop Suey",
+    artist: "osive",
+    url: "https://soundcloud.com/osive/chopsuey",
+  },
   {
     id: "gordos-dilemma",
     title: "Gordo's Dilemma",
@@ -49,7 +54,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "miguelmancha",
     url: "https://soundcloud.com/miguelmancha/fidde-i-wonder-yuno-hu-vision",
   },
-  { id: "sango2", title: "Sango2", artist: "pincheporvida", url: "https://soundcloud.com/pincheporvida/sango2" },
+  {
+    id: "sango2",
+    title: "Sango2",
+    artist: "pincheporvida",
+    url: "https://soundcloud.com/pincheporvida/sango2",
+  },
   {
     id: "dipset-x-future-i-really-mean",
     title: "Dipset x Future - I Really Mean",
@@ -86,7 +96,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "youngthugworld",
     url: "https://soundcloud.com/youngthugworld/phoenix-1",
   },
-  { id: "she-notice", title: "She Notice", artist: "youngthung", url: "https://soundcloud.com/youngthung/she-notice" },
+  {
+    id: "she-notice",
+    title: "She Notice",
+    artist: "youngthung",
+    url: "https://soundcloud.com/youngthung/she-notice",
+  },
   {
     id: "casts-of-a-dreamer-full-tape",
     title: "Casts of a Dreamer (Full Tape)",
@@ -165,7 +180,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "shekdash",
     url: "https://soundcloud.com/shekdash/fisherrr-shekdash-remix",
   },
-  { id: "slim", title: "Slim", artist: "musicbysamson", url: "https://soundcloud.com/musicbysamson/slim" },
+  {
+    id: "slim",
+    title: "Slim",
+    artist: "musicbysamson",
+    url: "https://soundcloud.com/musicbysamson/slim",
+  },
   {
     id: "rich-baby-daddy-pherris-edit-a-side",
     title: "Rich Baby Daddy (Pherris Edit A-Side)",
@@ -322,7 +342,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "user-126122356",
     url: "https://soundcloud.com/user-126122356/dear-april-justice-remix",
   },
-  { id: "slide", title: "Slide", artist: "trippy-turtle", url: "https://soundcloud.com/trippy-turtle/slide" },
+  {
+    id: "slide",
+    title: "Slide",
+    artist: "trippy-turtle",
+    url: "https://soundcloud.com/trippy-turtle/slide",
+  },
   {
     id: "at-your-best",
     title: "At Your Best",
@@ -437,7 +462,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "muathmy",
     url: "https://soundcloud.com/muathmy/welcome-back-chilly",
   },
-  { id: "fast-trax-3", title: "Fast Trax 3", artist: "454spike", url: "https://soundcloud.com/454spike/fast-trax-3" },
+  {
+    id: "fast-trax-3",
+    title: "Fast Trax 3",
+    artist: "454spike",
+    url: "https://soundcloud.com/454spike/fast-trax-3",
+  },
   {
     id: "tie-that-binds-vs-rmx",
     title: "Tie That Binds VS RMX",
@@ -474,7 +504,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "opentilll8",
     url: "https://soundcloud.com/opentilll8/drake-a-keeper-open-till-l8-remix",
   },
-  { id: "track-9-1", title: "Track 9", artist: "skepta", url: "https://soundcloud.com/skepta/track-9-1" },
+  {
+    id: "track-9-1",
+    title: "Track 9",
+    artist: "skepta",
+    url: "https://soundcloud.com/skepta/track-9-1",
+  },
   {
     id: "flex-up-prod-by-maaly-raw",
     title: "Flex Up (Prod. by Maaly Raw)",
@@ -493,7 +528,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "juel-sanchez",
     url: "https://soundcloud.com/juel-sanchez/off-the-grid",
   },
-  { id: "tlop5", title: "TLOP5", artist: "pierrebourne", url: "https://soundcloud.com/pierrebourne/tlop5" },
+  {
+    id: "tlop5",
+    title: "TLOP5",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/tlop5",
+  },
   {
     id: "drake-sticky-zack-bia-remix",
     title: "Drake - Sticky (Zack Bia Remix)",
@@ -602,7 +642,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "wileoutmusic",
     url: "https://soundcloud.com/wileoutmusic/teriyaki-funk-150-wile-out",
   },
-  { id: "ghostrider", title: "Ghostrider", artist: "madeintyo", url: "https://soundcloud.com/madeintyo/ghostrider" },
+  {
+    id: "ghostrider",
+    title: "Ghostrider",
+    artist: "madeintyo",
+    url: "https://soundcloud.com/madeintyo/ghostrider",
+  },
   {
     id: "stay-up-feat-lancey-foux-prod-wonda-gurl",
     title: "Stay Up (feat. Lancey Foux)",
@@ -627,7 +672,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "oganja",
     url: "https://soundcloud.com/oganja/pierre-bourne-captain-save-a-hoe",
   },
-  { id: "7-its-up", title: "It's Up", artist: "678uno", url: "https://soundcloud.com/678uno/7-its-up" },
+  {
+    id: "7-its-up",
+    title: "It's Up",
+    artist: "678uno",
+    url: "https://soundcloud.com/678uno/7-its-up",
+  },
   {
     id: "andromeda-by-sweeterman",
     title: "Andromeda",
@@ -694,8 +744,18 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "sinjin_hawke",
     url: "https://soundcloud.com/sinjin_hawke/just-blaze-sinjin-hawke-one",
   },
-  { id: "yea-hoe", title: "Yea Hoe", artist: "sinjin_hawke", url: "https://soundcloud.com/sinjin_hawke/yea-hoe" },
-  { id: "islabert", title: "Islabert", artist: "bakedgood", url: "https://soundcloud.com/bakedgood/islabert" },
+  {
+    id: "yea-hoe",
+    title: "Yea Hoe",
+    artist: "sinjin_hawke",
+    url: "https://soundcloud.com/sinjin_hawke/yea-hoe",
+  },
+  {
+    id: "islabert",
+    title: "Islabert",
+    artist: "bakedgood",
+    url: "https://soundcloud.com/bakedgood/islabert",
+  },
   {
     id: "the-good-1",
     title: "The Good",
@@ -762,8 +822,18 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "user-290523936",
     url: "https://soundcloud.com/user-290523936/lord-pretty-bad-gal-jodye",
   },
-  { id: "how-it-be", title: "How It Be", artist: "pierrebourne", url: "https://soundcloud.com/pierrebourne/how-it-be" },
-  { id: "how-2-luv", title: "How 2 Luv", artist: "beldina", url: "https://soundcloud.com/beldina/how-2-luv" },
+  {
+    id: "how-it-be",
+    title: "How It Be",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/how-it-be",
+  },
+  {
+    id: "how-2-luv",
+    title: "How 2 Luv",
+    artist: "beldina",
+    url: "https://soundcloud.com/beldina/how-2-luv",
+  },
   {
     id: "atl-freestyle-1",
     title: "ATL Freestyle",
@@ -800,7 +870,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "jbroadwaymusic",
     url: "https://soundcloud.com/jbroadwaymusic/money-in-the-grave-jbroadway-remix",
   },
-  { id: "cheers-mate", title: "Cheers Mate", artist: "a-k-paul", url: "https://soundcloud.com/a-k-paul/cheers-mate" },
+  {
+    id: "cheers-mate",
+    title: "Cheers Mate",
+    artist: "a-k-paul",
+    url: "https://soundcloud.com/a-k-paul/cheers-mate",
+  },
   {
     id: "skateboard-p-mix-prod-by-elijah-who",
     title: "Skateboard P Mix (Prod. by Elijah Who)",
@@ -825,8 +900,18 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "americanalovesyou",
     url: "https://soundcloud.com/americanalovesyou/aap-rocky-distraction",
   },
-  { id: "infinity", title: "Infinity", artist: "matt_ox", url: "https://soundcloud.com/matt_ox/infinity" },
-  { id: "bleed", title: "Bleed", artist: "newyearsplace", url: "https://soundcloud.com/newyearsplace/bleed" },
+  {
+    id: "infinity",
+    title: "Infinity",
+    artist: "matt_ox",
+    url: "https://soundcloud.com/matt_ox/infinity",
+  },
+  {
+    id: "bleed",
+    title: "Bleed",
+    artist: "newyearsplace",
+    url: "https://soundcloud.com/newyearsplace/bleed",
+  },
   {
     id: "sideways",
     title: "Sideways",
@@ -899,7 +984,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "kanyesfreshmanadjustments",
     url: "https://soundcloud.com/kanyesfreshmanadjustments/the-good-the-bad-the-ugly",
   },
-  { id: "nina-chop", title: "Nina Chop", artist: "lowkeysus23", url: "https://soundcloud.com/lowkeysus23/nina-chop" },
+  {
+    id: "nina-chop",
+    title: "Nina Chop",
+    artist: "lowkeysus23",
+    url: "https://soundcloud.com/lowkeysus23/nina-chop",
+  },
   {
     id: "dennis-hook-me-up-with-some",
     title: "Dennis Hook Me Up With Some",
@@ -966,8 +1056,18 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "griffin-mcmahon",
     url: "https://soundcloud.com/griffin-mcmahon/caffeine-vitamins",
   },
-  { id: "ily-1", title: "ILY", artist: "beldina", url: "https://soundcloud.com/beldina/ily-1" },
-  { id: "molly-world", title: "Molly World", artist: "vaughnpm", url: "https://soundcloud.com/vaughnpm/molly-world" },
+  {
+    id: "ily-1",
+    title: "ILY",
+    artist: "beldina",
+    url: "https://soundcloud.com/beldina/ily-1",
+  },
+  {
+    id: "molly-world",
+    title: "Molly World",
+    artist: "vaughnpm",
+    url: "https://soundcloud.com/vaughnpm/molly-world",
+  },
   {
     id: "5-bearbrick",
     title: "Bearbrick",
@@ -992,7 +1092,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "erykah-she-ill-badu",
     url: "https://soundcloud.com/erykah-she-ill-badu/act-1-eternal-sunshine-the-pledgeby-jay-electronica",
   },
-  { id: "smash", title: "Smash", artist: "vaughnpm", url: "https://soundcloud.com/vaughnpm/smash" },
+  {
+    id: "smash",
+    title: "Smash",
+    artist: "vaughnpm",
+    url: "https://soundcloud.com/vaughnpm/smash",
+  },
   {
     id: "lil-wayne-kobe-bryant",
     title: "Lil Wayne - Kobe Bryant",
@@ -1065,7 +1170,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "frazier-trill",
     url: "https://soundcloud.com/frazier-trill/trap-vacant",
   },
-  { id: "3-fiji", title: "Fiji", artist: "pierrebourne", url: "https://soundcloud.com/pierrebourne/3-fiji" },
+  {
+    id: "3-fiji",
+    title: "Fiji",
+    artist: "pierrebourne",
+    url: "https://soundcloud.com/pierrebourne/3-fiji",
+  },
   {
     id: "whats-the-move-with-brie",
     title: "What's The Move With Brie",
@@ -1108,7 +1218,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "chargedupdrake",
     url: "https://soundcloud.com/chargedupdrake/drake-sweeterman-explicit",
   },
-  { id: "vsvsvs1", title: "VSVSVS1", artist: "2fourhrs", url: "https://soundcloud.com/2fourhrs/vsvsvs1" },
+  {
+    id: "vsvsvs1",
+    title: "VSVSVS1",
+    artist: "2fourhrs",
+    url: "https://soundcloud.com/2fourhrs/vsvsvs1",
+  },
   {
     id: "drake-freak-in-you-partynextdoor-remix",
     title: "Drake - Freak In You (PARTYNEXTDOOR Remix)",
@@ -1145,7 +1260,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "notgoodcompany",
     url: "https://soundcloud.com/notgoodcompany/ftsv1breakfast",
   },
-  { id: "tonights", title: "Tonights", artist: "theshipwrek", url: "https://soundcloud.com/theshipwrek/tonights" },
+  {
+    id: "tonights",
+    title: "Tonights",
+    artist: "theshipwrek",
+    url: "https://soundcloud.com/theshipwrek/tonights",
+  },
   {
     id: "young-thug-elton-likes-me",
     title: "Young Thug - Elton Likes Me",
@@ -1170,7 +1290,12 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "sylvanlacue",
     url: "https://soundcloud.com/sylvanlacue/middle-of-south-florida-feat-prez-p",
   },
-  { id: "damnremix", title: "Damn Remix", artist: "bebas100", url: "https://soundcloud.com/bebas100/damnremix" },
+  {
+    id: "damnremix",
+    title: "Damn Remix",
+    artist: "bebas100",
+    url: "https://soundcloud.com/bebas100/damnremix",
+  },
   {
     id: "wasted-feat-lil-uzi-vert",
     title: "Wasted (feat. Lil Uzi Vert)",
@@ -1243,22 +1368,42 @@ const SOUNDCLOUD_TRACKS: Track[] = [
     artist: "disclosure",
     url: "https://soundcloud.com/disclosure/latch-feat-sam-smith",
   },
-  { id: "sleepless", title: "Sleepless", artist: "flume", url: "https://soundcloud.com/flume/sleepless" },
+  {
+    id: "sleepless",
+    title: "Sleepless",
+    artist: "flume",
+    url: "https://soundcloud.com/flume/sleepless",
+  },
   {
     id: "say-my-name-feat-zyra",
     title: "Say My Name (feat. Zyra)",
     artist: "odesza",
     url: "https://soundcloud.com/odesza/say-my-name-feat-zyra",
   },
-  { id: "gosh", title: "Gosh", artist: "jamie-xx", url: "https://soundcloud.com/jamie-xx/gosh" },
-  { id: "a-walk", title: "A Walk", artist: "tycho", url: "https://soundcloud.com/tycho/a-walk" },
+  {
+    id: "gosh",
+    title: "Gosh",
+    artist: "jamie-xx",
+    url: "https://soundcloud.com/jamie-xx/gosh",
+  },
+  {
+    id: "a-walk",
+    title: "A Walk",
+    artist: "tycho",
+    url: "https://soundcloud.com/tycho/a-walk",
+  },
   {
     id: "a-new-error",
     title: "A New Error",
     artist: "moderat-official",
     url: "https://soundcloud.com/moderat-official/a-new-error",
   },
-  { id: "odessa", title: "Odessa", artist: "caribouband", url: "https://soundcloud.com/caribouband/odessa" },
+  {
+    id: "odessa",
+    title: "Odessa",
+    artist: "caribouband",
+    url: "https://soundcloud.com/caribouband/odessa",
+  },
 ]
 
 export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {

@@ -16,17 +16,14 @@ export default function GlobalAudioPlayer() {
 
   useEffect(() => {
     setMounted(true)
-    console.log("[v0] GlobalAudioPlayer mounted")
 
     return () => {
       isUnmountingRef.current = true
-      console.log("[v0] GlobalAudioPlayer unmounting")
     }
   }, [])
 
   useEffect(() => {
     if (currentTrack?.url) {
-      console.log("[v0] Track changed to:", currentTrack.title, currentTrack.url)
       retryCountRef.current = 0
       isUnmountingRef.current = false
     }
@@ -35,19 +32,14 @@ export default function GlobalAudioPlayer() {
   const handleError = useCallback(
     (error: any) => {
       if (isUnmountingRef.current && (error?.name === "AbortError" || error?.message?.includes("interrupted"))) {
-        console.log("[v0] Ignoring AbortError during unmount")
         return
       }
 
-      console.error("[v0] Player error:", error)
-
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++
-        console.log(`[v0] Retrying... (${retryCountRef.current}/${maxRetries})`)
       } else {
         const errorMessage =
           "Unable to play this track. It may be unavailable, private, or region-restricted. Try shuffling for another track."
-        console.error("[v0] Max retries reached")
         setError(errorMessage)
         setLoading(false)
       }
@@ -56,34 +48,27 @@ export default function GlobalAudioPlayer() {
   )
 
   const handleReady = useCallback(() => {
-    console.log("[v0] Player ready")
     setLoading(false)
 
     if (playerRef.current) {
       try {
         const d = playerRef.current.getDuration?.()
-        console.log("[v0] Duration:", d)
         if (d && d !== Number.POSITIVE_INFINITY && !isNaN(d) && d > 0) {
           setDuration(d)
         }
       } catch (e) {
-        console.error("[v0] Error getting duration:", e)
+        // Silently fail
       }
     }
   }, [setDuration, setLoading])
 
   const handleStart = useCallback(() => {
-    console.log("[v0] PLAYBACK STARTED")
     setLoading(false)
     retryCountRef.current = 0
   }, [setLoading])
 
   const handleProgress = useCallback(
     (progress: { playedSeconds: number }) => {
-      if (progress.playedSeconds < 3) {
-        console.log("[v0] Progress:", progress.playedSeconds.toFixed(2), "s")
-      }
-
       if (progress.playedSeconds !== undefined && !isNaN(progress.playedSeconds) && progress.playedSeconds >= 0) {
         setCurrentTime(progress.playedSeconds)
       }
@@ -103,15 +88,12 @@ export default function GlobalAudioPlayer() {
   )
 
   const handleEnded = useCallback(() => {
-    console.log("[v0] Track ended")
     nextTrack()
   }, [nextTrack])
 
   if (!mounted || !currentTrack?.url) {
     return null
   }
-
-  console.log("[v0] Rendering - playing:", isPlaying)
 
   return (
     <div className="sc-audio-wrapper" aria-hidden="true">
@@ -126,8 +108,8 @@ export default function GlobalAudioPlayer() {
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}
-        onPlay={() => console.log("[v0] onPlay")}
-        onPause={() => console.log("[v0] onPause")}
+        onPlay={() => {}}
+        onPause={() => {}}
         onProgress={handleProgress}
         onEnded={handleEnded}
         onError={handleError}

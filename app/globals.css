@@ -396,28 +396,33 @@ html {
   background: #357abd;
 }
 
-/* Updated audio wrapper to give SoundCloud iframe proper on-screen footprint */
-/* Positioned at bottom-right with standard size, nearly transparent but not hidden */
+/* Repositioned audio wrapper below viewport to hide canvas while keeping iframe functional */
+/* Position completely below the visible viewport - not just opacity hidden */
 .sc-audio-wrapper {
   position: fixed !important;
-  bottom: 0 !important;
-  right: 0 !important;
+  left: 0 !important;
+  top: 100vh !important; /* Below viewport - not visible but still rendered */
   width: 400px !important;
-  height: 166px !important; /* Standard SoundCloud height */
-  overflow: visible !important; /* Don't clip internal widget elements */
-  pointer-events: none !important; /* Don't allow user interaction */
-  z-index: -1 !important; /* Behind your desktop UI */
-  opacity: 0.01 !important; /* Effectively invisible, but not 0 */
+  height: 166px !important;
+  overflow: hidden !important; /* Clip everything */
+  pointer-events: none !important;
+  z-index: -9999 !important;
+  opacity: 1 !important; /* Full opacity so browser doesn't throttle */
+  visibility: visible !important; /* Keep visible for event firing */
 }
 
 /* Hide all visual elements from SoundCloud that leak out as canvases */
 .sc-audio-wrapper canvas,
 .sc-audio-wrapper iframe canvas,
-.sc-audio-wrapper * canvas {
+.sc-audio-wrapper * canvas,
+canvas[class*="soundcloud"],
+canvas[id*="soundcloud"] {
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
+  position: absolute !important;
+  left: -9999px !important;
 }
 
 /* Let iframe fill the wrapper's 400 × 166 area */
