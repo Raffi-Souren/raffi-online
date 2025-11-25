@@ -35,8 +35,11 @@ export default function GlobalAudioPlayer() {
         return
       }
 
+      console.log("[v0] Player error:", error, "Track:", currentTrack?.url)
+
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++
+        console.log("[v0] Retrying...", retryCountRef.current, "/", maxRetries)
       } else {
         const errorMessage =
           "Unable to play this track. It may be unavailable, private, or region-restricted. Try shuffling for another track."
@@ -44,15 +47,17 @@ export default function GlobalAudioPlayer() {
         setLoading(false)
       }
     },
-    [setError, setLoading],
+    [setError, setLoading, currentTrack?.url],
   )
 
   const handleReady = useCallback(() => {
+    console.log("[v0] Player ready")
     setLoading(false)
 
     if (playerRef.current) {
       try {
         const d = playerRef.current.getDuration?.()
+        console.log("[v0] Duration on ready:", d)
         if (d && d !== Number.POSITIVE_INFINITY && !isNaN(d) && d > 0) {
           setDuration(d)
         }
@@ -63,12 +68,17 @@ export default function GlobalAudioPlayer() {
   }, [setDuration, setLoading])
 
   const handleStart = useCallback(() => {
+    console.log("[v0] Player started")
     setLoading(false)
     retryCountRef.current = 0
   }, [setLoading])
 
   const handleProgress = useCallback(
     (progress: { playedSeconds: number }) => {
+      if (progress.playedSeconds < 3) {
+        console.log("[v0] Progress:", progress.playedSeconds)
+      }
+
       if (progress.playedSeconds !== undefined && !isNaN(progress.playedSeconds) && progress.playedSeconds >= 0) {
         setCurrentTime(progress.playedSeconds)
       }
@@ -91,12 +101,30 @@ export default function GlobalAudioPlayer() {
     nextTrack()
   }, [nextTrack])
 
+  console.log("[v0] GlobalAudioPlayer render - mounted:", mounted, "track:", currentTrack?.url, "playing:", isPlaying)
+
   if (!mounted || !currentTrack?.url) {
     return null
   }
 
   return (
-    <div className="sc-audio-wrapper" aria-hidden="true">
+    <div
+      className="sc-audio-wrapper"
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        right: 0,
+        bottom: 0,
+        width: "400px",
+        height: "166px",
+        overflow: "hidden",
+        pointerEvents: "none",
+        zIndex: -9999,
+        opacity: 0.01,
+        visibility: "visible",
+        clipPath: "inset(100%)",
+      }}
+    >
       <ReactPlayer
         key={currentTrack.url}
         ref={playerRef}
@@ -108,8 +136,8 @@ export default function GlobalAudioPlayer() {
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}
-        onPlay={() => {}}
-        onPause={() => {}}
+        onPlay={() => console.log("[v0] onPlay fired")}
+        onPause={() => console.log("[v0] onPause fired")}
         onProgress={handleProgress}
         onEnded={handleEnded}
         onError={handleError}

@@ -396,19 +396,20 @@ html {
   background: #357abd;
 }
 
-/* Repositioned audio wrapper below viewport to hide canvas while keeping iframe functional */
-/* Position completely below the visible viewport - not just opacity hidden */
+/* Fixed positioning strategy - keep iframe ON-SCREEN to prevent browser throttling */
+/* Position at bottom-right corner, on-screen but visually clipped/hidden */
 .sc-audio-wrapper {
   position: fixed !important;
-  left: 0 !important;
-  top: 100vh !important; /* Below viewport - not visible but still rendered */
+  right: 0 !important;
+  bottom: 0 !important;
   width: 400px !important;
   height: 166px !important;
-  overflow: hidden !important; /* Clip everything */
+  overflow: hidden !important;
   pointer-events: none !important;
   z-index: -9999 !important;
-  opacity: 1 !important; /* Full opacity so browser doesn't throttle */
-  visibility: visible !important; /* Keep visible for event firing */
+  opacity: 0.01 !important; /* Near-invisible but NOT zero (zero triggers throttling) */
+  visibility: visible !important;
+  clip-path: inset(100%) !important; /* Visually clips everything but keeps it "rendered" */
 }
 
 /* Hide all visual elements from SoundCloud that leak out as canvases */
