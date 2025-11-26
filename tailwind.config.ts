@@ -79,6 +79,7 @@ const config: Config = {
     "max-w-6xl",
     "max-w-7xl",
     "sc-audio-wrapper",
+    "sc-player-wrapper",
     // Grid and layout classes
     "grid-cols-1",
     "grid-cols-2",
@@ -91,6 +92,16 @@ const config: Config = {
     "bg-gray-50",
     "bg-gray-100",
     "bg-gray-200",
+    "justify-between",
+    "justify-start",
+    "justify-end",
+    "items-start",
+    "items-end",
+    "overflow-auto",
+    "overflow-hidden",
+    "overflow-visible",
+    "overflow-y-auto",
+    "overflow-x-hidden",
   ],
   theme: {
     extend: {

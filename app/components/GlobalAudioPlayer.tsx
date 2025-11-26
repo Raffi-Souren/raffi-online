@@ -100,14 +100,15 @@ export default function GlobalAudioPlayer() {
     return null
   }
 
-  // - Position at bottom-right corner WITHIN viewport (not off-screen)
-  // - Use transform: scale(0.01) instead of width/height to shrink
-  // - Keep opacity at 0.01 (not 0) so browser doesn't throttle
-  // - overflow: visible to allow iframe to initialize properly
-  // This ensures the SoundCloud widget is "visible" to the browser
-  // and doesn't get throttled in production builds
+  // - Use CSS class "sc-player-wrapper" as primary (defined in globals.css with !important)
+  // - Also apply inline styles as fallback in case Tailwind purges the class
+  // - Position within viewport at bottom-right (not off-screen, which browsers throttle)
+  // - Use transform: scale(0.01) to shrink visually while maintaining full internal dimensions
+  // - Keep opacity: 0.01 (not 0) so browser doesn't throttle the iframe
+  // - overflow: visible allows iframe to initialize and fire events properly
   return (
     <div
+      className="sc-player-wrapper"
       aria-hidden="true"
       style={{
         position: "fixed",
