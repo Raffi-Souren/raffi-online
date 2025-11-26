@@ -94,24 +94,21 @@ export default function GlobalAudioPlayer() {
     return null
   }
 
-  // at full internal size (300x150) while visually shrinking it. This prevents
-  // browser throttling that occurs with tiny/hidden iframes.
+  // The iframe needs to be "visible enough" to the browser (opacity: 0.01, not 0)
+  // with no overflow:hidden that could block event propagation
   return (
     <div
       className="sc-player-wrapper"
       aria-hidden="true"
       style={{
         position: "fixed",
-        bottom: "10px",
-        right: "10px",
-        width: "300px",
-        height: "150px",
-        transform: "scale(0.01)",
-        transformOrigin: "bottom right",
+        bottom: 0,
+        right: 0,
+        width: "1px",
+        height: "1px",
         opacity: 0.01,
         pointerEvents: "none",
         zIndex: -1,
-        overflow: "visible",
       }}
     >
       <ReactPlayer
@@ -120,8 +117,8 @@ export default function GlobalAudioPlayer() {
         url={currentTrack.url}
         playing={isPlaying}
         volume={1}
-        width="100%"
-        height="100%"
+        width="300px"
+        height="150px"
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}

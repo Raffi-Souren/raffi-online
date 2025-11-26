@@ -16,6 +16,19 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-src 'self' https://w.soundcloud.com https://api.soundcloud.com https://soundcloud.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://w.soundcloud.com https://connect.soundcloud.com;",
+          },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

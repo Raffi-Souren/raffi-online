@@ -4,28 +4,27 @@
 
 /* Custom CSS for Windows XP aesthetic and Mario question block */
 
-/* Add critical production fix for SoundCloud player
-   The player needs to be "visible" to the browser (not throttled)
-   Using transform: scale() preserves internal iframe dimensions
-   while making it effectively invisible */
+/* Production fix for SoundCloud player
+   Use 1x1px container with opacity: 0.01 (NOT 0)
+   No overflow:hidden - allow iframe to render fully
+   This prevents browser throttling in production */
 .sc-player-wrapper {
   position: fixed !important;
-  bottom: 10px !important;
-  right: 10px !important;
-  width: 300px !important;
-  height: 150px !important;
-  transform: scale(0.01) !important;
-  transform-origin: bottom right !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
   opacity: 0.01 !important;
   pointer-events: none !important;
   z-index: -1 !important;
-  overflow: visible !important;
+  /* NO overflow: hidden - this blocks iframe events */
 }
 
-/* Ensure SoundCloud iframe doesn't cause visual issues */
+/* Ensure SoundCloud iframe has proper attributes for production */
 .sc-player-wrapper iframe {
-  width: 100% !important;
-  height: 100% !important;
+  /* Allow iframe to render at full size for proper initialization */
+  width: 300px !important;
+  height: 150px !important;
 }
 
 /* Mario Question Block Styles */
