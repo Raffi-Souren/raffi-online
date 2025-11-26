@@ -1,148 +1,119 @@
 "use client"
 
-import { useEffect, useState, useRef, useCallback } from "react"
-import dynamic from "next/dynamic"
+import { useEffect, useState, useRef } from "react"
 import { useAudio } from "../context/AudioContext"
-
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false })
 
 export default function GlobalAudioPlayer() {
   const { currentTrack, isPlaying, nextTrack, setCurrentTime, setDuration, setLoading, setError } = useAudio()
   const [mounted, setMounted] = useState(false)
-  const playerRef = useRef<any>(null)
-  const retryCountRef = useRef(0)
-  const maxRetries = 2
-  const isUnmountingRef = useRef(false)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const widgetRef = useRef<any>(null)
 
   useEffect(() => {
     setMounted(true)
-    return () => {
-      isUnmountingRef.current = true
-    }
   }, [])
 
   useEffect(() => {
-    if (currentTrack?.url) {
-      retryCountRef.current = 0
-      isUnmountingRef.current = false
-    }
-  }, [currentTrack?.url])
+    if (!mounted || !currentTrack?.url) return
 
-  const handleError = useCallback(
-    (error: any) => {
-      if (isUnmountingRef.current && (error?.name === "AbortError" || error?.message?.includes("interrupted"))) {
-        return
-      }
+    // Load SoundCloud Widget API
+    const script = document.createElement("script")
+    script.src = "https://w.soundcloud.com/player/api.js"
+    script.async = true
+    script.onload = () => {
+      if (iframeRef.current && (window as any).SC) {
+        const widget = (window as any).SC.Widget(iframeRef.current)
+        widgetRef.current = widget
 
-      if (retryCountRef.current < maxRetries) {
-        retryCountRef.current++
-      } else {
-        const errorMessage =
-          "Unable to play this track. It may be unavailable, private, or region-restricted. Try shuffling for another track."
-        setError(errorMessage)
-        setLoading(false)
-      }
-    },
-    [setError, setLoading],
-  )
+        widget.bind((window as any).SC.Widget.Events.READY, () => {
+          setLoading(false)
 
-  const handleReady = useCallback(() => {
-    setLoading(false)
+          // Get duration
+          widget.getDuration((duration: number) => {
+            if (duration && duration > 0) {
+              setDuration(duration / 1000) // Convert ms to seconds
+            }
+          })
 
-    if (playerRef.current) {
-      try {
-        const d = playerRef.current.getDuration?.()
-        if (d && d !== Number.POSITIVE_INFINITY && !isNaN(d) && d > 0) {
-          setDuration(d)
-        }
-      } catch (e) {
-        // Silently fail
-      }
-    }
-  }, [setDuration, setLoading])
-
-  const handleStart = useCallback(() => {
-    setLoading(false)
-    retryCountRef.current = 0
-  }, [setLoading])
-
-  const handleProgress = useCallback(
-    (progress: { playedSeconds: number }) => {
-      if (progress.playedSeconds !== undefined && !isNaN(progress.playedSeconds) && progress.playedSeconds >= 0) {
-        setCurrentTime(progress.playedSeconds)
-      }
-
-      if (playerRef.current) {
-        try {
-          const d = playerRef.current.getDuration?.()
-          if (d && d !== Number.POSITIVE_INFINITY && !isNaN(d) && d > 0) {
-            setDuration(d)
+          // Control playback based on isPlaying state
+          if (isPlaying) {
+            widget.play()
+          } else {
+            widget.pause()
           }
-        } catch (e) {
-          // Silently fail
-        }
-      }
-    },
-    [setCurrentTime, setDuration],
-  )
+        })
 
-  const handleEnded = useCallback(() => {
-    nextTrack()
-  }, [nextTrack])
+        widget.bind((window as any).SC.Widget.Events.PLAY_PROGRESS, (data: any) => {
+          if (data.currentPosition !== undefined) {
+            setCurrentTime(data.currentPosition / 1000) // Convert ms to seconds
+          }
+        })
+
+        widget.bind((window as any).SC.Widget.Events.FINISH, () => {
+          nextTrack()
+        })
+
+        widget.bind((window as any).SC.Widget.Events.ERROR, () => {
+          setError("Unable to play this track. Try shuffling for another track.")
+          setLoading(false)
+        })
+      }
+    }
+    document.body.appendChild(script)
+
+    return () => {
+      if (widgetRef.current) {
+        widgetRef.current.unbind((window as any).SC.Widget.Events.READY)
+        widgetRef.current.unbind((window as any).SC.Widget.Events.PLAY_PROGRESS)
+        widgetRef.current.unbind((window as any).SC.Widget.Events.FINISH)
+        widgetRef.current.unbind((window as any).SC.Widget.Events.ERROR)
+      }
+      if (script.parentNode) {
+        script.parentNode.removeChild(script)
+      }
+    }
+  }, [mounted, currentTrack?.url])
+
+  useEffect(() => {
+    if (widgetRef.current) {
+      if (isPlaying) {
+        widgetRef.current.play()
+      } else {
+        widgetRef.current.pause()
+      }
+    }
+  }, [isPlaying])
 
   if (!mounted || !currentTrack?.url) {
     return null
   }
 
-  // The iframe needs to be "visible enough" to the browser (opacity: 0.01, not 0)
-  // with no overflow:hidden that could block event propagation
+  const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(currentTrack.url)}&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false&show_artwork=false`
+
   return (
     <div
-      className="sc-player-wrapper"
       aria-hidden="true"
       style={{
         position: "fixed",
-        bottom: 0,
-        right: 0,
+        bottom: "0",
+        right: "0",
         width: "1px",
         height: "1px",
-        opacity: 0.01,
+        overflow: "hidden",
         pointerEvents: "none",
+        opacity: 0.01,
         zIndex: -1,
       }}
     >
-      <ReactPlayer
+      <iframe
+        ref={iframeRef}
         key={currentTrack.url}
-        ref={playerRef}
-        url={currentTrack.url}
-        playing={isPlaying}
-        volume={1}
-        width="300px"
-        height="150px"
-        progressInterval={500}
-        onReady={handleReady}
-        onStart={handleStart}
-        onProgress={handleProgress}
-        onEnded={handleEnded}
-        onError={handleError}
-        config={{
-          soundcloud: {
-            options: {
-              auto_play: false,
-              buying: false,
-              liking: false,
-              download: false,
-              sharing: false,
-              show_artwork: false,
-              show_comments: false,
-              show_playcount: false,
-              show_user: false,
-              show_reposts: false,
-              hide_related: true,
-              visual: false,
-            },
-          },
-        }}
+        src={embedUrl}
+        width="100%"
+        height="166"
+        scrolling="no"
+        frameBorder="no"
+        allow="autoplay"
       />
     </div>
   )

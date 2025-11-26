@@ -1,10 +1,13 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useCallback, useEffect, useRef } from "react"
-import { Shuffle, X, CheckCircle, Play, Pause, Loader2, AlertCircle } from "lucide-react"
+import { Shuffle, X, CheckCircle } from "lucide-react"
 import { useAudio, type Track } from "../context/AudioContext"
+
+const scEmbed = (url: string) =>
+  `https://w.soundcloud.com/player/?url=${encodeURIComponent(
+    url,
+  )}&auto_play=false&show_teaser=true&show_user=true&visual=false`
 
 interface DiggingInTheCratesProps {
   isOpen: boolean
@@ -1420,9 +1423,8 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
     currentTime,
     duration,
   } = useAudio()
-  const [localTrack, setLocalTrack] = useState<Track>(
-    () => SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)],
-  )
+  // Removed initial random track, replaced with null
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const prevFocusRef = useRef<HTMLElement | null>(null)
   const isHandlingClick = useRef(false)
@@ -1433,11 +1435,12 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
     }
   }, [isOpen, setPlaylist])
 
-  useEffect(() => {
-    if (globalTrack && isOpen) {
-      setLocalTrack(globalTrack)
-    }
-  }, [globalTrack, isOpen])
+  // Removed localTrack and related logic, simplified
+  // useEffect(() => {
+  //   if (globalTrack && isOpen) {
+  //     setLocalTrack(globalTrack)
+  //   }
+  // }, [globalTrack, isOpen])
 
   // Focus management
   useEffect(() => {
@@ -1468,67 +1471,75 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   //   }
   // }, [isGlobalPlaying, pauseTrack])
 
-  const shuffleTrack = useCallback(() => {
-    let t: Track
-    do {
-      t = SOUNDCLOUD_TRACKS[Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)]
-    } while (t.id === localTrack.id && SOUNDCLOUD_TRACKS.length > 1)
-    setLocalTrack(t)
-    clearError() // Clear any previous errors when shuffling
-    // Auto-play on shuffle if already playing
-    if (isGlobalPlaying) {
-      playTrack(t)
-    }
-  }, [localTrack.id, isGlobalPlaying, playTrack, clearError])
+  // Restored v237 simple shuffle function - no audio context needed
+  const handleShuffle = useCallback(() => {
+    const randomIndex = Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)
+    setCurrentTrack(SOUNDCLOUD_TRACKS[randomIndex])
+    // Removed clearError() call
+    // clearError() // Clear any previous errors when shuffling
+    // Removed auto-play logic
+    // // Auto-play on shuffle if already playing
+    // if (isGlobalPlaying) {
+    //   playTrack(t)
+    // }
+  }, [SOUNDCLOUD_TRACKS.length]) // Added dependency for clarity, though it's constant
 
-  const handlePlayPause = useCallback(
-    (e?: React.MouseEvent) => {
-      // Prevent event bubbling and default actions
-      e?.stopPropagation()
-      e?.preventDefault()
+  // Removed handlePlayPause, handleRetry, and related logic
+  // const handlePlayPause = useCallback(
+  //   (e?: React.MouseEvent) => {
+  //     // Prevent event bubbling and default actions
+  //     e?.stopPropagation()
+  //     e?.preventDefault()
 
-      // Prevent double-clicks within 500ms
-      if (isHandlingClick.current) {
-        console.log("[DiggingInTheCrates] Ignoring rapid click")
-        return
-      }
+  //     // Prevent double-clicks within 500ms
+  //     if (isHandlingClick.current) {
+  //       console.log("[DiggingInTheCrates] Ignoring rapid click")
+  //       return
+  //     }
 
-      isHandlingClick.current = true
-      setTimeout(() => {
-        isHandlingClick.current = false
-      }, 500)
+  //     isHandlingClick.current = true
+  //     setTimeout(() => {
+  //       isHandlingClick.current = false
+  //     }, 500)
 
-      console.log("[DiggingInTheCrates] Play/Pause clicked")
+  //     console.log("[DiggingInTheCrates] Play/Pause clicked")
 
-      if (globalTrack?.id === localTrack.id) {
-        if (isGlobalPlaying) {
-          pauseTrack()
-        } else {
-          resumeTrack()
-        }
-      } else {
-        console.log("[DiggingInTheCrates] Starting new track:", localTrack.title, localTrack.url)
-        playTrack(localTrack)
-      }
-    },
-    [globalTrack, localTrack, isGlobalPlaying, pauseTrack, resumeTrack, playTrack],
-  )
+  //     if (globalTrack?.id === localTrack.id) {
+  //       if (isGlobalPlaying) {
+  //         pauseTrack()
+  //       } else {
+  //         resumeTrack()
+  //       }
+  //     } else {
+  //       console.log("[DiggingInTheCrates] Starting new track:", localTrack.title, localTrack.url)
+  //       playTrack(localTrack)
+  //     }
+  //   },
+  //   [globalTrack, localTrack, isGlobalPlaying, pauseTrack, resumeTrack, playTrack],
+  // )
 
-  const handleRetry = useCallback(() => {
-    console.log("[DiggingInTheCrates] Retry clicked")
-    clearError()
-    playTrack(localTrack)
-  }, [clearError, playTrack, localTrack])
+  // const handleRetry = useCallback(() => {
+  //   console.log("[DiggingInTheCrates] Retry clicked")
+  //   clearError()
+  //   playTrack(localTrack)
+  // }, [clearError, playTrack, localTrack])
 
-  const isCurrentTrackPlaying = globalTrack?.id === localTrack.id && isGlobalPlaying
-  const isCurrentTrackLoading = globalTrack?.id === localTrack.id && isLoading
+  // Removed isCurrentTrackPlaying, isCurrentTrackLoading, formatTime, and related logic
+  // const isCurrentTrackPlaying = globalTrack?.id === localTrack.id && isGlobalPlaying
+  // const isCurrentTrackLoading = globalTrack?.id === localTrack.id && isLoading
 
-  // Format time helper
-  const formatTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return "0:00"
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`
+  // // Format time helper
+  // const formatTime = (seconds: number) => {
+  //   if (!seconds || isNaN(seconds)) return "0:00"
+  //   const mins = Math.floor(seconds / 60)
+  //   const secs = Math.floor(seconds % 60)
+  //   return `${mins}:${secs < 10 ? "0" : ""}${secs}`
+  // }
+
+  // Simplified the return statement to remove audio controls and error handling, and use the new handleClose logic.
+  const handleClose = () => {
+    setCurrentTrack(null) // Reset current track when closing
+    onClose?.()
   }
 
   if (!isOpen) return null
@@ -1542,7 +1553,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
           zIndex: 100,
           backgroundColor: "rgba(0, 0, 0, 0.5)",
         }}
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden="true"
       />
 
@@ -1576,6 +1587,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             pointerEvents: "auto",
             color: "#111827",
           }}
+          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
         >
           <div
             style={{
@@ -1596,7 +1608,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             </div>
             <button
               aria-label="Close"
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 borderRadius: "0.25rem",
                 padding: "0.5rem",
@@ -1639,135 +1651,47 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               </div>
             </div>
 
-            <div
-              style={{
-                overflow: "hidden",
-                borderRadius: "0.375rem",
-                border: "2px solid #E5E7EB",
-                backgroundColor: "#F3F4F6",
-                marginBottom: "1rem",
-                minHeight: "200px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "1rem",
-                padding: "1.5rem",
-              }}
-            >
-              <div className="text-center px-4">
-                <h3 className="font-bold text-lg mb-1" style={{ color: "#111827" }}>
-                  {localTrack.title}
-                </h3>
-                <p className="text-sm" style={{ color: "#4B5563" }}>
-                  {localTrack.artist}
-                </p>
-              </div>
-
-              {/* Error Display */}
-              {error && (
-                <div
-                  style={{
-                    backgroundColor: "#FEE2E2",
-                    border: "1px solid #FCA5A5",
-                    borderRadius: "0.375rem",
-                    padding: "0.75rem",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "0.5rem",
-                    width: "100%",
-                  }}
-                >
-                  <AlertCircle size={18} style={{ color: "#DC2626", flexShrink: 0, marginTop: "2px" }} />
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: "0.875rem", color: "#7F1D1D", margin: 0, marginBottom: "0.5rem" }}>{error}</p>
-                    <button
-                      onClick={handleRetry}
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#DC2626",
-                        textDecoration: "underline",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
-                      }}
-                    >
-                      Try again
-                    </button>
-                  </div>
-                </div>
-              )}
-
+            {currentTrack && (
               <div
-                className="flex flex-col items-center gap-4"
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "4px",
+                  padding: "16px",
+                  marginBottom: "16px",
+                }}
               >
-                <button
-                  onClick={handlePlayPause}
-                  disabled={isCurrentTrackLoading}
-                  aria-label={isCurrentTrackLoading ? "Loading..." : isCurrentTrackPlaying ? "Pause" : "Play"}
+                <iframe
+                  width="100%"
+                  height="166"
+                  scrolling="no"
+                  frameBorder="no"
+                  allow="autoplay"
+                  src={scEmbed(currentTrack.url)}
                   style={{
-                    backgroundColor: isCurrentTrackLoading ? "#9CA3AF" : "#FF5500",
-                    color: "white",
-                    width: "64px",
-                    height: "64px",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "none",
-                    cursor: isCurrentTrackLoading ? "not-allowed" : "pointer",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                    transition: "background-color 0.2s",
+                    borderRadius: "4px",
                   }}
-                >
-                  {isCurrentTrackLoading ? (
-                    <Loader2 size={32} className="animate-spin" />
-                  ) : isCurrentTrackPlaying ? (
-                    <Pause size={32} fill="currentColor" />
-                  ) : (
-                    <Play size={32} fill="currentColor" className="ml-1" />
-                  )}
-                </button>
-
-                {/* Time Display with proper spacing */}
-                {isCurrentTrackPlaying && !isCurrentTrackLoading && (
-                  <div
-                    style={{
-                      color: "#6B7280",
-                      fontFamily: "monospace",
-                      fontSize: "14px",
-                      marginTop: "8px" /* Added spacing */,
-                    }}
-                  >
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </div>
-                )}
-
-                {/* Loading indicator */}
-                {isCurrentTrackLoading && (
-                  <p style={{ fontSize: "0.875rem", color: "#6B7280", margin: 0 }}>Loading track...</p>
-                )}
-
-                <div
-                  className="flex items-center gap-2 text-xs text-gray-500"
-                  style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#6B7280" }}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full bg-[#FF5500]"
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      backgroundColor: "#FF5500",
-                      display: "inline-block",
-                    }}
-                  ></span>
-                  SoundCloud
+                />
+                <div style={{ marginTop: "12px", textAlign: "center" }}>
+                  <div style={{ fontWeight: "bold", fontSize: "16px" }}>{currentTrack.title}</div>
+                  <div style={{ color: "#666", fontSize: "14px" }}>by {currentTrack.artist}</div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {!currentTrack && (
+              <div
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "4px",
+                  padding: "40px 16px",
+                  marginBottom: "16px",
+                  textAlign: "center",
+                  color: "#999",
+                }}
+              >
+                Click "Shuffle" to discover a track!
+              </div>
+            )}
 
             <div
               style={{
@@ -1779,7 +1703,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               }}
             >
               <button
-                onClick={shuffleTrack}
+                onClick={handleShuffle}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1804,7 +1728,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                 Shuffle
               </button>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   borderRadius: "0.375rem",
                   backgroundColor: "#6B7280",
