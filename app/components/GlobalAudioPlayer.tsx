@@ -109,20 +109,18 @@ export default function GlobalAudioPlayer() {
 
   return (
     <div
-      className="sc-audio-wrapper"
       aria-hidden="true"
       style={{
         position: "fixed",
-        right: 0,
-        bottom: 0,
+        right: "-500px", // Position just off the right edge
+        bottom: "0px",
         width: "400px",
         height: "166px",
-        overflow: "hidden",
+        overflow: "visible", // CRITICAL: must be visible for events to fire
         pointerEvents: "none",
         zIndex: -9999,
-        opacity: 0.01,
+        opacity: 1, // Full opacity - hidden via position only
         visibility: "visible",
-        clipPath: "inset(100%)",
       }}
     >
       <ReactPlayer
@@ -131,8 +129,8 @@ export default function GlobalAudioPlayer() {
         url={currentTrack.url}
         playing={isPlaying}
         volume={1}
-        width="100%"
-        height="100%"
+        width="400px"
+        height="166px"
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}

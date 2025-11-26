@@ -397,39 +397,26 @@ html {
 }
 
 /* Fixed positioning strategy - keep iframe ON-SCREEN to prevent browser throttling */
-/* Position at bottom-right corner, on-screen but visually clipped/hidden */
+/* Remove clip-path which breaks iframe initialization, use transform to move off-screen instead */
 .sc-audio-wrapper {
   position: fixed !important;
-  right: 0 !important;
+  right: -500px !important; /* Just off the right edge of viewport */
   bottom: 0 !important;
   width: 400px !important;
   height: 166px !important;
-  overflow: hidden !important;
+  overflow: visible !important; /* Must be visible for SoundCloud events */
   pointer-events: none !important;
   z-index: -9999 !important;
-  opacity: 0.01 !important; /* Near-invisible but NOT zero (zero triggers throttling) */
+  opacity: 1 !important; /* Full opacity - we're hiding via position */
   visibility: visible !important;
-  clip-path: inset(100%) !important; /* Visually clips everything but keeps it "rendered" */
+  /* NO clip-path - it breaks iframe initialization */
 }
 
-/* Hide all visual elements from SoundCloud that leak out as canvases */
-.sc-audio-wrapper canvas,
-.sc-audio-wrapper iframe canvas,
-.sc-audio-wrapper * canvas,
-canvas[class*="soundcloud"],
-canvas[id*="soundcloud"] {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  left: -9999px !important;
-}
-
-/* Let iframe fill the wrapper's 400 × 166 area */
+/* Remove aggressive canvas hiding - let iframe work naturally */
+/* Hide visual leaks by positioning container off-screen */
 .sc-audio-wrapper iframe {
-  width: 100% !important;
-  height: 100% !important;
+  width: 400px !important;
+  height: 166px !important;
   border: none !important;
 }
 
