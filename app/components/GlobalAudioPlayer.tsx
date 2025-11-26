@@ -34,11 +34,8 @@ export default function GlobalAudioPlayer() {
         return
       }
 
-      console.log("[v0] Player error:", error, "Track:", currentTrack?.url)
-
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++
-        console.log("[v0] Retrying...", retryCountRef.current, "/", maxRetries)
       } else {
         const errorMessage =
           "Unable to play this track. It may be unavailable, private, or region-restricted. Try shuffling for another track."
@@ -46,17 +43,15 @@ export default function GlobalAudioPlayer() {
         setLoading(false)
       }
     },
-    [setError, setLoading, currentTrack?.url],
+    [setError, setLoading],
   )
 
   const handleReady = useCallback(() => {
-    console.log("[v0] Player ready")
     setLoading(false)
 
     if (playerRef.current) {
       try {
         const d = playerRef.current.getDuration?.()
-        console.log("[v0] Duration on ready:", d)
         if (d && d !== Number.POSITIVE_INFINITY && !isNaN(d) && d > 0) {
           setDuration(d)
         }
@@ -67,7 +62,6 @@ export default function GlobalAudioPlayer() {
   }, [setDuration, setLoading])
 
   const handleStart = useCallback(() => {
-    console.log("[v0] Player started")
     setLoading(false)
     retryCountRef.current = 0
   }, [setLoading])
@@ -100,12 +94,8 @@ export default function GlobalAudioPlayer() {
     return null
   }
 
-  // - Use CSS class "sc-player-wrapper" as primary (defined in globals.css with !important)
-  // - Also apply inline styles as fallback in case Tailwind purges the class
-  // - Position within viewport at bottom-right (not off-screen, which browsers throttle)
-  // - Use transform: scale(0.01) to shrink visually while maintaining full internal dimensions
-  // - Keep opacity: 0.01 (not 0) so browser doesn't throttle the iframe
-  // - overflow: visible allows iframe to initialize and fire events properly
+  // at full internal size (300x150) while visually shrinking it. This prevents
+  // browser throttling that occurs with tiny/hidden iframes.
   return (
     <div
       className="sc-player-wrapper"
