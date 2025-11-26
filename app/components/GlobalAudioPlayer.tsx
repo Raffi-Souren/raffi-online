@@ -16,7 +16,6 @@ export default function GlobalAudioPlayer() {
 
   useEffect(() => {
     setMounted(true)
-
     return () => {
       isUnmountingRef.current = true
     }
@@ -75,10 +74,6 @@ export default function GlobalAudioPlayer() {
 
   const handleProgress = useCallback(
     (progress: { playedSeconds: number }) => {
-      if (progress.playedSeconds < 3) {
-        console.log("[v0] Progress:", progress.playedSeconds)
-      }
-
       if (progress.playedSeconds !== undefined && !isNaN(progress.playedSeconds) && progress.playedSeconds >= 0) {
         setCurrentTime(progress.playedSeconds)
       }
@@ -90,7 +85,7 @@ export default function GlobalAudioPlayer() {
             setDuration(d)
           }
         } catch (e) {
-          // Silently fail - duration will be retrieved later
+          // Silently fail
         }
       }
     },
@@ -101,26 +96,31 @@ export default function GlobalAudioPlayer() {
     nextTrack()
   }, [nextTrack])
 
-  console.log("[v0] GlobalAudioPlayer render - mounted:", mounted, "track:", currentTrack?.url, "playing:", isPlaying)
-
   if (!mounted || !currentTrack?.url) {
     return null
   }
 
+  // - Position at bottom-right corner WITHIN viewport (not off-screen)
+  // - Use transform: scale(0.01) instead of width/height to shrink
+  // - Keep opacity at 0.01 (not 0) so browser doesn't throttle
+  // - overflow: visible to allow iframe to initialize properly
+  // This ensures the SoundCloud widget is "visible" to the browser
+  // and doesn't get throttled in production builds
   return (
     <div
       aria-hidden="true"
       style={{
         position: "fixed",
-        right: "-500px", // Position just off the right edge
-        bottom: "0px",
-        width: "400px",
-        height: "166px",
-        overflow: "visible", // CRITICAL: must be visible for events to fire
+        bottom: "10px",
+        right: "10px",
+        width: "300px",
+        height: "150px",
+        transform: "scale(0.01)",
+        transformOrigin: "bottom right",
+        opacity: 0.01,
         pointerEvents: "none",
-        zIndex: -9999,
-        opacity: 1, // Full opacity - hidden via position only
-        visibility: "visible",
+        zIndex: -1,
+        overflow: "visible",
       }}
     >
       <ReactPlayer
@@ -129,13 +129,11 @@ export default function GlobalAudioPlayer() {
         url={currentTrack.url}
         playing={isPlaying}
         volume={1}
-        width="400px"
-        height="166px"
+        width="100%"
+        height="100%"
         progressInterval={500}
         onReady={handleReady}
         onStart={handleStart}
-        onPlay={() => console.log("[v0] onPlay fired")}
-        onPause={() => console.log("[v0] onPause fired")}
         onProgress={handleProgress}
         onEnded={handleEnded}
         onError={handleError}

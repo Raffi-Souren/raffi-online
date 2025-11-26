@@ -4,6 +4,30 @@
 
 /* Custom CSS for Windows XP aesthetic and Mario question block */
 
+/* Add critical production fix for SoundCloud player
+   The player needs to be "visible" to the browser (not throttled)
+   Using transform: scale() preserves internal iframe dimensions
+   while making it effectively invisible */
+.sc-player-wrapper {
+  position: fixed !important;
+  bottom: 10px !important;
+  right: 10px !important;
+  width: 300px !important;
+  height: 150px !important;
+  transform: scale(0.01) !important;
+  transform-origin: bottom right !important;
+  opacity: 0.01 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+  overflow: visible !important;
+}
+
+/* Ensure SoundCloud iframe doesn't cause visual issues */
+.sc-player-wrapper iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* Mario Question Block Styles */
 .mario-box {
   width: 48px;
@@ -394,37 +418,6 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #357abd;
-}
-
-/* Fixed positioning strategy - keep iframe ON-SCREEN to prevent browser throttling */
-/* Remove clip-path which breaks iframe initialization, use transform to move off-screen instead */
-.sc-audio-wrapper {
-  position: fixed !important;
-  right: -500px !important; /* Just off the right edge of viewport */
-  bottom: 0 !important;
-  width: 400px !important;
-  height: 166px !important;
-  overflow: visible !important; /* Must be visible for SoundCloud events */
-  pointer-events: none !important;
-  z-index: -9999 !important;
-  opacity: 1 !important; /* Full opacity - we're hiding via position */
-  visibility: visible !important;
-  /* NO clip-path - it breaks iframe initialization */
-}
-
-/* Remove aggressive canvas hiding - let iframe work naturally */
-/* Hide visual leaks by positioning container off-screen */
-.sc-audio-wrapper iframe {
-  width: 400px !important;
-  height: 166px !important;
-  border: none !important;
-}
-
-/* Prevent theme resets from causing visible blocks */
-.sc-audio-wrapper,
-.sc-audio-wrapper * {
-  margin: 0 !important;
-  padding: 0 !important;
 }
 
 /* Ensure modal scrolling works in production */
