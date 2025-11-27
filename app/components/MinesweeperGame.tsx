@@ -203,7 +203,7 @@ export default function MinesweeperGame() {
 
   const getCellStyle = (cell: Cell) => {
     let baseStyle =
-      "w-6 h-6 flex items-center justify-center border border-gray-400 text-xs font-bold cursor-pointer select-none min-h-[24px] "
+      "flex items-center justify-center border border-gray-400 text-xs font-bold cursor-pointer select-none "
 
     if (cell.state === "hidden") {
       baseStyle += "bg-gray-300 hover:bg-gray-200 active:bg-gray-400 "
@@ -243,12 +243,25 @@ export default function MinesweeperGame() {
         </button>
       </div>
 
-      <div className="grid grid-cols-10 gap-0 w-fit mx-auto border-2 border-gray-600 max-w-full overflow-auto">
+      <div
+        className="w-fit mx-auto border-2 border-gray-600"
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${GRID_SIZE}, 32px)`,
+          gap: 0,
+        }}
+      >
         {grid.map((row, x) =>
           row.map((cell, y) => (
             <button
               key={`${x}-${y}`}
               className={getCellStyle(cell)}
+              style={{
+                width: "32px",
+                height: "32px",
+                minWidth: "32px",
+                minHeight: "32px",
+              }}
               onClick={() => handleCellClick(x, y)}
               onContextMenu={(e) => handleCellRightClick(e, x, y)}
               onTouchStart={handleTouchStart}

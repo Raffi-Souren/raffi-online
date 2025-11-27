@@ -49,10 +49,11 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         alignItems: "center",
         paddingLeft: "8px",
         paddingRight: "8px",
-        justifyContent: "space-between", // Force flexbox to justify content to space-between instead of flex-start
+        justifyContent: "space-between",
+        overflow: "hidden", // Added overflow hidden to prevent content from overflowing
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, overflow: "hidden" }}>
         <button
           onClick={onStartClick}
           className="flex items-center gap-2 px-2 py-1 rounded-r-lg rounded-tl-lg rounded-bl-lg transition-all active:translate-y-px hover:brightness-110"
@@ -234,6 +235,8 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
           color: "white",
           fontSize: "12px",
           flexShrink: 0,
+          marginLeft: "8px",
+          whiteSpace: "nowrap",
         }}
         suppressHydrationWarning
       >
