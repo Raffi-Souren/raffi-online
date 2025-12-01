@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@neondatabase/serverless": "latest",
     "@pinecone-database/pinecone": "latest",
     "@radix-ui/react-slot": "latest",
     "class-variance-authority": "^0.7.1",

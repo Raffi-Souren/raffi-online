@@ -6,8 +6,14 @@ export default function DoomGame() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 p-4">
-      <div className="w-full max-w-[600px] aspect-video relative bg-black rounded-lg overflow-hidden border-2 border-gray-700 shadow-lg">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 p-2 sm:p-4">
+      <div
+        className="w-full max-w-[600px] relative bg-black rounded-lg overflow-hidden border-2 border-gray-700 shadow-lg"
+        style={{
+          aspectRatio: "16/9",
+          maxHeight: "60vh",
+        }}
+      >
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center text-green-500 font-mono">
             Loading DOOM Captcha...
@@ -23,8 +29,8 @@ export default function DoomGame() {
           title="DOOM Captcha"
         />
       </div>
-      <div className="mt-4 text-center">
-        <p className="text-gray-400 text-sm font-mono mb-2">Prove you are human by slaying demons.</p>
+      <div className="mt-2 sm:mt-4 text-center">
+        <p className="text-gray-400 text-xs sm:text-sm font-mono mb-2">Prove you are human by slaying demons.</p>
         <div className="text-xs text-gray-500">
           Credit:{" "}
           <a

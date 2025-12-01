@@ -48,7 +48,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         display: "flex",
         alignItems: "center",
         paddingLeft: "8px",
-        paddingRight: "8px",
+        paddingRight: "12px",
         justifyContent: "space-between",
         overflow: "hidden", // Added overflow hidden to prevent content from overflowing
       }}
@@ -237,11 +237,13 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
           flexShrink: 0,
           marginLeft: "8px",
           whiteSpace: "nowrap",
+          minWidth: "90px",
+          justifyContent: "center",
         }}
         suppressHydrationWarning
       >
         <span className="mr-2">🔈</span>
-        {currentTime}
+        <span style={{ minWidth: "60px", textAlign: "center" }}>{currentTime}</span>
       </div>
     </div>
   )
