@@ -7,6 +7,7 @@ import ParachuteGame from "./ParachuteGame"
 import Brickbreaker from "./Brickbreaker"
 import MinesweeperGame from "./MinesweeperGame"
 import DoomGame from "./DoomGame"
+import GTAViceCity from "./GTAViceCity"
 
 interface Game {
   id: string
@@ -56,6 +57,22 @@ const RETRO_GAMES: Game[] = [
     available: true,
   },
   {
+    id: "gta-vice-city",
+    name: "GTA: Vice City",
+    device: "DOS Browser",
+    description: "Open-world crime action in 1980s Miami",
+    icon: "🏝️",
+    available: true,
+  },
+  {
+    id: "doom",
+    name: "DOOM Captcha",
+    device: "Vercel Edge",
+    description: "Prove you're human by slaying demons",
+    icon: "😈",
+    available: true,
+  },
+  {
     id: "tetris",
     name: "Tetris",
     device: "Game Boy",
@@ -70,14 +87,6 @@ const RETRO_GAMES: Game[] = [
     description: "The original arcade tennis game",
     icon: "🏓",
     available: false,
-  },
-  {
-    id: "doom",
-    name: "DOOM Captcha",
-    device: "Vercel Edge",
-    description: "Prove you're human by slaying demons",
-    icon: "😈",
-    available: true,
   },
   {
     id: "solitaire",
@@ -104,6 +113,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
       parachute: ParachuteGame,
       brickbreaker: Brickbreaker,
       minesweeper: MinesweeperGame,
+      "gta-vice-city": GTAViceCity,
     }[activeGame]
 
     if (GameComponent) {
@@ -207,7 +217,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                     </h3>
                     <span
                       className="text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded whitespace-nowrap"
-                      style={{ color: "#1E40AF", backgroundColor: "#DBEAFE" }}
+                      style={{ color: "#1E40AF", backgroundColor: "#DBEAFE", borderColor: "#A7F3D0" }}
                     >
                       {game.device}
                     </span>

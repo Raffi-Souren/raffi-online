@@ -9,15 +9,16 @@
     "start": "next start"
   },
   "dependencies": {
-    "@neondatabase/serverless": "latest",
+    "@neondatabase/serverless": "1.0.2",
     "@pinecone-database/pinecone": "latest",
     "@radix-ui/react-slot": "latest",
+    "bufferutil": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "csv-parse": "latest",
     "lucide-react": "^0.454.0",
-    "next": "14.0.0",
-    "next-themes": "latest",
+    "next": "14.2.35",
+    "next-themes": "0.4.6",
     "node-fetch": "latest",
     "openai": "latest",
     "react": "^18",
@@ -26,6 +27,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "three": "latest",
+    "utf-8-validate": "latest",
     "ws": "latest",
     "zod": "latest"
   },
