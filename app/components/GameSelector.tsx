@@ -160,7 +160,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
 
   return (
     <WindowShell title="RETRO GAMES" onClose={onClose}>
-      <div className="space-y-4 p-1 sm:p-0 overflow-x-hidden">
+      <div className="space-y-4 overflow-x-hidden">
         {/* Header */}
         <div className="text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2" style={{ color: "#111827" }}>
@@ -183,7 +183,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
               style={{ color: "#111827" }}
             />
 
-            <div className="flex gap-2 flex-wrap overflow-x-auto pb-1 -mx-1 px-1">
+            <div className="flex gap-2 flex-wrap pb-1">
               {devices.map((device) => (
                 <button
                   key={device}
@@ -217,7 +217,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                 key={game.id}
                 onClick={() => handleGameClick(game.id)}
                 className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
               >
                 <div className="text-xl sm:text-2xl flex-shrink-0">{game.icon}</div>
                 <div className="flex-1 min-w-0">
@@ -232,13 +232,19 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                       {game.device}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600 truncate" style={{ color: "#4B5563" }}>
+                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-1" style={{ color: "#4B5563" }}>
                     {game.description}
                   </p>
                 </div>
                 <div
-                  className="text-green-600 text-xs sm:text-sm font-bold px-2 sm:px-3 py-1 rounded border border-green-200 bg-green-50 flex-shrink-0"
-                  style={{ color: "#059669", backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }}
+                  className="text-green-600 text-xs font-bold px-2 py-1 rounded border border-green-200 bg-green-50 flex-shrink-0"
+                  style={{
+                    color: "#059669",
+                    backgroundColor: "#ECFDF5",
+                    borderColor: "#A7F3D0",
+                    minWidth: "45px",
+                    textAlign: "center",
+                  }}
                 >
                   PLAY
                 </div>
@@ -268,7 +274,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                 <div
                   key={game.id}
                   className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 opacity-75"
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
                 >
                   <div className="text-xl sm:text-2xl grayscale flex-shrink-0">{game.icon}</div>
                   <div className="flex-1 min-w-0">
@@ -283,13 +289,13 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
                         {game.device}
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-500 truncate" style={{ color: "#6B7280" }}>
+                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1" style={{ color: "#6B7280" }}>
                       {game.description}
                     </p>
                   </div>
                   <div
-                    className="text-orange-500 text-xs sm:text-sm font-semibold px-2 flex-shrink-0"
-                    style={{ color: "#F97316" }}
+                    className="text-orange-500 text-xs font-semibold px-2 flex-shrink-0"
+                    style={{ color: "#F97316", minWidth: "45px", textAlign: "center" }}
                   >
                     SOON
                   </div>
