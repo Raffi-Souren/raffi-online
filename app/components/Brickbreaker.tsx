@@ -11,18 +11,18 @@ const getCanvasDimensions = () => {
   if (typeof window !== "undefined") {
     const isMobile = window.innerWidth < 640
     return {
-      width: isMobile ? Math.min(window.innerWidth - 32, 320) : 400,
-      height: isMobile ? Math.min(window.innerWidth - 32, 320) * 1.25 : 500,
+      width: isMobile ? Math.min(window.innerWidth - 32, 340) : 380,
+      height: isMobile ? Math.min(window.innerWidth - 32, 340) * 1.6 : 600,
     }
   }
-  return { width: 400, height: 500 }
+  return { width: 380, height: 600 }
 }
 
-const PADDLE_WIDTH_RATIO = 0.18
-const PADDLE_HEIGHT = 12
-const BALL_RADIUS = 6
-const BRICK_COLUMNS = 8
-const BRICK_PADDING = 3
+const PADDLE_WIDTH_RATIO = 0.2
+const PADDLE_HEIGHT = 10
+const BALL_RADIUS = 5
+const BRICK_COLUMNS = 10
+const BRICK_PADDING = 2
 
 interface Brick {
   x: number
@@ -80,15 +80,15 @@ export default function Brickbreaker() {
     (currentLevel: number) => {
       const bricks: Brick[][] = []
       const config = getLevelConfig(currentLevel)
-      const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#FF8C00", "#9370DB"]
+      const colors = ["#FF0000", "#FF8800", "#FFFF00", "#00FF00", "#0088FF", "#0000FF", "#8800FF", "#FF00FF"]
       const BRICK_WIDTH = (CANVAS_WIDTH - (BRICK_COLUMNS + 1) * BRICK_PADDING) / BRICK_COLUMNS
 
       for (let c = 0; c < BRICK_COLUMNS; c++) {
         bricks[c] = []
         for (let r = 0; r < config.rows; r++) {
           const brickX = c * (BRICK_WIDTH + BRICK_PADDING) + BRICK_PADDING
-          const brickY = r * (BRICK_HEIGHT + BRICK_PADDING) + 50
-          const hitsRequired = r < config.multiHitRows ? 2 + Math.floor(currentLevel / 4) : 1
+          const brickY = r * (BRICK_HEIGHT + BRICK_PADDING) + 60
+          const hitsRequired = r < 2 && currentLevel > 3 ? 2 : 1
           bricks[c][r] = {
             x: brickX,
             y: brickY,
@@ -96,7 +96,7 @@ export default function Brickbreaker() {
             height: BRICK_HEIGHT,
             status: 1,
             color: colors[r % colors.length],
-            points: (config.rows - r) * 10 * currentLevel,
+            points: (config.rows - r) * 10,
             hits: hitsRequired,
             maxHits: hitsRequired,
           }
@@ -251,34 +251,20 @@ export default function Brickbreaker() {
     const drawBall = () => {
       ctx.beginPath()
       ctx.arc(gameState.ballX, gameState.ballY, BALL_RADIUS, 0, Math.PI * 2)
-      const gradient = ctx.createRadialGradient(
-        gameState.ballX - 2,
-        gameState.ballY - 2,
-        0,
-        gameState.ballX,
-        gameState.ballY,
-        BALL_RADIUS,
-      )
-      gradient.addColorStop(0, "#FFFFFF")
-      gradient.addColorStop(1, "#CCCCCC")
-      ctx.fillStyle = gradient
+      ctx.fillStyle = "#FFFFFF"
       ctx.fill()
+      ctx.strokeStyle = "#CCCCCC"
+      ctx.lineWidth = 1
+      ctx.stroke()
       ctx.closePath()
     }
 
     const drawPaddle = () => {
-      const gradient = ctx.createLinearGradient(
-        gameState.paddleX,
-        CANVAS_HEIGHT - PADDLE_HEIGHT - 10,
-        gameState.paddleX,
-        CANVAS_HEIGHT - 10,
-      )
-      gradient.addColorStop(0, "#4ECDC4")
-      gradient.addColorStop(1, "#2E8B7E")
-      ctx.fillStyle = gradient
-      ctx.beginPath()
-      ctx.roundRect(gameState.paddleX, CANVAS_HEIGHT - PADDLE_HEIGHT - 10, PADDLE_WIDTH, PADDLE_HEIGHT, 4)
-      ctx.fill()
+      ctx.fillStyle = "#00AAFF"
+      ctx.fillRect(gameState.paddleX, CANVAS_HEIGHT - PADDLE_HEIGHT - 8, PADDLE_WIDTH, PADDLE_HEIGHT)
+      ctx.strokeStyle = "#0088CC"
+      ctx.lineWidth = 1
+      ctx.strokeRect(gameState.paddleX, CANVAS_HEIGHT - PADDLE_HEIGHT - 8, PADDLE_WIDTH, PADDLE_HEIGHT)
     }
 
     const drawBricks = () => {
@@ -286,18 +272,27 @@ export default function Brickbreaker() {
         for (let r = 0; r < gameState.bricks[c]?.length; r++) {
           const brick = gameState.bricks[c][r]
           if (brick.status === 1) {
-            const gradient = ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height)
-            gradient.addColorStop(0, brick.color)
-            gradient.addColorStop(1, brick.color + "99")
-            ctx.fillStyle = gradient
+            ctx.fillStyle = brick.color
+            ctx.fillRect(brick.x, brick.y, brick.width, brick.height)
+
+            // Border for definition
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.3)"
+            ctx.lineWidth = 1
+            ctx.strokeRect(brick.x, brick.y, brick.width, brick.height)
+
+            // Highlight for 3D effect
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
+            ctx.lineWidth = 1
             ctx.beginPath()
-            ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 3)
-            ctx.fill()
+            ctx.moveTo(brick.x, brick.y + brick.height)
+            ctx.lineTo(brick.x, brick.y)
+            ctx.lineTo(brick.x + brick.width, brick.y)
+            ctx.stroke()
 
             // Show hit count for multi-hit bricks
             if (brick.maxHits > 1) {
-              ctx.fillStyle = "#FFFFFF"
-              ctx.font = `bold ${Math.floor(BRICK_HEIGHT * 0.7)}px Arial`
+              ctx.fillStyle = "#000000"
+              ctx.font = `bold ${Math.floor(BRICK_HEIGHT * 0.6)}px Arial`
               ctx.textAlign = "center"
               ctx.textBaseline = "middle"
               ctx.fillText(brick.hits.toString(), brick.x + brick.width / 2, brick.y + brick.height / 2)
@@ -373,11 +368,7 @@ export default function Brickbreaker() {
     const draw = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-      // Background
-      const bgGradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT)
-      bgGradient.addColorStop(0, "#1a1a2e")
-      bgGradient.addColorStop(1, "#16213e")
-      ctx.fillStyle = bgGradient
+      ctx.fillStyle = "#000000"
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
       drawBricks()
@@ -395,7 +386,7 @@ export default function Brickbreaker() {
       }
       if (gameState.ballY + gameState.ballDY < BALL_RADIUS) {
         gameState.ballDY = -gameState.ballDY
-      } else if (gameState.ballY + gameState.ballDY > CANVAS_HEIGHT - BALL_RADIUS - 10) {
+      } else if (gameState.ballY + gameState.ballDY > CANVAS_HEIGHT - BALL_RADIUS - 8) {
         if (gameState.ballX > gameState.paddleX && gameState.ballX < gameState.paddleX + PADDLE_WIDTH) {
           const hitPoint = (gameState.ballX - gameState.paddleX) / PADDLE_WIDTH
           const angle = (hitPoint - 0.5) * Math.PI * 0.4
@@ -424,17 +415,16 @@ export default function Brickbreaker() {
       gameState.ballX += gameState.ballDX
       gameState.ballY += gameState.ballDY
 
-      // HUD
       ctx.fillStyle = "#FFFFFF"
-      ctx.font = `bold ${Math.floor(CANVAS_WIDTH * 0.035)}px Arial`
+      ctx.font = `${Math.floor(CANVAS_WIDTH * 0.04)}px monospace`
       ctx.textAlign = "left"
-      ctx.fillText(`Score: ${score}`, 8, 20)
-      ctx.fillText(`Lives: ${"❤️".repeat(lives)}`, 8, 40)
+      ctx.fillText(`SCORE: ${score}`, 8, 25)
+      ctx.fillText(`LIVES: ${lives}`, 8, 45)
       ctx.textAlign = "right"
-      ctx.fillText(`Level ${level}`, CANVAS_WIDTH - 8, 20)
+      ctx.fillText(`LEVEL ${level}`, CANVAS_WIDTH - 8, 25)
       if (combo > 1) {
-        ctx.fillStyle = "#FFD700"
-        ctx.fillText(`${combo}x Combo!`, CANVAS_WIDTH - 8, 40)
+        ctx.fillStyle = "#FFFF00"
+        ctx.fillText(`COMBO x${combo}`, CANVAS_WIDTH - 8, 45)
       }
 
       if (gameView === "playing") {
