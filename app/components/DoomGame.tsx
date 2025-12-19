@@ -1,47 +1,47 @@
 "use client"
 
-import { useState } from "react"
-
 export default function DoomGame() {
-  const [isLoaded, setIsLoaded] = useState(false)
-
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 p-2 sm:p-4">
-      <div
-        className="w-full max-w-[600px] relative bg-black rounded-lg overflow-hidden border-2 border-gray-700 shadow-lg"
-        style={{
-          aspectRatio: "16/9",
-          maxHeight: "60vh",
-        }}
-      >
-        {!isLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center text-green-500 font-mono">
-            Loading DOOM Captcha...
-          </div>
-        )}
-        <iframe
-          src="https://doom-captcha.vercel.app/"
-          className="w-full h-full border-0"
-          onLoad={() => setIsLoaded(true)}
-          allow="accelerometer; autoplay; clipboard-read; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture"
-          allowFullScreen
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock"
-          title="DOOM Captcha"
-        />
-      </div>
-      <div className="mt-2 sm:mt-4 text-center">
-        <p className="text-gray-400 text-xs sm:text-sm font-mono mb-2">Prove you are human by slaying demons.</p>
-        <div className="text-xs text-gray-500">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-red-950 via-gray-900 to-black p-2 sm:p-4">
+      {/* Logo/Title */}
+      <div className="mb-2 text-center">
+        <h1
+          className="text-5xl sm:text-7xl font-bold text-red-600 drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]"
+          style={{ fontFamily: "monospace" }}
+        >
+          DOOM
+        </h1>
+        <h2 className="text-2xl sm:text-3xl font-bold text-green-500">CAPTCHA</h2>
+        <p className="text-sm text-gray-400 font-mono">Prove you are human by slaying demons.</p>
+        <p className="text-xs text-gray-500 mt-1">
           Credit:{" "}
           <a
             href="https://x.com/rauchg/status/1874130110120706556"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:underline"
+            className="text-red-400 hover:underline"
           >
             Guillermo Rauch
           </a>
+        </p>
+      </div>
+
+      {/* Game Embed */}
+      <div className="w-full h-full max-w-5xl flex flex-col">
+        <div className="flex-1 relative rounded-lg overflow-hidden border-2 border-red-900 shadow-2xl">
+          <iframe
+            src="https://doom-captcha.vercel.app/"
+            className="w-full h-full"
+            style={{ minHeight: "500px" }}
+            allow="fullscreen; autoplay"
+            title="DOOM CAPTCHA - Prove you are human by slaying demons"
+          />
         </div>
+      </div>
+
+      {/* Controls Guide */}
+      <div className="mt-2 text-xs text-gray-500 text-center font-mono">
+        Use arrow keys or WASD to move, space to shoot
       </div>
     </div>
   )

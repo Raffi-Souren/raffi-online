@@ -8,6 +8,7 @@ import Brickbreaker from "./Brickbreaker"
 import MinesweeperGame from "./MinesweeperGame"
 import DoomGame from "./DoomGame"
 import GTAViceCity from "./GTAViceCity"
+import AgeOfEmpires2 from "./AgeOfEmpires2"
 
 interface Game {
   id: string
@@ -65,6 +66,14 @@ const RETRO_GAMES: Game[] = [
     available: true,
   },
   {
+    id: "age-of-empires-2",
+    name: "Age of Empires II",
+    device: "DOS Browser",
+    description: "Command medieval armies in epic RTS battles",
+    icon: "🏰",
+    available: true,
+  },
+  {
     id: "doom",
     name: "DOOM Captcha",
     device: "Vercel Edge",
@@ -114,6 +123,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
       brickbreaker: Brickbreaker,
       minesweeper: MinesweeperGame,
       "gta-vice-city": GTAViceCity,
+      "age-of-empires-2": AgeOfEmpires2,
     }[activeGame]
 
     if (GameComponent) {
