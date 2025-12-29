@@ -7,8 +7,9 @@ import ParachuteGame from "./ParachuteGame"
 import Brickbreaker from "./Brickbreaker"
 import MinesweeperGame from "./MinesweeperGame"
 import DoomGame from "./DoomGame"
-import GTAViceCity from "./GTAViceCity"
+import GTA2 from "./GTA2"
 import AgeOfEmpires2 from "./AgeOfEmpires2"
+import XMenArcade from "./XMenArcade"
 
 interface Game {
   id: string
@@ -58,11 +59,19 @@ const RETRO_GAMES: Game[] = [
     available: true,
   },
   {
-    id: "gta-vice-city",
-    name: "GTA: Vice City",
+    id: "xmen-arcade",
+    name: "X-Men: The Arcade Game",
+    device: "Arcade",
+    description: "Classic 1992 Konami beat 'em up arcade game",
+    icon: "🦸",
+    available: true,
+  },
+  {
+    id: "gta-2",
+    name: "GTA 2",
     device: "DOS Browser",
-    description: "Open-world crime action in 1980s Miami",
-    icon: "🏝️",
+    description: "Top-down crime action in a dystopian city",
+    icon: "🚗",
     available: true,
   },
   {
@@ -122,8 +131,9 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
       parachute: ParachuteGame,
       brickbreaker: Brickbreaker,
       minesweeper: MinesweeperGame,
-      "gta-vice-city": GTAViceCity,
+      "gta-2": GTA2,
       "age-of-empires-2": AgeOfEmpires2,
+      "xmen-arcade": XMenArcade,
     }[activeGame]
 
     if (GameComponent) {
