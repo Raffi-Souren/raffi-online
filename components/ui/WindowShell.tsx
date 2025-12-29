@@ -86,8 +86,8 @@ export default function WindowShell({ title, onClose, children, className = "", 
                 borderRadius: "0.25rem",
                 transition: "background-color 0.2s",
                 flexShrink: 0,
-                background: "transparent",
-                border: "none",
+                background: "rgba(255, 255, 255, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.3)",
                 cursor: "pointer",
                 color: "white",
                 display: "flex",
@@ -95,18 +95,19 @@ export default function WindowShell({ title, onClose, children, className = "", 
                 justifyContent: "center",
                 position: "relative",
                 zIndex: 102,
-                minWidth: "32px",
-                minHeight: "32px",
+                minWidth: "40px",
+                minHeight: "40px",
+                WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)"
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.3)"
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent"
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)"
               }}
               aria-label="Close window"
             >
-              <X size={20} strokeWidth={2.5} />
+              <X size={24} strokeWidth={2.5} />
             </button>
           </div>
 
