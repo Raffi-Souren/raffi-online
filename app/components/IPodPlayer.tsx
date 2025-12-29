@@ -91,7 +91,88 @@ const BADCOMPANY_MIXES: Track[] = [
   },
 ]
 
-type MenuScreen = "main" | "music" | "playlists" | "artists" | "songs" | "nowPlaying" | "settings" | "about"
+const RAFS_CRATE: Track[] = [
+  {
+    id: "yukon-x-up-dj-hunny-bee-remix",
+    title: "Yukon X Up (DJ Hunny Bee Remix)",
+    artist: "djhunnybee",
+    url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-remix",
+  },
+  {
+    id: "four-tet-insect-near-piha-beach",
+    title: "Insect Near Piha Beach",
+    artist: "Four Tet",
+    url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
+  },
+  {
+    id: "habibi-funk-beirut",
+    title: "Habibi Funk Beirut",
+    artist: "DJ Sweeterman",
+    url: "https://soundcloud.com/djsweeterman/habibi-funk-beirut",
+  },
+  {
+    id: "chopsuey",
+    title: "Chop Suey",
+    artist: "Osive",
+    url: "https://soundcloud.com/osive/chopsuey",
+  },
+  {
+    id: "gordos-dilemma",
+    title: "Gordo's Dilemma",
+    artist: "Gordo",
+    url: "https://soundcloud.com/gordoszn/gordos-dilemma",
+  },
+  {
+    id: "08-compton-state-of-mind",
+    title: "Compton State of Mind",
+    artist: "Miles Davis",
+    url: "https://soundcloud.com/miles-davis-29/08-compton-state-of-mind",
+  },
+  {
+    id: "fidde-i-wonder-yuno-hu-vision",
+    title: "I Wonder (Yuno Hu Vision)",
+    artist: "Fidde",
+    url: "https://soundcloud.com/miguelmancha/fidde-i-wonder-yuno-hu-vision",
+  },
+  {
+    id: "sango2",
+    title: "Sango2",
+    artist: "Pinche Por Vida",
+    url: "https://soundcloud.com/pincheporvida/sango2",
+  },
+  {
+    id: "dipset-x-future-i-really-mean",
+    title: "Dipset x Future - I Really Mean",
+    artist: "Sango",
+    url: "https://soundcloud.com/sangobeats/dipset-x-future-i-really-mean",
+  },
+  {
+    id: "mos-def-auditorium-2",
+    title: "Auditorium",
+    artist: "Mos Def",
+    url: "https://soundcloud.com/beaubouthillier-1/mos-def-auditorium-2",
+  },
+  {
+    id: "blemforreal",
+    title: "Blem For Real",
+    artist: "David Mackay",
+    url: "https://soundcloud.com/davidmackaymusic/blemforreal",
+  },
+  {
+    id: "tems-me-u-blk-remix",
+    title: "Me & U (BLK Remix)",
+    artist: "Tems",
+    url: "https://soundcloud.com/blkmvsic/tems-me-u-blk-remix",
+  },
+  {
+    id: "first-day-of-my-life-bright",
+    title: "First Day of My Life",
+    artist: "Mac Miller",
+    url: "https://soundcloud.com/larryfisherman/first-day-of-my-life-bright",
+  },
+]
+
+type MenuScreen = "main" | "music" | "playlists" | "badcompany" | "rafscrate" | "nowPlaying" | "settings" | "about"
 
 interface MenuItem {
   label: string
@@ -147,16 +228,26 @@ export default function IPodPlayer() {
           { label: "About", submenu: "about" },
         ]
       case "music":
-        return [
-          { label: "Playlists", submenu: "playlists" },
-          { label: "All Songs", submenu: "songs" },
-        ]
+        return [{ label: "Playlists", submenu: "playlists" }]
       case "playlists":
-        return [{ label: "BadCompany Mixes", submenu: "songs" }]
-      case "songs":
+        return [
+          { label: "BadCompany Mixes", submenu: "badcompany" },
+          { label: "RAF's Crate", submenu: "rafscrate" },
+        ]
+      case "badcompany":
         return BADCOMPANY_MIXES.map((track) => ({
           label: track.title,
           action: () => {
+            setPlaylist(BADCOMPANY_MIXES)
+            playTrack(track)
+            setCurrentScreen("nowPlaying")
+          },
+        }))
+      case "rafscrate":
+        return RAFS_CRATE.map((track) => ({
+          label: track.title,
+          action: () => {
+            setPlaylist(RAFS_CRATE)
             playTrack(track)
             setCurrentScreen("nowPlaying")
           },
@@ -168,7 +259,7 @@ export default function IPodPlayer() {
       default:
         return []
     }
-  }, [currentScreen, playTrack])
+  }, [currentScreen, playTrack, setPlaylist])
 
   const menuItems = getMenuItems()
 
@@ -269,8 +360,10 @@ export default function IPodPlayer() {
         return "Music"
       case "playlists":
         return "Playlists"
-      case "songs":
-        return "Songs"
+      case "badcompany":
+        return "BadCompany"
+      case "rafscrate":
+        return "RAF's Crate"
       case "nowPlaying":
         return "Now Playing"
       case "settings":
