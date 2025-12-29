@@ -8,6 +8,7 @@ export default function GlobalAudioPlayer() {
   const [mounted, setMounted] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const widgetRef = useRef<any>(null)
+  const widgetReadyRef = useRef(false)
 
   useEffect(() => {
     setMounted(true)
@@ -15,6 +16,8 @@ export default function GlobalAudioPlayer() {
 
   useEffect(() => {
     if (!mounted || !currentTrack?.url) return
+
+    widgetReadyRef.current = false
 
     // Load SoundCloud Widget API
     const script = document.createElement("script")
@@ -26,6 +29,7 @@ export default function GlobalAudioPlayer() {
         widgetRef.current = widget
 
         widget.bind((window as any).SC.Widget.Events.READY, () => {
+          widgetReadyRef.current = true
           setLoading(false)
 
           // Get duration
@@ -62,11 +66,16 @@ export default function GlobalAudioPlayer() {
     document.body.appendChild(script)
 
     return () => {
+      widgetReadyRef.current = false
       if (widgetRef.current) {
-        widgetRef.current.unbind((window as any).SC.Widget.Events.READY)
-        widgetRef.current.unbind((window as any).SC.Widget.Events.PLAY_PROGRESS)
-        widgetRef.current.unbind((window as any).SC.Widget.Events.FINISH)
-        widgetRef.current.unbind((window as any).SC.Widget.Events.ERROR)
+        try {
+          widgetRef.current.unbind((window as any).SC.Widget.Events.READY)
+          widgetRef.current.unbind((window as any).SC.Widget.Events.PLAY_PROGRESS)
+          widgetRef.current.unbind((window as any).SC.Widget.Events.FINISH)
+          widgetRef.current.unbind((window as any).SC.Widget.Events.ERROR)
+        } catch (e) {
+          // Ignore unbind errors
+        }
       }
       if (script.parentNode) {
         script.parentNode.removeChild(script)
@@ -75,11 +84,15 @@ export default function GlobalAudioPlayer() {
   }, [mounted, currentTrack?.url])
 
   useEffect(() => {
-    if (widgetRef.current) {
-      if (isPlaying) {
-        widgetRef.current.play()
-      } else {
-        widgetRef.current.pause()
+    if (widgetRef.current && widgetReadyRef.current) {
+      try {
+        if (isPlaying) {
+          widgetRef.current.play()
+        } else {
+          widgetRef.current.pause()
+        }
+      } catch (e) {
+        // Ignore errors if widget not ready
       }
     }
   }, [isPlaying])

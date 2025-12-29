@@ -5,6 +5,7 @@ import Image from "next/image"
 import QuestionBlock from "../components/easter/QuestionBlock"
 import DesktopIcon from "../components/ui/DesktopIcon"
 import StartMenu from "../components/ui/StartMenu"
+import DesktopContextMenu from "../components/ui/DesktopContextMenu"
 import Taskbar from "./components/Taskbar"
 import AboutWindow from "./components/AboutWindow"
 import GameSelector from "./components/GameSelector"
@@ -13,7 +14,8 @@ import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import NowPlaying from "./components/NowPlaying"
-import GlobalAudioPlayer from "./components/GlobalAudioPlayer" // Import GlobalAudioPlayer
+import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
+import IPodWindow from "./components/IPodWindow"
 import { useAudio } from "./context/AudioContext"
 
 export default function Home() {
@@ -26,6 +28,7 @@ export default function Home() {
     notes: false,
     startup: false,
     counter: false,
+    ipod: false,
   })
   const [isDesktop, setIsDesktop] = useState(false)
   const { currentTrack, isPlaying, togglePlay } = useAudio()
@@ -74,7 +77,7 @@ export default function Home() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background - behind everything */}
-      <div style={{ position: "fixed", inset: 0, zIndex: -10, height: "100vh", width: "100vw" }}>
+      <div data-desktop-bg="true" style={{ position: "fixed", inset: 0, zIndex: -10, height: "100vh", width: "100vw" }}>
         <Image
           src="/windows-bg.jpg"
           alt="Windows XP Background"
@@ -86,6 +89,9 @@ export default function Home() {
           style={{ objectFit: "cover", objectPosition: "center", width: "100%", height: "100%" }}
         />
       </div>
+
+      {/* Desktop Context Menu */}
+      <DesktopContextMenu onOpenWindow={openWindow} />
 
       {isDesktop ? (
         <div className="absolute inset-0 z-10">
@@ -104,6 +110,9 @@ export default function Home() {
           <div className="absolute bottom-32 left-8">
             <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
           </div>
+          <div className="absolute top-32 left-8">
+            <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
+          </div>
         </div>
       ) : (
         <div className="absolute inset-0 z-10 p-4 grid grid-cols-2 gap-4 content-start">
@@ -111,9 +120,8 @@ export default function Home() {
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-          <div className="col-span-2 mt-8">
-            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-          </div>
+          <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
+          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
         </div>
       )}
 
@@ -154,6 +162,7 @@ export default function Home() {
       {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
       {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
       {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
+      {openWindows.ipod && <IPodWindow isOpen={openWindows.ipod} onClose={() => closeWindow("ipod")} />}
       {openWindows.startup && (
         <UnderConstructionWindow
           isOpen={openWindows.startup}

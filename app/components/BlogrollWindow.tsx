@@ -14,25 +14,37 @@ interface BlogrollItem {
   description: string
   url: string
   category: string
+  dates?: string
+  authors?: string[]
 }
 
 const blogrollItems: BlogrollItem[] = [
   {
     id: 1,
+    title: "YesGoodMusic",
+    description:
+      "My original music blog featuring indie, electronic, and alternative discoveries from the early 2010s.",
+    url: "https://yesgoodmusic.co/",
+    category: "Music",
+    dates: "2011-2014",
+    authors: ["Anthony Porcelli", "Jason Chiu", "Nick Brakatselos", "SLGiants", "stavBroseidon"],
+  },
+  {
+    id: 2,
     title: "Poolsuite",
     description: "The ultimate summer soundtrack and lifestyle brand that captures the essence of poolside vibes.",
     url: "https://poolsuite.net/",
     category: "Music",
   },
   {
-    id: 2,
+    id: 3,
     title: "KidTakeOver",
     description: "Creative collective pushing boundaries in music, fashion, and digital culture.",
     url: "https://kidtakeover.com/",
     category: "Creative",
   },
   {
-    id: 3,
+    id: 4,
     title: "Bowery Showroom",
     description: "Curated fashion and lifestyle destination showcasing emerging and established brands.",
     url: "https://boweryshowroom.com/",
@@ -118,12 +130,22 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
             >
               <CardContent className="p-4" style={{ borderBottom: "1px solid #f3f4f6" }}>
                 <div className="flex items-start justify-between mb-2">
-                  <h3
-                    className="text-lg font-semibold group-hover:text-blue-600 transition-colors"
-                    style={{ color: "#111827" }}
-                  >
-                    {item.title}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3
+                      className="text-lg font-semibold group-hover:text-blue-600 transition-colors"
+                      style={{ color: "#111827" }}
+                    >
+                      {item.title}
+                    </h3>
+                    {item.dates && (
+                      <Badge
+                        variant="outline"
+                        style={{ backgroundColor: "#fef3c7", color: "#92400e", borderColor: "#fcd34d" }}
+                      >
+                        {item.dates}
+                      </Badge>
+                    )}
+                  </div>
                   <Badge variant="secondary" style={{ backgroundColor: "#eff6ff", color: "#1d4ed8" }}>
                     {item.category}
                   </Badge>
@@ -131,6 +153,25 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
                 <p className="text-sm mb-3 leading-relaxed" style={{ color: "#4b5563" }}>
                   {item.description}
                 </p>
+                {item.authors && item.authors.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-medium mb-1" style={{ color: "#6b7280" }}>
+                      Contributors:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {item.authors.map((author, idx) => (
+                        <Badge
+                          key={idx}
+                          variant="outline"
+                          className="text-xs"
+                          style={{ backgroundColor: "#f3f4f6", color: "#374151", borderColor: "#e5e7eb" }}
+                        >
+                          {author}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <a
                   href={item.url}
                   target="_blank"
