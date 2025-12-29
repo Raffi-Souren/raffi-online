@@ -44,7 +44,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
             😎 ABOUT
           </h2>
           <p className="text-gray-700 leading-relaxed" style={{ color: "#374151" }}>
-            Field CTO and Technology Leader at IBM, helping companies build and scale AI products. Advisor at Nameless
+            Field CTO and Technology Leader at IBM, helping companies build and scale AI, automation, and infrastructure products. Advisor at Nameless
             Ventures and End of Love, co-founder of Bad Company and indify. Based in NYC, usually digging for vinyl,
             DJing at a friends function, or experimenting with new tech.
           </p>

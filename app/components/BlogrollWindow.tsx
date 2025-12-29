@@ -31,24 +31,61 @@ const blogrollItems: BlogrollItem[] = [
   },
   {
     id: 2,
+    title: "ryOS",
+    description: "A macOS-inspired web experience by Ryo Lu. Inspiration for the iPod music player on this site.",
+    url: "https://os.ryo.lu/",
+    category: "Inspiration",
+  },
+  {
+    id: 3,
+    title: "DOS.Zone",
+    description:
+      "Play classic DOS games in your browser. Home to titles like GTA 2, Age of Empires II, and other retro favorites.",
+    url: "https://dos.zone/",
+    category: "Games",
+  },
+  {
+    id: 4,
+    title: "RetroGames.cc",
+    description:
+      "Online arcade with classic games from NES, SNES, Sega, and arcade cabinets. X-Men, Street Fighter, Metal Slug, and more.",
+    url: "https://www.retrogames.cc/arcade-games/",
+    category: "Games",
+  },
+  {
+    id: 5,
     title: "Poolsuite",
     description: "The ultimate summer soundtrack and lifestyle brand that captures the essence of poolside vibes.",
     url: "https://poolsuite.net/",
     category: "Music",
   },
   {
-    id: 3,
+    id: 6,
     title: "KidTakeOver",
     description: "Creative collective pushing boundaries in music, fashion, and digital culture.",
     url: "https://kidtakeover.com/",
     category: "Creative",
   },
   {
-    id: 4,
+    id: 7,
     title: "Bowery Showroom",
     description: "Curated fashion and lifestyle destination showcasing emerging and established brands.",
     url: "https://boweryshowroom.com/",
-    category: "Venue",
+    category: "Lifestyle",
+  },
+  {
+    id: 8,
+    title: "Nameless",
+    description: "The Real-Time Fan Data Engine, studio and design collective.",
+    url: "https://nameless.nyc/",
+    category: "Creative",
+  },
+  {
+    id: 9,
+    title: "BADCO",
+    description: "My creative studio and lifestyle brand. Music, events, and bad company.",
+    url: "https://www.notgoodcompany.com/",
+    category: "Lifestyle",
   },
 ]
 
