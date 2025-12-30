@@ -40,6 +40,18 @@ const ARTICLES: Article[] = [
     platform: "substack",
   },
   {
+    version: "v12",
+    title: "Real or AI? Why Enterprise Needs Provenance-First Verification",
+    url: "https://www.linkedin.com/pulse/real-ai-why-enterprise-needs-provenance-first-raffi-khatchadourian-v5rhe/",
+    platform: "linkedin",
+  },
+  {
+    version: "v11",
+    title: "Singapore, Sovereign AI, and Shipping",
+    url: "https://www.linkedin.com/pulse/from-consumer-buzz-enterprise-adoption-v11-singapore-khatchadourian-10hae/",
+    platform: "linkedin",
+  },
+  {
     version: "v10",
     title: "When 27B Beats 400B: The Specialization Inflection (and Where Frontier Still Wins)",
     url: "https://www.linkedin.com/pulse/when-27b-beats-400b-specialization-inflection-where-khatchadourian-wicee/",
