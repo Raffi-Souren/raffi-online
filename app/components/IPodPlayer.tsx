@@ -4,6 +4,12 @@ import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useAudio, type Track } from "../context/AudioContext"
 
+interface Video {
+  id: string
+  title: string
+  youtubeId: string
+}
+
 const BADCOMPANY_MIXES: Track[] = [
   {
     id: "bc-1",
@@ -172,7 +178,42 @@ const RAFS_CRATE: Track[] = [
   },
 ]
 
-type MenuScreen = "main" | "music" | "playlists" | "badcompany" | "rafscrate" | "nowPlaying" | "settings" | "about"
+const ANALOG_DIGITAL_VIDEOS: Video[] = [
+  {
+    id: "ad-1",
+    title: "ANALOG & DIGITAL 001",
+    youtubeId: "FD9Zc_q3y6A",
+  },
+  {
+    id: "ad-2",
+    title: "ANALOG & DIGITAL 002",
+    youtubeId: "3JZ_D3ELwOQ",
+  },
+  {
+    id: "ad-3",
+    title: "ANALOG & DIGITAL 003",
+    youtubeId: "5qap5aO4i9A",
+  },
+  {
+    id: "ad-4",
+    title: "ANALOG & DIGITAL 004",
+    youtubeId: "kJQP7kiw5Fk",
+  },
+]
+
+type MenuScreen =
+  | "main"
+  | "music"
+  | "playlists"
+  | "badcompany"
+  | "rafscrate"
+  | "nowPlaying"
+  | "videos"
+  | "videoPlaylists"
+  | "analogDigital"
+  | "videoPlayer"
+  | "settings"
+  | "about"
 
 interface MenuItem {
   label: string
@@ -180,7 +221,11 @@ interface MenuItem {
   submenu?: MenuScreen
 }
 
-export default function IPodPlayer() {
+interface IPodPlayerProps {
+  onExpandVideo?: (youtubeId: string, title: string) => void
+}
+
+export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const {
     currentTrack,
     isPlaying,
@@ -197,16 +242,14 @@ export default function IPodPlayer() {
   const [currentScreen, setCurrentScreen] = useState<MenuScreen>("main")
   const [menuStack, setMenuStack] = useState<MenuScreen[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [shuffleEnabled, setShuffleEnabled] = useState(false)
+  const [repeatEnabled, setRepeatEnabled] = useState(false)
+  const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
+
   const wheelRef = useRef<HTMLDivElement>(null)
   const lastAngleRef = useRef<number | null>(null)
   const accumulatedRotationRef = useRef(0)
 
-  // Initialize playlist on mount
-  useEffect(() => {
-    setPlaylist(BADCOMPANY_MIXES)
-  }, [setPlaylist])
-
-  // Format time display
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00"
     const mins = Math.floor(seconds / 60)
@@ -214,15 +257,14 @@ export default function IPodPlayer() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Calculate progress percentage
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
-  // Get menu items for current screen
   const getMenuItems = useCallback((): MenuItem[] => {
     switch (currentScreen) {
       case "main":
         return [
           { label: "Music", submenu: "music" },
+          { label: "Videos", submenu: "videos" },
           { label: "Now Playing", submenu: "nowPlaying" },
           { label: "Settings", submenu: "settings" },
           { label: "About", submenu: "about" },
@@ -234,6 +276,18 @@ export default function IPodPlayer() {
           { label: "BadCompany Mixes", submenu: "badcompany" },
           { label: "RAF's Crate", submenu: "rafscrate" },
         ]
+      case "videos":
+        return [{ label: "Playlists", submenu: "videoPlaylists" }]
+      case "videoPlaylists":
+        return [{ label: "ANALOG & DIGITAL", submenu: "analogDigital" }]
+      case "analogDigital":
+        return ANALOG_DIGITAL_VIDEOS.map((video) => ({
+          label: video.title,
+          action: () => {
+            setCurrentVideo(video)
+            setCurrentScreen("videoPlayer")
+          },
+        }))
       case "badcompany":
         return BADCOMPANY_MIXES.map((track) => ({
           label: track.title,
@@ -253,17 +307,30 @@ export default function IPodPlayer() {
           },
         }))
       case "settings":
-        return [{ label: "Shuffle: Off" }, { label: "Repeat: Off" }, { label: "EQ: Flat" }]
+        return [
+          {
+            label: `Shuffle: ${shuffleEnabled ? "On" : "Off"}`,
+            action: () => setShuffleEnabled(!shuffleEnabled),
+          },
+          {
+            label: `Repeat: ${repeatEnabled ? "On" : "Off"}`,
+            action: () => setRepeatEnabled(!repeatEnabled),
+          },
+          { label: "EQ: Flat" },
+        ]
       case "about":
         return [{ label: "BadCompany Radio" }, { label: "notgoodcompany.com" }, { label: "v1.0" }]
       default:
         return []
     }
-  }, [currentScreen, playTrack, setPlaylist])
+  }, [currentScreen, playTrack, setPlaylist, shuffleEnabled, repeatEnabled])
 
   const menuItems = getMenuItems()
 
-  // Handle menu navigation
+  useEffect(() => {
+    setPlaylist(BADCOMPANY_MIXES)
+  }, [setPlaylist])
+
   const handleSelect = useCallback(() => {
     if (currentScreen === "nowPlaying") {
       if (isPlaying) {
@@ -271,6 +338,10 @@ export default function IPodPlayer() {
       } else {
         resumeTrack()
       }
+      return
+    }
+
+    if (currentScreen === "videoPlayer") {
       return
     }
 
@@ -293,7 +364,6 @@ export default function IPodPlayer() {
     }
   }, [menuStack])
 
-  // Click wheel rotation handler
   const handleWheelMove = useCallback(
     (clientX: number, clientY: number) => {
       if (!wheelRef.current) return
@@ -314,7 +384,7 @@ export default function IPodPlayer() {
 
         if (Math.abs(accumulatedRotationRef.current) >= 30) {
           const direction = accumulatedRotationRef.current > 0 ? 1 : -1
-          const maxIndex = currentScreen === "nowPlaying" ? 0 : menuItems.length - 1
+          const maxIndex = currentScreen === "nowPlaying" || currentScreen === "videoPlayer" ? 0 : menuItems.length - 1
 
           setSelectedIndex((prev) => {
             const newIndex = prev + direction
@@ -366,6 +436,14 @@ export default function IPodPlayer() {
         return "RAF's Crate"
       case "nowPlaying":
         return "Now Playing"
+      case "videos":
+        return "Videos"
+      case "videoPlaylists":
+        return "Playlists"
+      case "analogDigital":
+        return "ANALOG & DIGITAL"
+      case "videoPlayer":
+        return currentVideo?.title || "Video"
       case "settings":
         return "Settings"
       case "about":
@@ -387,7 +465,6 @@ export default function IPodPlayer() {
         border: "1px solid #999",
       }}
     >
-      {/* Screen bezel */}
       <div
         className="absolute"
         style={{
@@ -401,7 +478,6 @@ export default function IPodPlayer() {
           padding: "4px",
         }}
       >
-        {/* LCD Screen */}
         <div
           className="w-full h-full overflow-hidden"
           style={{
@@ -409,7 +485,6 @@ export default function IPodPlayer() {
             borderRadius: "2px",
           }}
         >
-          {/* Status bar */}
           <div
             className="flex items-center justify-between px-2 py-1"
             style={{
@@ -421,6 +496,16 @@ export default function IPodPlayer() {
               {getScreenTitle()}
             </span>
             <div className="flex items-center gap-1">
+              {shuffleEnabled && (
+                <span className="text-xs" style={{ color: "#000" }}>
+                  🔀
+                </span>
+              )}
+              {repeatEnabled && (
+                <span className="text-xs" style={{ color: "#000" }}>
+                  🔁
+                </span>
+              )}
               {isPlaying && (
                 <span className="text-xs" style={{ color: "#000" }}>
                   ▶
@@ -432,9 +517,39 @@ export default function IPodPlayer() {
             </div>
           </div>
 
-          {/* Content area */}
           <div className="p-1 h-[calc(100%-24px)] overflow-hidden">
-            {currentScreen === "nowPlaying" ? (
+            {currentScreen === "videoPlayer" && currentVideo ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <div className="w-full bg-black rounded overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${currentVideo.youtubeId}?autoplay=1&modestbranding=1&rel=0`}
+                    title={currentVideo.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+                <p className="text-xs mt-1 truncate w-full text-center" style={{ color: "#000", fontSize: "9px" }}>
+                  {currentVideo.title}
+                </p>
+                {onExpandVideo && (
+                  <button
+                    onClick={() => onExpandVideo(currentVideo.youtubeId, currentVideo.title)}
+                    className="mt-1 px-2 py-0.5 text-xs rounded"
+                    style={{
+                      background: "#3366cc",
+                      color: "#fff",
+                      fontSize: "8px",
+                      border: "1px solid #2255bb",
+                    }}
+                  >
+                    ⤢ Expand
+                  </button>
+                )}
+              </div>
+            ) : currentScreen === "nowPlaying" ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 {currentTrack ? (
                   <>
@@ -487,7 +602,7 @@ export default function IPodPlayer() {
                       No track selected
                     </p>
                     <p className="text-xs" style={{ color: "#666", fontSize: "9px" }}>
-                      Go to Music → Songs
+                      Go to Music → Playlists
                     </p>
                   </div>
                 )}
@@ -515,7 +630,6 @@ export default function IPodPlayer() {
         </div>
       </div>
 
-      {/* Click wheel */}
       <div
         ref={wheelRef}
         className="absolute cursor-pointer"
@@ -537,7 +651,6 @@ export default function IPodPlayer() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleWheelEnd}
       >
-        {/* Center button */}
         <button
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-95"
           style={{
@@ -551,7 +664,6 @@ export default function IPodPlayer() {
           onClick={handleSelect}
         />
 
-        {/* Menu button (top) */}
         <button
           className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70"
           style={{
@@ -568,7 +680,6 @@ export default function IPodPlayer() {
           MENU
         </button>
 
-        {/* Previous button (left) */}
         <button
           className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
           style={{
@@ -583,7 +694,6 @@ export default function IPodPlayer() {
           ⏮
         </button>
 
-        {/* Next button (right) */}
         <button
           className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
           style={{
@@ -598,7 +708,6 @@ export default function IPodPlayer() {
           ⏭
         </button>
 
-        {/* Play/Pause button (bottom) */}
         <button
           className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70"
           style={{
@@ -614,7 +723,6 @@ export default function IPodPlayer() {
         </button>
       </div>
 
-      {/* iPod branding */}
       <div
         className="absolute left-1/2 -translate-x-1/2 text-center"
         style={{
