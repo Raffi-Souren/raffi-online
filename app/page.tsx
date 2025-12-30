@@ -16,6 +16,8 @@ import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import NowPlaying from "./components/NowPlaying"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 import IPodWindow from "./components/IPodWindow"
+import ProjectsWindow from "./components/ProjectsWindow"
+import WindowShell from "../components/ui/WindowShell"
 import { useAudio } from "./context/AudioContext"
 
 export default function Home() {
@@ -29,6 +31,7 @@ export default function Home() {
     startup: false,
     counter: false,
     ipod: false,
+    projects: false,
   })
   const [isDesktop, setIsDesktop] = useState(false)
   const { currentTrack, isPlaying, togglePlay } = useAudio()
@@ -113,6 +116,9 @@ export default function Home() {
           <div className="absolute top-32 left-8">
             <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
           </div>
+          <div className="absolute top-32 right-8">
+            <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
+          </div>
         </div>
       ) : (
         <div className="absolute inset-0 z-10 p-4 grid grid-cols-2 gap-4 content-start">
@@ -121,6 +127,7 @@ export default function Home() {
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
           <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
+          <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
           <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
         </div>
       )}
@@ -163,6 +170,11 @@ export default function Home() {
       {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
       {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
       {openWindows.ipod && <IPodWindow isOpen={openWindows.ipod} onClose={() => closeWindow("ipod")} />}
+      {openWindows.projects && (
+        <WindowShell title="PROJECTS" onClose={() => closeWindow("projects")}>
+          <ProjectsWindow />
+        </WindowShell>
+      )}
       {openWindows.startup && (
         <UnderConstructionWindow
           isOpen={openWindows.startup}

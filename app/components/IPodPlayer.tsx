@@ -245,10 +245,13 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const [shuffleEnabled, setShuffleEnabled] = useState(false)
   const [repeatEnabled, setRepeatEnabled] = useState(false)
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true)
 
   const wheelRef = useRef<HTMLDivElement>(null)
   const lastAngleRef = useRef<number | null>(null)
   const accumulatedRotationRef = useRef(0)
+  const videoIframeRef = useRef<HTMLIFrameElement>(null)
 
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00"
@@ -281,10 +284,12 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       case "videoPlaylists":
         return [{ label: "ANALOG & DIGITAL", submenu: "analogDigital" }]
       case "analogDigital":
-        return ANALOG_DIGITAL_VIDEOS.map((video) => ({
+        return ANALOG_DIGITAL_VIDEOS.map((video, index) => ({
           label: video.title,
           action: () => {
             setCurrentVideo(video)
+            setCurrentVideoIndex(index)
+            setIsVideoPlaying(true)
             setCurrentScreen("videoPlayer")
           },
         }))
@@ -342,6 +347,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     }
 
     if (currentScreen === "videoPlayer") {
+      handleVideoPlayPause()
       return
     }
 
@@ -453,6 +459,31 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     }
   }
 
+  const handleVideoPlayPause = useCallback(() => {
+    if (videoIframeRef.current?.contentWindow) {
+      if (isVideoPlaying) {
+        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*")
+      } else {
+        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', "*")
+      }
+      setIsVideoPlaying(!isVideoPlaying)
+    }
+  }, [isVideoPlaying])
+
+  const handleNextVideo = useCallback(() => {
+    const nextIndex = (currentVideoIndex + 1) % ANALOG_DIGITAL_VIDEOS.length
+    setCurrentVideoIndex(nextIndex)
+    setCurrentVideo(ANALOG_DIGITAL_VIDEOS[nextIndex])
+    setIsVideoPlaying(true)
+  }, [currentVideoIndex])
+
+  const handlePrevVideo = useCallback(() => {
+    const prevIndex = currentVideoIndex === 0 ? ANALOG_DIGITAL_VIDEOS.length - 1 : currentVideoIndex - 1
+    setCurrentVideoIndex(prevIndex)
+    setCurrentVideo(ANALOG_DIGITAL_VIDEOS[prevIndex])
+    setIsVideoPlaying(true)
+  }, [currentVideoIndex])
+
   return (
     <div
       className="relative mx-auto select-none"
@@ -522,9 +553,10 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
               <div className="h-full flex flex-col items-center justify-center">
                 <div className="w-full bg-black rounded overflow-hidden" style={{ aspectRatio: "16/9" }}>
                   <iframe
+                    ref={videoIframeRef}
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${currentVideo.youtubeId}?autoplay=1&modestbranding=1&rel=0`}
+                    src={`https://www.youtube.com/embed/${currentVideo.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1`}
                     title={currentVideo.title}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -532,7 +564,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                   />
                 </div>
                 <p className="text-xs mt-1 truncate w-full text-center" style={{ color: "#000", fontSize: "9px" }}>
-                  {currentVideo.title}
+                  {currentVideo.title} ({currentVideoIndex + 1}/{ANALOG_DIGITAL_VIDEOS.length})
                 </p>
                 {onExpandVideo && (
                   <button
@@ -689,7 +721,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
             background: "none",
             border: "none",
           }}
-          onClick={previousTrack}
+          onClick={currentScreen === "videoPlayer" ? handlePrevVideo : previousTrack}
         >
           ⏮
         </button>
@@ -703,7 +735,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
             background: "none",
             border: "none",
           }}
-          onClick={nextTrack}
+          onClick={currentScreen === "videoPlayer" ? handleNextVideo : nextTrack}
         >
           ⏭
         </button>
@@ -717,9 +749,11 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
             background: "none",
             border: "none",
           }}
-          onClick={() => (isPlaying ? pauseTrack() : resumeTrack())}
+          onClick={
+            currentScreen === "videoPlayer" ? handleVideoPlayPause : () => (isPlaying ? pauseTrack() : resumeTrack())
+          }
         >
-          ▶❚❚
+          {currentScreen === "videoPlayer" ? (isVideoPlaying ? "❚❚" : "▶") : "▶❚❚"}
         </button>
       </div>
 
