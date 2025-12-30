@@ -187,17 +187,17 @@ const ANALOG_DIGITAL_VIDEOS: Video[] = [
   {
     id: "ad-2",
     title: "ANALOG & DIGITAL 002",
-    youtubeId: "3JZ_D3ELwOQ",
+    youtubeId: "1JfRgKDIG9c",
   },
   {
     id: "ad-3",
     title: "ANALOG & DIGITAL 003",
-    youtubeId: "5qap5aO4i9A",
+    youtubeId: "xceycOJgOlI",
   },
   {
     id: "ad-4",
     title: "ANALOG & DIGITAL 004",
-    youtubeId: "kJQP7kiw5Fk",
+    youtubeId: "H--Ohwv2j8s",
   },
 ]
 
