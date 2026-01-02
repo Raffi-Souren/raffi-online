@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
+import { Analytics } from "@vercel/analytics/next"
 import { AudioProvider } from "./context/AudioContext"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 
@@ -48,6 +49,7 @@ export default function RootLayout({
           <GlobalAudioPlayer />
           {children}
         </AudioProvider>
+        <Analytics />
       </body>
     </html>
   )

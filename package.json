@@ -12,6 +12,7 @@
     "@neondatabase/serverless": "1.0.2",
     "@pinecone-database/pinecone": "latest",
     "@radix-ui/react-slot": "latest",
+    "@vercel/analytics": "^1.6.1",
     "bufferutil": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
