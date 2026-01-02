@@ -34,6 +34,12 @@ interface PressItem {
 
 const ARTICLES: Article[] = [
   {
+    version: "v2",
+    title: "Ideas and Execution - Thoughts on IP, Patents, Trademarks",
+    url: "https://raf94.substack.com/p/ideas-and-execution-thoughts-on-ip",
+    platform: "substack",
+  },
+  {
     version: "v1",
     title: "Variables - A series bridging academic & professional",
     url: "https://open.substack.com/pub/raf94/p/variables-a-series-bridging-academic?r=1vmhm5&utm_campaign=post&utm_medium=web",
