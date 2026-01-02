@@ -83,7 +83,7 @@ const blogrollItems: BlogrollItem[] = [
   {
     id: 9,
     title: "BADCO",
-    description: "My creative studio and lifestyle brand. Music, events, and bad company.",
+    description: "Creative studio and lifestyle brand. Music, events, and bad company.",
     url: "https://www.notgoodcompany.com/",
     category: "Lifestyle",
   },

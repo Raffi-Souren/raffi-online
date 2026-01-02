@@ -29,15 +29,15 @@ export default function WindowShell({ title, onClose, children, className = "", 
       <div
         style={{
           position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
+          top: "8px",
+          left: "8px",
+          right: "8px",
+          bottom: "8px",
           zIndex: 101,
-          width: "calc(100vw - 16px)",
-          maxWidth: "1024px",
-          maxHeight: "calc(100vh - 16px)",
           display: "flex",
-          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
         }}
       >
         <div
@@ -48,11 +48,14 @@ export default function WindowShell({ title, onClose, children, className = "", 
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             display: "flex",
             flexDirection: "column",
-            height: "100%",
-            maxHeight: "calc(100vh - 16px)",
+            width: "100%",
+            maxWidth: "1024px",
+            maxHeight: "100%",
+            pointerEvents: "auto",
+            overflow: "hidden",
           }}
         >
-          {/* Blue Title Bar */}
+          {/* Blue Title Bar - sticky positioning to always show */}
           <div
             style={{
               background: "linear-gradient(to right, #2563eb, #1d4ed8)",
@@ -64,6 +67,9 @@ export default function WindowShell({ title, onClose, children, className = "", 
               borderTopLeftRadius: "0.5rem",
               borderTopRightRadius: "0.5rem",
               flexShrink: 0,
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
             }}
           >
             <h2
@@ -111,6 +117,7 @@ export default function WindowShell({ title, onClose, children, className = "", 
             </button>
           </div>
 
+          {/* Content area */}
           <div
             style={{
               flex: "1 1 auto",
