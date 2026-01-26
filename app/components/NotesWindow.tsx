@@ -13,6 +13,7 @@ interface Article {
 interface ResearchPaper {
   title: string
   url: string
+  date: string
 }
 
 interface Event {
@@ -123,22 +124,27 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
   {
     title: "Replayable Financial Agents: A Determinism-Faithfulness Assurance Harness for Tool-Using LLM Agents",
     url: "https://arxiv.org/abs/2601.15322",
+    date: "Jan 2026",
   },
   {
     title: "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows",
     url: "https://arxiv.org/abs/2511.07585",
+    date: "Nov 2025",
   },
   {
     title: "Impact of External Forces and the Digital Age on the Turkish Narrative of Armenians in Turkey's Textbooks",
     url: "https://www.academia.edu/44288138/Impact_of_External_Forces_and_the_Digital_Age_on_the_Turkish_Narrative_of_Armenians_in_Turkeys_Textbooks?source=swp_share",
+    date: "2020",
   },
   {
     title: "Ticketmaster and Live Nation Antitrust Violations",
     url: "https://drive.google.com/file/d/1ClBedYKfuRYiJU-DCmV45wRHUd2_Ier2/view?usp=sharing",
+    date: "2019",
   },
   {
     title: "The Effect of a US Recession and Macroeconomic Variables on Stock Market Performance",
     url: "https://drive.google.com/file/d/1fJcGuypNM7N-oBu6caEDm0hJlokZfihB/view?usp=sharing",
+    date: "2018",
   },
 ]
 
@@ -491,9 +497,25 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 {RESEARCH_PAPERS.map((paper, index) => (
                   <div key={index} style={{ ...cardStyle, borderLeft: "4px solid #22c55e" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <h4 style={{ fontWeight: "600", color: "#111827", flex: 1, paddingRight: "1rem" }}>
-                        {paper.title}
-                      </h4>
+                      <div style={{ flex: 1, paddingRight: "1rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.25rem" }}>
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              fontWeight: "500",
+                              color: "#6b7280",
+                              backgroundColor: "#f3f4f6",
+                              padding: "0.125rem 0.5rem",
+                              borderRadius: "0.25rem",
+                            }}
+                          >
+                            {paper.date}
+                          </span>
+                        </div>
+                        <h4 style={{ fontWeight: "600", color: "#111827" }}>
+                          {paper.title}
+                        </h4>
+                      </div>
                       <a
                         href={paper.url}
                         target="_blank"
