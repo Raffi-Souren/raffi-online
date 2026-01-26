@@ -134,17 +134,17 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
   {
     title: "Impact of External Forces and the Digital Age on the Turkish Narrative of Armenians in Turkey's Textbooks",
     url: "https://www.academia.edu/44288138/Impact_of_External_Forces_and_the_Digital_Age_on_the_Turkish_Narrative_of_Armenians_in_Turkeys_Textbooks?source=swp_share",
-    date: "2020",
+    date: "May 2017",
   },
   {
     title: "Ticketmaster and Live Nation Antitrust Violations",
     url: "https://drive.google.com/file/d/1ClBedYKfuRYiJU-DCmV45wRHUd2_Ier2/view?usp=sharing",
-    date: "2019",
+    date: "May 2017",
   },
   {
     title: "The Effect of a US Recession and Macroeconomic Variables on Stock Market Performance",
     url: "https://drive.google.com/file/d/1fJcGuypNM7N-oBu6caEDm0hJlokZfihB/view?usp=sharing",
-    date: "2018",
+    date: "Dec 2015",
   },
 ]
 
