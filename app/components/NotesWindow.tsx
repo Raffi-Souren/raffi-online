@@ -121,6 +121,10 @@ const ARTICLES: Article[] = [
 
 const RESEARCH_PAPERS: ResearchPaper[] = [
   {
+    title: "Replayable Financial Agents: A Determinism-Faithfulness Assurance Harness for Tool-Using LLM Agents",
+    url: "https://arxiv.org/abs/2601.15322",
+  },
+  {
     title: "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows",
     url: "https://arxiv.org/abs/2511.07585",
   },
