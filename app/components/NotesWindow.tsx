@@ -35,6 +35,12 @@ interface PressItem {
 
 const ARTICLES: Article[] = [
   {
+    version: "v3",
+    title: "Messaging, Infrastructure and Purpose",
+    url: "https://raf94.substack.com/p/messaging-infrastructure-and-purpose",
+    platform: "substack",
+  },
+  {
     version: "v2",
     title: "Ideas and Execution - Thoughts on IP, Patents, Trademarks",
     url: "https://raf94.substack.com/p/ideas-and-execution-thoughts-on-ip",
