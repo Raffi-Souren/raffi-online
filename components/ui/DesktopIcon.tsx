@@ -43,6 +43,7 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'}
       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
       type="button"
+      aria-label={label}
     >
       {/* Icon Container */}
       <div 

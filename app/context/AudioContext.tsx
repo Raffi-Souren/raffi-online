@@ -49,20 +49,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const playTrack = useCallback(
     (track: Track) => {
-      console.log("[AudioContext] playTrack called:", track.title, track.url)
-
       // Clear any previous errors
       setError(null)
 
       // If it's the same track, just resume
       if (currentTrack?.id === track.id) {
-        console.log("[AudioContext] Same track, resuming")
         setIsPlaying(true)
         return
       }
 
       // For a new track, set loading state
-      console.log("[AudioContext] New track, setting loading state")
       setIsLoading(true)
       setCurrentTrack(track)
       setIsPlaying(true)
@@ -73,12 +69,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   )
 
   const pauseTrack = useCallback(() => {
-    console.log("[AudioContext] pauseTrack called")
     setIsPlaying(false)
   }, [])
 
   const resumeTrack = useCallback(() => {
-    console.log("[AudioContext] resumeTrack called")
     if (currentTrack) {
       setError(null)
       setIsPlaying(true)
@@ -92,7 +86,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [currentTrack])
 
   const stopTrack = useCallback(() => {
-    console.log("[AudioContext] stopTrack called")
     setIsPlaying(false)
     setCurrentTrack(null)
     setIsLoading(false)

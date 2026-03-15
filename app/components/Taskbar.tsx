@@ -34,7 +34,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 h-10 z-[9999] bg-[#245DDA] border-t-2 border-[#3E80F1] flex items-center px-2 shadow-md select-none w-full"
+      className="shadow-md select-none"
       style={{
         position: "fixed",
         bottom: 0,
@@ -50,13 +50,14 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         paddingLeft: "8px",
         paddingRight: "12px",
         justifyContent: "space-between",
-        overflow: "hidden", // Added overflow hidden to prevent content from overflowing
+        overflow: "hidden",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, overflow: "hidden" }}>
         <button
           onClick={onStartClick}
-          className="flex items-center gap-2 px-2 py-1 rounded-r-lg rounded-tl-lg rounded-bl-lg transition-all active:translate-y-px hover:brightness-110"
+          className="rounded-r-lg rounded-tl-lg rounded-bl-lg transition-all active:translate-y-px hover:brightness-110"
+          aria-label="Start menu"
           style={{
             background: "linear-gradient(to bottom, #3E9C4D 0%, #236F30 100%)",
             boxShadow: "inset 1px 1px 0px rgba(255,255,255,0.4), 2px 2px 3px rgba(0,0,0,0.3)",
@@ -72,7 +73,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
             cursor: "pointer",
           }}
         >
-          <div className="italic font-bold text-lg not-italic drop-shadow-sm">
+          <div>
             <svg
               width="18"
               height="18"
@@ -88,7 +89,6 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
             </svg>
           </div>
           <span
-            className="text-lg italic font-bold"
             style={{
               textShadow: "0 1px 1px rgba(0,0,0,0.4)",
               fontStyle: "italic",
@@ -103,7 +103,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         </button>
 
         <div
-          className="w-[2px] h-[28px] bg-[#1846A0] mx-2 shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"
+          className="shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"
           style={{
             width: "2px",
             height: "28px",
@@ -116,11 +116,11 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
 
         {/* Quick Launch section with pinned apps (Crates, Games, About) */}
         <div
-          className="flex items-center gap-1 mr-2 px-2 border-r border-[#1846A0] shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"
+          className="shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "16px", // Increased gap to spread icons more
+            gap: "16px",
             marginRight: "8px",
             paddingRight: "8px",
             borderRight: "1px solid #1846A0",
@@ -129,7 +129,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         >
           <button
             onClick={() => onWindowClick("crates")}
-            className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
+            className="hover:bg-[#3E80F1] rounded transition-colors"
             style={{
               backgroundColor: "transparent",
               border: "none",
@@ -142,12 +142,13 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
               padding: "4px",
             }}
             title="Digging in the Crates"
+            aria-label="Digging in the Crates"
           >
             <Disc size={20} className="text-white drop-shadow-md" />
           </button>
           <button
             onClick={() => onWindowClick("games")}
-            className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
+            className="hover:bg-[#3E80F1] rounded transition-colors"
             style={{
               backgroundColor: "transparent",
               border: "none",
@@ -160,12 +161,13 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
               padding: "4px",
             }}
             title="Games"
+            aria-label="Games"
           >
             <Gamepad2 size={20} className="text-white drop-shadow-md" />
           </button>
           <button
             onClick={() => onWindowClick("about")}
-            className="p-1 hover:bg-[#3E80F1] rounded group relative transition-colors bg-transparent border-none"
+            className="hover:bg-[#3E80F1] rounded transition-colors"
             style={{
               backgroundColor: "transparent",
               border: "none",
@@ -178,6 +180,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
               padding: "4px",
             }}
             title="About"
+            aria-label="About"
           >
             <User size={20} className="text-white drop-shadow-md" />
           </button>
@@ -185,7 +188,6 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
 
         {Object.entries(openWindows).some(([, isOpen]) => isOpen) && (
           <div
-            className="flex gap-1 overflow-x-auto mr-2"
             style={{
               display: "flex",
               gap: "4px",
@@ -198,7 +200,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
               .map(([name]) => (
                 <div
                   key={name}
-                  className="px-4 py-1 bg-[#1F50B8] hover:bg-[#2860D6] text-white text-xs rounded shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] cursor-pointer transition-colors min-w-[100px] truncate border-b-2 border-[#153885]"
+                  className="hover:bg-[#2860D6] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] transition-colors"
                   style={{
                     padding: "4px 16px",
                     backgroundColor: "#1F50B8",
@@ -224,7 +226,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
 
       {/* Time display */}
       <div
-        className={`flex items-center bg-[#0F9DDE] px-3 py-1 rounded border border-[#0B76A8] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)] text-white text-xs font-sans`}
+        className="shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)] font-sans"
         style={{
           display: "flex",
           alignItems: "center",

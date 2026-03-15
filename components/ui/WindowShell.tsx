@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { type ReactNode, useEffect, useRef, useCallback } from "react"
 import { X } from "lucide-react"
 
 interface WindowShellProps {
@@ -12,6 +12,44 @@ interface WindowShellProps {
 }
 
 export default function WindowShell({ title, onClose, children, className = "", id }: WindowShellProps) {
+  const windowRef = useRef<HTMLDivElement>(null)
+
+  // Lock body scroll while window is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = originalOverflow
+    }
+  }, [])
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [onClose])
+
+  // Focus trap
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== "Tab" || !windowRef.current) return
+    const focusable = windowRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }, [])
+
   return (
     <>
       {/* Backdrop */}
@@ -41,6 +79,10 @@ export default function WindowShell({ title, onClose, children, className = "", 
         }}
       >
         <div
+          ref={windowRef}
+          onKeyDown={handleKeyDown}
+          role="dialog"
+          aria-label={title}
           style={{
             backgroundColor: "#ffffff",
             color: "#111827",

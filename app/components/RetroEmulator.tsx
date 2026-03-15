@@ -57,12 +57,8 @@ export default function RetroEmulator({ core, onClose }: RetroEmulatorProps) {
           window.EJS_gameUrl = '';
           window.EJS_gameName = 'EmulatorJS';
           window.EJS_loadStateOnStart = false;
-          window.EJS_onGameStart = function() {
-            console.log('Game started');
-          };
-          window.EJS_onLoadState = function() {
-            console.log('State loaded');
-          };
+          window.EJS_onGameStart = function() {};
+          window.EJS_onLoadState = function() {};
         `
 
         // Create loader script
@@ -72,7 +68,6 @@ export default function RetroEmulator({ core, onClose }: RetroEmulatorProps) {
         loaderScript.async = true
 
         loaderScript.onload = () => {
-          console.log("EmulatorJS loaded successfully")
           setIsLoading(false)
         }
 
@@ -113,7 +108,6 @@ export default function RetroEmulator({ core, onClose }: RetroEmulatorProps) {
       ;(window as any).EJS_gameUrl = url
       ;(window as any).EJS_gameName = file.name
 
-      console.log("ROM file loaded:", file.name)
     }
     reader.readAsArrayBuffer(file)
   }

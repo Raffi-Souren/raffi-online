@@ -1,7 +1,12 @@
 import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
 
-const sql = neon(process.env.DATABASE_URL!)
+function getSql() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set")
+  }
+  return neon(process.env.DATABASE_URL)
+}
 
 export async function GET(request: Request) {
   try {
@@ -13,6 +18,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Game name required" }, { status: 400 })
     }
 
+    const sql = getSql()
     const scores = await sql`
       SELECT player_name, score, level, created_at
       FROM game_scores
@@ -40,6 +46,7 @@ export async function POST(request: Request) {
     // Truncate player name to 50 chars
     const truncatedName = playerName.substring(0, 50)
 
+    const sql = getSql()
     const result = await sql`
       INSERT INTO game_scores (player_name, game_name, score, level)
       VALUES (${truncatedName}, ${gameName}, ${score}, ${level || 1})
