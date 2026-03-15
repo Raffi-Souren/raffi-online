@@ -34,19 +34,6 @@ export default function NowPlaying() {
         maxWidth: "320px",
       }}
     >
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
-
       <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
         <button
           onClick={previousTrack}
