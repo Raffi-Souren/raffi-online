@@ -1,5 +1,5 @@
 import { fetchLikedTrackUrls, resolveOEmbed, type Track } from "@/lib/soundcloud"
-import type { NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return Response.json(results)
+    return NextResponse.json(results)
   } catch (error) {
     console.error("Error fetching SoundCloud likes:", error)
-    return Response.json({ error: "Failed to fetch likes" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch likes" }, { status: 500 })
   }
 }
