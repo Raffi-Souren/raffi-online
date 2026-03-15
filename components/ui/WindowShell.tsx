@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { type ReactNode, useEffect } from "react"
 import { X } from "lucide-react"
 
 interface WindowShellProps {
@@ -12,6 +12,28 @@ interface WindowShellProps {
 }
 
 export default function WindowShell({ title, onClose, children, className = "", id }: WindowShellProps) {
+  // Lock body scroll while window is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+    }
+  }, [])
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose()
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [onClose])
+
   return (
     <>
       {/* Backdrop */}

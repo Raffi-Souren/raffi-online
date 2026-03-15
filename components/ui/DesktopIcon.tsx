@@ -22,6 +22,7 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
   return (
     <button
       onClick={onClick}
+      aria-label={label}
       style={{
         display: 'flex',
         flexDirection: 'column',
