@@ -87,6 +87,14 @@ const blogrollItems: BlogrollItem[] = [
     url: "https://www.notgoodcompany.com/",
     category: "Lifestyle",
   },
+  {
+    id: 10,
+    title: "Forward Thinking Observations",
+    description: "Forward-thinking observations based on field and dev reality.",
+    url: "https://observations.frwd.dev",
+    category: "Creative",
+    authors: ["Faraz Ahmad"],
+  },
 ]
 
 interface BlogrollWindowProps {
