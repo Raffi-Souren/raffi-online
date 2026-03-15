@@ -16,7 +16,7 @@ Initial Feedback:
 4. Investment Potential: Pending LLM integration`
 
     return NextResponse.json({ feedback: mockFeedback })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to process pitch' },
       { status: 500 }
