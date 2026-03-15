@@ -6,12 +6,12 @@ import { AudioProvider } from "./context/AudioContext"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://raffi-souren.vercel.app"),
+  metadataBase: new URL("https://raffi.computer"),
   title: "Raffi WW Web",
   description: "IBM CTO and entrepreneur based in NYC",
   openGraph: {
     type: "website",
-    url: "https://raffi-souren.vercel.app/",
+    url: "https://raffi.computer/",
     title: "Raffi Web",
     description: "IBM CTO and entrepreneur based in NYC",
     images: [
@@ -28,7 +28,6 @@ export const metadata: Metadata = {
     description: "IBM CTO and entrepreneur based in NYC",
     images: ["/windows-2000-background.png"],
   },
-  generator: "v0.app",
 }
 
 export default function RootLayout({

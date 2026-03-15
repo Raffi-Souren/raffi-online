@@ -14,11 +14,11 @@ interface Project {
 
 const projects: Project[] = [
   {
-    name: "raffi.online",
+    name: "raffi.computer",
     description: "This website. Windows XP vibes, retro games, iPod music player, and more.",
     github: "https://github.com/Raffi-Souren/raffi-online",
-    demo: "https://raffi-souren.vercel.app",
-    madeWith: "v0.app",
+    demo: "https://raffi.computer",
+    madeWith: "Next.js + TypeScript",
     year: "2025",
   },
   {

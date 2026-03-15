@@ -11,7 +11,7 @@ export default function SeoHead({
   title = "Raffi WW Web",
   description = "AI Architect & Technology Consultant based in New York City.",
   ogImage = "/windows-2000-background.png",
-  ogUrl = "https://raffi-souren.vercel.app/",
+  ogUrl = "https://raffi.computer/",
 }: SeoHeadProps) {
   return (
     <Head>
