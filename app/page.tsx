@@ -59,7 +59,7 @@ export default function Home() {
         const subject = "Contact from Website"
         const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}`
         window.location.href = mailtoUrl
-      } catch (error) {
+      } catch {
         alert("Email: raffi@notgoodcompany.com")
       }
     } else if (action === "startup") {
