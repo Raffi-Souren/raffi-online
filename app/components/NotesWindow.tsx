@@ -14,6 +14,7 @@ interface ResearchPaper {
   title: string
   url: string
   date: string
+  coAuthors?: string
 }
 
 interface Event {
@@ -34,6 +35,12 @@ interface PressItem {
 }
 
 const ARTICLES: Article[] = [
+  {
+    version: "v4",
+    title: "Closed Gates, Open Weights",
+    url: "https://open.substack.com/pub/raf94/p/variables-v4-closed-gates-open-weights",
+    platform: "substack",
+  },
   {
     version: "v3",
     title: "Messaging, Infrastructure and Purpose",
@@ -127,6 +134,12 @@ const ARTICLES: Article[] = [
 ]
 
 const RESEARCH_PAPERS: ResearchPaper[] = [
+  {
+    title: "Forecasting Future Language: Context Design for Mention Markets",
+    url: "https://arxiv.org/abs/2602.21229",
+    date: "Feb 2026",
+    coAuthors: "Sumin Kim, Jihoon Kwon, Yoon Kim, Nicole Kagan, Raffi Khatchadourian, Wonbin Ahn, Alejandro Lopez-Lira, Jaewon Lee, Yoontae Hwang, Oscar Levy, Yongjae Lee, Chanyeol Choi",
+  },
   {
     title: "Replayable Financial Agents: A Determinism-Faithfulness Assurance Harness for Tool-Using LLM Agents",
     url: "https://arxiv.org/abs/2601.15322",
@@ -521,6 +534,11 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                         <h4 style={{ fontWeight: "600", color: "#111827" }}>
                           {paper.title}
                         </h4>
+                        {paper.coAuthors && (
+                          <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                            Co-authors: {paper.coAuthors}
+                          </p>
+                        )}
                       </div>
                       <a
                         href={paper.url}
