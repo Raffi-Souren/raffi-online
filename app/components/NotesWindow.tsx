@@ -45,6 +45,12 @@ interface Podcast {
 
 const ARTICLES: Article[] = [
   {
+    version: "v5",
+    title: "From Prompting Agents to Governing Loops & Buying Real Estate",
+    url: "https://raf94.substack.com/p/variables-v5-from-prompting-agents",
+    platform: "substack",
+  },
+  {
     version: "v4",
     title: "Closed Gates, Open Weights",
     url: "https://open.substack.com/pub/raf94/p/variables-v4-closed-gates-open-weights",
