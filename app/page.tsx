@@ -14,7 +14,6 @@ import BlogrollWindow from "./components/BlogrollWindow"
 import NotesWindow from "./components/NotesWindow"
 import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import NowPlaying from "./components/NowPlaying"
-import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 import IPodWindow from "./components/IPodWindow"
 import ProjectsWindow from "./components/ProjectsWindow"
 import WindowShell from "../components/ui/WindowShell"
@@ -146,9 +145,6 @@ export default function Home() {
 
       {/* Now Playing Component */}
       <NowPlaying />
-
-      {/* GlobalAudioPlayer to handle actual audio playback */}
-      <GlobalAudioPlayer />
 
       {/* Taskbar - z-50 */}
       <Taskbar onStartClick={handleStartMenuToggle} onWindowClick={openWindow} openWindows={openWindows} />

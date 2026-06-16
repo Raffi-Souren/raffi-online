@@ -34,6 +34,15 @@ interface PressItem {
   url: string
 }
 
+interface Podcast {
+  title: string
+  show: string
+  description: string
+  apple: string
+  spotify: string
+  youtube: string
+}
+
 const ARTICLES: Article[] = [
   {
     version: "v4",
@@ -245,13 +254,25 @@ const PRESS: PressItem[] = [
   },
 ]
 
+const PODCASTS: Podcast[] = [
+  {
+    title: "AI Deployments: A Practical Guide",
+    show: "Making Data Simple (IBM)",
+    description:
+      "Shipping enterprise AI in the real world — replayability, infrastructure, guardrails, and what actually breaks between demo and production.",
+    apple: "https://podcasts.apple.com/us/podcast/making-data-simple/id605818735",
+    spotify: "https://open.spotify.com/episode/5OxZkTGk7J6rrPswpmQfiy",
+    youtube: "https://www.youtube.com/watch?v=-oWAk7dMf9w",
+  },
+]
+
 interface NotesWindowProps {
   isOpen: boolean
   onClose: () => void
 }
 
 export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
-  const [activeTab, setActiveTab] = useState<"articles" | "research" | "events">("articles")
+  const [activeTab, setActiveTab] = useState<"articles" | "research" | "events" | "podcasts">("articles")
 
   if (!isOpen) return null
 
@@ -334,6 +355,9 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
           </button>
           <button onClick={() => setActiveTab("events")} style={tabButtonStyle(activeTab === "events")}>
             📅 Events
+          </button>
+          <button onClick={() => setActiveTab("podcasts")} style={tabButtonStyle(activeTab === "podcasts")}>
+            🎙️ Podcasts
           </button>
         </div>
 
@@ -719,6 +743,115 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === "podcasts" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              {/* Podcasts & Talks */}
+              <div>
+                <div
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: "600",
+                    color: "#7c3aed",
+                    marginBottom: "1rem",
+                    borderBottom: "2px solid #a78bfa",
+                    paddingBottom: "0.25rem",
+                    display: "inline-block",
+                  }}
+                >
+                  🎙️ PODCASTS & TALKS
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {PODCASTS.map((podcast) => (
+                    <div key={podcast.title} style={{ ...cardStyle, borderLeft: "4px solid #7c3aed" }}>
+                      <div style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>
+                        {podcast.title}
+                      </div>
+                      <div style={{ fontSize: "0.875rem", color: "#7c3aed", marginBottom: "0.5rem" }}>
+                        {podcast.show}
+                      </div>
+                      <div style={{ fontSize: "0.875rem", color: "#374151", marginBottom: "0.75rem" }}>
+                        {podcast.description}
+                      </div>
+                      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                        {[
+                          { label: "Apple Podcasts →", href: podcast.apple },
+                          { label: "Spotify →", href: podcast.spotify },
+                          { label: "YouTube →", href: podcast.youtube },
+                        ].map((link) => (
+                          <a
+                            key={link.label}
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#2563eb",
+                              fontWeight: "500",
+                              fontSize: "0.875rem",
+                              textDecoration: "none",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                          >
+                            {link.label}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Press */}
+              {PRESS.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: "600",
+                      color: "#6b7280",
+                      marginBottom: "1rem",
+                      borderBottom: "2px solid #9ca3af",
+                      paddingBottom: "0.25rem",
+                      display: "inline-block",
+                    }}
+                  >
+                    📰 IN THE PRESS
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    {PRESS.map((item) => (
+                      <div key={item.url} style={{ ...cardStyle, borderLeft: "4px solid #9ca3af" }}>
+                        <div style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>
+                          {item.title}
+                        </div>
+                        <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+                          {item.publication}
+                        </div>
+                        <div style={{ fontSize: "0.875rem", color: "#374151", marginBottom: "0.75rem" }}>
+                          {item.description}
+                        </div>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "#2563eb",
+                            fontWeight: "500",
+                            fontSize: "0.875rem",
+                            textDecoration: "none",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                        >
+                          Read →
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
