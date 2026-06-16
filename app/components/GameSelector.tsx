@@ -90,30 +90,6 @@ const RETRO_GAMES: Game[] = [
     icon: "😈",
     available: true,
   },
-  {
-    id: "tetris",
-    name: "Tetris",
-    device: "Game Boy",
-    description: "Arrange falling blocks to clear lines",
-    icon: "🟦",
-    available: false,
-  },
-  {
-    id: "pong",
-    name: "Pong",
-    device: "Atari",
-    description: "The original arcade tennis game",
-    icon: "🏓",
-    available: false,
-  },
-  {
-    id: "solitaire",
-    name: "Solitaire",
-    device: "Windows 98",
-    description: "The classic card game",
-    icon: "🃏",
-    available: false,
-  },
 ]
 
 export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
@@ -162,7 +138,6 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
   })
 
   const availableGames = filteredGames.filter((game) => game.available)
-  const comingSoonGames = filteredGames.filter((game) => !game.available)
 
   const handleGameClick = (gameId: string) => {
     setActiveGame(gameId)
@@ -269,55 +244,9 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
           )}
         </div>
 
-        {/* Coming Soon */}
-        {comingSoonGames.length > 0 && (
-          <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-            <h2
-              className="text-base sm:text-lg font-semibold text-gray-900 mb-3 border-b-2 border-orange-400 pb-1 inline-block"
-              style={{ color: "#111827" }}
-            >
-              COMING SOON
-            </h2>
-
-            <div className="grid gap-2 sm:gap-3">
-              {comingSoonGames.map((game) => (
-                <div
-                  key={game.id}
-                  className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 opacity-75"
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
-                >
-                  <div className="text-xl sm:text-2xl grayscale flex-shrink-0">{game.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 sm:gap-2 mb-1 flex-wrap">
-                      <h3 className="font-semibold text-gray-700 text-sm sm:text-base" style={{ color: "#374151" }}>
-                        {game.name}
-                      </h3>
-                      <span
-                        className="text-xs bg-gray-200 text-gray-600 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded whitespace-nowrap"
-                        style={{ color: "#4B5563", backgroundColor: "#E5E7EB" }}
-                      >
-                        {game.device}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1" style={{ color: "#6B7280" }}>
-                      {game.description}
-                    </p>
-                  </div>
-                  <div
-                    className="text-orange-500 text-xs font-semibold px-2 flex-shrink-0"
-                    style={{ color: "#F97316", minWidth: "45px", textAlign: "center" }}
-                  >
-                    SOON
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Stats */}
         <div className="text-center text-xs text-gray-500 pt-4 border-t" style={{ color: "#6B7280" }}>
-          {availableGames.length} available games • {comingSoonGames.length} coming soon
+          {availableGames.length} games available
         </div>
       </div>
     </WindowShell>

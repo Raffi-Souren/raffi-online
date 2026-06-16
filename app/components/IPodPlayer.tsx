@@ -201,6 +201,46 @@ const ANALOG_DIGITAL_VIDEOS: Video[] = [
   },
 ]
 
+// Holy-grail Boiler Room & Cercle sets. These stream continuously so you can
+// roll from one set straight into the next while you work.
+const DJ_SETS: Video[] = [
+  {
+    id: "djset-fred-again",
+    title: "Fred again.. — Boiler Room London",
+    youtubeId: "c0-hvjV2A5Y",
+  },
+  {
+    id: "djset-ben-bohmer",
+    title: "Ben Böhmer — Cercle, Cappadocia",
+    youtubeId: "RvRhUHTV_8k",
+  },
+  {
+    id: "djset-solomun",
+    title: "Solomun — Cercle, Théâtre Antique d'Orange",
+    youtubeId: "QHDRRxKlimY",
+  },
+  {
+    id: "djset-carl-cox",
+    title: "Carl Cox — Cercle, Château de Chambord",
+    youtubeId: "ZdAwiV4T22I",
+  },
+  {
+    id: "djset-keinemusik",
+    title: "Keinemusik — Cercle, Giza Pyramids",
+    youtubeId: "vnuIDZCN2ow",
+  },
+  {
+    id: "djset-black-coffee",
+    title: "Black Coffee — Cercle, Salle Wagram",
+    youtubeId: "SGqg_ZzThDU",
+  },
+  {
+    id: "djset-fkj",
+    title: "FKJ — Cercle, Salar de Uyuni",
+    youtubeId: "sCNlt5nvSI8",
+  },
+]
+
 type MenuScreen =
   | "main"
   | "music"
@@ -211,6 +251,7 @@ type MenuScreen =
   | "videos"
   | "videoPlaylists"
   | "analogDigital"
+  | "djSets"
   | "videoPlayer"
   | "settings"
   | "about"
@@ -246,6 +287,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const [repeatEnabled, setRepeatEnabled] = useState(false)
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+  const [currentVideoPlaylist, setCurrentVideoPlaylist] = useState<Video[]>(ANALOG_DIGITAL_VIDEOS)
   const [isVideoPlaying, setIsVideoPlaying] = useState(true)
 
   const wheelRef = useRef<HTMLDivElement>(null)
@@ -282,11 +324,26 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       case "videos":
         return [{ label: "Playlists", submenu: "videoPlaylists" }]
       case "videoPlaylists":
-        return [{ label: "ANALOG & DIGITAL", submenu: "analogDigital" }]
+        return [
+          { label: "DJ SETS", submenu: "djSets" },
+          { label: "ANALOG & DIGITAL", submenu: "analogDigital" },
+        ]
       case "analogDigital":
         return ANALOG_DIGITAL_VIDEOS.map((video, index) => ({
           label: video.title,
           action: () => {
+            setCurrentVideoPlaylist(ANALOG_DIGITAL_VIDEOS)
+            setCurrentVideo(video)
+            setCurrentVideoIndex(index)
+            setIsVideoPlaying(true)
+            setCurrentScreen("videoPlayer")
+          },
+        }))
+      case "djSets":
+        return DJ_SETS.map((video, index) => ({
+          label: video.title,
+          action: () => {
+            setCurrentVideoPlaylist(DJ_SETS)
             setCurrentVideo(video)
             setCurrentVideoIndex(index)
             setIsVideoPlaying(true)
@@ -448,6 +505,8 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         return "Playlists"
       case "analogDigital":
         return "ANALOG & DIGITAL"
+      case "djSets":
+        return "DJ SETS"
       case "videoPlayer":
         return currentVideo?.title || "Video"
       case "settings":
@@ -471,18 +530,18 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   }, [isVideoPlaying])
 
   const handleNextVideo = useCallback(() => {
-    const nextIndex = (currentVideoIndex + 1) % ANALOG_DIGITAL_VIDEOS.length
+    const nextIndex = (currentVideoIndex + 1) % currentVideoPlaylist.length
     setCurrentVideoIndex(nextIndex)
-    setCurrentVideo(ANALOG_DIGITAL_VIDEOS[nextIndex])
+    setCurrentVideo(currentVideoPlaylist[nextIndex])
     setIsVideoPlaying(true)
-  }, [currentVideoIndex])
+  }, [currentVideoIndex, currentVideoPlaylist])
 
   const handlePrevVideo = useCallback(() => {
-    const prevIndex = currentVideoIndex === 0 ? ANALOG_DIGITAL_VIDEOS.length - 1 : currentVideoIndex - 1
+    const prevIndex = currentVideoIndex === 0 ? currentVideoPlaylist.length - 1 : currentVideoIndex - 1
     setCurrentVideoIndex(prevIndex)
-    setCurrentVideo(ANALOG_DIGITAL_VIDEOS[prevIndex])
+    setCurrentVideo(currentVideoPlaylist[prevIndex])
     setIsVideoPlaying(true)
-  }, [currentVideoIndex])
+  }, [currentVideoIndex, currentVideoPlaylist])
 
   return (
     <div
@@ -564,7 +623,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                   />
                 </div>
                 <p className="text-xs mt-1 truncate w-full text-center" style={{ color: "#000", fontSize: "9px" }}>
-                  {currentVideo.title} ({currentVideoIndex + 1}/{ANALOG_DIGITAL_VIDEOS.length})
+                  {currentVideo.title} ({currentVideoIndex + 1}/{currentVideoPlaylist.length})
                 </p>
                 {onExpandVideo && (
                   <button
