@@ -241,6 +241,33 @@ const DJ_SETS: Video[] = [
   },
 ]
 
+interface Podcast {
+  id: string
+  title: string
+  show: string
+  description: string
+  youtubeId: string
+  apple: string
+  spotify: string
+  youtube: string
+}
+
+// Talks & podcast appearances. Watch in the iPod (YouTube) or pop out to your
+// platform of choice.
+const PODCASTS: Podcast[] = [
+  {
+    id: "mds-ai-deployments",
+    title: "AI Deployments: A Practical Guide",
+    show: "Making Data Simple",
+    description:
+      "Shipping enterprise AI in the real world — replayability, infrastructure, Mac Minis, guardrails, and what actually breaks between demo and production.",
+    youtubeId: "-oWAk7dMf9w",
+    apple: "https://podcasts.apple.com/us/podcast/making-data-simple/id605818735",
+    spotify: "https://open.spotify.com/episode/5OxZkTGk7J6rrPswpmQfiy",
+    youtube: "https://www.youtube.com/watch?v=-oWAk7dMf9w",
+  },
+]
+
 type MenuScreen =
   | "main"
   | "music"
@@ -253,6 +280,8 @@ type MenuScreen =
   | "analogDigital"
   | "djSets"
   | "videoPlayer"
+  | "podcasts"
+  | "podcastDetail"
   | "settings"
   | "about"
 
@@ -289,6 +318,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [currentVideoPlaylist, setCurrentVideoPlaylist] = useState<Video[]>(ANALOG_DIGITAL_VIDEOS)
   const [isVideoPlaying, setIsVideoPlaying] = useState(true)
+  const [currentPodcast, setCurrentPodcast] = useState<Podcast | null>(null)
 
   const wheelRef = useRef<HTMLDivElement>(null)
   const lastAngleRef = useRef<number | null>(null)
@@ -310,6 +340,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         return [
           { label: "Music", submenu: "music" },
           { label: "Videos", submenu: "videos" },
+          { label: "Podcasts / Talks", submenu: "podcasts" },
           { label: "Now Playing", submenu: "nowPlaying" },
           { label: "Settings", submenu: "settings" },
           { label: "About", submenu: "about" },
@@ -350,6 +381,16 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
             setCurrentScreen("videoPlayer")
           },
         }))
+      case "podcasts":
+        return PODCASTS.map((podcast) => ({
+          label: podcast.title,
+          action: () => {
+            setCurrentPodcast(podcast)
+            setCurrentScreen("podcastDetail")
+          },
+        }))
+      case "podcastDetail":
+        return []
       case "badcompany":
         return BADCOMPANY_MIXES.map((track) => ({
           label: track.title,
@@ -509,6 +550,10 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         return "DJ SETS"
       case "videoPlayer":
         return currentVideo?.title || "Video"
+      case "podcasts":
+        return "Podcasts / Talks"
+      case "podcastDetail":
+        return currentPodcast?.show || "Talk"
       case "settings":
         return "Settings"
       case "about":
@@ -639,6 +684,70 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                     ⤢ Expand
                   </button>
                 )}
+              </div>
+            ) : currentScreen === "podcastDetail" && currentPodcast ? (
+              <div className="h-full overflow-y-auto px-2 py-1 text-left">
+                <p
+                  className="font-bold leading-tight"
+                  style={{ color: "#000", fontFamily: "Chicago, system-ui", fontSize: "11px" }}
+                >
+                  {currentPodcast.title}
+                </p>
+                <p className="mb-1" style={{ color: "#cc4400", fontSize: "9px" }}>
+                  {currentPodcast.show}
+                </p>
+                <p className="mb-2 leading-snug" style={{ color: "#333", fontSize: "9px" }}>
+                  {currentPodcast.description}
+                </p>
+                <button
+                  onClick={() => {
+                    const podcastVideo: Video = {
+                      id: currentPodcast.id,
+                      title: currentPodcast.title,
+                      youtubeId: currentPodcast.youtubeId,
+                    }
+                    setCurrentVideoPlaylist([podcastVideo])
+                    setCurrentVideo(podcastVideo)
+                    setCurrentVideoIndex(0)
+                    setIsVideoPlaying(true)
+                    setCurrentScreen("videoPlayer")
+                  }}
+                  className="w-full mb-2 rounded font-bold"
+                  style={{
+                    background: "#3366cc",
+                    color: "#fff",
+                    fontSize: "9px",
+                    padding: "4px 0",
+                    border: "1px solid #2255bb",
+                  }}
+                >
+                  ▶ Watch on iPod
+                </button>
+                <div className="flex gap-1">
+                  {[
+                    { label: "Apple", href: currentPodcast.apple },
+                    { label: "Spotify", href: currentPodcast.spotify },
+                    { label: "YouTube", href: currentPodcast.youtube },
+                  ].map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-center rounded"
+                      style={{
+                        background: "#e0e0e0",
+                        color: "#000",
+                        fontSize: "8px",
+                        padding: "3px 0",
+                        border: "1px solid #aaa",
+                        textDecoration: "none",
+                      }}
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
               </div>
             ) : currentScreen === "nowPlaying" ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
