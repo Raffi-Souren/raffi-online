@@ -180,6 +180,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         currentTime,
         isLoading,
         error,
+        shuffle,
+        repeatMode,
         playTrack,
         pauseTrack,
         resumeTrack,
@@ -187,12 +189,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         stopTrack,
         nextTrack,
         previousTrack,
+        handleTrackEnd,
         setPlaylist,
         setDuration,
         setCurrentTime,
         setLoading: setIsLoading,
         setError,
         clearError,
+        toggleShuffle,
+        cycleRepeatMode,
       }}
     >
       {children}

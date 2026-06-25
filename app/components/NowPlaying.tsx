@@ -1,11 +1,24 @@
 "use client"
 
 import { useAudio } from "../context/AudioContext"
-import { Pause, Play, X, SkipBack, SkipForward } from "lucide-react"
+import { Pause, Play, X, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from "lucide-react"
 
 export default function NowPlaying() {
-  const { currentTrack, isPlaying, togglePlay, stopTrack, nextTrack, previousTrack, playlist, currentTime, duration } =
-    useAudio()
+  const {
+    currentTrack,
+    isPlaying,
+    togglePlay,
+    stopTrack,
+    nextTrack,
+    previousTrack,
+    playlist,
+    currentTime,
+    duration,
+    shuffle,
+    repeatMode,
+    toggleShuffle,
+    cycleRepeatMode,
+  } = useAudio()
 
   if (!currentTrack) return null
 
