@@ -186,18 +186,18 @@ export function stepVehicle(v, h, ctl, dt, world) {
   const steer = clamp(ctl.steer, -1, 1)
   const handbrake = ctl.handbrake ? 1 : 0
 
-  // Longitudinal.
+  // Longitudinal: S brakes then reverses with real bite (no long dead zone).
   let accel = throttle * h.accel
   if (brake > 0) {
-    if (v.speed > 0.4) accel -= brake * h.brake
-    else accel -= brake * h.accel * 0.6 // reverse
+    if (v.speed > 0.12) accel -= brake * h.brake
+    else accel -= brake * h.accel * (h.reversePower ?? 0.95)
   }
+  if (throttle > 0.01 && v.speed < -0.12) accel = throttle * h.brake * 0.85
   accel -= v.speed * h.drag * 0.12
   v.speed += accel * dt
 
-  const top = h.topSpeed
+  const top = Math.max(h.topSpeed, 1)
   const bottom = -h.reverse
-  // Soft cap rather than a hard clamp so hitting top speed does not feel like a wall.
   if (v.speed > top) v.speed += (top - v.speed) * Math.min(1, dt * 4)
   if (v.speed < bottom) v.speed += (bottom - v.speed) * Math.min(1, dt * 4)
 
@@ -207,16 +207,21 @@ export function stepVehicle(v, h, ctl, dt, world) {
     else v.speed -= Math.sign(v.speed) * fric
   }
 
-  // Steering authority falls off with speed so the car does not spin at 100.
+  // Steer at crawl — min authority so A/D works when almost stopped.
   const speedFrac = Math.min(1, Math.abs(v.speed) / top)
   const authority = 1 - h.steerFalloff * speedFrac
-  const steerRate = h.steerRate * authority * Math.sign(v.speed || 1)
-  const targetAngular = steer * steerRate * Math.min(1, Math.abs(v.speed) / (h.steerSpeed || 4))
-
-  v.angularVel += (targetAngular - v.angularVel) * Math.min(1, dt * 9)
+  const reverseSign = v.speed < -0.15 ? -1 : 1
+  const steerRate = h.steerRate * authority * reverseSign
+  const steerSpeed = h.steerSpeed || 3.2
+  const minAuthority = h.minSteerAuthority ?? 0.55
+  const speedFactor = Math.abs(steer) > 0.05
+    ? Math.max(minAuthority, Math.min(1, Math.abs(v.speed) / steerSpeed))
+    : Math.min(1, Math.abs(v.speed) / steerSpeed)
+  const targetAngular = steer * steerRate * speedFactor
+  const yawLerp = Math.abs(v.speed) < 6 ? 14 : 9
+  v.angularVel += (targetAngular - v.angularVel) * Math.min(1, dt * yawLerp)
   v.yaw += v.angularVel * dt
 
-  // Lateral slip: grip pulls the velocity vector back in line with the nose.
   const grip = handbrake ? h.handbrakeGrip : h.grip
   v.lateral += -v.angularVel * v.speed * dt
   v.lateral -= v.lateral * Math.min(1, grip * dt)
@@ -230,16 +235,30 @@ export function stepVehicle(v, h, ctl, dt, world) {
   let nx = v.x + (fx * v.speed + rx * v.lateral) * dt
   let nz = v.z + (fz * v.speed + rz * v.lateral) * dt
 
-  const res = resolveCircle(world, nx, nz, v.collisionRadius || h.collisionRadius || 1.7, 2)
+  const radius = v.collisionRadius || h.collisionRadius || 1.7
+  const res = resolveCircle(world, nx, nz, radius, 3)
   if (res.hit) {
-    // Push and slow. Never destroy.
-    const impact = Math.abs(v.speed) * 0.5
-    v.speed *= 0.55
-    v.lateral *= 0.4
-    v.damage = Math.min(1, (v.damage || 0) + impact * 0.012)
-    v.lastImpact = impact
+    // Kill only velocity into the wall so reverse can free you.
+    let vx = fx * v.speed + rx * v.lateral
+    let vz = fz * v.speed + rz * v.lateral
+    const intoWall = -(vx * res.normalX + vz * res.normalZ)
+    if (intoWall > 0) {
+      vx += res.normalX * intoWall
+      vz += res.normalZ * intoWall
+    }
+    v.speed = vx * fx + vz * fz
+    v.lateral = vx * rx + vz * rz
+    if (brake > 0.2 && throttle < 0.05 && intoWall > -0.5) {
+      const escape = (h.escapeBoost ?? 3.2) * brake * dt
+      res.x += res.normalX * escape
+      res.z += res.normalZ * escape
+      if (v.speed > -0.5) v.speed = Math.min(v.speed, -h.accel * 0.15 * brake)
+    }
+    v.lastImpact = Math.max(0, intoWall)
+    v.stuckFrames = (v.stuckFrames || 0) + 1
   } else {
     v.lastImpact = 0
+    v.stuckFrames = 0
   }
 
   v.x = res.x

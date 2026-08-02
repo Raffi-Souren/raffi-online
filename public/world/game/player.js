@@ -13,8 +13,8 @@ import { resolveCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { makeVehicle, animateVehicle } from '../gen/vehicles.js'
 
-const WALK_SPEED = 2.6
-const RUN_SPEED = 5.4
+const WALK_SPEED = 3.4
+const RUN_SPEED = 6.2
 const PLAYER_RADIUS = 0.45
 
 export const player = {
@@ -250,6 +250,8 @@ function updateWalking(dt, input, world, beatPhase) {
   const p = state.player
   const basis = movementBasis()
 
+  // Camera-relative: stick/WASD are mapped through the live view axes so chase
+  // and free modes feel like GTA (W = into the screen), not inverted iso.
   const wantX = basis.rx * input.move.x + basis.fx * input.move.y
   const wantZ = basis.rz * input.move.x + basis.fz * input.move.y
   const mag = Math.hypot(wantX, wantZ)
@@ -258,24 +260,27 @@ function updateWalking(dt, input, world, beatPhase) {
   const desiredX = mag > 0.001 ? (wantX / mag) * target * Math.min(1, mag) : 0
   const desiredZ = mag > 0.001 ? (wantZ / mag) * target * Math.min(1, mag) : 0
 
-  p.vx = damp(p.vx, desiredX, 12, dt)
-  p.vz = damp(p.vz, desiredZ, 12, dt)
+  // Snappier accel/stop — the old damp rate felt like ice-skating.
+  const blend = mag > 0.01 ? 18 : 14
+  p.vx = damp(p.vx, desiredX, blend, dt)
+  p.vz = damp(p.vz, desiredZ, blend, dt)
 
   let nx = p.x + p.vx * dt
   let nz = p.z + p.vz * dt
 
-  const res = resolveCircle(world, nx, nz, PLAYER_RADIUS, 2)
+  const res = resolveCircle(world, nx, nz, PLAYER_RADIUS, 3)
   const bounded = clampToBounds(res.x, res.z, data.world.bounds, 6)
   p.x = bounded.x
   p.z = bounded.z
   p.y = res.y
 
   p.speed = Math.hypot(p.vx, p.vz)
-  if (mag > 0.01) p.yaw = Math.atan2(p.vx, p.vz)
+  // Face movement; if almost stopped keep last facing.
+  if (p.speed > 0.35) p.yaw = Math.atan2(p.vx, p.vz)
 
   syncPlayerVisual()
 
-  const st = p.speed < 0.2 ? 'idle' : p.speed > WALK_SPEED + 0.6 ? 'run' : 'walk'
+  const st = p.speed < 0.25 ? 'idle' : p.speed > WALK_SPEED + 0.5 ? 'run' : 'walk'
   player.animState = st
   animatePed(player.ped, data.npcs, st, dt, p.speed, beatPhase)
 }
@@ -283,23 +288,30 @@ function updateWalking(dt, input, world, beatPhase) {
 function updateDriving(dt, input, world) {
   const v = player.vehicle
   const basis = movementBasis()
-
-  // Steering is screen-relative too: pushing the stick left turns the car left
-  // on screen, which is the only thing that feels right under a fixed camera.
-  const screenRight = basis.rx * input.move.x + basis.fx * input.move.y
-  const screenFwd = basis.rz * input.move.x + basis.fz * input.move.y
-  let steer = 0
   const inputMag = Math.hypot(input.move.x, input.move.y)
-  if (inputMag > 0.15) {
+  const microRide = v.kind === 'skateboard' || v.kind === 'scooter'
+
+  // Cars: tank controls — A/D steer the nose, W/S gas/brake. Point-to-go made
+  // every W press spin the car under iso/chase. Micro-rides keep soft aim.
+  let steer = 0
+  if (microRide && inputMag > 0.12) {
+    const screenRight = basis.rx * input.move.x + basis.fx * input.move.y
+    const screenFwd = basis.rz * input.move.x + basis.fz * input.move.y
     const desiredYaw = Math.atan2(screenRight, screenFwd)
     let diff = desiredYaw - v.yaw
     while (diff > Math.PI) diff -= Math.PI * 2
     while (diff < -Math.PI) diff += Math.PI * 2
-    steer = clamp(diff * 1.6, -1, 1)
+    steer = clamp(diff * 1.35 * 0.72 + input.move.x * 0.45, -1, 1)
+  } else {
+    // Prefer pure A/D; if only stick X is used it's the same axis.
+    steer = clamp(input.move.x, -1, 1)
   }
+  if (Math.abs(steer) < 0.08) steer = 0
 
   const ctl = {
-    throttle: input.throttle > 0.01 ? input.throttle : inputMag > 0.15 ? inputMag : 0,
+    throttle: input.throttle > 0.01
+      ? input.throttle
+      : (microRide && inputMag > 0.15 ? inputMag : 0),
     brake: input.brake,
     steer,
     handbrake: input.handbrake,

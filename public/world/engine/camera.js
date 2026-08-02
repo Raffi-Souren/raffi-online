@@ -164,32 +164,36 @@ export function updateCamera(dt, focus, velocity, aspect) {
   const ax = clamp(velocity.x * laScale, -c.lookAheadMax, c.lookAheadMax)
   const az = clamp(velocity.z * laScale, -c.lookAheadMax, c.lookAheadMax)
 
-  // Chase / free: ease yaw toward behind-player when not free-orbiting heavily.
+  // Chase: stay behind the actor, snappy enough that W always matches "forward
+  // on screen". Free: leave yaw to Q/X orbit only.
   if (mode.id === 'chase') {
     const behind = (state.player.yaw || 0) + Math.PI
     let dy = behind - cam.desiredYaw
     while (dy > Math.PI) dy -= Math.PI * 2
     while (dy < -Math.PI) dy += Math.PI * 2
-    cam.desiredYaw += dy * Math.min(1, dt * 3.2)
-    cam.desiredPitch = damp(cam.desiredPitch, 0.36, 4, dt)
+    // Fast catch-up so turning doesn't fight movementBasis lag.
+    cam.desiredYaw += dy * Math.min(1, dt * 8.5)
+    cam.desiredPitch = 0.34
   } else if (mode.id === 'free') {
     cam.desiredPitch = clamp(cam.desiredPitch, 0.12, 1.1)
   } else if (mode.id === 'birds') {
-    // High look-down; keep iso yaw snaps.
     cam.desiredPitch = (c.birdsPitchDeg || 72) * DEG
   } else {
     cam.desiredPitch = (c.pitchDeg || 55) * DEG
   }
 
-  cam.currentYaw = damp(cam.currentYaw, cam.desiredYaw, mode.kind === 'persp' ? 6.5 : 7.5, dt)
-  cam.pitch = damp(cam.pitch, cam.desiredPitch, 6, dt)
+  const yawFollow = mode.id === 'chase' ? 14 : mode.kind === 'persp' ? 8 : 7.5
+  cam.currentYaw = damp(cam.currentYaw, cam.desiredYaw, yawFollow, dt)
+  cam.pitch = damp(cam.pitch, cam.desiredPitch, 8, dt)
   state.camera.yaw = cam.currentYaw
   state.camera.mode = mode.id
 
   const focusY = focus.y || 0
-  cam.target.x = damp(cam.target.x, focus.x + ax, c.followLerp, dt)
-  cam.target.z = damp(cam.target.z, focus.z + az, c.followLerp, dt)
-  cam.target.y = damp(cam.target.y, focusY + (mode.kind === 'persp' ? 1.4 : 0), c.followLerp, dt)
+  // Tighter follow in chase so the character doesn't skate under a lagging rig.
+  const follow = mode.id === 'chase' ? Math.max(c.followLerp, 11) : c.followLerp
+  cam.target.x = damp(cam.target.x, focus.x + ax, follow, dt)
+  cam.target.z = damp(cam.target.z, focus.z + az, follow, dt)
+  cam.target.y = damp(cam.target.y, focusY + (mode.kind === 'persp' ? 1.15 : 0), follow, dt)
 
   let sx = 0
   let sy = 0
@@ -231,43 +235,55 @@ function updateOrthoRig(mode, c, sx, sy) {
 }
 
 function updatePerspRig(mode, sx, sy) {
-  const dist = cam.chaseDistance * (state.mode === 'vehicle' ? 1.35 : 1)
+  const dist = cam.chaseDistance * (state.mode === 'vehicle' ? 1.45 : 1.05)
   const pitch = cam.pitch
   const yaw = cam.currentYaw
-  // Position behind/above the target looking at it (Vice City / GTA III feel).
+  // Camera sits on the orbit ring and looks at the actor (GTA III / VC style).
   const horiz = Math.cos(pitch)
   const ox = Math.sin(yaw) * horiz * dist
-  const oy = Math.sin(pitch) * dist + (state.mode === 'vehicle' ? 1.2 : 0.4)
+  const oy = Math.sin(pitch) * dist + (state.mode === 'vehicle' ? 1.6 : 0.85)
   const oz = Math.cos(yaw) * horiz * dist
 
   cam.persp.position.set(
-    cam.target.x + ox + sx * 0.15,
-    cam.target.y + oy + sy * 0.15,
+    cam.target.x + ox + sx * 0.12,
+    Math.max(1.2, cam.target.y + oy + sy * 0.12),
     cam.target.z + oz
   )
-  const look = cam.target.clone()
-  look.y += mode.id === 'free' ? 1.1 : 1.35
+  const look = new THREE.Vector3(
+    cam.target.x,
+    cam.target.y + (mode.id === 'free' ? 1.25 : 1.45),
+    cam.target.z
+  )
   cam.persp.lookAt(look)
   cam.camera = cam.persp
 }
 
 /**
- * World-space movement basis for the current yaw. Input is screen-relative:
- * pushing "up" on the stick walks away from the viewer in the active mode.
+ * Screen-relative movement axes from the *actual* camera pose.
+ * W / stick-up always moves into the scene (away from the viewer), never
+ * inverted under chase/free. Deriving from camera.position → target avoids the
+ * lag/invert bugs that came from hand-rolled yaw offsets.
  */
 export function movementBasis() {
-  const mode = getCameraMode()
-  let y = cam.currentYaw
-  if (mode.kind === 'persp') {
-    // In chase/free, "forward" is the camera's ground-projected facing
-    // (from camera toward target ≈ -orbit direction).
-    y = cam.currentYaw + Math.PI
+  const camera = cam.camera
+  if (camera) {
+    let lx = cam.target.x - camera.position.x
+    let lz = cam.target.z - camera.position.z
+    const len = Math.hypot(lx, lz)
+    if (len > 1e-4) {
+      lx /= len
+      lz /= len
+      // Screen-right = look × up on XZ (RH): looking -Z → right is +X.
+      const rx = -lz
+      const rz = lx
+      return { fx: lx, fz: lz, rx, rz }
+    }
   }
+  // Fallback if camera not ready.
+  const y = cam.currentYaw
   const fx = -Math.sin(y)
   const fz = -Math.cos(y)
-  const rx = -fz
-  const rz = fx
-  return { fx, fz, rx, rz }
+  return { fx, fz, rx: -fz, rz: fx }
 }
 
 export function viewExtents(aspect) {

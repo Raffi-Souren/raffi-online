@@ -268,11 +268,14 @@ export function updateInput(mode) {
   input.handbrake = keys.has('space') || keys.has('handbrake')
 
   if (mode === 'vehicle') {
-    // On touch the right thumb drives; on desktop the stick's Y axis does.
     const gasBtn = input.held.has('primary') ? 1 : 0
     const brakeBtn = input.held.has('second') ? 1 : 0
-    input.throttle = Math.max(gasBtn, my > 0 ? my : 0)
-    input.brake = Math.max(brakeBtn, my < 0 ? -my : 0)
+    let throttle = Math.max(gasBtn, my > 0.12 ? my : 0)
+    let brake = Math.max(brakeBtn, my < -0.12 ? -my : 0)
+    // Panic mash: brake/reverse wins over gas so walls are escapable.
+    if (brake > 0.05 && throttle > 0.05) throttle = 0
+    input.throttle = throttle
+    input.brake = brake
   } else {
     input.throttle = 0
     input.brake = 0
