@@ -1,0 +1,19 @@
+{
+  // Standalone build for the audio-engine unit tests.
+  // Uses the TypeScript compiler that's already a devDependency plus Node's
+  // built-in test runner, so `npm test` needs no extra packages.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2022",
+    "lib": ["es2022"],
+    "outDir": ".test-build",
+    "rootDir": ".",
+    "types": ["node"],
+    "plugins": []
+  },
+  "include": ["lib/audio-engine.ts", "lib/audio-engine.test.ts", "data/audio-library.ts", "data/crates-tracks.ts"]
+}

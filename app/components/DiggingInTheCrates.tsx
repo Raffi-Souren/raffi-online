@@ -51,8 +51,11 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   const handleShuffle = useCallback(() => {
     const currentIndex = currentTrack ? SOUNDCLOUD_TRACKS.findIndex((t) => t.id === currentTrack.id) : -1
     const randomIndex = getRandomTrackIndex(SOUNDCLOUD_TRACKS.length, currentIndex)
+    // Re-assert the crate as the active playlist — another surface (the iPod)
+    // may have swapped it out while this window was open.
+    setPlaylist(SOUNDCLOUD_TRACKS)
     playTrack(SOUNDCLOUD_TRACKS[randomIndex])
-  }, [currentTrack, playTrack])
+  }, [currentTrack, playTrack, setPlaylist])
 
   // Closing the crate keeps the music playing via the global NowPlaying bar.
   const handleClose = () => {

@@ -26,12 +26,26 @@ export const RAFS_CRATE: Track[] = CRATE_TRACKS
 // Back-compat alias: existing imports of SOUNDCLOUD_TRACKS keep working.
 export const SOUNDCLOUD_TRACKS: Track[] = CRATE_TRACKS
 
-/** Pick a random track index that differs from `current` (when possible). */
+/**
+ * Pick a random track index that differs from `current` (when possible).
+ *
+ * Returns 0 for degenerate lengths so callers that already guard on an empty
+ * playlist keep working; callers that don't should check `length` first.
+ */
 export function getRandomTrackIndex(length: number, current = -1): number {
-  if (length <= 1) return 0
-  let next = current
-  while (next === current) {
-    next = Math.floor(Math.random() * length)
+  if (!Number.isFinite(length) || length <= 1) return 0
+
+  const size = Math.floor(length)
+  let next = Math.floor(Math.random() * size)
+
+  // Bounded retry: with size >= 2 this virtually always exits on the first
+  // pass, but the cap guarantees we can never spin forever on a bad `current`.
+  for (let attempt = 0; next === current && attempt < 10; attempt++) {
+    next = Math.floor(Math.random() * size)
   }
+
+  // Last resort if the RNG kept landing on `current`: step to a neighbour.
+  if (next === current) next = (current + 1) % size
+
   return next
 }

@@ -431,9 +431,14 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
   const menuItems = getMenuItems()
 
+  // Seed the default playlist once, but never hijack a session that's already
+  // playing (e.g. a record dug out of the crate).
+  const seededPlaylistRef = useRef(false)
   useEffect(() => {
-    setPlaylist(BADCOMPANY_MIXES)
-  }, [setPlaylist])
+    if (seededPlaylistRef.current) return
+    seededPlaylistRef.current = true
+    if (!currentTrack) setPlaylist(BADCOMPANY_MIXES)
+  }, [currentTrack, setPlaylist])
 
   const handleSelect = useCallback(() => {
     if (currentScreen === "nowPlaying") {
