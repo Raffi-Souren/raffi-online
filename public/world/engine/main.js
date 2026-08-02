@@ -37,6 +37,10 @@ import {
 import {
   initCompliance, updateCompliance, setComplianceTier, complianceSnapshot,
 } from '../game/compliance.js'
+import {
+  initPursuit, updatePursuit, onComplianceCleared, onComplianceTierChange,
+  pursuitSnapshot, pursuitBlocksControl,
+} from '../game/pursuit.js'
 import { initDebug, updateDebugCamera, updateDebugReadout, debugState, exposeAuditApi } from './debug.js'
 
 const els = {}
@@ -64,6 +68,8 @@ function grab() {
     compliance: $('compliance'),
     pips: document.querySelector('.cl-pips'),
     clock: $('clock'),
+    catchFade: $('catch-fade'),
+    catchLabel: $('catch-label'),
     minimap: $('minimap'),
     minimapCanvas: $('minimap-canvas'),
     minimapDistance: $('minimap-distance'),
@@ -429,7 +435,19 @@ async function boot() {
     spawnVehicle,
     onStart: startMissionPresentation,
   })
-  initCompliance()
+  initPursuit({
+    scene: gfx.scene,
+    materials,
+    atlas,
+    graph: world.graph,
+    collision,
+    catchEl: els.catchFade,
+    catchLabel: els.catchLabel,
+  })
+  initCompliance({
+    onClear: () => onComplianceCleared(),
+    onTierChange: (next) => onComplianceTierChange(next),
+  })
   initDebug({ root: els.debugRoot, readout: els.debugReadout, buttons: els.debugButtons }, collision)
 
   applyGrade(state.grade.current, 1)
@@ -450,6 +468,11 @@ async function boot() {
     dismissDialogue,
     setComplianceTier,
     complianceSnapshot,
+    pursuitSnapshot,
+    debugPullPursuersToPlayer: async () => {
+      const mod = await import('../game/pursuit.js')
+      mod.debugPullPursuersToPlayer()
+    },
   })
 
   setBoot(1, 'ready')
@@ -564,7 +587,19 @@ function loop(now) {
     }
 
     if (!world.transitBusy && !isDialogueBlocking()) updateMissions(dt)
-    if (!world.transitBusy && !isDialogueBlocking()) updateCompliance(dt)
+    if (!world.transitBusy) updateCompliance(dt)
+    if (!world.transitBusy) updatePursuit(dt)
+
+    // Catch freeze owns locomotion for the invite beat.
+    if (pursuitBlocksControl()) {
+      if (player.vehicle) {
+        player.vehicle.speed = 0
+        player.vehicle.lateral = 0
+      }
+      state.player.vx = 0
+      state.player.vz = 0
+      state.player.speed = 0
+    }
 
     const focus = flying
       ? { x: debugState.flyX, y: debugState.flyY, z: debugState.flyZ }

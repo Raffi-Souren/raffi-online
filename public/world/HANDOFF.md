@@ -1,5 +1,35 @@
 # RAFFI WORLD — Handoff
 
+## [2026-08-02 19:10] FROM: grok — COMPLIANCE PURSUIT + CALENDAR CATCH
+
+**Shipped:** COMPLIANCE is now a real pursuit loop. `game/pursuit-core.js`
+compiles tier rosters and catch/decay rules from `data/npcs.json`;
+`game/pursuit.js` pools generated drones/foot/sedans, spawns on the road graph
+outside the player, chases, and runs the calendar-invite catch fade. Reply All
+Repaint cancels pursuit and any partial hold via compliance `onClear`.
+
+**Tiers:** 1 drone follow-only (never catches) · 2 foot coordinator with
+sustained-contact catch · 3 one sedan pull-alongside · 4 three sedans with
+multi-angle surround approach · 5 four sedans + drone. Tier 4/5 are honest
+multi-unit surround chases from ring offsets — not full intersection pathfinding;
+documented as such in JANK.
+
+**Catch contract:** hold for `caughtHoldSeconds`, break resets timer, freeze +
+authored invite dialogue + fade, clear heat, despawn, resume at collision-resolved
+location. Mission waypoint and ownership preserved. No-contact decay uses
+`decayRequiresNoContact` + `decaySecondsPerTier`.
+
+**Repaint pre-flight (same branch, separate commit):** validated `world.repaint`
+contract (no silent fallbacks), first clear uses `clearLines[0]`, zero heat
+drops compliance-owned waypoint only, mutation tests for authored radius/speed.
+
+**Guards:** pure pursuit-core tests + extended browser smoke (T1 no-catch, T2
+hold/catch/fade, T3/T4 counts, mission survive catch, repaint despawns, budgets).
+Mutations: Tier-1 catchable fails named test; hold bypass fails threshold test.
+
+**Deferred:** true intersection-block pathfinding, radio SFX playback, replay
+ghosts, interiors, XP shell.
+
 ## [2026-08-02 18:15] FROM: grok — REPLY ALL REPAINT COMPLIANCE CLEAR
 
 **Shipped:** the first honest COMPLIANCE clear loop. `game/compliance-core.js`

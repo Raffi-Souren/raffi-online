@@ -85,3 +85,22 @@ at the Heights shop (`repaint-heights`, seed=FIXED). Budgets on those frames:
 No repaint frame breached the 120 draw-call / 60k triangle budgets. On-foot and
 high-speed negatives are browser-guarded; mounted-only and tier-reset rules are
 mutation-tested in `compliance-core.test.mjs`.
+
+## Phase 3c — COMPLIANCE pursuit + calendar catch
+
+Screenshots (session, not committed): `/tmp/raffi-pursuit/raffi-world-pursuit-{desktop,mobile}-{dusk,night}.png`
+and `raffi-world-pursuit-catch-desktop.png`. Tier-4 multi-sedan view budgets:
+~13 draw calls, ~37k triangles (under 120 / 60k).
+
+| Screenshot | Issue | Severity | Fixed |
+|---|---|---|---|
+| pursuit desktop dusk/night | Amber drones + black sedans read as pursuers; COMPLIANCE pips show tier. | — | Yes (behavior) |
+| pursuit catch | Calendar invite overlay is full-screen and bounds-safe on desktop. | — | Yes |
+| pursuit mobile | Catch overlay hidden when idle; HUD remains in 390×844. | — | Yes |
+| Tier 4/5 | Multi-unit surround uses ring approach offsets — not true intersection pathfinding or roadblock placement. | visible (honesty) | Deferred full box-in / block-intersections AI; counts and multi-angle chase ship |
+| Pursuer bark spam | Authored lines fire on a timer and can stack with mentor captions. | charm | Acceptable; could queue later |
+| Foot coordinator | Suit ped may clip kerbs while pathing straight to player (no full navmesh). | charm | Kept — jank as charm per bible |
+| Drone mesh | Simple box drone is readable but not fancy. | charm | Kept — generated geometry only |
+
+No blocker found: no actors spawning inside buildings (road-node snap), no invisible
+pursuers, no death-screen catch, no mission wipe on catch.

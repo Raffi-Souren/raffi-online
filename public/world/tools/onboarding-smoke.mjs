@@ -335,6 +335,116 @@ assert.equal(finished.mission.active, null)
 assert.ok(finished.mission.completed.includes('deal-clock'))
 assert.equal(finished.state.compliance.tier, 4)
 
+// --- COMPLIANCE pursuit / calendar catch ------------------------------------
+async function advancePursuit(page, seconds, pull = false) {
+  const steps = Math.ceil(seconds / 0.05)
+  await page.evaluate(async ({ steps: n, pull: doPull }) => {
+    const { updatePursuit, debugPullPursuersToPlayer } = await import('/world/game/pursuit.js')
+    for (let i = 0; i < n; i++) {
+      if (doPull) debugPullPursuersToPlayer()
+      updatePursuit(0.05)
+    }
+  }, { steps, pull })
+}
+
+// Tier 1: drone pursues past hold without catching.
+await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(1))
+await desktop.waitForTimeout(80)
+let pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.equal(pursuit.roster.kinds.drone, 1, 'tier 1 must compile one drone')
+assert.equal(pursuit.roster.canCatch, 0, 'tier 1 must not be catch-capable')
+await advancePursuit(desktop, 3.0, true)
+pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.notEqual(pursuit.phase, 'catching', 'Tier 1 must never enter catch phase')
+assert.equal(pursuit.contact.caught, false, 'Tier 1 contact must never catch')
+assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier, 1)
+
+// Tier 2: catch only after full hold.
+await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(2))
+await desktop.waitForTimeout(80)
+pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.equal(pursuit.roster.kinds.foot, 1)
+const hold = pursuit.tuning.caughtHoldSeconds
+await advancePursuit(desktop, Math.max(0.1, hold - 0.3), true)
+pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.equal(pursuit.contact.caught, false, 'tier 2 must not catch before hold completes')
+assert.ok(pursuit.contact.hold > 0, 'tier 2 contact hold must accumulate')
+await advancePursuit(desktop, 0.5, true)
+// Allow catch sequence to start
+await advancePursuit(desktop, 0.2, true)
+pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.ok(
+  pursuit.phase === 'catching' || pursuit.phase === 'fade-out' || pursuit.phase === 'fade-in' || pursuit.phase === 'idle',
+  'tier 2 full hold should enter catch sequence'
+)
+// Drain catch fade to restore control
+for (let i = 0; i < 40; i++) {
+  await advancePursuit(desktop, 0.1, false)
+  pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+  if (pursuit.phase === 'idle' && (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier === 0) break
+}
+assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier, 0, 'catch must clear COMPLIANCE')
+assert.equal(pursuit.phase, 'idle', 'catch fade must complete and return control')
+await desktop.screenshot({ path: OUT + '/raffi-world-pursuit-catch-desktop.png' })
+
+// Tier 3: exactly one sedan.
+await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(3))
+await desktop.waitForTimeout(80)
+pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.equal(pursuit.roster.kinds.vehicle, 1, 'tier 3 must be exactly one sedan')
+assert.equal(pursuit.active.filter((a) => a.kind === 'vehicle').length, 1)
+assert.ok(
+  pursuit.active[0].distance > pursuit.active[0].interceptRadius,
+  `sedan must not spawn already inside intercept (${pursuit.active[0].distance} vs ${pursuit.active[0].interceptRadius})`
+)
+
+// Tier 4 counts (multi-sedan surround approach — honest multi-unit chase).
+await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(4))
+await desktop.waitForTimeout(80)
+pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.equal(pursuit.roster.kinds.vehicle, 3, 'tier 4 must compile three sedans')
+assert.equal(pursuit.active.filter((a) => a.kind === 'vehicle').length, 3)
+
+// Active mission must survive a catch (restore mission-like state then catch).
+await desktop.evaluate(async () => {
+  const { state } = await import('/world/engine/state.js')
+  state.mission.active = 'deal-clock'
+  window.RAFFI_WORLD.setWaypoint({ x: 60, z: -380 }, 'DEAL CLOCK · STOP 2')
+  window.RAFFI_WORLD.setComplianceTier(2)
+})
+await desktop.waitForTimeout(60)
+const missionLabelBefore = await desktop.locator('#minimap-label').textContent()
+await advancePursuit(desktop, 3.0, true)
+for (let i = 0; i < 40; i++) {
+  await advancePursuit(desktop, 0.1, false)
+  if ((await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())).phase === 'idle') break
+}
+assert.equal(
+  await desktop.evaluate(async () => (await import('/world/engine/state.js')).state.mission.active),
+  'deal-clock',
+  'catch must preserve active mission id'
+)
+assert.equal(
+  await desktop.locator('#minimap-label').textContent(),
+  missionLabelBefore,
+  'catch must preserve active mission waypoint'
+)
+await desktop.evaluate(async () => {
+  const { state } = await import('/world/engine/state.js')
+  state.mission.active = null
+})
+
+// Budgets at max implemented multi-unit tier.
+await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(4))
+await desktop.waitForTimeout(100)
+const pursuitBudget = await desktop.evaluate(() => window.RAFFI_WORLD.stats())
+assert.ok(pursuitBudget.drawCalls < 120, `pursuit draws ${pursuitBudget.drawCalls} >= 120`)
+assert.ok(pursuitBudget.triangles < 60_000, `pursuit tris ${pursuitBudget.triangles} >= 60000`)
+await desktop.evaluate((g) => window.RAFFI_WORLD.setGrade(g), 'dusk')
+await desktop.screenshot({ path: OUT + '/raffi-world-pursuit-desktop-dusk.png' })
+await desktop.evaluate((g) => window.RAFFI_WORLD.setGrade(g), 'night')
+await desktop.screenshot({ path: OUT + '/raffi-world-pursuit-desktop-night.png' })
+
 // --- Reply All Repaint: clear COMPLIANCE after DEAL CLOCK heat ---------------
 // Free-roam guidance must point at an authored shop without hardcoding coords
 // in the engine (data-driven nearest shop).
@@ -483,6 +593,13 @@ assert.ok(
   paintChanged && cleared.paint,
   'vehicle colour buffer / paint metadata did not change after Reply All Repaint'
 )
+const afterRepaintPursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
+assert.equal(
+  afterRepaintPursuit.active.length,
+  0,
+  'repaint must cancel pursuit and despawn active pursuers'
+)
+assert.equal(afterRepaintPursuit.phase, 'idle', 'repaint must leave pursuit idle')
 
 // One-shot latch: remain stopped with re-applied heat — no second clear.
 await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(2))
