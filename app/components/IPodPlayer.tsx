@@ -253,6 +253,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const accumulatedRotationRef = useRef(0)
   const scrollRotationRef = useRef(0)
   const lastScrollAtRef = useRef(0)
+  const wheelDidRotateRef = useRef(false)
   const mouseWheelActiveRef = useRef(false)
   const touchWheelActiveRef = useRef(false)
   const videoIframeRef = useRef<HTMLIFrameElement>(null)
@@ -449,6 +450,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
           // Advance by however many full steps were rotated so a fast spin
           // moves multiple items instead of getting stuck on one.
           const steps = Math.trunc(accumulatedRotationRef.current / STEP)
+          wheelDidRotateRef.current = true
           navigateByWheel(steps)
 
           // Keep the leftover rotation so movement stays smooth.
@@ -543,10 +545,13 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     })
   }, [menuItems.length])
 
-  const isWheelControl = (target: EventTarget | null) => target instanceof Element && target.closest("button") !== null
+  const isCenterControl = (target: EventTarget | null) =>
+    target instanceof Element && target.closest("[data-wheel-center]") !== null
 
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || isWheelControl(event.target)) return
+    if (event.button !== 0) return
+    wheelDidRotateRef.current = false
+    if (isCenterControl(event.target)) return
     mouseWheelActiveRef.current = true
     handleWheelStart()
     handleWheelMove(event.clientX, event.clientY)
@@ -565,7 +570,9 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   }
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (event.touches.length !== 1 || isWheelControl(event.target)) return
+    if (event.touches.length !== 1) return
+    wheelDidRotateRef.current = false
+    if (isCenterControl(event.target)) return
     touchWheelActiveRef.current = true
     handleWheelStart()
     const touch = event.touches[0]
@@ -576,6 +583,13 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     if (!touchWheelActiveRef.current) return
     touchWheelActiveRef.current = false
     handleWheelEnd()
+  }
+
+  const handleWheelClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!wheelDidRotateRef.current) return
+    wheelDidRotateRef.current = false
+    event.preventDefault()
+    event.stopPropagation()
   }
 
   useEffect(() => {
@@ -958,8 +972,10 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        onClickCapture={handleWheelClickCapture}
       >
         <button
+          data-wheel-center
           type="button"
           aria-label={
             currentScreen === "videoPlayer"
