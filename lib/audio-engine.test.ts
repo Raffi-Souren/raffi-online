@@ -54,6 +54,22 @@ test("FEATURED_RAFS_CRATE applies curated display metadata", () => {
   )
 })
 
+test("FEATURED_RAFS_CRATE prioritizes homie tracks after the original 13", () => {
+  assert.deepEqual(
+    FEATURED_RAFS_CRATE.slice(13, 21).map((track) => track.id),
+    [
+      "rich-baby-daddy-pherris-edit-a-side",
+      "texas-speed-white-ferrari0",
+      "kdot-x-radiohead",
+      "beyonce-x-stardust-break-my-soul-sango-mix",
+      "brent-faiyaz-all-mine-dwells-rmx",
+      "semi-on-em-1979",
+      "caffeine-vitamins",
+      "habibi-funk-plus",
+    ],
+  )
+})
+
 // --- resolveTrackEnd --------------------------------------------------------
 
 const base = { currentIndex: 0, playlistLength: 5, shuffle: false, repeatMode: "all" as const }

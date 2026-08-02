@@ -57,18 +57,35 @@ const handPickedTracks = FEATURED_OVERRIDES.flatMap(({ id, title, artist }) => {
   return track ? [{ ...track, title: title ?? track.title, artist }] : []
 })
 
-const handPickedIds = new Set(handPickedTracks.map((track) => track.id))
+const HOMIE_DISCOVERY_IDS = [
+  "rich-baby-daddy-pherris-edit-a-side",
+  "texas-speed-white-ferrari0",
+  "kdot-x-radiohead",
+  "beyonce-x-stardust-break-my-soul-sango-mix",
+  "brent-faiyaz-all-mine-dwells-rmx",
+  "semi-on-em-1979",
+  "caffeine-vitamins",
+  "habibi-funk-plus",
+] as const
+
+const homieDiscoveryTracks = HOMIE_DISCOVERY_IDS.flatMap((id) => {
+  const track = CRATE_TRACKS.find((candidate) => candidate.id === id)
+  return track ? [track] : []
+})
+
+const prioritizedIds = new Set([...handPickedTracks, ...homieDiscoveryTracks].map((track) => track.id))
 
 /**
  * The 50-track crate shown in the iPod. It opens with the original hand-picked
- * sequence, then continues through unique tracks from Raffi's broader library.
- * URLs and base metadata remain single-sourced in the canonical crate.
+ * sequence, continues with direct tracks from Raffi's homies, then fills out
+ * the session from Raffi / DJ Sweeterman's broader liked-track library.
  */
 export const FEATURED_RAFS_CRATE: Track[] = [
   ...handPickedTracks,
-  ...CRATE_TRACKS.filter((track) => !handPickedIds.has(track.id)).slice(
+  ...homieDiscoveryTracks,
+  ...CRATE_TRACKS.filter((track) => !prioritizedIds.has(track.id)).slice(
     0,
-    Math.max(0, CURATED_CRATE_SIZE - handPickedTracks.length),
+    Math.max(0, CURATED_CRATE_SIZE - handPickedTracks.length - homieDiscoveryTracks.length),
   ),
 ]
 
