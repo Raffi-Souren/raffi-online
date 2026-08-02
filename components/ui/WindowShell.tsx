@@ -9,9 +9,18 @@ interface WindowShellProps {
   children: ReactNode
   className?: string
   id?: string
+  /**
+   * Fill the whole window with the child instead of sizing to content.
+   *
+   * Normal windows (About, Notes) size to their content, so the dialog has no
+   * explicit height and `height: 100%` on any descendant collapses to `auto`.
+   * Games need the opposite: a definite height to stretch into, and no padding
+   * eating the frame. Opt in rather than changing every window.
+   */
+  fill?: boolean
 }
 
-export default function WindowShell({ title, onClose, children, className = "", id }: WindowShellProps) {
+export default function WindowShell({ title, onClose, children, className = "", id, fill = false }: WindowShellProps) {
   const windowRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll while window is open
@@ -98,6 +107,10 @@ export default function WindowShell({ title, onClose, children, className = "", 
             flexDirection: "column",
             width: "100%",
             maxWidth: "1024px",
+            // A definite height is what lets `height: 100%` resolve further
+            // down. Without it the dialog sizes to content and every nested
+            // percentage height silently collapses to auto.
+            height: fill ? "100%" : undefined,
             maxHeight: "100%",
             pointerEvents: "auto",
             overflow: "hidden",
@@ -175,7 +188,15 @@ export default function WindowShell({ title, onClose, children, className = "", 
               flex: "1 1 auto",
               overflowY: "auto",
               overflowX: "hidden",
-              padding: "1rem",
+              // Containing block for any child's `absolute inset-0` overlay.
+              // Without it those resolve against the fixed outer positioner and
+              // escape the window frame entirely, covering the title bar.
+              position: "relative",
+              // Games own their whole frame; padding would letterbox them in
+              // white and the scrollbar would sit on top of the canvas.
+              padding: fill ? 0 : "1rem",
+              display: fill ? "flex" : undefined,
+              flexDirection: fill ? "column" : undefined,
               backgroundColor: "#ffffff",
               color: "#111827",
               minHeight: 0,
