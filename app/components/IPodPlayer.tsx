@@ -219,6 +219,49 @@ const IPOD_WIDTH = 280
 const IPOD_HEIGHT = 460
 const MIN_USABLE_SCALE = 0.75
 
+// One detent per 30 degrees — twelve rows per full turn. Coarse enough that a
+// resting hand never registers, fine enough that a flick walks a long list.
+const WHEEL_DETENT_DEGREES = 30
+// Angles are unstable near the hub, where a pixel of travel swings the bearing
+// wildly. Ignore samples inside this fraction of the radius; 0.4 of the 160px
+// wheel clears the 60px Select button.
+const WHEEL_DEAD_ZONE_RATIO = 0.4
+// Pixels of copy to move per detent on screens that scroll text instead of
+// highlighting rows.
+const WHEEL_SCROLL_PIXELS_PER_DETENT = 28
+// Total swept rotation that promotes a press from "tap" to "spin". Below this a
+// press is left completely alone so it lands on MENU, a skip button or
+// play/pause; above it the wheel takes over the pointer and eats the closing
+// click. Both effects share this one threshold so a press can never fall
+// between them and do nothing at all.
+const WHEEL_GESTURE_CONFIRM_DEGREES = 8
+
+/**
+ * Bearing of a point on the wheel, in degrees clockwise from 3 o'clock.
+ *
+ * Returns 0-359 so the seam sits at 3 o'clock, and `null` inside the dead zone
+ * so callers can drop the sample instead of acting on a meaningless angle.
+ */
+function wheelBearingDegrees(dx: number, dy: number, radius: number) {
+  if (Math.hypot(dx, dy) < radius * WHEEL_DEAD_ZONE_RATIO) return null
+  const degrees = Math.atan2(dy, dx) * (180 / Math.PI)
+  return (degrees + 360) % 360
+}
+
+/**
+ * Signed shortest rotation from one bearing to another.
+ *
+ * Bearings wrap at the 359/0 seam, so a pointer crossing it reads as a ~359
+ * degree jump in the wrong direction. Folding the raw difference back into
+ * (-180, 180] keeps one continuous drag continuous.
+ */
+function shortestAngleDelta(fromDegrees: number, toDegrees: number) {
+  let delta = (toDegrees - fromDegrees) % 360
+  if (delta > 180) delta -= 360
+  if (delta <= -180) delta += 360
+  return delta
+}
+
 export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const {
     currentTrack,
@@ -251,13 +294,16 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const wheelRef = useRef<HTMLDivElement>(null)
   const lastAngleRef = useRef<number | null>(null)
   const accumulatedRotationRef = useRef(0)
+  const sweptRotationRef = useRef(0)
   const scrollRotationRef = useRef(0)
   const lastScrollAtRef = useRef(0)
   const wheelDidRotateRef = useRef(false)
-  const mouseWheelActiveRef = useRef(false)
-  const touchWheelActiveRef = useRef(false)
+  // Mouse, touch and pen all arrive as pointer events, so one captured pointer
+  // id is the whole gesture bookkeeping.
+  const wheelPointerIdRef = useRef<number | null>(null)
   const videoIframeRef = useRef<HTMLIFrameElement>(null)
   const selectedItemRef = useRef<HTMLDivElement>(null)
+  const menuListRef = useRef<HTMLDivElement>(null)
   const screenScrollRef = useRef<HTMLDivElement>(null)
 
   const formatTime = (seconds: number) => {
@@ -365,6 +411,15 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
   const menuItems = getMenuItems()
 
+  // The wheel only ever moves something that already exists on screen. Now
+  // Playing and the video player have no rows and no scrollable copy, so the
+  // wheel stays inert there rather than inventing navigation or interrupting
+  // whatever is playing.
+  const hasSelectableRows =
+    currentScreen !== "nowPlaying" && currentScreen !== "videoPlayer" && menuItems.length > 0
+  const hasScrollableCopy = currentScreen === "podcastDetail"
+  const wheelCanRotate = hasSelectableRows || hasScrollableCopy
+
   // Seed the default playlist once, but never hijack a session that's already
   // playing (e.g. a record dug out of the crate).
   const seededPlaylistRef = useRef(false)
@@ -412,59 +467,74 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     (steps: number) => {
       if (!steps) return
 
-      const hasSelectableRows =
-        currentScreen !== "nowPlaying" && currentScreen !== "videoPlayer" && menuItems.length > 0
-
       if (hasSelectableRows) {
         setSelectedIndex((prev) => Math.max(0, Math.min(menuItems.length - 1, prev + steps)))
         return
       }
 
-      // Detail screens have no highlighted rows, but the click wheel should
-      // still work like an iPod wheel and move their scrollable copy.
-      screenScrollRef.current?.scrollBy({ top: steps * 28, behavior: "auto" })
+      if (hasScrollableCopy) {
+        // Detail screens have no highlighted rows, but the click wheel should
+        // still work like an iPod wheel and move their scrollable copy.
+        screenScrollRef.current?.scrollBy({
+          top: steps * WHEEL_SCROLL_PIXELS_PER_DETENT,
+          behavior: "auto",
+        })
+      }
     },
-    [currentScreen, menuItems.length],
+    [hasScrollableCopy, hasSelectableRows, menuItems.length],
   )
 
-  const handleWheelMove = useCallback(
+  // Bearing of a client point on the wheel, or null if the wheel is gone or the
+  // point sits in the hub dead zone.
+  const readWheelBearing = useCallback((clientX: number, clientY: number) => {
+    const wheel = wheelRef.current
+    if (!wheel) return null
+
+    const rect = wheel.getBoundingClientRect()
+    const radius = rect.width / 2
+    if (radius <= 0) return null
+
+    return wheelBearingDegrees(clientX - (rect.left + radius), clientY - (rect.top + rect.height / 2), radius)
+  }, [])
+
+  const trackWheelRotation = useCallback(
     (clientX: number, clientY: number) => {
-      if (!wheelRef.current) return
+      const bearing = readWheelBearing(clientX, clientY)
 
-      const rect = wheelRef.current.getBoundingClientRect()
-      const centerX = rect.left + rect.width / 2
-      const centerY = rect.top + rect.height / 2
-
-      const angle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI)
-
-      if (lastAngleRef.current !== null) {
-        let delta = angle - lastAngleRef.current
-
-        if (delta > 180) delta -= 360
-        if (delta < -180) delta += 360
-
-        accumulatedRotationRef.current += delta
-
-        const STEP = 30
-        if (Math.abs(accumulatedRotationRef.current) >= STEP) {
-          // Advance by however many full steps were rotated so a fast spin
-          // moves multiple items instead of getting stuck on one.
-          const steps = Math.trunc(accumulatedRotationRef.current / STEP)
-          wheelDidRotateRef.current = true
-          navigateByWheel(steps)
-
-          // Keep the leftover rotation so movement stays smooth.
-          accumulatedRotationRef.current -= steps * STEP
-        }
+      if (bearing === null) {
+        // Inside the dead zone: pause the gesture rather than end it, and
+        // re-seed on the way out so crossing the hub emits nothing.
+        lastAngleRef.current = null
+        return
       }
 
-      lastAngleRef.current = angle
+      const previousBearing = lastAngleRef.current
+      lastAngleRef.current = bearing
+      if (previousBearing === null) return
+
+      const delta = shortestAngleDelta(previousBearing, bearing)
+      accumulatedRotationRef.current += delta
+      sweptRotationRef.current += Math.abs(delta)
+      if (sweptRotationRef.current >= WHEEL_GESTURE_CONFIRM_DEGREES) {
+        wheelDidRotateRef.current = true
+      }
+
+      // Emit every whole detent the pointer swept, so a fast spin moves several
+      // rows instead of getting stuck on one.
+      const steps = Math.trunc(accumulatedRotationRef.current / WHEEL_DETENT_DEGREES)
+      if (!steps) return
+
+      // Keep the leftover rotation so slow movement stays smooth.
+      accumulatedRotationRef.current -= steps * WHEEL_DETENT_DEGREES
+      navigateByWheel(steps)
     },
-    [navigateByWheel],
+    [navigateByWheel, readWheelBearing],
   )
 
   const handleJogWheelScroll = useCallback(
     (event: WheelEvent) => {
+      // Screens with nothing to move keep native scrolling.
+      if (!wheelCanRotate) return
       event.preventDefault()
 
       const now = performance.now()
@@ -481,17 +551,8 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       navigateByWheel(steps)
       scrollRotationRef.current -= steps * STEP
     },
-    [navigateByWheel],
+    [navigateByWheel, wheelCanRotate],
   )
-
-  const handleWheelStart = () => {
-    lastAngleRef.current = null
-    accumulatedRotationRef.current = 0
-  }
-
-  const handleWheelEnd = () => {
-    lastAngleRef.current = null
-  }
 
   useEffect(() => {
     const viewport = playerViewportRef.current
@@ -531,11 +592,28 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     return () => resizeObserver.disconnect()
   }, [])
 
-  // Keep the highlighted row in view when scrolling long lists so the
-  // selection never disappears off-screen.
+  // Keep the highlighted row in view when scrolling long lists so the selection
+  // never disappears off-screen. This nudges the list's own scrollTop instead of
+  // calling scrollIntoView, which would also drag the surrounding window and the
+  // page around while the wheel is being spun.
   useEffect(() => {
-    selectedItemRef.current?.scrollIntoView({ block: "nearest" })
-  }, [selectedIndex])
+    const row = selectedItemRef.current
+    const list = menuListRef.current
+    if (!row || !list) return
+
+    const listRect = list.getBoundingClientRect()
+    if (listRect.height <= 0) return
+    const rowRect = row.getBoundingClientRect()
+    // The chassis is CSS-scaled, so convert measured client pixels back into
+    // the list's own unscaled scroll pixels.
+    const toScrollPixels = list.clientHeight / listRect.height
+
+    if (rowRect.top < listRect.top) {
+      list.scrollTop -= (listRect.top - rowRect.top) * toScrollPixels
+    } else if (rowRect.bottom > listRect.bottom) {
+      list.scrollTop += (rowRect.bottom - listRect.bottom) * toScrollPixels
+    }
+  }, [currentScreen, selectedIndex])
 
   // Guard against a stale selectedIndex when moving to a shorter menu.
   useEffect(() => {
@@ -548,41 +626,60 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const isCenterControl = (target: EventTarget | null) =>
     target instanceof Element && target.closest("[data-wheel-center]") !== null
 
-  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return
+  const handleWheelPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // Secondary mouse buttons are not a spin. Touch and pen always report 0.
+    if (event.button > 0) return
+
+    // A fresh press ends the "this was a drag" state so the tap that follows
+    // reaches its button normally.
     wheelDidRotateRef.current = false
+
+    // The hub owns Select; only the annulus rotates.
     if (isCenterControl(event.target)) return
-    mouseWheelActiveRef.current = true
-    handleWheelStart()
-    handleWheelMove(event.clientX, event.clientY)
+    if (!wheelCanRotate) return
+    if (wheelPointerIdRef.current !== null) return
+    if (readWheelBearing(event.clientX, event.clientY) === null) return
+
+    wheelPointerIdRef.current = event.pointerId
+    lastAngleRef.current = null
+    accumulatedRotationRef.current = 0
+    sweptRotationRef.current = 0
+    // No pointer capture yet — capturing here would retarget the closing click
+    // to the wheel and kill every ordinary tap on the controls it covers.
+    trackWheelRotation(event.clientX, event.clientY)
   }
 
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (mouseWheelActiveRef.current && event.buttons === 1) {
-      handleWheelMove(event.clientX, event.clientY)
+  const handleWheelPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (wheelPointerIdRef.current !== event.pointerId) return
+    // Suppress page scrolling and text selection only while a spin is actually
+    // running; an idle pointer over the wheel behaves normally.
+    if (event.cancelable) event.preventDefault()
+    trackWheelRotation(event.clientX, event.clientY)
+
+    // Once this is definitely a spin, take the pointer so it survives leaving
+    // the 160px wheel — which happens constantly on the scaled-down phone
+    // layout — and so the release lands here to have its click swallowed.
+    //
+    // Only pointerup and pointercancel end the gesture. lostpointercapture must
+    // not: touch pointers are implicitly captured at pointerdown, so claiming
+    // them explicitly here fires a lostpointercapture for the implicit capture
+    // and would otherwise cancel the spin on its very first move.
+    if (wheelDidRotateRef.current && !event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.setPointerCapture(event.pointerId)
     }
   }
 
-  const handleMouseEnd = () => {
-    if (!mouseWheelActiveRef.current) return
-    mouseWheelActiveRef.current = false
-    handleWheelEnd()
-  }
-
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (event.touches.length !== 1) return
-    wheelDidRotateRef.current = false
-    if (isCenterControl(event.target)) return
-    touchWheelActiveRef.current = true
-    handleWheelStart()
-    const touch = event.touches[0]
-    handleWheelMove(touch.clientX, touch.clientY)
-  }
-
-  const handleTouchEnd = () => {
-    if (!touchWheelActiveRef.current) return
-    touchWheelActiveRef.current = false
-    handleWheelEnd()
+  const handleWheelPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (wheelPointerIdRef.current !== event.pointerId) return
+    wheelPointerIdRef.current = null
+    lastAngleRef.current = null
+    accumulatedRotationRef.current = 0
+    sweptRotationRef.current = 0
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    // wheelDidRotateRef stays set so the click this release generates is
+    // swallowed below instead of firing MENU, play/pause or a skip button.
   }
 
   const handleWheelClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -591,22 +688,6 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     event.preventDefault()
     event.stopPropagation()
   }
-
-  useEffect(() => {
-    const wheel = wheelRef.current
-    if (!wheel) return
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (!touchWheelActiveRef.current || event.touches.length !== 1) return
-      // Suppress page/viewport movement only during an intentional wheel spin.
-      event.preventDefault()
-      const touch = event.touches[0]
-      handleWheelMove(touch.clientX, touch.clientY)
-    }
-
-    wheel.addEventListener("touchmove", handleTouchMove, { passive: false })
-    return () => wheel.removeEventListener("touchmove", handleTouchMove)
-  }, [handleWheelMove])
 
   useEffect(() => {
     const wheel = wheelRef.current
@@ -945,11 +1026,13 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                 )}
               </div>
             ) : (
-              <div className="space-y-0 overflow-y-auto h-full">
+              <div ref={menuListRef} className="space-y-0 overflow-y-auto h-full">
                 {menuItems.map((item, index) => (
                   <div
                     key={index}
                     ref={selectedIndex === index ? selectedItemRef : null}
+                    data-ipod-row
+                    data-selected={selectedIndex === index}
                     className="flex items-center justify-between px-2 py-1"
                     style={{
                       background: selectedIndex === index ? "#3366cc" : "transparent",
@@ -981,16 +1064,15 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
           background: "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 50%, #ccc 100%)",
           borderRadius: "50%",
           boxShadow: "inset 0 2px 10px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.1)",
-          touchAction: "none",
+          // Only claim the touch gesture on screens the wheel can actually
+          // move; elsewhere a swipe over the wheel still scrolls the page.
+          touchAction: wheelCanRotate ? "none" : "auto",
           WebkitTapHighlightColor: "transparent",
         }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseEnd}
-        onMouseLeave={handleMouseEnd}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        onPointerDown={handleWheelPointerDown}
+        onPointerMove={handleWheelPointerMove}
+        onPointerUp={handleWheelPointerEnd}
+        onPointerCancel={handleWheelPointerEnd}
         onClickCapture={handleWheelClickCapture}
       >
         <button
