@@ -29,7 +29,7 @@
         "bumper": { "depth": 0.16, "height": 0.3 }
       },
       "jitter": { "length": 0.06, "width": 0.04, "cabinHeight": 0.08 },
-      "handling": { "accel": 6.4, "topSpeed": 31, "reverse": 9, "grip": 9.2, "handbrakeGrip": 2.6, "steerRate": 2.5, "steerFalloff": 0.55, "brake": 13, "mass": 1400, "drag": 0.42 },
+      "handling": { "accel": 7.2, "topSpeed": 31, "reverse": 9, "grip": 9.6, "handbrakeGrip": 2.6, "steerRate": 3.2, "steerFalloff": 0.42, "steerSpeed": 2.4, "minSteerAuthority": 0.6, "brake": 14, "mass": 1400, "drag": 0.4, "coastFriction": 2.8 },
       "colors": [["#B4B8BC", "#8E9296"], ["#2E4A6E", "#22374F"], ["#7A2E2E", "#5C2323"], ["#D8D2C4", "#B0AB9E"], ["#3A3E42", "#2A2E32"], ["#4A6E5A", "#3A5646"]]
     },
     "compact": {
@@ -44,7 +44,7 @@
         "bumper": { "depth": 0.14, "height": 0.28 }
       },
       "jitter": { "length": 0.05, "width": 0.04, "cabinHeight": 0.07 },
-      "handling": { "accel": 6.0, "topSpeed": 28, "reverse": 9, "grip": 9.8, "handbrakeGrip": 2.9, "steerRate": 2.9, "steerFalloff": 0.5, "brake": 13, "mass": 1100, "drag": 0.4 },
+      "handling": { "accel": 7.0, "topSpeed": 28, "reverse": 9, "grip": 10.2, "handbrakeGrip": 2.9, "steerRate": 3.5, "steerFalloff": 0.38, "steerSpeed": 2.2, "minSteerAuthority": 0.65, "brake": 14, "mass": 1100, "drag": 0.38, "coastFriction": 2.6 },
       "colors": [["#C4462E", "#9E3724"], ["#3E7A9E", "#2F5E7A"], ["#E0DCC8", "#BAB6A4"], ["#7A6E9E", "#5E547A"], ["#4A4E52", "#3A3E42"]]
     },
     "coupe-sport": {
@@ -60,7 +60,7 @@
         "spoiler": { "chance": 0.5, "height": 0.16, "depth": 0.3 }
       },
       "jitter": { "length": 0.05, "width": 0.03, "cabinHeight": 0.06 },
-      "handling": { "accel": 9.4, "topSpeed": 41, "reverse": 10, "grip": 11.5, "handbrakeGrip": 2.2, "steerRate": 2.7, "steerFalloff": 0.62, "brake": 16, "mass": 1300, "drag": 0.36 },
+      "handling": { "accel": 9.6, "topSpeed": 41, "reverse": 10, "grip": 11.6, "handbrakeGrip": 2.2, "steerRate": 3.3, "steerFalloff": 0.45, "steerSpeed": 2.2, "minSteerAuthority": 0.6, "brake": 16, "mass": 1300, "drag": 0.34, "coastFriction": 2.5 },
       "colors": [["#D8C24A", "#B09E3A"], ["#8E2E4A", "#6E2338"], ["#2A2E32", "#1E2226"], ["#E4E0D4", "#BEBAAE"], ["#2E6E7A", "#23545E"]]
     },
     "wagon": {
@@ -76,7 +76,7 @@
         "roofRack": { "chance": 0.55, "height": 0.1 }
       },
       "jitter": { "length": 0.06, "width": 0.04, "cabinHeight": 0.06 },
-      "handling": { "accel": 5.8, "topSpeed": 29, "reverse": 8, "grip": 9.0, "handbrakeGrip": 2.8, "steerRate": 2.3, "steerFalloff": 0.55, "brake": 12, "mass": 1550, "drag": 0.46 },
+      "handling": { "accel": 6.4, "topSpeed": 29, "reverse": 8, "grip": 9.4, "handbrakeGrip": 2.8, "steerRate": 3.0, "steerFalloff": 0.42, "steerSpeed": 2.5, "minSteerAuthority": 0.58, "brake": 13, "mass": 1550, "drag": 0.42, "coastFriction": 2.9 },
       "colors": [["#5E6E4A", "#48563A"], ["#8A8378", "#6E6A60"], ["#2E4A6E", "#22374F"], ["#7A4A2E", "#5E3823"]]
     },
     "van": {
@@ -108,7 +108,7 @@
         "bumper": { "depth": 0.2, "height": 0.36 }
       },
       "jitter": { "length": 0.06, "width": 0.04, "cabinHeight": 0.06 },
-      "handling": { "accel": 5.6, "topSpeed": 29, "reverse": 8, "grip": 8.0, "handbrakeGrip": 3.0, "steerRate": 2.1, "steerFalloff": 0.52, "brake": 12, "mass": 1900, "drag": 0.52 },
+      "handling": { "accel": 6.2, "topSpeed": 29, "reverse": 8, "grip": 8.4, "handbrakeGrip": 3.0, "steerRate": 2.8, "steerFalloff": 0.42, "steerSpeed": 2.6, "minSteerAuthority": 0.55, "brake": 13, "mass": 1900, "drag": 0.48, "coastFriction": 3.0 },
       "colors": [["#7A2E2E", "#5C2323"], ["#2E4A3E", "#233A30"], ["#B4B8BC", "#8E9296"], ["#8A6A2E", "#6E5423"]]
     },
     "box-truck": {
@@ -161,7 +161,7 @@
         "grille": { "width": 1.04, "height": 0.3, "color": "#D4D7D8" }
       },
       "jitter": { "length": 0.01, "width": 0.01, "cabinHeight": 0.015 },
-      "handling": { "accel": 8.8, "topSpeed": 39, "reverse": 10, "grip": 11.8, "handbrakeGrip": 2.3, "steerRate": 2.65, "steerFalloff": 0.6, "brake": 16, "mass": 1480, "drag": 0.35 },
+      "handling": { "accel": 9.4, "topSpeed": 38, "reverse": 11, "grip": 12.0, "handbrakeGrip": 2.4, "steerRate": 3.4, "steerFalloff": 0.4, "steerSpeed": 2.0, "minSteerAuthority": 0.7, "brake": 17, "mass": 1480, "drag": 0.33, "coastFriction": 2.4 },
       "colors": [["#164E3B", "#0E3228"], ["#CDD0CA", "#777D7C"], ["#182A48", "#0F1C31"], ["#4A1E2C", "#2E121C"]]
     },
     "skateboard": {
@@ -213,7 +213,7 @@
         "strobe": { "color": "#FFB03A", "rate": 5.5, "width": 1.1, "height": 0.12 }
       },
       "jitter": { "length": 0.02, "width": 0.02, "cabinHeight": 0.03 },
-      "handling": { "accel": 7.6, "topSpeed": 35, "reverse": 10, "grip": 10.4, "handbrakeGrip": 2.5, "steerRate": 2.6, "steerFalloff": 0.58, "brake": 15, "mass": 1500, "drag": 0.4 },
+      "handling": { "accel": 8.0, "topSpeed": 35, "reverse": 10, "grip": 10.6, "handbrakeGrip": 2.5, "steerRate": 3.1, "steerFalloff": 0.42, "steerSpeed": 2.3, "minSteerAuthority": 0.6, "brake": 15, "mass": 1500, "drag": 0.38, "coastFriction": 2.7 },
       "colors": [["#26262A", "#1A1A1E"], ["#2E3440", "#22262E"]]
     }
   },

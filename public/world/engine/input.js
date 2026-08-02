@@ -3,11 +3,12 @@
  *
  * Left thumb: a virtual analog stick that appears wherever the thumb lands and
  * then stays put. Right thumb: a context button whose label changes with the
- * situation, plus a secondary. In a vehicle the right side becomes accelerate
- * and brake and the stick becomes steering only.
+ * situation, plus a secondary. In a car the right side becomes accelerate and
+ * brake and the stick X axis is steering only (Y is mild gas/brake assist).
  *
- * Desktop: WASD move, Space handbrake / micro-ride exit, E context, R radio, Tab pause,
- * Q / X rotate the view 90°.
+ * Desktop cars: W/S gas/brake, A/D steer (tank), Space handbrake, E exit.
+ * Micro-rides keep stick aim-assist. Space also exits board/scooter.
+ * E context, R radio, Tab pause, Q / X rotate the view 90°.
  *
  * There is no gyroscope binding. The camera is fixed, so gyro has nothing to
  * control.
@@ -264,11 +265,15 @@ export function updateInput(mode) {
   input.handbrake = keys.has('space') || keys.has('handbrake') || (mode === 'vehicle' && input.held.has('cam'))
 
   if (mode === 'vehicle') {
-    // On touch the right thumb drives; on desktop the stick's Y axis does.
+    // Right thumb (GAS/BRAKE) is authoritative on touch. On desktop W/S map to
+    // move.y and become throttle/brake so A/D can be pure steer without also
+    // reorienting the car to "screen up".
     const gasBtn = input.held.has('primary') ? 1 : 0
     const brakeBtn = input.held.has('second') ? 1 : 0
-    input.throttle = Math.max(gasBtn, my > 0 ? my : 0)
-    input.brake = Math.max(brakeBtn, my < 0 ? -my : 0)
+    // Mild stick-forward gas helps touch when GAS is held lightly; keyboard W
+    // still wins via my.
+    input.throttle = Math.max(gasBtn, my > 0.12 ? my : 0)
+    input.brake = Math.max(brakeBtn, my < -0.12 ? -my : 0)
   } else {
     input.throttle = 0
     input.brake = 0

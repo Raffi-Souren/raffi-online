@@ -207,13 +207,24 @@ export function stepVehicle(v, h, ctl, dt, world) {
     else v.speed -= Math.sign(v.speed) * fric
   }
 
-  // Steering authority falls off with speed so the car does not spin at 100.
-  const speedFrac = Math.min(1, Math.abs(v.speed) / top)
+  // Steering authority falls off with speed so the car does not spin at top end.
+  // A minimum authority floor lets parked cars still turn (arcade crawl/pivot)
+  // — without it, A/D does nothing until you are already rolling, which makes
+  // driveway exits feel broken.
+  const speedFrac = Math.min(1, Math.abs(v.speed) / Math.max(top, 1))
   const authority = 1 - h.steerFalloff * speedFrac
-  const steerRate = h.steerRate * authority * Math.sign(v.speed || 1)
-  const targetAngular = steer * steerRate * Math.min(1, Math.abs(v.speed) / (h.steerSpeed || 4))
+  const reverseSign = v.speed < -0.15 ? -1 : 1
+  const steerRate = h.steerRate * authority * reverseSign
+  const steerSpeed = h.steerSpeed || 3.2
+  const minAuthority = h.minSteerAuthority ?? 0.55
+  const speedFactor = Math.abs(steer) > 0.05
+    ? Math.max(minAuthority, Math.min(1, Math.abs(v.speed) / steerSpeed))
+    : Math.min(1, Math.abs(v.speed) / steerSpeed)
+  const targetAngular = steer * steerRate * speedFactor
 
-  v.angularVel += (targetAngular - v.angularVel) * Math.min(1, dt * 9)
+  // Snappier response at low speed so the first A/D press after mount bites.
+  const yawLerp = Math.abs(v.speed) < 6 ? 14 : 9
+  v.angularVel += (targetAngular - v.angularVel) * Math.min(1, dt * yawLerp)
   v.yaw += v.angularVel * dt
 
   // Lateral slip: grip pulls the velocity vector back in line with the nose.

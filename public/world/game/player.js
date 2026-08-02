@@ -283,23 +283,43 @@ function updateWalking(dt, input, world, beatPhase) {
 function updateDriving(dt, input, world) {
   const v = player.vehicle
   const basis = movementBasis()
-
-  // Steering is screen-relative too: pushing the stick left turns the car left
-  // on screen, which is the only thing that feels right under a fixed camera.
-  const screenRight = basis.rx * input.move.x + basis.fx * input.move.y
-  const screenFwd = basis.rz * input.move.x + basis.fz * input.move.y
-  let steer = 0
   const inputMag = Math.hypot(input.move.x, input.move.y)
-  if (inputMag > 0.15) {
+  const microRide = v.kind === 'skateboard' || v.kind === 'scooter'
+
+  // Cars use tank / arcade controls: A/D or stick X steers relative to the car,
+  // W/S or GAS/BRAKE push along the nose. Point-to-go (reorient to the stick
+  // vector) made desktop navigation feel like spinning a shopping cart under
+  // a fixed iso camera — W fought the current heading instead of driving it.
+  //
+  // Micro-rides keep a soft screen-relative assist so kick/carve still tracks
+  // the stick the way walking does.
+  let steer = 0
+  if (microRide && inputMag > 0.12) {
+    const screenRight = basis.rx * input.move.x + basis.fx * input.move.y
+    const screenFwd = basis.rz * input.move.x + basis.fz * input.move.y
     const desiredYaw = Math.atan2(screenRight, screenFwd)
     let diff = desiredYaw - v.yaw
     while (diff > Math.PI) diff -= Math.PI * 2
     while (diff < -Math.PI) diff += Math.PI * 2
-    steer = clamp(diff * 1.6, -1, 1)
+    // Blend aim-assist with pure lateral so small left/right nudges still carve.
+    const aim = clamp(diff * 1.35, -1, 1)
+    const lateral = clamp(input.move.x * 1.1, -1, 1)
+    steer = clamp(aim * 0.72 + lateral * 0.45, -1, 1)
+  } else {
+    // Tank / arcade: only the lateral axis steers (A/D, stick X). Forward input
+    // must never yaw the car — that was the main "can't navigate" complaint.
+    steer = clamp(input.move.x, -1, 1)
   }
 
+  // Dead-zone so resting stick/keyboard noise does not creep-turn.
+  if (Math.abs(steer) < 0.08) steer = 0
+
   const ctl = {
-    throttle: input.throttle > 0.01 ? input.throttle : inputMag > 0.15 ? inputMag : 0,
+    // Cars: throttle/brake come from W/S or GAS/BRAKE only (see updateInput).
+    // Micro-rides may still push from stick magnitude when the kick button is up.
+    throttle: input.throttle > 0.01
+      ? input.throttle
+      : (microRide && inputMag > 0.15 ? inputMag : 0),
     brake: input.brake,
     steer,
     handbrake: input.handbrake,
