@@ -56,7 +56,11 @@ export default function WindowShell({ title, onClose, children, className = "", 
       <div
         style={{
           position: "fixed",
-          inset: "0",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
+          maxHeight: "calc(100dvh - 40px - env(safe-area-inset-bottom, 0px))",
           zIndex: 100,
           backgroundColor: "rgba(0, 0, 0, 0.5)",
         }}
@@ -67,10 +71,12 @@ export default function WindowShell({ title, onClose, children, className = "", 
       <div
         style={{
           position: "fixed",
-          top: "8px",
-          left: "8px",
-          right: "8px",
-          bottom: "8px",
+          top: "max(8px, env(safe-area-inset-top, 0px))",
+          left: "max(8px, env(safe-area-inset-left, 0px))",
+          right: "max(8px, env(safe-area-inset-right, 0px))",
+          bottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
+          maxHeight:
+            "calc(100dvh - max(8px, env(safe-area-inset-top, 0px)) - 48px - env(safe-area-inset-bottom, 0px))",
           zIndex: 101,
           display: "flex",
           alignItems: "center",
@@ -128,9 +134,10 @@ export default function WindowShell({ title, onClose, children, className = "", 
               {title}
             </h2>
             <button
+              type="button"
               onClick={onClose}
               style={{
-                padding: "0.5rem",
+                padding: 0,
                 borderRadius: "0.25rem",
                 transition: "background-color 0.2s",
                 flexShrink: 0,
@@ -143,8 +150,11 @@ export default function WindowShell({ title, onClose, children, className = "", 
                 justifyContent: "center",
                 position: "relative",
                 zIndex: 102,
-                minWidth: "40px",
-                minHeight: "40px",
+                minWidth: "44px",
+                minHeight: "44px",
+                width: "44px",
+                height: "44px",
+                boxSizing: "border-box",
                 WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => {

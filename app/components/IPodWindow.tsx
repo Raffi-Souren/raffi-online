@@ -20,7 +20,20 @@ export default function IPodWindow({ isOpen, onClose }: IPodWindowProps) {
 
   return (
     <WindowShell title={expandedVideo ? `Video: ${expandedVideo.title}` : "iPod"} onClose={onClose}>
-      <div className="flex items-center justify-center p-4" style={{ backgroundColor: "#1a1a2e", minHeight: "520px" }}>
+      <div
+        style={{
+          alignItems: expandedVideo ? "flex-start" : "center",
+          backgroundColor: "#1a1a2e",
+          display: "flex",
+          height: expandedVideo
+            ? "auto"
+            : "min(520px, max(120px, calc(100dvh - 156px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))))",
+          justifyContent: "center",
+          minHeight: 0,
+          padding: "clamp(4px, 2vw, 16px)",
+          width: "100%",
+        }}
+      >
         {expandedVideo ? (
           <div className="w-full max-w-2xl">
             <div className="relative w-full" style={{ aspectRatio: "16/9" }}>

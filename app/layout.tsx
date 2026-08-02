@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { Analytics } from "@vercel/analytics/next"
 import { AudioProvider } from "./context/AudioContext"
@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://raffi.computer"),
   title: "Raffi WW Web",
   description: "IBM CTO and entrepreneur based in NYC",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.png",
+  },
   openGraph: {
     type: "website",
     url: "https://raffi.computer/",
@@ -28,6 +32,13 @@ export const metadata: Metadata = {
     description: "IBM CTO and entrepreneur based in NYC",
     images: ["/windows-2000-background.png"],
   },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#245DDA",
 }
 
 export default function RootLayout({

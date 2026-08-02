@@ -30,8 +30,13 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
     <div
       style={{
         position: "fixed",
-        bottom: "3rem",
-        left: "0.5rem",
+        bottom: "calc(44px + env(safe-area-inset-bottom, 0px))",
+        left: "max(0.5rem, env(safe-area-inset-left, 0px))",
+        width:
+          "calc(100vw - 1rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))",
+        maxWidth: "16rem",
+        maxHeight:
+          "calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
         zIndex: 91,
       }}
     >
@@ -42,17 +47,25 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
           borderTopLeftRadius: "0.5rem",
           borderTopRightRadius: "0.5rem",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-          width: "16rem",
+          width: "100%",
+          maxHeight:
+            "calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          boxSizing: "border-box",
         }}
       >
         {/* Header */}
         <div
           style={{
             background: "linear-gradient(to right, #2563eb, #1e40af)",
-            padding: "0.5rem 1rem",
+            padding: "0 0.5rem 0 1rem",
+            minHeight: "44px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            flexShrink: 0,
             borderTopLeftRadius: "0.375rem",
             borderTopRightRadius: "0.375rem",
           }}
@@ -67,15 +80,24 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
             Start Menu
           </span>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close Start menu"
             style={{
               color: "white",
               borderRadius: "0.25rem",
-              padding: "0.25rem",
+              padding: 0,
               backgroundColor: "transparent",
               border: "none",
               cursor: "pointer",
               transition: "background-color 0.2s",
+              width: "44px",
+              height: "44px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              WebkitTapHighlightColor: "transparent",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e40af")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
@@ -85,9 +107,19 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
         </div>
 
         {/* Menu Items */}
-        <div style={{ padding: "0.5rem" }}>
+        <div
+          style={{
+            padding: "0.5rem",
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+            minHeight: 0,
+            flex: "1 1 auto",
+          }}
+        >
           {menuItems.map((item, index) => (
             <button
+              type="button"
               key={index}
               onClick={item.action}
               style={{
@@ -105,11 +137,13 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
                 cursor: "pointer",
                 fontSize: "0.875rem",
                 fontWeight: "500",
+                minHeight: "44px",
+                WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
-              <span style={{ fontSize: "1.125rem" }}>{item.icon}</span>
+              <span style={{ fontSize: "1.125rem" }} aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
@@ -122,6 +156,7 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
             padding: "0.5rem 1rem",
             borderBottomLeftRadius: "0.375rem",
             borderBottomRightRadius: "0.375rem",
+            flexShrink: 0,
           }}
         >
           <div

@@ -1,15 +1,17 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import WindowShell from "../../components/ui/WindowShell"
-import SnakeGame from "./SnakeGame"
-import ParachuteGame from "./ParachuteGame"
-import Brickbreaker from "./Brickbreaker"
-import MinesweeperGame from "./MinesweeperGame"
-import DoomGame from "./DoomGame"
-import GTA2 from "./GTA2"
-import AgeOfEmpires2 from "./AgeOfEmpires2"
-import XMenArcade from "./XMenArcade"
+
+const SnakeGame = dynamic(() => import("./SnakeGame"))
+const ParachuteGame = dynamic(() => import("./ParachuteGame"))
+const Brickbreaker = dynamic(() => import("./Brickbreaker"))
+const MinesweeperGame = dynamic(() => import("./MinesweeperGame"))
+const DoomGame = dynamic(() => import("./DoomGame"))
+const GTA2 = dynamic(() => import("./GTA2"))
+const AgeOfEmpires2 = dynamic(() => import("./AgeOfEmpires2"))
+const XMenArcade = dynamic(() => import("./XMenArcade"))
 
 interface Game {
   id: string

@@ -1,23 +1,24 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import QuestionBlock from "../components/easter/QuestionBlock"
 import DesktopIcon from "../components/ui/DesktopIcon"
 import StartMenu from "../components/ui/StartMenu"
 import DesktopContextMenu from "../components/ui/DesktopContextMenu"
 import Taskbar from "./components/Taskbar"
-import AboutWindow from "./components/AboutWindow"
-import GameSelector from "./components/GameSelector"
-import DiggingInTheCrates from "./components/DiggingInTheCrates"
-import BlogrollWindow from "./components/BlogrollWindow"
-import NotesWindow from "./components/NotesWindow"
-import UnderConstructionWindow from "./components/UnderConstructionWindow"
 import NowPlaying from "./components/NowPlaying"
-import IPodWindow from "./components/IPodWindow"
-import ProjectsWindow from "./components/ProjectsWindow"
 import WindowShell from "../components/ui/WindowShell"
-import { useAudio } from "./context/AudioContext"
+
+const AboutWindow = dynamic(() => import("./components/AboutWindow"))
+const GameSelector = dynamic(() => import("./components/GameSelector"))
+const DiggingInTheCrates = dynamic(() => import("./components/DiggingInTheCrates"))
+const BlogrollWindow = dynamic(() => import("./components/BlogrollWindow"))
+const NotesWindow = dynamic(() => import("./components/NotesWindow"))
+const UnderConstructionWindow = dynamic(() => import("./components/UnderConstructionWindow"))
+const IPodWindow = dynamic(() => import("./components/IPodWindow"))
+const ProjectsWindow = dynamic(() => import("./components/ProjectsWindow"))
 
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
@@ -32,16 +33,6 @@ export default function Home() {
     ipod: false,
     projects: false,
   })
-  const [isDesktop, setIsDesktop] = useState(false)
-  const { currentTrack, isPlaying, togglePlay } = useAudio()
-
-  useEffect(() => {
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768)
-    checkDesktop()
-    window.addEventListener("resize", checkDesktop)
-    return () => window.removeEventListener("resize", checkDesktop)
-  }, [])
-
   const openWindow = (windowName: string) => {
     setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
     setShowStartMenu(false)
@@ -77,9 +68,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div
+      className="relative min-h-screen h-screen overflow-hidden"
+      style={{
+        minHeight: "100dvh",
+        height: "100dvh",
+      }}
+    >
       {/* Background - behind everything */}
-      <div data-desktop-bg="true" style={{ position: "fixed", inset: 0, zIndex: -10, height: "100vh", width: "100vw" }}>
+      <div data-desktop-bg="true" style={{ position: "fixed", inset: 0, zIndex: -10, height: "100dvh", width: "100vw" }}>
         <Image
           src="/windows-bg.jpg"
           alt="Windows XP Background"
@@ -95,50 +92,63 @@ export default function Home() {
       {/* Desktop Context Menu */}
       <DesktopContextMenu onOpenWindow={openWindow} />
 
-      {isDesktop ? (
-        <div className="absolute inset-0 z-10">
-          <div className="absolute top-8 left-8">
-            <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-          </div>
-          <div className="absolute top-8 left-1/2 -translate-x-1/2">
-            <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-          </div>
-          <div className="absolute top-8 right-32">
-            <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-          </div>
-          <div className="absolute top-8 right-8">
-            <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-          </div>
-          <div className="absolute bottom-32 left-8">
-            <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-          </div>
-          <div className="absolute top-32 left-8">
-            <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
-          </div>
-          <div className="absolute top-32 right-8">
-            <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
-          </div>
-        </div>
-      ) : (
-        <div className="absolute inset-0 z-10 p-4 grid grid-cols-2 gap-4 content-start">
+      <div className="absolute inset-0 z-10 hidden md:block">
+        <div className="absolute top-8 left-8">
           <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
+        </div>
+        <div className="absolute top-8 left-1/2 -translate-x-1/2">
           <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
+        </div>
+        <div className="absolute top-8 right-32">
           <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
+        </div>
+        <div className="absolute top-8 right-8">
           <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-          <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
-          <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
+        </div>
+        <div className="absolute bottom-32 left-8">
           <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
         </div>
-      )}
+        <div className="absolute top-32 left-8">
+          <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
+        </div>
+        <div className="absolute top-32 right-8">
+          <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
+        </div>
+      </div>
+
+      <div
+        className="grid grid-cols-2 content-start gap-4 overflow-y-auto md:hidden"
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          bottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
+          left: 0,
+          zIndex: 10,
+          paddingTop: "calc(1rem + env(safe-area-inset-top, 0px))",
+          paddingRight: "calc(1rem + env(safe-area-inset-right, 0px))",
+          paddingBottom: "5rem",
+          paddingLeft: "calc(1rem + env(safe-area-inset-left, 0px))",
+          overscrollBehavior: "contain",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
+        <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
+        <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
+        <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
+        <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
+        <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
+        <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
+        <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+      </div>
 
       <div
         style={{
           position: "fixed",
-          bottom: "5rem",
-          left: "1rem",
+          bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+          left: "calc(1rem + env(safe-area-inset-left, 0px))",
           zIndex: 20,
         }}
-        className="md:bottom-20"
       >
         <QuestionBlock onClick={handleEasterEggClick} />
       </div>

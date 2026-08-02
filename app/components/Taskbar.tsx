@@ -41,20 +41,23 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         left: 0,
         right: 0,
         width: "100%",
-        height: "40px",
+        height: "calc(40px + env(safe-area-inset-bottom, 0px))",
         zIndex: 9999,
         backgroundColor: "#245DDA",
         borderTop: "2px solid #3E80F1",
         display: "flex",
         alignItems: "center",
-        paddingLeft: "8px",
-        paddingRight: "12px",
+        boxSizing: "border-box",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "max(4px, env(safe-area-inset-left, 0px))",
+        paddingRight: "max(4px, env(safe-area-inset-right, 0px))",
         justifyContent: "space-between",
         overflow: "hidden",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, overflow: "hidden" }}>
         <button
+          type="button"
           onClick={onStartClick}
           className="rounded-r-lg rounded-tl-lg rounded-bl-lg transition-all active:translate-y-px hover:brightness-110"
           aria-label="Start menu"
@@ -63,13 +66,13 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
             boxShadow: "inset 1px 1px 0px rgba(255,255,255,0.4), 2px 2px 3px rgba(0,0,0,0.3)",
             border: "none",
             color: "white",
-            paddingRight: "10px",
+            paddingRight: "8px",
             paddingLeft: "6px",
             height: "32px",
-            minWidth: "80px",
+            minWidth: "76px",
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "6px",
             cursor: "pointer",
           }}
         >
@@ -93,7 +96,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
               textShadow: "0 1px 1px rgba(0,0,0,0.4)",
               fontStyle: "italic",
               fontWeight: "bold",
-              fontSize: "18px",
+              fontSize: "17px",
               lineHeight: "1",
               display: "inline-block",
             }}
@@ -103,7 +106,7 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
         </button>
 
         <div
-          className="shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"
+          className="hidden min-[520px]:block shadow-[1px_0px_0px_rgba(255,255,255,0.2)]"
           style={{
             width: "2px",
             height: "28px",
@@ -121,13 +124,14 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
             display: "flex",
             alignItems: "center",
             gap: "16px",
-            marginRight: "8px",
-            paddingRight: "8px",
+            marginRight: "4px",
+            paddingRight: "4px",
             borderRight: "1px solid #1846A0",
             flexShrink: 0,
           }}
         >
           <button
+            type="button"
             onClick={() => onWindowClick("crates")}
             className="hover:bg-[#3E80F1] rounded transition-colors"
             style={{
@@ -147,15 +151,15 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
             <Disc size={20} className="text-white drop-shadow-md" />
           </button>
           <button
+            type="button"
             onClick={() => onWindowClick("games")}
-            className="hover:bg-[#3E80F1] rounded transition-colors"
+            className="hidden min-[520px]:flex hover:bg-[#3E80F1] rounded transition-colors"
             style={{
               backgroundColor: "transparent",
               border: "none",
               cursor: "pointer",
               width: "32px",
               height: "32px",
-              display: "flex",
               alignItems: "center",
               justifyContent: "center",
               padding: "4px",
@@ -166,15 +170,15 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
             <Gamepad2 size={20} className="text-white drop-shadow-md" />
           </button>
           <button
+            type="button"
             onClick={() => onWindowClick("about")}
-            className="hover:bg-[#3E80F1] rounded transition-colors"
+            className="hidden min-[520px]:flex hover:bg-[#3E80F1] rounded transition-colors"
             style={{
               backgroundColor: "transparent",
               border: "none",
               cursor: "pointer",
               width: "32px",
               height: "32px",
-              display: "flex",
               alignItems: "center",
               justifyContent: "center",
               padding: "4px",
@@ -188,8 +192,8 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
 
         {Object.entries(openWindows).some(([, isOpen]) => isOpen) && (
           <div
+            className="hidden md:flex"
             style={{
-              display: "flex",
               gap: "4px",
               overflowX: "auto",
               marginRight: "8px",
@@ -231,21 +235,21 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
           display: "flex",
           alignItems: "center",
           backgroundColor: "#0F9DDE",
-          padding: "4px 12px",
+          padding: "4px 6px",
           borderRadius: "4px",
           border: "1px solid #0B76A8",
           color: "white",
           fontSize: "12px",
           flexShrink: 0,
-          marginLeft: "8px",
+          marginLeft: "4px",
           whiteSpace: "nowrap",
-          minWidth: "90px",
+          minWidth: "68px",
           justifyContent: "center",
         }}
         suppressHydrationWarning
       >
-        <span className="mr-2">🔈</span>
-        <span style={{ minWidth: "60px", textAlign: "center" }}>{currentTime}</span>
+        <span className="mr-1 hidden min-[380px]:inline" aria-hidden="true">🔈</span>
+        <span style={{ minWidth: "56px", textAlign: "center" }}>{currentTime}</span>
       </div>
     </div>
   )

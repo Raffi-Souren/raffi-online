@@ -215,6 +215,10 @@ interface IPodPlayerProps {
   onExpandVideo?: (youtubeId: string, title: string) => void
 }
 
+const IPOD_WIDTH = 280
+const IPOD_HEIGHT = 460
+const MIN_USABLE_SCALE = 0.75
+
 export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const {
     currentTrack,
@@ -241,12 +245,19 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const [currentVideoPlaylist, setCurrentVideoPlaylist] = useState<Video[]>(ANALOG_DIGITAL_VIDEOS)
   const [isVideoPlaying, setIsVideoPlaying] = useState(true)
   const [currentPodcast, setCurrentPodcast] = useState<Podcast | null>(null)
+  const [playerLayout, setPlayerLayout] = useState({ scale: 1, needsVerticalScroll: false })
 
+  const playerViewportRef = useRef<HTMLDivElement>(null)
   const wheelRef = useRef<HTMLDivElement>(null)
   const lastAngleRef = useRef<number | null>(null)
   const accumulatedRotationRef = useRef(0)
+  const scrollRotationRef = useRef(0)
+  const lastScrollAtRef = useRef(0)
+  const mouseWheelActiveRef = useRef(false)
+  const touchWheelActiveRef = useRef(false)
   const videoIframeRef = useRef<HTMLIFrameElement>(null)
   const selectedItemRef = useRef<HTMLDivElement>(null)
+  const screenScrollRef = useRef<HTMLDivElement>(null)
 
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00"
@@ -396,6 +407,25 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     }
   }, [menuStack])
 
+  const navigateByWheel = useCallback(
+    (steps: number) => {
+      if (!steps) return
+
+      const hasSelectableRows =
+        currentScreen !== "nowPlaying" && currentScreen !== "videoPlayer" && menuItems.length > 0
+
+      if (hasSelectableRows) {
+        setSelectedIndex((prev) => Math.max(0, Math.min(menuItems.length - 1, prev + steps)))
+        return
+      }
+
+      // Detail screens have no highlighted rows, but the click wheel should
+      // still work like an iPod wheel and move their scrollable copy.
+      screenScrollRef.current?.scrollBy({ top: steps * 28, behavior: "auto" })
+    },
+    [currentScreen, menuItems.length],
+  )
+
   const handleWheelMove = useCallback(
     (clientX: number, clientY: number) => {
       if (!wheelRef.current) return
@@ -419,14 +449,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
           // Advance by however many full steps were rotated so a fast spin
           // moves multiple items instead of getting stuck on one.
           const steps = Math.trunc(accumulatedRotationRef.current / STEP)
-          const maxIndex = currentScreen === "nowPlaying" || currentScreen === "videoPlayer" ? 0 : menuItems.length - 1
-
-          setSelectedIndex((prev) => {
-            const newIndex = prev + steps
-            if (newIndex < 0) return 0
-            if (newIndex > maxIndex) return maxIndex
-            return newIndex
-          })
+          navigateByWheel(steps)
 
           // Keep the leftover rotation so movement stays smooth.
           accumulatedRotationRef.current -= steps * STEP
@@ -435,7 +458,28 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
       lastAngleRef.current = angle
     },
-    [menuItems.length, currentScreen],
+    [navigateByWheel],
+  )
+
+  const handleJogWheelScroll = useCallback(
+    (event: React.WheelEvent<HTMLDivElement>) => {
+      event.preventDefault()
+
+      const now = performance.now()
+      if (now - lastScrollAtRef.current > 180) scrollRotationRef.current = 0
+      lastScrollAtRef.current = now
+
+      const multiplier = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1
+      scrollRotationRef.current += event.deltaY * multiplier
+
+      const STEP = 36
+      const steps = Math.max(-3, Math.min(3, Math.trunc(scrollRotationRef.current / STEP)))
+      if (!steps) return
+
+      navigateByWheel(steps)
+      scrollRotationRef.current -= steps * STEP
+    },
+    [navigateByWheel],
   )
 
   const handleWheelStart = () => {
@@ -446,6 +490,44 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const handleWheelEnd = () => {
     lastAngleRef.current = null
   }
+
+  useEffect(() => {
+    const viewport = playerViewportRef.current
+    if (!viewport) return
+
+    const updatePlayerLayout = () => {
+      const availableWidth = viewport.clientWidth
+      const availableHeight = viewport.clientHeight
+      if (availableWidth <= 0 || availableHeight <= 0) return
+
+      const widthScale = availableWidth / IPOD_WIDTH
+      const heightScale = availableHeight / IPOD_HEIGHT
+      const fitScale = Math.min(1, widthScale, heightScale)
+      // Never create horizontal overflow. On short screens, preserve a usable
+      // click wheel and let this local viewport scroll vertically instead.
+      const minimumScale = Math.min(1, widthScale, MIN_USABLE_SCALE)
+      const scale = Math.max(fitScale, minimumScale)
+      const needsVerticalScroll = IPOD_HEIGHT * scale > availableHeight + 1
+
+      setPlayerLayout((previous) => {
+        if (Math.abs(previous.scale - scale) < 0.001 && previous.needsVerticalScroll === needsVerticalScroll) {
+          return previous
+        }
+        return { scale, needsVerticalScroll }
+      })
+    }
+
+    updatePlayerLayout()
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updatePlayerLayout)
+      return () => window.removeEventListener("resize", updatePlayerLayout)
+    }
+
+    const resizeObserver = new ResizeObserver(updatePlayerLayout)
+    resizeObserver.observe(viewport)
+    return () => resizeObserver.disconnect()
+  }, [])
 
   // Keep the highlighted row in view when scrolling long lists so the
   // selection never disappears off-screen.
@@ -461,16 +543,56 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     })
   }, [menuItems.length])
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (e.buttons === 1) {
-      handleWheelMove(e.clientX, e.clientY)
+  const isWheelControl = (target: EventTarget | null) => target instanceof Element && target.closest("button") !== null
+
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || isWheelControl(event.target)) return
+    mouseWheelActiveRef.current = true
+    handleWheelStart()
+    handleWheelMove(event.clientX, event.clientY)
+  }
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (mouseWheelActiveRef.current && event.buttons === 1) {
+      handleWheelMove(event.clientX, event.clientY)
     }
   }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const touch = e.touches[0]
+  const handleMouseEnd = () => {
+    if (!mouseWheelActiveRef.current) return
+    mouseWheelActiveRef.current = false
+    handleWheelEnd()
+  }
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 1 || isWheelControl(event.target)) return
+    touchWheelActiveRef.current = true
+    handleWheelStart()
+    const touch = event.touches[0]
     handleWheelMove(touch.clientX, touch.clientY)
   }
+
+  const handleTouchEnd = () => {
+    if (!touchWheelActiveRef.current) return
+    touchWheelActiveRef.current = false
+    handleWheelEnd()
+  }
+
+  useEffect(() => {
+    const wheel = wheelRef.current
+    if (!wheel) return
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!touchWheelActiveRef.current || event.touches.length !== 1) return
+      // Suppress page/viewport movement only during an intentional wheel spin.
+      event.preventDefault()
+      const touch = event.touches[0]
+      handleWheelMove(touch.clientX, touch.clientY)
+    }
+
+    wheel.addEventListener("touchmove", handleTouchMove, { passive: false })
+    return () => wheel.removeEventListener("touchmove", handleTouchMove)
+  }, [handleWheelMove])
 
   const getScreenTitle = () => {
     switch (currentScreen) {
@@ -534,18 +656,46 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     setIsVideoPlaying(true)
   }, [currentVideoIndex, currentVideoPlaylist])
 
+  const renderedWidth = IPOD_WIDTH * playerLayout.scale
+  const renderedHeight = IPOD_HEIGHT * playerLayout.scale
+
   return (
     <div
-      className="relative mx-auto select-none"
+      ref={playerViewportRef}
       style={{
-        width: "280px",
-        height: "460px",
-        background: "linear-gradient(180deg, #e8e8e8 0%, #d4d4d4 50%, #c0c0c0 100%)",
-        borderRadius: "24px",
-        boxShadow: "0 10px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)",
-        border: "1px solid #999",
+        alignItems: "center",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        justifyContent: playerLayout.needsVerticalScroll ? "flex-start" : "center",
+        minHeight: 0,
+        overflowX: "hidden",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        width: "100%",
       }}
     >
+      <div
+        style={{
+          flex: "0 0 auto",
+          height: `${renderedHeight}px`,
+          position: "relative",
+          width: `${renderedWidth}px`,
+        }}
+      >
+        <div
+          className="relative select-none"
+          style={{
+            width: `${IPOD_WIDTH}px`,
+            height: `${IPOD_HEIGHT}px`,
+            background: "linear-gradient(180deg, #e8e8e8 0%, #d4d4d4 50%, #c0c0c0 100%)",
+            borderRadius: "24px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)",
+            border: "1px solid #999",
+            transform: `scale(${playerLayout.scale})`,
+            transformOrigin: "top left",
+          }}
+        >
       <div
         className="absolute"
         style={{
@@ -632,7 +782,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                 )}
               </div>
             ) : currentScreen === "podcastDetail" && currentPodcast ? (
-              <div className="h-full overflow-y-auto px-2 py-1 text-left">
+              <div ref={screenScrollRef} className="h-full overflow-y-auto px-2 py-1 text-left">
                 <p
                   className="font-bold leading-tight"
                   style={{ color: "#000", fontFamily: "Chicago, system-ui", fontSize: "11px" }}
@@ -779,6 +929,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
       <div
         ref={wheelRef}
+        aria-label="iPod click wheel. Rotate or scroll to navigate."
         className="absolute cursor-pointer"
         style={{
           bottom: "40px",
@@ -789,38 +940,61 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
           background: "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 50%, #ccc 100%)",
           borderRadius: "50%",
           boxShadow: "inset 0 2px 10px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.1)",
+          touchAction: "none",
+          WebkitTapHighlightColor: "transparent",
         }}
-        onMouseDown={handleWheelStart}
+        onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleWheelEnd}
-        onMouseLeave={handleWheelEnd}
-        onTouchStart={handleWheelStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleWheelEnd}
+        onMouseUp={handleMouseEnd}
+        onMouseLeave={handleMouseEnd}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onWheel={handleJogWheelScroll}
       >
         <button
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-95"
+          type="button"
+          aria-label={
+            currentScreen === "videoPlayer"
+              ? "Play or pause video"
+              : currentScreen === "nowPlaying"
+                ? "Play or pause track"
+                : "Select highlighted item"
+          }
+          className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            width: "50px",
-            height: "50px",
+            width: "60px",
+            height: "60px",
             background: "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)",
             borderRadius: "50%",
             boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
             border: "none",
+            cursor: "pointer",
+            WebkitTapHighlightColor: "transparent",
           }}
           onClick={handleSelect}
         />
 
         <button
-          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label="Back to previous menu"
+          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            top: "8px",
+            alignItems: "flex-start",
+            cursor: "pointer",
+            display: "flex",
             fontSize: "10px",
             fontWeight: "bold",
             color: "#333",
             background: "none",
             border: "none",
             fontFamily: "system-ui",
+            height: "60px",
+            justifyContent: "center",
+            paddingTop: "8px",
+            top: 0,
+            WebkitTapHighlightColor: "transparent",
+            width: "80px",
           }}
           onClick={handleBack}
         >
@@ -828,13 +1002,23 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         </button>
 
         <button
-          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label={currentScreen === "videoPlayer" ? "Previous video" : "Previous track"}
+          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            left: "12px",
+            alignItems: "center",
+            cursor: "pointer",
+            display: "flex",
             fontSize: "14px",
             color: "#333",
             background: "none",
             border: "none",
+            height: "80px",
+            justifyContent: "flex-start",
+            left: 0,
+            paddingLeft: "12px",
+            WebkitTapHighlightColor: "transparent",
+            width: "50px",
           }}
           onClick={currentScreen === "videoPlayer" ? handlePrevVideo : previousTrack}
         >
@@ -842,13 +1026,23 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         </button>
 
         <button
-          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label={currentScreen === "videoPlayer" ? "Next video" : "Next track"}
+          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            right: "12px",
+            alignItems: "center",
+            cursor: "pointer",
+            display: "flex",
             fontSize: "14px",
             color: "#333",
             background: "none",
             border: "none",
+            height: "80px",
+            justifyContent: "flex-end",
+            paddingRight: "12px",
+            right: 0,
+            WebkitTapHighlightColor: "transparent",
+            width: "50px",
           }}
           onClick={currentScreen === "videoPlayer" ? handleNextVideo : nextTrack}
         >
@@ -856,13 +1050,23 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         </button>
 
         <button
-          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label={currentScreen === "videoPlayer" ? "Play or pause video" : "Play or pause track"}
+          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            bottom: "8px",
+            alignItems: "flex-end",
+            bottom: 0,
+            cursor: "pointer",
+            display: "flex",
             fontSize: "12px",
             color: "#333",
             background: "none",
             border: "none",
+            height: "60px",
+            justifyContent: "center",
+            paddingBottom: "8px",
+            WebkitTapHighlightColor: "transparent",
+            width: "80px",
           }}
           onClick={
             currentScreen === "videoPlayer" ? handleVideoPlayPause : () => (isPlaying ? pauseTrack() : resumeTrack())
@@ -883,6 +1087,8 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         }}
       >
         iPod
+      </div>
+        </div>
       </div>
     </div>
   )
