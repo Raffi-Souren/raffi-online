@@ -20,6 +20,16 @@ const UnderConstructionWindow = dynamic(() => import("./components/UnderConstruc
 const IPodWindow = dynamic(() => import("./components/IPodWindow"))
 const ProjectsWindow = dynamic(() => import("./components/ProjectsWindow"))
 
+const DESKTOP_SHORTCUTS = [
+  { action: "about", icon: "👤", label: "ABOUT" },
+  { action: "blogroll", icon: "🌐", label: "BLOGROLL" },
+  { action: "games", icon: "🎮", label: "GAMES" },
+  { action: "notes", icon: "📝", label: "NOTES" },
+  { action: "startup", icon: "💡", label: "PITCH STARTUP" },
+  { action: "ipod", icon: "🎧", label: "iPod" },
+  { action: "projects", icon: "🛠️", label: "PROJECTS" },
+] as const
+
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
   const [openWindows, setOpenWindows] = useState<Record<string, boolean>>({
@@ -92,54 +102,16 @@ export default function Home() {
       {/* Desktop Context Menu */}
       <DesktopContextMenu onOpenWindow={openWindow} />
 
-      <div className="absolute inset-0 z-10 hidden md:block">
-        <div className="absolute top-8 left-8">
-          <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-        </div>
-        <div className="absolute top-8 left-1/2 -translate-x-1/2">
-          <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-        </div>
-        <div className="absolute top-8 right-32">
-          <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-        </div>
-        <div className="absolute top-8 right-8">
-          <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-        </div>
-        <div className="absolute bottom-32 left-8">
-          <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
-        </div>
-        <div className="absolute top-32 left-8">
-          <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
-        </div>
-        <div className="absolute top-32 right-8">
-          <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
-        </div>
-      </div>
-
-      <div
-        className="grid grid-cols-2 content-start gap-4 overflow-y-auto md:hidden"
-        style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          bottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
-          left: 0,
-          zIndex: 10,
-          paddingTop: "calc(1rem + env(safe-area-inset-top, 0px))",
-          paddingRight: "calc(1rem + env(safe-area-inset-right, 0px))",
-          paddingBottom: "5rem",
-          paddingLeft: "calc(1rem + env(safe-area-inset-left, 0px))",
-          overscrollBehavior: "contain",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        <DesktopIcon label="ABOUT" icon="👤" onClick={() => handleIconClick("about")} />
-        <DesktopIcon label="BLOGROLL" icon="🌐" onClick={() => handleIconClick("blogroll")} />
-        <DesktopIcon label="GAMES" icon="🎮" onClick={() => handleIconClick("games")} />
-        <DesktopIcon label="NOTES" icon="📝" onClick={() => handleIconClick("notes")} />
-        <DesktopIcon label="iPod" icon="🎧" onClick={() => handleIconClick("ipod")} />
-        <DesktopIcon label="PROJECTS" icon="🛠️" onClick={() => handleIconClick("projects")} />
-        <DesktopIcon label="PITCH STARTUP" icon="💡" onClick={() => handleIconClick("startup")} />
+      <div data-desktop-icons="true" className="desktop-shortcuts">
+        {DESKTOP_SHORTCUTS.map((shortcut) => (
+          <div key={shortcut.action} className={`desktop-shortcut desktop-shortcut-${shortcut.action}`}>
+            <DesktopIcon
+              label={shortcut.label}
+              icon={shortcut.icon}
+              onClick={() => handleIconClick(shortcut.action)}
+            />
+          </div>
+        ))}
       </div>
 
       <div
