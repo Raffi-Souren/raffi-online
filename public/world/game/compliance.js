@@ -1,5 +1,5 @@
 /**
- * RAFFI WORLD — Reply All Repaint runtime.
+ * RAFFI WORLD — Reply All Repaint runtime + compliance tier orchestration.
  *
  * Compiles shop locations from data/world.json, clears COMPLIANCE when a
  * mounted vehicle parks in a bay, and routes free-roam players with heat to
@@ -18,17 +18,28 @@ import {
   nearestRepaintShop,
   evaluateRepaintClear,
   clearComplianceState,
+  clearLineAt,
+  shouldClearRepaintWaypoint,
 } from './compliance-core.js'
 
 let latch = createRepaintLatch()
 /** True while the navigator waypoint was last set by compliance guidance. */
 let ownsWaypoint = false
 let clearCount = 0
+/** Optional pursuit hooks — set by initCompliance({ onClear, onTierChange }). */
+let hooks = { onClear: null, onTierChange: null, onUpdate: null }
 
-export function initCompliance() {
+export function initCompliance(options = {}) {
   latch = createRepaintLatch()
   ownsWaypoint = false
   clearCount = 0
+  hooks = {
+    onClear: options.onClear || null,
+    onTierChange: options.onTierChange || null,
+    onUpdate: options.onUpdate || null,
+  }
+  // Validate contract at boot so missing tuning fails loudly.
+  repaintTuning(data.world)
 }
 
 export function complianceSnapshot() {
@@ -44,15 +55,17 @@ export function complianceSnapshot() {
 
 /** Debug / audit helper — does not fake pursuers. */
 export function setComplianceTier(tier, heat = state.compliance.heat) {
+  const prev = state.compliance.tier
   const next = Math.max(0, Math.min(5, Math.floor(Number(tier) || 0)))
   state.compliance.tier = next
   state.compliance.heat = Math.max(0, Number(heat) || 0)
   setCompliance(state.compliance.tier)
   updateRepaintGuidance()
+  if (prev !== next) hooks.onTierChange?.(next, prev)
   return complianceSnapshot()
 }
 
-export function updateCompliance(_dt = 0) {
+export function updateCompliance(dt = 0) {
   if (!data.world) return
 
   const shops = listRepaintShops(data.world)
@@ -80,6 +93,7 @@ export function updateCompliance(_dt = 0) {
   }
 
   updateRepaintGuidance()
+  hooks.onUpdate?.(dt)
 }
 
 function applyRepaintClear(shop, tuning) {
@@ -93,25 +107,41 @@ function applyRepaintClear(shop, tuning) {
     repaint(player.vehicle.mesh, data.vehicles, seed)
   }
 
+  // First clear uses clearLines[0]; then alternate in authored order.
+  const line = clearLineAt(clearCount, tuning.clearLines)
   clearCount += 1
-  const line = tuning.clearLines[clearCount % tuning.clearLines.length]
   queueDialogue(line, { duration: 3.2 })
   toast(tuning.toast, 3.2)
-  bus.emit('sfx', tuning.sfx)
+  if (tuning.sfx) bus.emit('sfx', tuning.sfx)
 
   if (ownsWaypoint && !state.mission.active) {
     ownsWaypoint = false
     setWaypoint(null)
   }
+
+  // Pursuit cancel is mandatory when repaint clears heat.
+  hooks.onClear?.(shop)
 }
 
 /**
  * When free of an active mission and carrying heat, point the minimap at the
  * nearest authored shop. Never replaces an active mission waypoint.
+ * If heat drops to zero away from a shop, drop a compliance-owned waypoint.
  */
 function updateRepaintGuidance() {
   if (state.mission.active) {
     ownsWaypoint = false
+    return
+  }
+
+  if (shouldClearRepaintWaypoint({
+    ownsWaypoint,
+    missionActive: !!state.mission.active,
+    tier: state.compliance.tier,
+    heat: state.compliance.heat,
+  })) {
+    ownsWaypoint = false
+    setWaypoint(null)
     return
   }
 
@@ -133,4 +163,9 @@ function updateRepaintGuidance() {
     setWaypoint(nearest.at, tuning.label)
   }
   ownsWaypoint = true
+}
+
+/** Test hook: expose whether compliance currently owns the waypoint. */
+export function complianceOwnsWaypoint() {
+  return ownsWaypoint
 }

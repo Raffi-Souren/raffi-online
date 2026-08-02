@@ -9,18 +9,50 @@ export function listRepaintShops(worldData) {
   return Array.isArray(shops) ? shops.slice() : []
 }
 
-/** Authored bay / speed / copy. Never invent shop coordinates here. */
+/**
+ * Authored bay / speed / copy. Required fields must come from world.repaint —
+ * no silent defaults that hide missing data.
+ * @throws {Error} when the contract is missing or invalid
+ */
 export function repaintTuning(worldData) {
-  const r = worldData?.repaint || {}
-  return {
-    bayRadius: Number.isFinite(r.bayRadius) ? r.bayRadius : 6.5,
-    maxClearSpeed: Number.isFinite(r.maxClearSpeed) ? r.maxClearSpeed : 2.5,
-    label: r.label || 'REPLY ALL REPAINT',
-    objective: r.objective || 'PARK AT REPLY ALL REPAINT',
-    toast: r.toast || 'COMPLIANCE CLEARED',
-    clearLines: Array.isArray(r.clearLines) && r.clearLines.length ? r.clearLines.slice() : ['repaint-1', 'repaint-2'],
-    sfx: r.sfx || 'compliance-clear',
+  const r = worldData?.repaint
+  if (!r || typeof r !== 'object') {
+    throw new Error('world.repaint is required (bayRadius, maxClearSpeed, label, toast, clearLines)')
   }
+  if (!Number.isFinite(r.bayRadius) || r.bayRadius <= 0) {
+    throw new Error('world.repaint.bayRadius must be a finite number > 0')
+  }
+  if (!Number.isFinite(r.maxClearSpeed) || r.maxClearSpeed < 0) {
+    throw new Error('world.repaint.maxClearSpeed must be a finite number >= 0')
+  }
+  if (typeof r.label !== 'string' || !r.label.trim()) {
+    throw new Error('world.repaint.label must be a non-empty string')
+  }
+  if (typeof r.toast !== 'string' || !r.toast.trim()) {
+    throw new Error('world.repaint.toast must be a non-empty string')
+  }
+  if (!Array.isArray(r.clearLines) || r.clearLines.length === 0 ||
+      r.clearLines.some((line) => typeof line !== 'string' || !line.trim())) {
+    throw new Error('world.repaint.clearLines must be a non-empty string array')
+  }
+  return {
+    bayRadius: r.bayRadius,
+    maxClearSpeed: r.maxClearSpeed,
+    label: r.label,
+    objective: typeof r.objective === 'string' && r.objective.trim() ? r.objective : r.label,
+    toast: r.toast,
+    clearLines: r.clearLines.slice(),
+    sfx: typeof r.sfx === 'string' && r.sfx.trim() ? r.sfx : null,
+  }
+}
+
+/** First clear uses clearLines[0]; then 1, 2, … wrapping. */
+export function clearLineAt(clearCount, clearLines) {
+  if (!Array.isArray(clearLines) || clearLines.length === 0) {
+    throw new Error('clearLines must be a non-empty array')
+  }
+  const index = Math.max(0, Math.floor(Number(clearCount) || 0)) % clearLines.length
+  return clearLines[index]
 }
 
 export function createRepaintLatch() {
@@ -29,8 +61,10 @@ export function createRepaintLatch() {
 
 export function isInsideRepaintBay(shop, x, z, bayRadius) {
   if (!shop?.at || !Number.isFinite(x) || !Number.isFinite(z)) return false
-  const r = Number.isFinite(bayRadius) ? bayRadius : 0
-  return Math.hypot(shop.at.x - x, shop.at.z - z) <= r
+  if (!Number.isFinite(bayRadius) || bayRadius < 0) {
+    throw new Error('bayRadius must be a finite number >= 0')
+  }
+  return Math.hypot(shop.at.x - x, shop.at.z - z) <= bayRadius
 }
 
 /** Nearest shop by Euclidean distance. Data-driven — no district hardcoding. */
@@ -76,14 +110,6 @@ export function releaseRepaintLatch(latch, shops, x, z, bayRadius) {
  * - tier or heat must be nonzero
  * - one-shot while remaining in the same bay (latch)
  * - leaving and returning with new heat can clear again
- *
- * @returns {{
- *   action: 'none'|'clear',
- *   shop: object|null,
- *   reason: string,
- *   compliance: { tier: number, heat: number },
- *   latch: { shopId: string|null },
- * }}
  */
 export function evaluateRepaintClear({
   mounted,
@@ -96,8 +122,11 @@ export function evaluateRepaintClear({
   latch,
   tuning,
 }) {
-  const bayRadius = tuning?.bayRadius ?? 6.5
-  const maxSpeed = tuning?.maxClearSpeed ?? 2.5
+  if (!tuning || !Number.isFinite(tuning.bayRadius) || !Number.isFinite(tuning.maxClearSpeed)) {
+    throw new Error('evaluateRepaintClear requires validated tuning (bayRadius, maxClearSpeed)')
+  }
+  const bayRadius = tuning.bayRadius
+  const maxSpeed = tuning.maxClearSpeed
   const nextLatch = releaseRepaintLatch(latch, shops, x, z, bayRadius)
   const shop = shopAtPosition(shops, x, z, bayRadius)
   const cleared = { tier: 0, heat: 0 }
@@ -164,4 +193,14 @@ export function clearComplianceState(compliance = {}) {
     tier: 0,
     heat: 0,
   }
+}
+
+/**
+ * Guidance bookkeeping when heat drops to zero away from a shop
+ * (decay / debug). Never touches mission-owned waypoints.
+ */
+export function shouldClearRepaintWaypoint({ ownsWaypoint, missionActive, tier, heat }) {
+  if (missionActive) return false
+  if (!ownsWaypoint) return false
+  return (tier || 0) <= 0 && (heat || 0) <= 0
 }

@@ -12,6 +12,8 @@ import {
   releaseRepaintLatch,
   evaluateRepaintClear,
   clearComplianceState,
+  clearLineAt,
+  shouldClearRepaintWaypoint,
 } from '../game/compliance-core.js'
 
 const world = JSON.parse(fs.readFileSync(new URL('../data/world.json', import.meta.url), 'utf8'))
@@ -34,17 +36,57 @@ function actorAt(shop, overrides = {}) {
   }
 }
 
-test('repaint shops are compiled from world data with no hardcoded coordinates', () => {
-  assert.ok(shops.length >= 1)
-  for (const shop of shops) {
-    assert.equal(typeof shop.id, 'string')
-    assert.equal(typeof shop.district, 'string')
-    assert.ok(Number.isFinite(shop.at.x))
-    assert.ok(Number.isFinite(shop.at.z))
-  }
-  assert.ok(Number.isFinite(tuning.bayRadius))
-  assert.ok(Number.isFinite(tuning.maxClearSpeed))
-  assert.ok(tuning.label.length > 0)
+test('repaintTuning requires authored world.repaint contract fields', () => {
+  assert.throws(() => repaintTuning({}), /world\.repaint is required/)
+  assert.throws(() => repaintTuning({ repaint: { bayRadius: 1 } }), /maxClearSpeed/)
+  assert.throws(
+    () => repaintTuning({ repaint: { ...world.repaint, bayRadius: -1 } }),
+    /bayRadius/
+  )
+  const t = repaintTuning(world)
+  assert.equal(t.bayRadius, world.repaint.bayRadius)
+  assert.equal(t.maxClearSpeed, world.repaint.maxClearSpeed)
+  assert.deepEqual(t.clearLines, world.repaint.clearLines)
+})
+
+test('authored bayRadius mutation changes the clear decision boundary', () => {
+  const clone = structuredClone(world)
+  clone.repaint.bayRadius = 2
+  const tight = repaintTuning(clone)
+  const shop = clone.repaintShops[0]
+  const insideTight = evaluateRepaintClear({
+    ...actorAt(shop, { tuning: tight, shops: clone.repaintShops }),
+    x: shop.at.x + 1.5,
+    z: shop.at.z,
+  })
+  assert.equal(insideTight.action, 'clear')
+
+  const outsideTight = evaluateRepaintClear({
+    ...actorAt(shop, { tuning: tight, shops: clone.repaintShops }),
+    x: shop.at.x + 2.5,
+    z: shop.at.z,
+  })
+  assert.equal(outsideTight.action, 'none')
+  assert.equal(outsideTight.reason, 'outside-bay')
+
+  // Original authored radius still accepts 2.5m as inside.
+  const loose = evaluateRepaintClear({
+    ...actorAt(shop),
+    x: shop.at.x + 2.5,
+    z: shop.at.z,
+  })
+  assert.equal(loose.action, 'clear')
+})
+
+test('authored maxClearSpeed mutation changes the speed boundary', () => {
+  const clone = structuredClone(world)
+  clone.repaint.maxClearSpeed = 1
+  const slow = repaintTuning(clone)
+  const reject = evaluateRepaintClear(actorAt(heights, { tuning: slow, speed: 1.5 }))
+  assert.equal(reject.action, 'none')
+  assert.equal(reject.reason, 'too-fast')
+  const accept = evaluateRepaintClear(actorAt(heights, { tuning: slow, speed: 1 }))
+  assert.equal(accept.action, 'clear')
 })
 
 test('mounted-only protection blocks on-foot bay entry', () => {
@@ -80,6 +122,13 @@ test('clear resets tier and heat to zero', () => {
   })
 })
 
+test('first clear uses clearLines[0] then alternates in authored order', () => {
+  const lines = tuning.clearLines
+  assert.equal(clearLineAt(0, lines), lines[0])
+  assert.equal(clearLineAt(1, lines), lines[1 % lines.length])
+  assert.equal(clearLineAt(2, lines), lines[2 % lines.length])
+})
+
 test('one-shot latch ignores remaining stopped in the same bay', () => {
   const first = evaluateRepaintClear(actorAt(heights))
   assert.equal(first.action, 'clear')
@@ -93,7 +142,6 @@ test('one-shot latch ignores remaining stopped in the same bay', () => {
   assert.equal(stillThere.action, 'none')
   assert.equal(stillThere.reason, 'latched')
 
-  // Even if heat is re-applied while still latched, remaining in-bay does not re-fire.
   const heatWhileLatched = evaluateRepaintClear(actorAt(heights, {
     tier: 2,
     heat: 1,
@@ -137,4 +185,31 @@ test('data-driven shop selection picks the nearest authored bay', () => {
     null
   )
   assert.equal(isInsideRepaintBay(nearStrip, nearStrip.at.x, nearStrip.at.z, tuning.bayRadius), true)
+})
+
+test('zero COMPLIANCE away from a shop clears a compliance-owned waypoint only', () => {
+  assert.equal(shouldClearRepaintWaypoint({
+    ownsWaypoint: true,
+    missionActive: false,
+    tier: 0,
+    heat: 0,
+  }), true)
+  assert.equal(shouldClearRepaintWaypoint({
+    ownsWaypoint: true,
+    missionActive: true,
+    tier: 0,
+    heat: 0,
+  }), false)
+  assert.equal(shouldClearRepaintWaypoint({
+    ownsWaypoint: false,
+    missionActive: false,
+    tier: 0,
+    heat: 0,
+  }), false)
+  assert.equal(shouldClearRepaintWaypoint({
+    ownsWaypoint: true,
+    missionActive: false,
+    tier: 2,
+    heat: 0,
+  }), false)
 })
