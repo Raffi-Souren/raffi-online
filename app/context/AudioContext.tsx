@@ -2,10 +2,10 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 import { type Track, getRandomTrackIndex } from "@/data/audio-library"
+import { resolveTrackEnd, type RepeatMode } from "@/lib/audio-engine"
 
 export type { Track }
-
-export type RepeatMode = "off" | "one" | "all"
+export type { RepeatMode }
 
 interface AudioContextType {
   isPlaying: boolean
@@ -17,6 +17,12 @@ interface AudioContextType {
   error: string | null
   shuffle: boolean
   repeatMode: RepeatMode
+  /**
+   * Increments every time the current track should restart from 0. The player
+   * engine watches this and issues an explicit seek — a state toggle alone is
+   * not enough to make the SoundCloud widget rewind.
+   */
+  replayToken: number
   playTrack: (track: Track) => void
   pauseTrack: () => void
   resumeTrack: () => void
@@ -49,6 +55,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [shuffle, setShuffle] = useState(false)
   // Default "all" preserves the original wrap-around behavior.
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("all")
+  const [replayToken, setReplayToken] = useState(0)
 
   const clearError = useCallback(() => {
     setError(null)
@@ -137,38 +144,46 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     playTrack(playlist[prevIndex])
   }, [currentTrack, playlist, playTrack, shuffle])
 
+  /** Restart the current track from the top. */
+  const requestReplay = useCallback(() => {
+    setCurrentTime(0)
+    setIsPlaying(true)
+    setReplayToken((token) => token + 1)
+  }, [])
+
   // Called by the player engine when a track naturally finishes.
   const handleTrackEnd = useCallback(() => {
-    if (!currentTrack || playlist.length === 0) return
-
-    // Repeat one: replay the same track from the start.
-    if (repeatMode === "one") {
-      setCurrentTime(0)
-      setIsPlaying(false)
-      // Re-trigger play on the next tick so the widget seeks to 0 and replays.
-      setTimeout(() => setIsPlaying(true), 0)
-      return
-    }
+    if (!currentTrack) return
 
     const currentIndex = playlist.findIndex((track) => track.id === currentTrack.id)
+    const action = resolveTrackEnd({
+      currentIndex,
+      playlistLength: playlist.length,
+      shuffle,
+      repeatMode,
+    })
 
-    if (shuffle) {
-      const randomIndex = getRandomTrackIndex(playlist.length, currentIndex)
-      playTrack(playlist[randomIndex])
-      return
-    }
-
-    const isLastTrack = currentIndex === playlist.length - 1
-
-    // Repeat off: stop at the end of the playlist.
-    if (repeatMode === "off" && isLastTrack) {
+    if (action.type === "stop") {
       setIsPlaying(false)
       return
     }
 
-    const nextIndex = (currentIndex + 1) % playlist.length
-    playTrack(playlist[nextIndex])
-  }, [currentTrack, playlist, playTrack, shuffle, repeatMode])
+    if (action.type === "replay") {
+      requestReplay()
+      return
+    }
+
+    const nextTrackToPlay = playlist[action.index]
+
+    // Landing back on the current track means "start it over" — playTrack would
+    // see the same id and no-op, leaving playback dead.
+    if (!nextTrackToPlay || nextTrackToPlay.id === currentTrack.id) {
+      requestReplay()
+      return
+    }
+
+    playTrack(nextTrackToPlay)
+  }, [currentTrack, playlist, playTrack, shuffle, repeatMode, requestReplay])
 
   return (
     <AudioContext.Provider
@@ -182,6 +197,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         error,
         shuffle,
         repeatMode,
+        replayToken,
         playTrack,
         pauseTrack,
         resumeTrack,

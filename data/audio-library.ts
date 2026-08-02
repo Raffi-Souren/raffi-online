@@ -26,12 +26,89 @@ export const RAFS_CRATE: Track[] = CRATE_TRACKS
 // Back-compat alias: existing imports of SOUNDCLOUD_TRACKS keep working.
 export const SOUNDCLOUD_TRACKS: Track[] = CRATE_TRACKS
 
-/** Pick a random track index that differs from `current` (when possible). */
+const FEATURED_OVERRIDES: ReadonlyArray<{
+  id: string
+  artist: string
+  title?: string
+}> = [
+  { id: "yukon-x-up-dj-hunny-bee-remix", artist: "DJ Hunny Bee" },
+  { id: "four-tet-insect-near-piha-beach", artist: "Four Tet" },
+  { id: "habibi-funk-beirut", artist: "DJ Sweeterman" },
+  { id: "chopsuey", artist: "Osive" },
+  { id: "gordos-dilemma", artist: "Gordo" },
+  { id: "08-compton-state-of-mind", artist: "Miles Davis" },
+  { id: "fidde-i-wonder-yuno-hu-vision", artist: "Fidde" },
+  { id: "sango2", artist: "Pinche Por Vida" },
+  { id: "dipset-x-future-i-really-mean", artist: "Sango" },
+  { id: "mos-def-auditorium-2", title: "Auditorium", artist: "Mos Def" },
+  { id: "blemforreal", artist: "David Mackay" },
+  { id: "tems-me-u-blk-remix", title: "Me & U (BLK Remix)", artist: "Tems" },
+  { id: "first-day-of-my-life-bright", artist: "Mac Miller" },
+]
+
+/**
+ * The curated short crate shown in the iPod. URLs and base metadata stay
+ * single-sourced in the canonical library; only display metadata is overridden.
+ */
+const CURATED_CRATE_SIZE = 50
+
+const handPickedTracks = FEATURED_OVERRIDES.flatMap(({ id, title, artist }) => {
+  const track = CRATE_TRACKS.find((candidate) => candidate.id === id)
+  return track ? [{ ...track, title: title ?? track.title, artist }] : []
+})
+
+const HOMIE_DISCOVERY_IDS = [
+  "rich-baby-daddy-pherris-edit-a-side",
+  "texas-speed-white-ferrari0",
+  "kdot-x-radiohead",
+  "beyonce-x-stardust-break-my-soul-sango-mix",
+  "brent-faiyaz-all-mine-dwells-rmx",
+  "semi-on-em-1979",
+  "caffeine-vitamins",
+  "habibi-funk-plus",
+] as const
+
+const homieDiscoveryTracks = HOMIE_DISCOVERY_IDS.flatMap((id) => {
+  const track = CRATE_TRACKS.find((candidate) => candidate.id === id)
+  return track ? [track] : []
+})
+
+const prioritizedIds = new Set([...handPickedTracks, ...homieDiscoveryTracks].map((track) => track.id))
+
+/**
+ * The 50-track crate shown in the iPod. It opens with the original hand-picked
+ * sequence, continues with direct tracks from Raffi's homies, then fills out
+ * the session from Raffi / DJ Sweeterman's broader liked-track library.
+ */
+export const FEATURED_RAFS_CRATE: Track[] = [
+  ...handPickedTracks,
+  ...homieDiscoveryTracks,
+  ...CRATE_TRACKS.filter((track) => !prioritizedIds.has(track.id)).slice(
+    0,
+    Math.max(0, CURATED_CRATE_SIZE - handPickedTracks.length - homieDiscoveryTracks.length),
+  ),
+]
+
+/**
+ * Pick a random track index that differs from `current` (when possible).
+ *
+ * Returns 0 for degenerate lengths so callers that already guard on an empty
+ * playlist keep working; callers that don't should check `length` first.
+ */
 export function getRandomTrackIndex(length: number, current = -1): number {
-  if (length <= 1) return 0
-  let next = current
-  while (next === current) {
-    next = Math.floor(Math.random() * length)
+  if (!Number.isFinite(length) || length <= 1) return 0
+
+  const size = Math.floor(length)
+  let next = Math.floor(Math.random() * size)
+
+  // Bounded retry: with size >= 2 this virtually always exits on the first
+  // pass, but the cap guarantees we can never spin forever on a bad `current`.
+  for (let attempt = 0; next === current && attempt < 10; attempt++) {
+    next = Math.floor(Math.random() * size)
   }
+
+  // Last resort if the RNG kept landing on `current`: step to a neighbour.
+  if (next === current) next = (current + 1) % size
+
   return next
 }

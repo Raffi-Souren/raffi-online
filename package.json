@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "test": "tsc -p tsconfig.test.json && node --test .test-build/lib/audio-engine.test.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "1.0.2",

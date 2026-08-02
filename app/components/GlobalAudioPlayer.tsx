@@ -30,12 +30,15 @@ function loadSoundCloudApi(): Promise<void> {
 }
 
 export default function GlobalAudioPlayer() {
-  const { currentTrack, isPlaying, handleTrackEnd, setCurrentTime, setDuration, setLoading, setError } = useAudio()
+  const { currentTrack, isPlaying, replayToken, handleTrackEnd, setCurrentTime, setDuration, setLoading, setError } =
+    useAudio()
 
   const [playerUrl, setPlayerUrl] = useState<string | null>(null)
+  // State (not just a ref) so the load/play effects re-run and reconcile once
+  // the widget comes up — a track can be picked before the API finishes loading.
+  const [widgetReady, setWidgetReady] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const widgetRef = useRef<any>(null)
-  const widgetReadyRef = useRef(false)
   const loadedUrlRef = useRef<string | null>(null)
 
   // Keep the latest callbacks/state in refs so the widget's bound listeners
@@ -62,6 +65,7 @@ export default function GlobalAudioPlayer() {
   useEffect(() => {
     if (!playerUrl || !iframeRef.current) return
     let cancelled = false
+    let dispose: (() => void) | null = null
 
     loadSoundCloudApi()
       .then(() => {
@@ -70,8 +74,10 @@ export default function GlobalAudioPlayer() {
         const widget = SC.Widget(iframeRef.current)
         widgetRef.current = widget
 
-        widget.bind(SC.Widget.Events.READY, () => {
-          widgetReadyRef.current = true
+        const events = SC.Widget.Events
+
+        widget.bind(events.READY, () => {
+          setWidgetReady(true)
           setLoading(false)
           widget.getDuration((d: number) => {
             if (d && d > 0) setDuration(d / 1000)
@@ -79,20 +85,32 @@ export default function GlobalAudioPlayer() {
           if (isPlayingRef.current) widget.play()
         })
 
-        widget.bind(SC.Widget.Events.PLAY_PROGRESS, (data: any) => {
+        widget.bind(events.PLAY_PROGRESS, (data: any) => {
           if (data?.currentPosition !== undefined) {
             setCurrentTime(data.currentPosition / 1000)
           }
         })
 
-        widget.bind(SC.Widget.Events.FINISH, () => {
+        // Read through the ref so this binding never captures a stale callback.
+        widget.bind(events.FINISH, () => {
           handleTrackEndRef.current()
         })
 
-        widget.bind(SC.Widget.Events.ERROR, () => {
+        widget.bind(events.ERROR, () => {
           setError("Unable to play this track. Try another one or shuffle.")
           setLoading(false)
         })
+
+        dispose = () => {
+          try {
+            widget.unbind(events.READY)
+            widget.unbind(events.PLAY_PROGRESS)
+            widget.unbind(events.FINISH)
+            widget.unbind(events.ERROR)
+          } catch {
+            // Widget already torn down with the iframe; nothing to release.
+          }
+        }
       })
       .catch(() => {
         setError("Could not load the audio player.")
@@ -101,13 +119,19 @@ export default function GlobalAudioPlayer() {
 
     return () => {
       cancelled = true
+      dispose?.()
+      widgetRef.current = null
+      setWidgetReady(false)
     }
   }, [playerUrl, setLoading, setDuration, setCurrentTime, setError])
 
   // When the track changes, stream the new one in-place via widget.load (no remount).
+  // Depends on `widgetReady` so a track selected before the widget came up still
+  // gets loaded instead of leaving the iframe stuck on the initial URL.
   useEffect(() => {
     const url = currentTrack?.url
-    if (!url || !widgetRef.current || !widgetReadyRef.current) return
+    const widget = widgetRef.current
+    if (!url || !widget || !widgetReady) return
     if (loadedUrlRef.current === url) return
 
     loadedUrlRef.current = url
@@ -115,22 +139,24 @@ export default function GlobalAudioPlayer() {
     setCurrentTime(0)
     setDuration(0)
 
-    widgetRef.current.load(url, {
+    widget.load(url, {
       auto_play: isPlayingRef.current,
       show_artwork: false,
       callback: () => {
+        // The widget may have been torn down while the load was in flight.
+        if (widgetRef.current !== widget) return
         setLoading(false)
-        widgetRef.current.getDuration((d: number) => {
+        widget.getDuration((d: number) => {
           if (d && d > 0) setDuration(d / 1000)
         })
-        if (isPlayingRef.current) widgetRef.current.play()
+        if (isPlayingRef.current) widget.play()
       },
     })
-  }, [currentTrack?.url, setLoading, setCurrentTime, setDuration])
+  }, [currentTrack?.url, widgetReady, setLoading, setCurrentTime, setDuration])
 
   // Reflect play/pause toggles onto the widget.
   useEffect(() => {
-    if (!widgetRef.current || !widgetReadyRef.current) return
+    if (!widgetRef.current || !widgetReady) return
     try {
       if (isPlaying) {
         widgetRef.current.play()
@@ -140,7 +166,22 @@ export default function GlobalAudioPlayer() {
     } catch {
       // Widget not ready yet; the READY/load callbacks will sync state.
     }
-  }, [isPlaying])
+  }, [isPlaying, widgetReady])
+
+  // Repeat-one (and any wrap back onto the current track) restarts playback.
+  // The widget sits at the end of the track after FINISH, so `play()` alone is
+  // not reliable — it needs an explicit rewind first.
+  useEffect(() => {
+    if (replayToken === 0) return
+    if (!widgetRef.current || !widgetReady) return
+    try {
+      widgetRef.current.seekTo(0)
+      widgetRef.current.play()
+      setCurrentTime(0)
+    } catch {
+      // Widget went away mid-replay; the next track change will resync.
+    }
+  }, [replayToken, widgetReady, setCurrentTime])
 
   if (!playerUrl) return null
 

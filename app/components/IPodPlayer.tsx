@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useAudio, type Track } from "../context/AudioContext"
+import { FEATURED_RAFS_CRATE } from "@/data/audio-library"
 
 interface Video {
   id: string
@@ -94,87 +95,6 @@ const BADCOMPANY_MIXES: Track[] = [
     title: "ROOFTOP",
     artist: "NotGoodCompany",
     url: "https://api.soundcloud.com/tracks/459410418",
-  },
-]
-
-const RAFS_CRATE: Track[] = [
-  {
-    id: "yukon-x-up-dj-hunny-bee-remix",
-    title: "Yukon X Up (DJ Hunny Bee Remix)",
-    artist: "djhunnybee",
-    url: "https://soundcloud.com/djhunnybee/yukon-x-up-dj-hunny-bee-remix",
-  },
-  {
-    id: "four-tet-insect-near-piha-beach",
-    title: "Insect Near Piha Beach",
-    artist: "Four Tet",
-    url: "https://soundcloud.com/user-982065028/four-tet-insect-near-piha-beach",
-  },
-  {
-    id: "habibi-funk-beirut",
-    title: "Habibi Funk Beirut",
-    artist: "DJ Sweeterman",
-    url: "https://soundcloud.com/djsweeterman/habibi-funk-beirut",
-  },
-  {
-    id: "chopsuey",
-    title: "Chop Suey",
-    artist: "Osive",
-    url: "https://soundcloud.com/osive/chopsuey",
-  },
-  {
-    id: "gordos-dilemma",
-    title: "Gordo's Dilemma",
-    artist: "Gordo",
-    url: "https://soundcloud.com/gordoszn/gordos-dilemma",
-  },
-  {
-    id: "08-compton-state-of-mind",
-    title: "Compton State of Mind",
-    artist: "Miles Davis",
-    url: "https://soundcloud.com/miles-davis-29/08-compton-state-of-mind",
-  },
-  {
-    id: "fidde-i-wonder-yuno-hu-vision",
-    title: "I Wonder (Yuno Hu Vision)",
-    artist: "Fidde",
-    url: "https://soundcloud.com/miguelmancha/fidde-i-wonder-yuno-hu-vision",
-  },
-  {
-    id: "sango2",
-    title: "Sango2",
-    artist: "Pinche Por Vida",
-    url: "https://soundcloud.com/pincheporvida/sango2",
-  },
-  {
-    id: "dipset-x-future-i-really-mean",
-    title: "Dipset x Future - I Really Mean",
-    artist: "Sango",
-    url: "https://soundcloud.com/sangobeats/dipset-x-future-i-really-mean",
-  },
-  {
-    id: "mos-def-auditorium-2",
-    title: "Auditorium",
-    artist: "Mos Def",
-    url: "https://soundcloud.com/beaubouthillier-1/mos-def-auditorium-2",
-  },
-  {
-    id: "blemforreal",
-    title: "Blem For Real",
-    artist: "David Mackay",
-    url: "https://soundcloud.com/davidmackaymusic/blemforreal",
-  },
-  {
-    id: "tems-me-u-blk-remix",
-    title: "Me & U (BLK Remix)",
-    artist: "Tems",
-    url: "https://soundcloud.com/blkmvsic/tems-me-u-blk-remix",
-  },
-  {
-    id: "first-day-of-my-life-bright",
-    title: "First Day of My Life",
-    artist: "Mac Miller",
-    url: "https://soundcloud.com/larryfisherman/first-day-of-my-life-bright",
   },
 ]
 
@@ -307,13 +227,15 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     setPlaylist,
     currentTime,
     duration,
+    shuffle,
+    repeatMode,
+    toggleShuffle,
+    cycleRepeatMode,
   } = useAudio()
 
   const [currentScreen, setCurrentScreen] = useState<MenuScreen>("main")
   const [menuStack, setMenuStack] = useState<MenuScreen[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [shuffleEnabled, setShuffleEnabled] = useState(false)
-  const [repeatEnabled, setRepeatEnabled] = useState(false)
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [currentVideoPlaylist, setCurrentVideoPlaylist] = useState<Video[]>(ANALOG_DIGITAL_VIDEOS)
@@ -402,10 +324,10 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
           },
         }))
       case "rafscrate":
-        return RAFS_CRATE.map((track) => ({
+        return FEATURED_RAFS_CRATE.map((track) => ({
           label: track.title,
           action: () => {
-            setPlaylist(RAFS_CRATE)
+            setPlaylist(FEATURED_RAFS_CRATE)
             playTrack(track)
             setCurrentScreen("nowPlaying")
           },
@@ -413,12 +335,12 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       case "settings":
         return [
           {
-            label: `Shuffle: ${shuffleEnabled ? "On" : "Off"}`,
-            action: () => setShuffleEnabled(!shuffleEnabled),
+            label: `Shuffle: ${shuffle ? "On" : "Off"}`,
+            action: toggleShuffle,
           },
           {
-            label: `Repeat: ${repeatEnabled ? "On" : "Off"}`,
-            action: () => setRepeatEnabled(!repeatEnabled),
+            label: `Repeat: ${repeatMode === "off" ? "Off" : repeatMode === "one" ? "One" : "All"}`,
+            action: cycleRepeatMode,
           },
           { label: "EQ: Flat" },
         ]
@@ -427,13 +349,18 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       default:
         return []
     }
-  }, [currentScreen, playTrack, setPlaylist, shuffleEnabled, repeatEnabled])
+  }, [currentScreen, playTrack, setPlaylist, shuffle, repeatMode, toggleShuffle, cycleRepeatMode])
 
   const menuItems = getMenuItems()
 
+  // Seed the default playlist once, but never hijack a session that's already
+  // playing (e.g. a record dug out of the crate).
+  const seededPlaylistRef = useRef(false)
   useEffect(() => {
-    setPlaylist(BADCOMPANY_MIXES)
-  }, [setPlaylist])
+    if (seededPlaylistRef.current) return
+    seededPlaylistRef.current = true
+    if (!currentTrack) setPlaylist(BADCOMPANY_MIXES)
+  }, [currentTrack, setPlaylist])
 
   const handleSelect = useCallback(() => {
     if (currentScreen === "nowPlaying") {
@@ -650,16 +577,16 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
               {getScreenTitle()}
             </span>
             <div className="flex items-center gap-1">
-              {shuffleEnabled && (
-                <span className="text-xs" style={{ color: "#000" }}>
-                  🔀
-                </span>
-              )}
-              {repeatEnabled && (
-                <span className="text-xs" style={{ color: "#000" }}>
-                  🔁
-                </span>
-              )}
+          {shuffle && (
+            <span className="text-xs font-bold" style={{ color: "#000" }} title="Shuffle on">
+              S
+            </span>
+          )}
+          {repeatMode !== "off" && (
+            <span className="text-xs font-bold" style={{ color: "#000" }} title={`Repeat ${repeatMode}`}>
+              {repeatMode === "one" ? "R1" : "R"}
+            </span>
+          )}
               {isPlaying && (
                 <span className="text-xs" style={{ color: "#000" }}>
                   ▶
