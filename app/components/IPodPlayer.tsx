@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useAudio, type Track } from "../context/AudioContext"
-import { FEATURED_FEATURED_RAFS_CRATE } from "@/data/audio-library"
+import { FEATURED_RAFS_CRATE } from "@/data/audio-library"
 
 interface Video {
   id: string
