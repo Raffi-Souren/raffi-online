@@ -50,10 +50,27 @@ const FEATURED_OVERRIDES: ReadonlyArray<{
  * The curated short crate shown in the iPod. URLs and base metadata stay
  * single-sourced in the canonical library; only display metadata is overridden.
  */
-export const FEATURED_RAFS_CRATE: Track[] = FEATURED_OVERRIDES.flatMap(({ id, title, artist }) => {
+const CURATED_CRATE_SIZE = 50
+
+const handPickedTracks = FEATURED_OVERRIDES.flatMap(({ id, title, artist }) => {
   const track = CRATE_TRACKS.find((candidate) => candidate.id === id)
   return track ? [{ ...track, title: title ?? track.title, artist }] : []
 })
+
+const handPickedIds = new Set(handPickedTracks.map((track) => track.id))
+
+/**
+ * The 50-track crate shown in the iPod. It opens with the original hand-picked
+ * sequence, then continues through unique tracks from Raffi's broader library.
+ * URLs and base metadata remain single-sourced in the canonical crate.
+ */
+export const FEATURED_RAFS_CRATE: Track[] = [
+  ...handPickedTracks,
+  ...CRATE_TRACKS.filter((track) => !handPickedIds.has(track.id)).slice(
+    0,
+    Math.max(0, CURATED_CRATE_SIZE - handPickedTracks.length),
+  ),
+]
 
 /**
  * Pick a random track index that differs from `current` (when possible).

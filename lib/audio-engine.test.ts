@@ -37,9 +37,9 @@ test("getRandomTrackIndex tolerates an out-of-range current index", () => {
 
 // --- featured crate ---------------------------------------------------------
 
-test("FEATURED_RAFS_CRATE resolves all 13 canonical tracks", () => {
-  assert.equal(FEATURED_RAFS_CRATE.length, 13)
-  assert.equal(new Set(FEATURED_RAFS_CRATE.map((track) => track.id)).size, 13)
+test("FEATURED_RAFS_CRATE resolves 50 unique canonical tracks", () => {
+  assert.equal(FEATURED_RAFS_CRATE.length, 50)
+  assert.equal(new Set(FEATURED_RAFS_CRATE.map((track) => track.id)).size, 50)
   assert.ok(FEATURED_RAFS_CRATE.every((track) => track.url.startsWith("https://soundcloud.com/")))
 })
 

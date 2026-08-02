@@ -227,13 +227,15 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     setPlaylist,
     currentTime,
     duration,
+    shuffle,
+    repeatMode,
+    toggleShuffle,
+    cycleRepeatMode,
   } = useAudio()
 
   const [currentScreen, setCurrentScreen] = useState<MenuScreen>("main")
   const [menuStack, setMenuStack] = useState<MenuScreen[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [shuffleEnabled, setShuffleEnabled] = useState(false)
-  const [repeatEnabled, setRepeatEnabled] = useState(false)
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [currentVideoPlaylist, setCurrentVideoPlaylist] = useState<Video[]>(ANALOG_DIGITAL_VIDEOS)
@@ -333,12 +335,12 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       case "settings":
         return [
           {
-            label: `Shuffle: ${shuffleEnabled ? "On" : "Off"}`,
-            action: () => setShuffleEnabled(!shuffleEnabled),
+            label: `Shuffle: ${shuffle ? "On" : "Off"}`,
+            action: toggleShuffle,
           },
           {
-            label: `Repeat: ${repeatEnabled ? "On" : "Off"}`,
-            action: () => setRepeatEnabled(!repeatEnabled),
+            label: `Repeat: ${repeatMode === "off" ? "Off" : repeatMode === "one" ? "One" : "All"}`,
+            action: cycleRepeatMode,
           },
           { label: "EQ: Flat" },
         ]
@@ -347,7 +349,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       default:
         return []
     }
-  }, [currentScreen, playTrack, setPlaylist, shuffleEnabled, repeatEnabled])
+  }, [currentScreen, playTrack, setPlaylist, shuffle, repeatMode, toggleShuffle, cycleRepeatMode])
 
   const menuItems = getMenuItems()
 
@@ -575,16 +577,16 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
               {getScreenTitle()}
             </span>
             <div className="flex items-center gap-1">
-              {shuffleEnabled && (
-                <span className="text-xs" style={{ color: "#000" }}>
-                  🔀
-                </span>
-              )}
-              {repeatEnabled && (
-                <span className="text-xs" style={{ color: "#000" }}>
-                  🔁
-                </span>
-              )}
+          {shuffle && (
+            <span className="text-xs font-bold" style={{ color: "#000" }} title="Shuffle on">
+              S
+            </span>
+          )}
+          {repeatMode !== "off" && (
+            <span className="text-xs font-bold" style={{ color: "#000" }} title={`Repeat ${repeatMode}`}>
+              {repeatMode === "one" ? "R1" : "R"}
+            </span>
+          )}
               {isPlaying && (
                 <span className="text-xs" style={{ color: "#000" }}>
                   ▶
