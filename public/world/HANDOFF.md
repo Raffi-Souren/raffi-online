@@ -1,9 +1,11 @@
 # RAFFI WORLD — Handoff
 
-## [2026-08-02 ~session] FROM: grok — INFINITOWN MASSING + KICKFLIP + SHARP POST + CODEX ARCHIVE
+## [2026-08-02 19:11 EDT] FROM: grok — INFINITOWN MASSING + KICKFLIP + SHARP POST
 
-**Read first for Codex:** `public/world/CODEX-ARCHIVE.md` — full file map, commit stack,
-owner decisions, deferred work, controls, and “where is X?”.
+**Read first for Codex (dated handoff):**  
+`public/world/CODEX-HANDOFF-2026-08-02_1911.md`
+
+Also: `public/world/CODEX-ARCHIVE.md` (same arc, undated long form).
 
 **Shipped this arc (branch `grok/camera-modes`, worktree `raffi-online-grok-pursuit`):**
 
