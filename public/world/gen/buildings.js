@@ -102,17 +102,17 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
       topRect: flatRect,
     })
 
-    // Thin floor belts break pure extruded Minecraft slabs into readable
-    // storeys — classic low-poly city massing (Spider-Man PS2 / GTA III era).
+    // Floor ledges — slightly darker, proud of the wall so storeys read as
+    // massing (GTA III / Spidey), not one flat Minecraft slab.
     const shellBot = s.y - s.h / 2
     const shellTop = s.y + s.h / 2
-    const beltH = Math.min(0.18, fh * 0.06)
-    const beltOut = 0.11
-    for (let y = shellBot + fh; y < shellTop - 0.35; y += fh) {
+    const beltH = Math.min(0.22, fh * 0.07)
+    const beltOut = 0.16
+    for (let y = shellBot + fh; y < shellTop - 0.4; y += fh) {
       b.box({
         x: lot.x, y, z: lot.z,
         w: s.w + beltOut * 2, h: beltH, d: s.d + beltOut * 2,
-        ry: lot.ry, color: wallColor, rect: flatRect, faces: SIDES,
+        ry: lot.ry, color: '#d8d4cc', rect: flatRect, faces: [...SIDES, 'up', 'down'],
       })
     }
   }
@@ -121,6 +121,13 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
   const top = shells[shells.length - 1]
   const roofY = top.y + top.h / 2
   b.plane({ x: lot.x, y: roofY, z: lot.z, w: top.w, d: top.d, ry: lot.ry, color: '#ffffff', rect: flatRect })
+
+  // -------------------------------------------------- window recesses ---
+  // Real inset panes + frames. Painted UV windows alone read as flat Minecraft
+  // textures; GTA/Spidey buildings had punched depth. Budget-capped.
+  addWindowRecesses(b, set, atlas, lot, {
+    floors, fh, bays, totalH, shells, rng, wallRect: flatRect,
+  })
 
   // --------------------------------------------------------------- cap ---
   const cap = arch.cap || { type: 'parapet', height: 0.6 }
@@ -294,6 +301,107 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
     roofProps,
     height: totalH,
     floors,
+  }
+}
+
+/**
+ * Punch window recesses into the primary shell faces.
+ * Street-facing long sides only; skips interior floors that would vanish.
+ */
+function addWindowRecesses(b, set, atlas, lot, ctx) {
+  const { floors, fh, bays, totalH, shells, rng } = ctx
+  if (floors < 1 || bays < 1) return
+
+  // Use the widest/lowest shell as the main facade mass (setbacks keep upper).
+  const main = shells[0]
+  const paneRect = atlas.uv('litwindow') || atlas.uv('white')
+  const darkPane = '#1a2230'
+  const frameCol = '#c8c2b6'
+
+  const bayW = main.w / bays
+  const winW = Math.min(bayW * 0.55, 2.4)
+  const winH = Math.min(fh * 0.48, 1.7)
+  const depth = 0.22
+  const frameT = 0.08
+
+  // Front + back along lot local Z (street faces). Side walls only if wide.
+  const faces = [
+    { axis: 'z', sign: 1, span: main.w, along: 'x' },
+    { axis: 'z', sign: -1, span: main.w, along: 'x' },
+  ]
+  if (main.w >= 18) {
+    faces.push(
+      { axis: 'x', sign: 1, span: main.d, along: 'z' },
+      { axis: 'x', sign: -1, span: main.d, along: 'z' },
+    )
+  }
+
+  let placed = 0
+  const maxPlaced = Math.min(36, floors * bays * 2)
+
+  for (const face of faces) {
+    const faceBays = face.axis === 'z' ? bays : Math.max(1, Math.round(main.d / (bayW || 3.5)))
+    for (let f = 0; f < floors; f++) {
+      // Skip ground floor on retail-looking lower band a bit; still punch some.
+      const y = f * fh + fh * 0.52
+      if (y > totalH - 0.6) continue
+      if (y > main.y + main.h / 2 - 0.3) continue
+      if (y < main.y - main.h / 2 + 0.4) continue
+
+      for (let i = 0; i < faceBays; i++) {
+        if (placed >= maxPlaced) return
+        // Slight irregularity like real city stock, not a perfect grid.
+        if (rng.chance(0.12)) continue
+
+        const t = (-0.5 + (i + 0.5) / faceBays) * face.span
+        let localX = 0
+        let localZ = 0
+        if (face.axis === 'z') {
+          localX = t
+          localZ = face.sign * (main.d / 2 - depth * 0.5)
+        } else {
+          localZ = t
+          localX = face.sign * (main.w / 2 - depth * 0.5)
+        }
+        const p = lotPoint(lot, localX, localZ)
+
+        // Dark recessed pane (reads as a hole).
+        b.box({
+          x: p.x, y, z: p.z,
+          w: face.axis === 'z' ? winW : depth,
+          h: winH,
+          d: face.axis === 'z' ? depth : winW,
+          ry: lot.ry,
+          color: darkPane,
+          rect: paneRect,
+          faces: SIDES,
+        })
+
+        // Thin outer frame lip — cheap silhouette of a real window.
+        const fw = face.axis === 'z' ? winW + frameT * 2 : depth + 0.04
+        const fd = face.axis === 'z' ? depth + 0.04 : winW + frameT * 2
+        let frameLocalX = localX
+        let frameLocalZ = localZ
+        if (face.axis === 'z') frameLocalZ = face.sign * (main.d / 2 + 0.02)
+        else frameLocalX = face.sign * (main.w / 2 + 0.02)
+        const fp = lotPoint(lot, frameLocalX, frameLocalZ)
+        // Top lintel only (3 boxes would be too heavy) — still sells depth.
+        b.box({
+          x: fp.x,
+          y: y + winH * 0.5 + frameT * 0.5,
+          z: fp.z,
+          w: face.axis === 'z' ? fw : 0.1,
+          h: frameT,
+          d: face.axis === 'z' ? 0.1 : fd,
+          ry: lot.ry,
+          color: frameCol,
+          rect: atlas.uv('white'),
+          faces: [...SIDES, 'up'],
+        })
+
+        placed++
+      }
+    }
   }
 }
 

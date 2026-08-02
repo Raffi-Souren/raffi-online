@@ -268,11 +268,11 @@
 
   "grades": {
     "dusk": {
-      "$comment": "Spider-Man PS2 golden-hour city: dense mauve haze, soft bloom on windows.",
+      "$comment": "Clear golden hour — street sharp, far haze only.",
       "fogColor": "#C48A9E",
       "fogColor2": "#F7B873",
-      "fogNear": 90,
-      "fogFar": 480,
+      "fogNear": 180,
+      "fogFar": 620,
       "key": "#FFF1D0",
       "keyDir": { "x": -0.45, "y": -0.78, "z": 0.44 },
       "ambient": "#7A6C9A",
@@ -281,18 +281,18 @@
       "skyBottom": "#F7B873",
       "waterColor": "#2E8FA8",
       "post": {
-        "shadowStrength": 0.12, "keyStrength": 0.08, "saturation": 1.22, "contrast": 1.05,
-        "exposure": 0.98, "gamma": 0.98, "vignette": 0.2,
-        "bloomStrength": 0.38, "bloomThreshold": 0.48, "softness": 0.72, "grain": 0.032,
-        "quantize": 0.28, "dither": 0.4
+        "shadowStrength": 0.14, "keyStrength": 0.1, "saturation": 1.18, "contrast": 1.1,
+        "exposure": 1.0, "gamma": 1, "vignette": 0.12,
+        "bloomStrength": 0.1, "bloomThreshold": 0.68,
+        "quantize": 0.15, "dither": 0.25
       }
     },
     "haze": {
-      "$comment": "Midday soft overcast — still atmospheric, never hard pixel skyline.",
+      "$comment": "Clear midday city — high contrast form, mild far fog.",
       "fogColor": "#B8D0CC",
       "fogColor2": "#F4D39C",
-      "fogNear": 120,
-      "fogFar": 560,
+      "fogNear": 220,
+      "fogFar": 680,
       "key": "#FFF0BF",
       "keyDir": { "x": -0.3, "y": -0.9, "z": 0.31 },
       "ambient": "#7AA8A8",
@@ -301,18 +301,18 @@
       "skyBottom": "#F4D39C",
       "waterColor": "#2996A6",
       "post": {
-        "shadowStrength": 0.08, "keyStrength": 0.06, "saturation": 1.14, "contrast": 1.04,
-        "exposure": 1.02, "gamma": 1, "vignette": 0.14,
-        "bloomStrength": 0.22, "bloomThreshold": 0.58, "softness": 0.55, "grain": 0.022,
-        "quantize": 0.22, "dither": 0.32
+        "shadowStrength": 0.1, "keyStrength": 0.08, "saturation": 1.12, "contrast": 1.1,
+        "exposure": 1.04, "gamma": 1, "vignette": 0.1,
+        "bloomStrength": 0.06, "bloomThreshold": 0.72,
+        "quantize": 0.12, "dither": 0.2
       }
     },
     "night": {
-      "$comment": "Night city glow — Spidey NYC purple fog + lit windows blooming.",
+      "$comment": "Night city: readable streets, lit windows pop, no mush.",
       "fogColor": "#1E2A52",
       "fogColor2": "#59356F",
-      "fogNear": 70,
-      "fogFar": 420,
+      "fogNear": 140,
+      "fogFar": 520,
       "key": "#72D7FF",
       "keyDir": { "x": 0.35, "y": -0.85, "z": -0.39 },
       "ambient": "#3B4E80",
@@ -321,10 +321,10 @@
       "skyBottom": "#59356F",
       "waterColor": "#123F60",
       "post": {
-        "shadowStrength": 0.16, "keyStrength": 0.1, "saturation": 1.28, "contrast": 1.08,
-        "exposure": 0.78, "gamma": 0.94, "vignette": 0.24,
-        "bloomStrength": 0.55, "bloomThreshold": 0.42, "softness": 0.78, "grain": 0.04,
-        "quantize": 0.32, "dither": 0.45
+        "shadowStrength": 0.18, "keyStrength": 0.12, "saturation": 1.22, "contrast": 1.12,
+        "exposure": 0.86, "gamma": 0.98, "vignette": 0.14,
+        "bloomStrength": 0.22, "bloomThreshold": 0.55,
+        "quantize": 0.18, "dither": 0.28
       }
     },
     "mainframe": {
@@ -341,10 +341,10 @@
       "skyBottom": "#04080F",
       "waterColor": "#04080F",
       "post": {
-        "shadowStrength": 0.18, "keyStrength": 0.08, "saturation": 1.12, "contrast": 1.08,
-        "exposure": 1, "gamma": 1, "vignette": 0.12,
-        "bloomStrength": 0.25, "bloomThreshold": 0.5, "softness": 0.35, "grain": 0.02,
-        "quantize": 0.2, "dither": 0.25
+        "shadowStrength": 0.18, "keyStrength": 0.08, "saturation": 1.12, "contrast": 1.1,
+        "exposure": 1, "gamma": 1, "vignette": 0.1,
+        "bloomStrength": 0.08, "bloomThreshold": 0.6,
+        "quantize": 0.12, "dither": 0.2
       }
     }
   },
@@ -361,17 +361,15 @@
   },
 
   "render": {
-    "$comment": "Soft early-2000s city presentation (Spider-Man PS2 vibe). Higher internal res + linear upscale + mild bloom. Not Minecraft nearest 512x288.",
-    "internalWidth": 720,
-    "internalHeight": 405,
-    "mobileInternalWidth": 540,
-    "mobileInternalHeight": 304,
-    "quantize": 0.3,
-    "dither": 0.4,
-    "softness": 0.68,
-    "grain": 0.03,
-    "bloom": { "strength": 0.34, "threshold": 0.5 },
+    "$comment": "Sharp early-2000s city (GTA/Spidey PS2): higher internal res, no smear. Form comes from geometry + lighting, not blur.",
+    "internalWidth": 960,
+    "internalHeight": 540,
+    "mobileInternalWidth": 640,
+    "mobileInternalHeight": 360,
+    "quantize": 0.15,
+    "dither": 0.25,
+    "bloom": { "strength": 0.1, "threshold": 0.65 },
     "maxPixelRatio": 1,
-    "budget": { "drawCalls": 120, "triangles": 60000 }
+    "budget": { "drawCalls": 140, "triangles": 90000 }
   }
 }
