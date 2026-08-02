@@ -1,0 +1,339 @@
+{
+  "$schema": "world",
+  "$comment": "PORT VANTAGE — district bounds, road graph, spawn points, expressway spline. The engine compiles this; it hardcodes nothing. Compass: -Z north, +X east. 1 unit = 1 metre.",
+  "seed": "port-vantage-v1",
+  "bounds": { "minX": -640, "maxX": 680, "minZ": -460, "maxZ": 420 },
+  "seaLevel": -1.6,
+  "groundY": 0,
+
+  "$waterComment": "Land is a peninsula; everything outside `bounds` is open water. `harbor` rects carve water back into the land mass.",
+  "harbor": [
+    { "id": "north-east-basin", "minX": 340, "maxX": 680, "minZ": -460, "maxZ": -110 },
+    { "id": "heights-inlet", "minX": -640, "maxX": -600, "minZ": -300, "maxZ": -60 }
+  ],
+
+  "$fogCardComment": "Unreachable painted backdrop geometry. Always stays a card — never model behind it.",
+  "fogCards": [
+    { "id": "far-skyline", "at": { "x": 0, "z": -620 }, "width": 1600, "height": 150, "facing": "south", "silhouette": "towers", "seed": 41 },
+    { "id": "east-cranes", "at": { "x": 900, "z": 120 }, "width": 900, "height": 90, "facing": "west", "silhouette": "cranes", "seed": 17 }
+  ],
+
+  "districts": [
+    {
+      "id": "heights",
+      "name": "THE HEIGHTS",
+      "bounds": { "minX": -620, "maxX": -190, "minZ": -440, "maxZ": -80 },
+      "defaultGrade": "dusk",
+      "ambient": "heights",
+      "streamPriority": 0,
+      "spawnPoints": [
+        { "id": "apartment", "x": -450, "z": -151, "yaw": 0, "role": "player-home" },
+        { "id": "promenade", "x": -400, "z": -410, "yaw": 3.14159, "role": "scenic" },
+        { "id": "bridge-foot", "x": -420, "z": -395, "yaw": 3.14159, "role": "vehicle" }
+      ]
+    },
+    {
+      "id": "downtown",
+      "name": "DOWNTOWN",
+      "bounds": { "minX": -170, "maxX": 320, "minZ": -440, "maxZ": -80 },
+      "defaultGrade": "haze",
+      "ambient": "downtown",
+      "streamPriority": 1,
+      "spawnPoints": [
+        { "id": "campus-plaza", "x": 60, "z": -250, "yaw": 0, "role": "mission" },
+        { "id": "lobby-door", "x": 62, "z": -206, "yaw": 3.14159, "role": "interior-door" },
+        { "id": "tower-row", "x": -100, "z": -350, "yaw": 1.5708, "role": "vehicle" }
+      ]
+    },
+    {
+      "id": "strip",
+      "name": "THE STRIP",
+      "bounds": { "minX": -170, "maxX": 320, "minZ": -60, "maxZ": 400 },
+      "defaultGrade": "night",
+      "ambient": "strip",
+      "streamPriority": 1,
+      "spawnPoints": [
+        { "id": "record-store", "x": -60, "z": 112, "yaw": 1.5708, "role": "mission" },
+        { "id": "club-door", "x": 140, "z": 136, "yaw": 3.14159, "role": "interior-door" },
+        { "id": "lot", "x": 220, "z": 220, "yaw": 0, "role": "vehicle-spawn-major" }
+      ]
+    },
+    {
+      "id": "yards",
+      "name": "THE YARDS",
+      "bounds": { "minX": 340, "maxX": 660, "minZ": -80, "maxZ": 400 },
+      "defaultGrade": "haze",
+      "ambient": "yards",
+      "streamPriority": 2,
+      "spawnPoints": [
+        { "id": "gate", "x": 360, "z": 40, "yaw": 1.5708, "role": "mission" },
+        { "id": "long-straight", "x": 520, "z": 300, "yaw": 3.14159, "role": "vehicle" }
+      ]
+    },
+    {
+      "id": "bowl",
+      "name": "THE BOWL",
+      "bounds": { "minX": -620, "maxX": -190, "minZ": -60, "maxZ": 400 },
+      "defaultGrade": "dusk",
+      "ambient": "bowl",
+      "streamPriority": 2,
+      "spawnPoints": [
+        { "id": "tailgate", "x": -260, "z": 120, "yaw": 1.5708, "role": "vehicle" },
+        { "id": "ramp-base", "x": -420, "z": 110, "yaw": 3.14159, "role": "mission" },
+        { "id": "pitch", "x": -420, "z": 230, "yaw": 3.14159, "role": "interior" }
+      ]
+    }
+  ],
+
+  "$landmarkComment": "Big authored structures the block grammar must not build over. `keepout` is an AABB in world units.",
+  "landmarks": [
+    { "id": "stadium", "district": "bowl", "type": "stadium", "at": { "x": -420, "z": 230 }, "radius": 108, "keepout": { "minX": -540, "maxX": -300, "minZ": 110, "maxZ": 350 } },
+    { "id": "vantage-tower", "district": "downtown", "type": "tower-hero", "at": { "x": 60, "z": -300 }, "height": 210, "keepout": { "minX": 10, "maxX": 110, "minZ": -350, "maxZ": -250 } },
+    { "id": "campus-lobby", "district": "downtown", "type": "lobby", "at": { "x": 60, "z": -220 }, "keepout": { "minX": 20, "maxX": 100, "minZ": -245, "maxZ": -195 } },
+    { "id": "record-store", "district": "strip", "type": "storefront", "at": { "x": -60, "z": 140 }, "keepout": { "minX": -95, "maxX": -25, "minZ": 115, "maxZ": 165 } },
+    { "id": "club", "district": "strip", "type": "club", "at": { "x": 140, "z": 170 }, "keepout": { "minX": 100, "maxX": 180, "minZ": 140, "maxZ": 205 } },
+    { "id": "apartment", "district": "heights", "type": "brownstone-hero", "at": { "x": -450, "z": -175 }, "keepout": { "minX": -475, "maxX": -425, "minZ": -200, "maxZ": -155 } },
+    {
+      "id": "crib-garage",
+      "name": "THE CRIB GARAGE",
+      "district": "heights",
+      "type": "mobility-hub",
+      "at": { "x": -472, "z": -146 },
+      "marker": { "x": -460, "z": -141 },
+      "keepout": { "minX": -481, "maxX": -463, "minZ": -158, "maxZ": -132 },
+      "rides": [
+        { "id": "crib-car", "archetype": "grand-tourer", "at": { "x": -475, "z": -146.5 }, "yaw": 0 },
+        { "id": "crib-scooter", "archetype": "scooter", "at": { "x": -470.7, "z": -145.5 }, "yaw": 0 },
+        { "id": "crib-board", "archetype": "skateboard", "at": { "x": -467, "z": -144.5 }, "yaw": 0 }
+      ],
+      "transit": {
+        "id": "crib-express",
+        "name": "VANTAGE EXPRESS",
+        "at": { "x": -455, "z": -137 },
+        "yaw": 0,
+        "useRadius": 4.2,
+        "arrivalOffset": { "x": 0, "z": -7 }
+      },
+      "props": [
+        { "type": "garage-pad", "at": { "x": -472, "z": -146 }, "yaw": 0 },
+        { "type": "garage-sign", "at": { "x": -480, "z": -151 }, "yaw": 1.5708 },
+        { "type": "subway-entrance", "at": { "x": -455, "z": -137 }, "yaw": 0 }
+      ]
+    },
+    { "id": "promenade", "district": "heights", "type": "promenade", "at": { "x": -400, "z": -425 }, "keepout": { "minX": -620, "maxX": -200, "minZ": -440, "maxZ": -405 } },
+    { "id": "bridge", "district": "heights", "type": "suspension-bridge", "at": { "x": -420, "z": -520 }, "span": 260, "deckY": 26, "keepout": { "minX": -470, "maxX": -370, "minZ": -660, "maxZ": -430 } },
+    { "id": "crane-row", "district": "yards", "type": "gantry-cranes", "at": { "x": 600, "z": 60 }, "count": 4, "keepout": { "minX": 560, "maxX": 660, "minZ": -40, "maxZ": 200 } },
+    { "id": "mainframe-entry", "district": "downtown", "type": "stair-down", "at": { "x": 60, "z": -212 }, "leadsTo": "mainframe" }
+  ],
+
+  "$interiorComment": "Interiors are separate small scenes swapped in at a door trigger. THE MAINFRAME disables fog entirely — that contrast is deliberate.",
+  "interiors": [
+    {
+      "id": "mainframe",
+      "name": "THE MAINFRAME",
+      "parent": "downtown",
+      "grade": "mainframe",
+      "fog": false,
+      "bounds": { "minX": -90, "maxX": 90, "minZ": -60, "maxZ": 120 },
+      "exit": { "x": 60, "z": -206, "district": "downtown" },
+      "spawn": { "x": 0, "z": 100, "yaw": 0 }
+    },
+    {
+      "id": "club-floor",
+      "name": "THE CLUB",
+      "parent": "strip",
+      "grade": "night",
+      "fog": true,
+      "bounds": { "minX": -40, "maxX": 40, "minZ": -40, "maxZ": 40 },
+      "exit": { "x": 140, "z": 140, "district": "strip" },
+      "spawn": { "x": 0, "z": 30, "yaw": 0 }
+    },
+    {
+      "id": "pitch",
+      "name": "THE BOWL — PITCH",
+      "parent": "bowl",
+      "grade": "night",
+      "fog": true,
+      "bounds": { "minX": -55, "maxX": 55, "minZ": -38, "maxZ": 38 },
+      "exit": { "x": -420, "z": 120, "district": "bowl" },
+      "spawn": { "x": 0, "z": 26, "yaw": 0 }
+    }
+  ],
+
+  "$roadComment": "Arterials are a sparse grid; roads.js builds the node/edge graph from `xs` × `zs`, drops any node in `suppressNodes` or inside a landmark keepout, then adds `extraEdges`. Sidewalks, curbs, lane paint and crosswalks are all generated from this.",
+  "roadGraph": {
+    "arterials": {
+      "xs": [-560, -400, -260, -100, 60, 220, 380, 540],
+      "zs": [-380, -250, -120, 20, 160, 300]
+    },
+    "laneWidth": 5.2,
+    "defaultLanes": 2,
+    "sidewalkWidth": 4.0,
+    "curbHeight": 0.22,
+    "suppressNodes": ["-400|160", "-400|300", "540|-380", "380|-380", "540|-250", "380|-250"],
+    "wideEdges": [
+      { "a": "-100|-380", "b": "60|-380", "lanes": 3 },
+      { "a": "60|-380", "b": "220|-380", "lanes": 3 },
+      { "a": "-100|20", "b": "60|20", "lanes": 3 },
+      { "a": "60|20", "b": "220|20", "lanes": 3 }
+    ],
+    "extraEdges": [
+      { "a": "-260|-120", "b": "-100|-120", "lanes": 2, "name": "HARBOR ST" },
+      { "a": "220|160", "b": "380|160", "lanes": 2, "name": "YARD GATE RD" },
+      { "a": "-260|20", "b": "-260|160", "lanes": 2, "name": "BOWL LOOP" },
+      { "a": "380|20", "b": "540|20", "lanes": 2, "name": "PIER RD" }
+    ],
+    "streetNames": {
+      "xs": ["9TH AVE", "7TH AVE", "5TH AVE", "3RD AVE", "VANTAGE AVE", "2ND AVE", "DOCK AVE", "PIER AVE"],
+      "zs": ["PROMENADE ST", "BLUFF ST", "HARBOR ST", "CENTRE ST", "LOW ST", "STADIUM ST"]
+    }
+  },
+
+  "$expresswayComment": "Elevated ring touching all five districts. Closed Catmull-Rom spline; deck is generated along it with piers dropped to ground. On-ramps splice it to the surface graph.",
+  "expressway": {
+    "deckY": 13.5,
+    "deckWidth": 16,
+    "pierSpacing": 46,
+    "closed": true,
+    "spline": [
+      { "x": -520, "z": -400 },
+      { "x": -180, "z": -418 },
+      { "x": 180, "z": -412 },
+      { "x": 420, "z": -330 },
+      { "x": 600, "z": -160 },
+      { "x": 624, "z": 120 },
+      { "x": 540, "z": 340 },
+      { "x": 220, "z": 384 },
+      { "x": -120, "z": 392 },
+      { "x": -380, "z": 372 },
+      { "x": -580, "z": 250 },
+      { "x": -604, "z": -60 },
+      { "x": -600, "z": -260 }
+    ],
+    "onRamps": [
+      { "id": "heights-on", "surface": { "x": -400, "z": -380 }, "deckT": 0.02, "district": "heights" },
+      { "id": "downtown-on", "surface": { "x": 220, "z": -380 }, "deckT": 0.17, "district": "downtown" },
+      { "id": "yards-on", "surface": { "x": 540, "z": 20 }, "deckT": 0.42, "district": "yards" },
+      { "id": "strip-on", "surface": { "x": 220, "z": 300 }, "deckT": 0.62, "district": "strip" },
+      { "id": "bowl-on", "surface": { "x": -400, "z": 300 }, "deckT": 0.79, "district": "bowl" }
+    ],
+    "$tunnelComment": "Streaming hand-off cover. District load/unload is triggered inside these.",
+    "tunnels": [
+      { "id": "north-tunnel", "fromT": 0.09, "toT": 0.13, "handoff": ["heights", "downtown"] },
+      { "id": "east-tunnel", "fromT": 0.33, "toT": 0.37, "handoff": ["downtown", "yards"] },
+      { "id": "south-tunnel", "fromT": 0.66, "toT": 0.70, "handoff": ["strip", "bowl"] }
+    ]
+  },
+
+  "$repaintComment": "Reply All Repaint — parking here clears COMPLIANCE and repaints the vehicle.",
+  "repaintShops": [
+    { "id": "repaint-heights", "district": "heights", "at": { "x": -560, "z": -120 }, "yaw": 1.5708 },
+    { "id": "repaint-strip", "district": "strip", "at": { "x": 250, "z": 60 }, "yaw": 0 },
+    { "id": "repaint-yards", "district": "yards", "at": { "x": 420, "z": 250 }, "yaw": 3.14159 },
+    { "id": "repaint-bowl", "district": "bowl", "at": { "x": -300, "z": 330 }, "yaw": 0 }
+  ],
+
+  "$playerSpawn": "Where a cold boot drops you. ?to=NAME puts the greeter two metres in front of this.",
+  "spawn": { "x": -450, "z": -151, "yaw": 0, "district": "heights" },
+  "greeterSpawn": { "x": -450, "z": -148.5, "yaw": 3.14159 },
+
+  "camera": {
+    "$comment": "Fixed 3/4 iso. Pitch and yaw are law — see WORLD-BIBLE §4. Yaw snaps in 90° steps only.",
+    "pitchDeg": 55,
+    "yawDeg": 45,
+    "yawSnapDeg": 90,
+    "orthoHeightFoot": 46,
+    "orthoHeightVehicle": 74,
+    "zoomLerp": 3.2,
+    "followLerp": 6.5,
+    "lookAheadFoot": 0.35,
+    "lookAheadVehicle": 0.85,
+    "lookAheadMax": 18,
+    "near": -400,
+    "far": 900,
+    "pinchMin": 0.75,
+    "pinchMax": 1.6
+  },
+
+  "grades": {
+    "dusk": {
+      "fogColor": "#B77E99",
+      "fogColor2": "#F7B873",
+      "fogNear": 260,
+      "fogFar": 650,
+      "key": "#FFF1D0",
+      "keyDir": { "x": -0.45, "y": -0.78, "z": 0.44 },
+      "ambient": "#736C9A",
+      "shadowTint": "#35486E",
+      "skyTop": "#566FA6",
+      "skyBottom": "#F7B873",
+      "waterColor": "#2E8FA8",
+      "post": { "shadowStrength": 0.08, "keyStrength": 0.05, "saturation": 1.14, "contrast": 1.04, "exposure": 0.95, "gamma": 1, "vignette": 0.06 }
+    },
+    "haze": {
+      "fogColor": "#BDD3CE",
+      "fogColor2": "#F4D39C",
+      "fogNear": 360,
+      "fogFar": 720,
+      "key": "#FFF0BF",
+      "keyDir": { "x": -0.3, "y": -0.9, "z": 0.31 },
+      "ambient": "#78A4A4",
+      "shadowTint": "#496981",
+      "skyTop": "#58B9D2",
+      "skyBottom": "#F4D39C",
+      "waterColor": "#2996A6",
+      "post": { "shadowStrength": 0.04, "keyStrength": 0.04, "saturation": 1.1, "contrast": 1.03, "exposure": 1, "gamma": 1, "vignette": 0.04 }
+    },
+    "night": {
+      "fogColor": "#27345D",
+      "fogColor2": "#59356F",
+      "fogNear": 270,
+      "fogFar": 620,
+      "key": "#72D7FF",
+      "keyDir": { "x": 0.35, "y": -0.85, "z": -0.39 },
+      "ambient": "#3B4E80",
+      "shadowTint": "#141638",
+      "skyTop": "#11143B",
+      "skyBottom": "#59356F",
+      "waterColor": "#123F60",
+      "post": { "shadowStrength": 0.1, "keyStrength": 0.05, "saturation": 1.18, "contrast": 1.06, "exposure": 0.72, "gamma": 0.96, "vignette": 0.08 }
+    },
+    "mainframe": {
+      "$comment": "Interior-only. No fog by design — the visual opposite of the surface.",
+      "fogColor": "#0A1A2A",
+      "fogColor2": "#0A1A2A",
+      "fogNear": 400,
+      "fogFar": 900,
+      "key": "#CFE6FF",
+      "keyDir": { "x": 0, "y": -1, "z": 0.05 },
+      "ambient": "#4A6E8C",
+      "shadowTint": "#06121F",
+      "skyTop": "#04080F",
+      "skyBottom": "#04080F",
+      "waterColor": "#04080F",
+      "post": { "shadowStrength": 0.18, "keyStrength": 0.08, "saturation": 1.12, "contrast": 1.08, "exposure": 1, "gamma": 1, "vignette": 0.08 }
+    }
+  },
+
+  "$timeComment": "The XP system clock drives this when the game is embedded in the shell. Hours are local. `force` from the pause menu overrides.",
+  "timeOfDay": {
+    "cycle": [
+      { "fromHour": 5, "toHour": 10, "grade": "haze" },
+      { "fromHour": 10, "toHour": 17, "grade": "haze" },
+      { "fromHour": 17, "toHour": 20, "grade": "dusk" },
+      { "fromHour": 20, "toHour": 5, "grade": "night" }
+    ],
+    "transitionSeconds": 3.0
+  },
+
+  "render": {
+    "internalWidth": 512,
+    "internalHeight": 288,
+    "mobileInternalWidth": 426,
+    "mobileInternalHeight": 240,
+    "quantizeBits": { "r": 5, "g": 6, "b": 5 },
+    "ditherMatrix": 4,
+    "maxPixelRatio": 1,
+    "budget": { "drawCalls": 120, "triangles": 60000 }
+  }
+}

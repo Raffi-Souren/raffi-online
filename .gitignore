@@ -29,3 +29,6 @@ next-env.d.ts
 
 # tests
 /.test-build/
+
+# generated RAFFI WORLD screenshot audits
+/public/world/audit/

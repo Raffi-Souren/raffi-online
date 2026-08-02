@@ -1,0 +1,178 @@
+{
+  "$schema": "dialogue",
+  "$comment": "Every spoken and displayed line, keyed by id. tools/voice.mjs reads this file, resolves `voice` against the ElevenLabs voice list by NAME (no ids committed), and writes /audio/vo/<id>.mp3. It is idempotent: a line whose text hash is unchanged is skipped. The API key lives in ELEVENLABS_API_KEY and never reaches the client. If an mp3 is missing the game shows the subtitle and moves on.",
+
+  "voices": {
+    "$comment": "Set `name` to a voice in your ElevenLabs library. `voice.mjs --list` prints what your account has.",
+    "narrator": { "name": "Raffi", "stability": 0.42, "similarity": 0.78, "style": 0.25, "speed": 1.0 },
+    "dispatch": { "name": "Rachel", "stability": 0.6, "similarity": 0.7, "style": 0.1, "speed": 1.05 },
+    "pursuer": { "name": "Adam", "stability": 0.55, "similarity": 0.72, "style": 0.15, "speed": 1.0 },
+    "clerk": { "name": "Domi", "stability": 0.45, "similarity": 0.75, "style": 0.3, "speed": 1.0 },
+    "dj": { "name": "Antoni", "stability": 0.38, "similarity": 0.8, "style": 0.45, "speed": 1.0 },
+    "ad": { "name": "Josh", "stability": 0.5, "similarity": 0.7, "style": 0.5, "speed": 1.08 }
+  },
+
+  "speakers": {
+    "mentor": { "label": "MENTOR", "accent": "#39E6FF" },
+    "manager": { "label": "MANAGER", "accent": "#FF3D8A" },
+    "transit": { "label": "VANTAGE EXPRESS", "accent": "#FFE347" }
+  },
+
+  "lines": {
+    "boot-1": { "voice": "narrator", "text": "Port Vantage. Nothing here is real, including the deadlines." },
+    "greeter-hello": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "{name}. You actually came. Good — walk with me." },
+    "greeter-brief": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Five districts, one ring road, and a wanted level made entirely of meetings. Pick a ride at the crib garage." },
+    "greeter-quest": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Board, scooter, car, or subway. Explore if you want. The bright route gets you to the work." },
+    "garage-choice": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Your commute has options. Board for shortcuts, scooter for side streets, car for distance — or take the train straight to the pin." },
+    "ride-board": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Low overhead. High ankle exposure. Follow the gold route. Space or E hops off." },
+    "ride-scooter": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Fast enough to matter, small enough to ignore parking. Space or E hops off." },
+    "ride-car": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Four doors, one destination. The map will reroute if you wander." },
+    "onboard-manager-call": { "voice": "dispatch", "speaker": "manager", "delivery": "call", "text": "First assignment: DEAL CLOCK at Vantage Plaza. I sent the route. The timer starts only when you accept." },
+    "subway-depart": { "voice": null, "speaker": "transit", "delivery": "call", "text": "MISSION EXPRESS. Direct service. No transfers and, somehow, no reimbursement form." },
+    "subway-arrive": { "voice": "dispatch", "speaker": "manager", "delivery": "call", "text": "Downtown. The marker starts DEAL CLOCK. There is a loaner car by the lobby." },
+
+    "home-save": { "voice": "narrator", "text": "Saved. The apartment stays where you left it." },
+    "wardrobe": { "voice": "narrator", "text": "Same four shirts. Pick one." },
+
+    "commuter-1": { "voice": "narrator", "text": "Train's coming." },
+    "commuter-2": { "voice": "narrator", "text": "It's a five minute walk. It's always a five minute walk." },
+    "commuter-3": { "voice": "narrator", "text": "Excuse me. Walking here." },
+    "commuter-4": { "voice": "narrator", "text": "Not today." },
+
+    "suit-1": { "voice": "narrator", "text": "Let's put some time on the calendar." },
+    "suit-2": { "voice": "narrator", "text": "I'll take that offline." },
+    "suit-3": { "voice": "narrator", "text": "Circling back on the circle back." },
+    "suit-4": { "voice": "narrator", "text": "Directionally, yes." },
+
+    "digger-1": { "voice": "clerk", "text": "This one's sealed." },
+    "digger-2": { "voice": "clerk", "text": "Twelve dollars? For this?" },
+    "digger-3": { "voice": "clerk", "text": "I own this already. I'm buying it again." },
+    "digger-4": { "voice": "clerk", "text": "Hold that one for me." },
+
+    "raver-1": { "voice": "dj", "text": "Who's on next?" },
+    "raver-2": { "voice": "dj", "text": "It's loud in the good way." },
+    "raver-3": { "voice": "dj", "text": "I'm not leaving." },
+    "raver-4": { "voice": "dj", "text": "Kick sounds different in here." },
+
+    "delegate-1": { "voice": "narrator", "text": "Is this being recorded?" },
+    "delegate-2": { "voice": "narrator", "text": "Great question. I'll follow up." },
+    "delegate-3": { "voice": "narrator", "text": "Where's the coffee?" },
+    "delegate-4": { "voice": "narrator", "text": "That one slide was the whole talk." },
+
+    "dock-1": { "voice": "narrator", "text": "Manifest says it's already here." },
+    "dock-2": { "voice": "narrator", "text": "Watch the yellow line." },
+    "dock-3": { "voice": "narrator", "text": "Not my container." },
+
+    "jogger-1": { "voice": "narrator", "text": "On your left." },
+    "jogger-2": { "voice": "narrator", "text": "Two more laps." },
+
+    "tailgate-1": { "voice": "narrator", "text": "Gates don't open for an hour." },
+    "tailgate-2": { "voice": "narrator", "text": "We brought the good grill." },
+    "tailgate-3": { "voice": "narrator", "text": "Park anywhere, it's all lot." },
+
+    "cat-1": { "voice": null, "text": "", "subtitle": "(the cat does not acknowledge you)" },
+    "cat-2": { "voice": null, "text": "", "subtitle": "(a slow blink)" },
+    "cat-3": { "voice": null, "text": "", "subtitle": "(loafing)" },
+    "cat-4": { "voice": null, "text": "", "subtitle": "MERCH — bodega cat, employed" },
+
+    "pursuer-t1-a": { "voice": "pursuer", "text": "Hey — quick one, no rush." },
+    "pursuer-t1-b": { "voice": "pursuer", "text": "Sorry to ping. Are you around?" },
+    "pursuer-t1-c": { "voice": "pursuer", "text": "Following up on my follow up." },
+    "pursuer-t2-a": { "voice": "pursuer", "text": "I've put fifteen minutes on your calendar." },
+    "pursuer-t2-b": { "voice": "pursuer", "text": "It's already declined. That's fine. I'll re-send." },
+    "pursuer-t2-c": { "voice": "pursuer", "text": "Do you have a hard stop?" },
+    "pursuer-t3-a": { "voice": "pursuer", "text": "My skip is asking. That's all I'll say." },
+    "pursuer-t3-b": { "voice": "pursuer", "text": "Pull over and we can align." },
+    "pursuer-t3-c": { "voice": "pursuer", "text": "This would be a two-minute conversation." },
+    "pursuer-t4-a": { "voice": "pursuer", "text": "The committee has notes." },
+    "pursuer-t4-b": { "voice": "pursuer", "text": "We're just trying to get everyone in a room." },
+    "pursuer-t4-c": { "voice": "pursuer", "text": "Nobody's blaming anybody." },
+    "pursuer-t5-a": { "voice": "pursuer", "text": "Legal would like to be looped in." },
+    "pursuer-t5-b": { "voice": "pursuer", "text": "We're not saying stop. We're saying pause." },
+    "pursuer-t5-c": { "voice": "pursuer", "text": "This is a process conversation, not a you conversation." },
+
+    "caught-1": { "voice": "dispatch", "text": "Invite accepted. Recurring." },
+    "caught-2": { "voice": "dispatch", "text": "You have been added to a working group." },
+    "repaint-1": { "voice": "ad", "text": "Reply All Repaint. Fresh coat, clean thread, everyone removed." },
+    "repaint-2": { "voice": "dispatch", "text": "Compliance cleared. New paint." },
+
+    "m-deal-clock-start": { "voice": "dispatch", "speaker": "manager", "delivery": "call", "text": "Four lobbies, one countdown. Every stop escalates you. Go." },
+    "m-deal-clock-stop": { "voice": "dispatch", "speaker": "manager", "delivery": "call", "text": "Signed. Next lobby." },
+    "m-deal-clock-win": { "voice": "dispatch", "speaker": "manager", "delivery": "call", "text": "All four. The deal exists now, which is worse." },
+    "m-deal-clock-fail": { "voice": "dispatch", "speaker": "manager", "delivery": "call", "text": "Clock's out. It'll be on next quarter's roadmap." },
+
+    "m-crate-dig-start": { "voice": "clerk", "text": "Six records walked out of here. Find them and I'll unlock the good stations." },
+    "m-crate-dig-pick": { "voice": "clerk", "text": "That's one." },
+    "m-crate-dig-win": { "voice": "clerk", "text": "All six. Station's yours. Don't make it weird." },
+
+    "m-set-time-start": { "voice": "dj", "text": "Booth's yours. Stay on the grid." },
+    "m-set-time-miss": { "voice": "dj", "text": "That was audible." },
+    "m-set-time-win": { "voice": "dj", "text": "Clean set. The room noticed." },
+    "m-set-time-fail": { "voice": "dj", "text": "Hecklers win. Happens." },
+
+    "m-cold-boot-start": { "voice": "dispatch", "text": "Sub-level. Raised floor, pressure sensors. Reach the terminal without lighting one." },
+    "m-cold-boot-trip": { "voice": "dispatch", "text": "Sensor. Reset and try the other row." },
+    "m-cold-boot-win": { "voice": "dispatch", "text": "Terminal's up. Cold boot complete." },
+
+    "m-shootout-start": { "voice": "dispatch", "text": "Best of five. The keeper has a tell." },
+    "m-shootout-score": { "voice": "dispatch", "text": "In." },
+    "m-shootout-miss": { "voice": "dispatch", "text": "Wide." },
+    "m-shootout-win": { "voice": "dispatch", "text": "That'll do it." },
+
+    "m-yard-run-start": { "voice": "dispatch", "text": "Checkpoints through the yard. Ramps are load-bearing. Probably." },
+    "m-yard-run-check": { "voice": "dispatch", "text": "Checkpoint." },
+    "m-yard-run-win": { "voice": "dispatch", "text": "Under time. The cranes are impressed." },
+
+    "m-escort-start": { "voice": "narrator", "text": "Airport road to The Heights. My passenger is nervous and reads the speedometer." },
+    "m-escort-speed": { "voice": "narrator", "text": "That's — that's quite fast." },
+    "m-escort-win": { "voice": "narrator", "text": "Door to door. No incident report." },
+
+    "m-blackout-start": { "voice": "dispatch", "text": "Lights are out across all five. Everyone wants a word. Drive." },
+    "m-blackout-win": { "voice": "dispatch", "text": "You lost them at the bridge. Power's back. Nobody will mention this again." },
+
+    "radio-id-wgrd": { "voice": "ad", "text": "W-G-R-D. Ground Floor. Entry level, senior sound." },
+    "radio-id-kflp": { "voice": "ad", "text": "K-F-L-P. Flip Side. We only play the edit." },
+    "radio-id-habi": { "voice": "ad", "text": "Habibi Wave. Everything is a reissue and that is fine." },
+    "radio-id-mnfr": { "voice": "ad", "text": "Mainframe F-M. Broadcasting from a basement with excellent cooling." },
+    "radio-id-tlkr": { "voice": "ad", "text": "All-Talk Ten-Ten. You're on the air, and you're on mute." },
+    "radio-id-suns": { "voice": "ad", "text": "Sunset Debenture. Soft rock for people with courtside seats." },
+
+    "ad-repaint": { "voice": "ad", "text": "Got a thread you can't leave? Reply All Repaint. Two coats and everybody's off the chain." },
+    "ad-deli": { "voice": "ad", "text": "Sunrise Deli. Bacon, egg and cheese. Four fifty. Cash. He's already making it." },
+    "ad-vantage": { "voice": "ad", "text": "Vantage Group. We're not a company, we're a way of working. Legally we are also a company." },
+    "ad-consult": { "voice": "ad", "text": "Is your transformation transforming? Ours transformed so hard it became a different transformation." },
+
+    "ui-enter-vehicle": { "voice": null, "text": "", "subtitle": "ENTER" },
+    "ui-exit-vehicle": { "voice": null, "text": "", "subtitle": "EXIT" },
+    "ui-talk": { "voice": null, "text": "", "subtitle": "TALK" },
+    "ui-pickup": { "voice": null, "text": "", "subtitle": "PICK UP" },
+    "ui-start-mission": { "voice": null, "text": "", "subtitle": "START" },
+    "ui-subway": { "voice": null, "text": "", "subtitle": "SUBWAY" },
+
+    "rewind-explain": {
+      "voice": "narrator",
+      "text": "Same seed, same policies, same sixty seconds. Watch what they decide, then watch how they get there. The decisions hold. The paths don't."
+    }
+  },
+
+  "$signageComment": "Text painted into the atlas for signs and billboards. Keep each short — these render at 64px.",
+  "signage": {
+    "sign-repaint": "REPLY ALL REPAINT",
+    "sign-garage": "CRIB GARAGE",
+    "sign-subway": "VANTAGE EXPRESS",
+    "sign-deli": "SUNRISE DELI",
+    "sign-records": "B-SIDE RECORDS",
+    "sign-club": "THE FUNCTION",
+    "sign-lobby": "VANTAGE GROUP",
+    "sign-van-a": "VANTAGE LOGISTICS",
+    "sign-van-b": "PORT SUPPLY CO",
+    "sign-van-c": "SAME DAY, EVENTUALLY",
+    "billboards": [
+      "SYNERGY. NOW WITH SYNERGY.",
+      "ASK ABOUT OUR PILOT",
+      "THE FUTURE, Q3",
+      "WE ALIGNED SO YOU DON'T HAVE TO",
+      "PORT VANTAGE WELCOMES YOU BACK"
+    ]
+  }
+}

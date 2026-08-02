@@ -1,0 +1,231 @@
+{
+  "$schema": "blocks",
+  "$comment": "Block grammar. gen/blocks.js subdivides each district's land into lots along the road graph, then gen/buildings.js expands one archetype per lot: footprint -> extrude -> setback -> cap -> window grid (atlas UV) -> rooftop props. Change `density` on a district and that district rebuilds denser. That single-number test is the architecture check from the spec.",
+
+  "lotting": {
+    "$comment": "How land between roads becomes buildable lots.",
+    "blockPadding": 4.5,
+    "minLotWidth": 14,
+    "maxLotWidth": 46,
+    "minLotDepth": 16,
+    "maxLotDepth": 44,
+    "splitJitter": 0.28,
+    "cornerBias": 0.65,
+    "keepoutMargin": 3.0
+  },
+
+  "archetypes": {
+    "brownstone": {
+      "$comment": "The Heights. Narrow, repetitive, stoops facing the street. Reads as a row when packed.",
+      "footprint": { "wMin": 9, "wMax": 14, "dMin": 16, "dMax": 24 },
+      "floors": { "min": 3, "max": 5 },
+      "floorHeight": 3.6,
+      "setback": { "mode": "none" },
+      "cap": { "type": "cornice", "height": 0.9, "overhang": 0.45 },
+      "windows": { "tile": "window-brownstone", "colsPer": 3.1, "rowsPerFloor": 1, "litChance": { "haze": 0.02, "dusk": 0.35, "night": 0.6 } },
+      "facade": ["brick-red", "brick-brown", "brownstone-tan", "brick-grey"],
+      "stoop": { "chance": 0.85, "width": 3.2, "depth": 2.6, "steps": 5 },
+      "roofProps": { "chance": 0.4, "types": ["chimney", "water-tank", "vent"], "max": 2 },
+      "triBudget": 220
+    },
+    "rowhouse-corner": {
+      "$comment": "Wider corner variant with ground-floor retail. Anchors block ends.",
+      "footprint": { "wMin": 16, "wMax": 24, "dMin": 18, "dMax": 26 },
+      "floors": { "min": 3, "max": 6 },
+      "floorHeight": 3.6,
+      "setback": { "mode": "none" },
+      "cap": { "type": "cornice", "height": 1.1, "overhang": 0.5 },
+      "windows": { "tile": "window-brownstone", "colsPer": 3.4, "rowsPerFloor": 1, "litChance": { "haze": 0.04, "dusk": 0.4, "night": 0.62 } },
+      "facade": ["brick-red", "brick-grey", "brownstone-tan"],
+      "ground": { "type": "retail", "awningChance": 0.7, "signChance": 0.8 },
+      "roofProps": { "chance": 0.5, "types": ["water-tank", "vent", "aerial"], "max": 2 },
+      "triBudget": 300
+    },
+    "glass-tower": {
+      "$comment": "Downtown. Flat curtain wall, strong vertical mullions, single setback near the top.",
+      "footprint": { "wMin": 26, "wMax": 44, "dMin": 26, "dMax": 44 },
+      "floors": { "min": 14, "max": 34 },
+      "floorHeight": 4.0,
+      "setback": { "mode": "single", "atFraction": 0.78, "inset": 0.16 },
+      "cap": { "type": "mech-box", "height": 5.0, "inset": 0.3 },
+      "windows": { "tile": "window-curtain", "colsPer": 4.2, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.3, "night": 0.45 } },
+      "facade": ["glass-blue", "glass-teal", "glass-smoke", "glass-bronze"],
+      "roofProps": { "chance": 0.9, "types": ["mast", "hvac", "beacon"], "max": 3 },
+      "triBudget": 340
+    },
+    "setback-tower": {
+      "$comment": "Older Downtown stock. Wedding-cake massing, three setbacks.",
+      "footprint": { "wMin": 30, "wMax": 46, "dMin": 28, "dMax": 42 },
+      "floors": { "min": 10, "max": 22 },
+      "floorHeight": 3.9,
+      "setback": { "mode": "stepped", "steps": 3, "inset": 0.13 },
+      "cap": { "type": "crown", "height": 6.0, "inset": 0.45 },
+      "windows": { "tile": "window-grid", "colsPer": 3.6, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.35, "night": 0.5 } },
+      "facade": ["stone-cream", "stone-grey", "brick-grey"],
+      "roofProps": { "chance": 0.8, "types": ["mast", "water-tank", "beacon"], "max": 2 },
+      "triBudget": 420
+    },
+    "lowrise-retail": {
+      "$comment": "Everywhere. Two-storey filler with signage doing the talking.",
+      "footprint": { "wMin": 14, "wMax": 30, "dMin": 14, "dMax": 24 },
+      "floors": { "min": 1, "max": 3 },
+      "floorHeight": 4.2,
+      "setback": { "mode": "none" },
+      "cap": { "type": "parapet", "height": 0.8, "overhang": 0.15 },
+      "windows": { "tile": "window-shop", "colsPer": 3.8, "rowsPerFloor": 1, "litChance": { "haze": 0.1, "dusk": 0.5, "night": 0.7 } },
+      "facade": ["stucco-cream", "stucco-mint", "brick-red", "panel-grey"],
+      "ground": { "type": "retail", "awningChance": 0.55, "signChance": 0.95 },
+      "roofProps": { "chance": 0.35, "types": ["hvac", "vent"], "max": 2 },
+      "triBudget": 190
+    },
+    "neon-lowrise": {
+      "$comment": "The Strip. Same massing as lowrise-retail but every sign is emissive and the palette is saturated.",
+      "footprint": { "wMin": 14, "wMax": 32, "dMin": 14, "dMax": 26 },
+      "floors": { "min": 1, "max": 3 },
+      "floorHeight": 4.2,
+      "setback": { "mode": "none" },
+      "cap": { "type": "parapet", "height": 1.2, "overhang": 0.2 },
+      "windows": { "tile": "window-shop", "colsPer": 3.6, "rowsPerFloor": 1, "litChance": { "haze": 0.2, "dusk": 0.7, "night": 0.95 } },
+      "facade": ["panel-black", "stucco-plum", "panel-teal", "brick-grey"],
+      "ground": { "type": "retail", "awningChance": 0.4, "signChance": 1.0 },
+      "neon": { "chance": 1.0, "types": ["blade-sign", "box-sign", "tube-outline"], "palette": ["#FF3D8A", "#39E6FF", "#FFE347", "#B14BFF", "#3DFF9E"], "flickerChance": 0.22 },
+      "roofProps": { "chance": 0.55, "types": ["blade-sign", "hvac", "aerial"], "max": 2 },
+      "triBudget": 240
+    },
+    "warehouse": {
+      "$comment": "The Yards. Long, low, corrugated. Roll-up doors face the lot.",
+      "footprint": { "wMin": 34, "wMax": 74, "dMin": 24, "dMax": 40 },
+      "floors": { "min": 1, "max": 1 },
+      "floorHeight": 11.0,
+      "setback": { "mode": "none" },
+      "cap": { "type": "sawtooth", "height": 2.4, "teeth": 5 },
+      "windows": { "tile": "window-clerestory", "colsPer": 6.5, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.2, "night": 0.35 } },
+      "facade": ["corrugated-blue", "corrugated-rust", "corrugated-grey"],
+      "ground": { "type": "roll-door", "count": 3 },
+      "roofProps": { "chance": 0.6, "types": ["vent", "hvac"], "max": 3 },
+      "triBudget": 260
+    },
+    "parking-structure": {
+      "$comment": "Open-deck garage. Reads as horizontal bands with cars parked inside on the visible faces only.",
+      "footprint": { "wMin": 34, "wMax": 52, "dMin": 30, "dMax": 44 },
+      "floors": { "min": 3, "max": 6 },
+      "floorHeight": 3.2,
+      "setback": { "mode": "none" },
+      "cap": { "type": "open-deck", "height": 1.0 },
+      "windows": { "tile": "deck-band", "colsPer": 1, "rowsPerFloor": 1, "litChance": { "haze": 0, "dusk": 0.3, "night": 0.55 } },
+      "facade": ["concrete-pale", "concrete-stain"],
+      "roofProps": { "chance": 0.3, "types": ["light-mast"], "max": 4 },
+      "triBudget": 210
+    },
+    "shed": {
+      "$comment": "Small industrial filler; also used for tailgate lot structures in The Bowl.",
+      "footprint": { "wMin": 8, "wMax": 18, "dMin": 8, "dMax": 16 },
+      "floors": { "min": 1, "max": 1 },
+      "floorHeight": 4.5,
+      "setback": { "mode": "none" },
+      "cap": { "type": "gable", "height": 1.8 },
+      "windows": { "tile": "window-clerestory", "colsPer": 5, "rowsPerFloor": 1, "litChance": { "haze": 0.02, "dusk": 0.1, "night": 0.2 } },
+      "facade": ["corrugated-grey", "corrugated-rust", "panel-grey"],
+      "roofProps": { "chance": 0.2, "types": ["vent"], "max": 1 },
+      "triBudget": 90
+    }
+  },
+
+  "districts": {
+    "heights": {
+      "density": 0.86,
+      "tileSize": 22,
+      "weights": { "brownstone": 7, "rowhouse-corner": 2, "lowrise-retail": 1 },
+      "heightScale": 1.0,
+      "ground": { "tile": "cobble", "tint": "#F0F6FF" },
+      "streetTrees": { "spacing": 13, "chance": 0.8, "types": ["broadleaf", "broadleaf-tall"] },
+      "sidewalkStyle": "cobble-edge",
+      "propWeights": { "streetlight-heritage": 5, "hydrant": 2, "bench": 2, "trash": 2, "planter": 2, "newsbox": 1, "stoop-rail": 3 },
+      "parkedCarChance": 0.55,
+      "pedDensity": 0.5
+    },
+    "downtown": {
+      "density": 0.72,
+      "tileSize": 40,
+      "weights": { "glass-tower": 5, "setback-tower": 3, "lowrise-retail": 2, "parking-structure": 1 },
+      "heightScale": 1.0,
+      "ground": { "tile": "sidewalk", "tint": "#FFF8EC" },
+      "streetTrees": { "spacing": 20, "chance": 0.35, "types": ["planter-tree"] },
+      "sidewalkStyle": "wide-slab",
+      "propWeights": { "streetlight-modern": 6, "hydrant": 2, "bollard": 4, "trash": 2, "planter": 3, "bus-shelter": 1, "newsbox": 2 },
+      "parkedCarChance": 0.4,
+      "pedDensity": 1.0,
+      "pedDensityNight": 0.15
+    },
+    "strip": {
+      "density": 0.8,
+      "tileSize": 26,
+      "weights": { "neon-lowrise": 6, "lowrise-retail": 3, "parking-structure": 1 },
+      "heightScale": 0.9,
+      "ground": { "tile": "sidewalk", "tint": "#FFF2F8" },
+      "streetTrees": { "spacing": 24, "chance": 0.2, "types": ["palm-thin"] },
+      "sidewalkStyle": "painted",
+      "propWeights": { "streetlight-strip": 5, "neon-pole": 4, "hydrant": 1, "trash": 3, "bollard": 2, "phone-box": 1, "food-cart": 2 },
+      "parkedCarChance": 0.7,
+      "pedDensity": 0.7,
+      "pedDensityNight": 1.2
+    },
+    "yards": {
+      "density": 0.42,
+      "tileSize": 56,
+      "weights": { "warehouse": 6, "shed": 3, "parking-structure": 1 },
+      "heightScale": 1.0,
+      "ground": { "tile": "dirt", "tint": "#FFF3E8" },
+      "streetTrees": { "spacing": 40, "chance": 0.04, "types": ["scrub"] },
+      "sidewalkStyle": "none",
+      "propWeights": { "container": 10, "streetlight-mast": 4, "chainlink": 6, "pallet": 3, "drum": 3, "rail-track": 4, "crane-small": 1, "ramp": 2 },
+      "parkedCarChance": 0.15,
+      "pedDensity": 0.1
+    },
+    "bowl": {
+      "density": 0.34,
+      "tileSize": 44,
+      "weights": { "lowrise-retail": 3, "shed": 4, "parking-structure": 2, "warehouse": 1 },
+      "heightScale": 0.8,
+      "ground": { "tile": "dirt", "tint": "#FFF8EA" },
+      "streetTrees": { "spacing": 26, "chance": 0.3, "types": ["broadleaf"] },
+      "sidewalkStyle": "wide-slab",
+      "propWeights": { "floodlight-pylon": 3, "streetlight-mast": 4, "bollard": 3, "trash": 2, "parking-stripe": 8, "tailgate-tent": 3, "bleacher": 2 },
+      "parkedCarChance": 0.85,
+      "pedDensity": 0.35
+    }
+  },
+
+  "$facadeComment": "Named entries in the generated atlas. gen/atlas.js paints all of these into one 1024x1024 texture at load.",
+  "facades": {
+    "brick-red": { "base": "#A14F49", "accent": "#743934", "noise": 0.1, "pattern": "brick" },
+    "brick-brown": { "base": "#7F5540", "accent": "#5F3C2D", "noise": 0.1, "pattern": "brick" },
+    "brick-grey": { "base": "#77747A", "accent": "#59575E", "noise": 0.09, "pattern": "brick" },
+    "brownstone-tan": { "base": "#AD7D59", "accent": "#805A40", "noise": 0.08, "pattern": "ashlar" },
+    "stone-cream": { "base": "#B3A98F", "accent": "#948B74", "noise": 0.06, "pattern": "ashlar" },
+    "stone-grey": { "base": "#8E8E8A", "accent": "#73736F", "noise": 0.06, "pattern": "ashlar" },
+    "stucco-cream": { "base": "#D3C5AA", "accent": "#AC9C82", "noise": 0.05, "pattern": "flat" },
+    "stucco-mint": { "base": "#84B7A6", "accent": "#648F82", "noise": 0.05, "pattern": "flat" },
+    "stucco-plum": { "base": "#74466B", "accent": "#55334F", "noise": 0.06, "pattern": "flat" },
+    "panel-grey": { "base": "#7B7F84", "accent": "#63676B", "noise": 0.04, "pattern": "panel" },
+    "panel-black": { "base": "#30303D", "accent": "#22222D", "noise": 0.05, "pattern": "panel" },
+    "panel-teal": { "base": "#347876", "accent": "#275A59", "noise": 0.05, "pattern": "panel" },
+    "glass-blue": { "base": "#426D87", "accent": "#304F63", "noise": 0.03, "pattern": "curtain" },
+    "glass-teal": { "base": "#3D807A", "accent": "#2D5E5A", "noise": 0.03, "pattern": "curtain" },
+    "glass-smoke": { "base": "#52606E", "accent": "#3B4651", "noise": 0.03, "pattern": "curtain" },
+    "glass-bronze": { "base": "#866744", "accent": "#624B32", "noise": 0.03, "pattern": "curtain" },
+    "corrugated-blue": { "base": "#4C7089", "accent": "#385367", "noise": 0.07, "pattern": "corrugate" },
+    "corrugated-rust": { "base": "#A35D3E", "accent": "#78442E", "noise": 0.12, "pattern": "corrugate" },
+    "corrugated-grey": { "base": "#7E8288", "accent": "#666A6F", "noise": 0.07, "pattern": "corrugate" },
+    "concrete-pale": { "base": "#A9A6A0", "accent": "#8D8B85", "noise": 0.05, "pattern": "flat" },
+    "concrete-stain": { "base": "#8E8B84", "accent": "#716F69", "noise": 0.11, "pattern": "flat" }
+  },
+
+  "$vertexLightComment": "Baked at generation time. One key, one fill, plus a cheap per-face AO darkening on downward and inward faces. No realtime lights anywhere in this build.",
+  "vertexLighting": {
+    "keyStrength": 0.62,
+    "fillStrength": 0.62,
+    "faceAO": { "down": 0.62, "north": 0.86, "east": 0.96, "south": 1.0, "west": 0.92, "up": 1.0 },
+    "groundContact": { "height": 2.5, "darken": 0.86 }
+  }
+}
