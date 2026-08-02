@@ -1,7 +1,13 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 
-import { FEATURED_RAFS_CRATE, getRandomTrackIndex } from "../data/audio-library"
+import {
+  FEATURED_OVERRIDES,
+  FEATURED_RAFS_CRATE,
+  HOMIE_DISCOVERY_IDS,
+  RAFS_CRATE,
+  getRandomTrackIndex,
+} from "../data/audio-library"
 import { resolveTrackEnd } from "./audio-engine"
 
 // --- getRandomTrackIndex ----------------------------------------------------
@@ -54,20 +60,54 @@ test("FEATURED_RAFS_CRATE applies curated display metadata", () => {
   )
 })
 
-test("FEATURED_RAFS_CRATE prioritizes homie tracks after the original 13", () => {
+test("FEATURED_RAFS_CRATE prioritizes homie tracks after the hand-picked head", () => {
+  const start = FEATURED_OVERRIDES.length
   assert.deepEqual(
-    FEATURED_RAFS_CRATE.slice(13, 21).map((track) => track.id),
-    [
-      "rich-baby-daddy-pherris-edit-a-side",
-      "texas-speed-white-ferrari0",
-      "kdot-x-radiohead",
-      "beyonce-x-stardust-break-my-soul-sango-mix",
-      "brent-faiyaz-all-mine-dwells-rmx",
-      "semi-on-em-1979",
-      "caffeine-vitamins",
-      "habibi-funk-plus",
-    ],
+    FEATURED_RAFS_CRATE.slice(start, start + HOMIE_DISCOVERY_IDS.length).map((track) => track.id),
+    [...HOMIE_DISCOVERY_IDS],
   )
+})
+
+// Both curated lists reference ids in the canonical crate and resolve with a
+// `track ? [track] : []` fallback, so an id that stops resolving is dropped
+// silently and backfilled with a raw-handle track. These assertions turn that
+// into a named failure.
+//
+// Note there is deliberately no `track.artist === override.artist` check: the
+// featured track's artist is *built from* the override, so such an assertion
+// can never fail. The override is the source of truth for display names — the
+// testable invariants are that the id resolves and the URL stays canonical.
+test("every curated override resolves against the canonical crate", () => {
+  const canonicalById = new Map(RAFS_CRATE.map((track) => [track.id, track]))
+
+  for (const override of FEATURED_OVERRIDES) {
+    const canonical = canonicalById.get(override.id)
+    assert.ok(canonical, `override "${override.id}" is not in the canonical crate`)
+
+    const track = FEATURED_RAFS_CRATE.find((candidate) => candidate.id === override.id)
+    assert.ok(track, `override "${override.id}" did not make it into the featured crate`)
+
+    // URLs must stay single-sourced — overrides may restyle display text only.
+    assert.equal(track.url, canonical.url, `"${override.id}" drifted from the canonical URL`)
+  }
+
+  // The hand-picked sequence must lead the crate, in declaration order.
+  assert.deepEqual(
+    FEATURED_RAFS_CRATE.slice(0, FEATURED_OVERRIDES.length).map((track) => track.id),
+    FEATURED_OVERRIDES.map((override) => override.id),
+  )
+})
+
+test("every homie discovery id resolves against the canonical crate", () => {
+  const canonicalIds = new Set(RAFS_CRATE.map((track) => track.id))
+  for (const id of HOMIE_DISCOVERY_IDS) {
+    assert.ok(canonicalIds.has(id), `homie id "${id}" is not in the canonical crate`)
+  }
+})
+
+test("the canonical crate has no duplicate ids or urls", () => {
+  assert.equal(new Set(RAFS_CRATE.map((track) => track.id)).size, RAFS_CRATE.length)
+  assert.equal(new Set(RAFS_CRATE.map((track) => track.url)).size, RAFS_CRATE.length)
 })
 
 // --- resolveTrackEnd --------------------------------------------------------

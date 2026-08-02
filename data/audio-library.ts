@@ -26,7 +26,12 @@ export const RAFS_CRATE: Track[] = CRATE_TRACKS
 // Back-compat alias: existing imports of SOUNDCLOUD_TRACKS keep working.
 export const SOUNDCLOUD_TRACKS: Track[] = CRATE_TRACKS
 
-const FEATURED_OVERRIDES: ReadonlyArray<{
+/**
+ * Display-metadata overrides for the head of the curated crate. Ids reference
+ * the canonical library, so a rename there must be mirrored here — the tests
+ * assert every id still resolves, because an unresolved one degrades silently.
+ */
+export const FEATURED_OVERRIDES: ReadonlyArray<{
   id: string
   artist: string
   title?: string
@@ -57,7 +62,7 @@ const handPickedTracks = FEATURED_OVERRIDES.flatMap(({ id, title, artist }) => {
   return track ? [{ ...track, title: title ?? track.title, artist }] : []
 })
 
-const HOMIE_DISCOVERY_IDS = [
+export const HOMIE_DISCOVERY_IDS = [
   "rich-baby-daddy-pherris-edit-a-side",
   "texas-speed-white-ferrari0",
   "kdot-x-radiohead",
