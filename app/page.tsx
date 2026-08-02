@@ -25,9 +25,9 @@ const DESKTOP_SHORTCUTS = [
   { action: "blogroll", icon: "🌐", label: "BLOGROLL" },
   { action: "games", icon: "🎮", label: "GAMES" },
   { action: "notes", icon: "📝", label: "NOTES" },
-  { action: "startup", icon: "💡", label: "PITCH STARTUP" },
   { action: "ipod", icon: "🎧", label: "iPod" },
   { action: "projects", icon: "🛠️", label: "PROJECTS" },
+  { action: "startup", icon: "💡", label: "PITCH STARTUP" },
 ] as const
 
 export default function Home() {
