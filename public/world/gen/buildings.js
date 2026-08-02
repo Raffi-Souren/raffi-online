@@ -9,6 +9,10 @@
  *   5. layered cornice / parapet / mech crown
  *
  * Window *textures* still come from the atlas; geometry sells depth.
+ *
+ * PERF (post-massing): detail is LOD'd by height — street-level keeps
+ * full windows/ledges; towers thin out faces, drop sills, and use single
+ * planes for glass. City is already merged per district (≤3 meshes each).
  */
 
 import { makeRng } from '../engine/state.js'
@@ -298,19 +302,23 @@ function addStoreyBelts(b, lot, s, color, rect) {
   const shellBot = s.y - s.h / 2
   const shellTop = s.y + s.h / 2
   const step = s.floorH || 3.6
+  // Tall shafts: every other floor — silhouette holds, ~half the boxes.
+  const stride = s.h > 22 ? step * 2 : step
   const beltH = Math.min(0.2, step * 0.06)
   const out = 0.14
-  for (let y = shellBot + step; y < shellTop - 0.35; y += step) {
+  for (let y = shellBot + step; y < shellTop - 0.35; y += stride) {
     b.box({
       x: lot.x, y, z: lot.z,
       w: s.w + out * 2, h: beltH, d: s.d + out * 2,
-      ry: lot.ry, color, rect, faces: SIDES_ALL,
+      ry: lot.ry, color, rect,
+      // Sides + top only (down face never reads).
+      faces: SIDES_TOP,
     })
   }
 }
 
 function addPilasters(b, lot, s, color, rect, bays) {
-  // Corner posts + mid pilasters on the street face (rowhouse / brownstone read).
+  // Corner posts only — mid-face pilasters were a big tri tax for little read.
   const pw = 0.28
   const out = 0.08
   const posts = [
@@ -324,20 +332,17 @@ function addPilasters(b, lot, s, color, rect, bays) {
     b.box({
       x: p.x, y: s.y, z: p.z,
       w: pw, h: s.h * 0.98, d: pw,
-      ry: lot.ry, color, rect, faces: SIDES_TOP,
+      ry: lot.ry, color, rect, faces: SIDES,
     })
   }
-
-  if (bays >= 3) {
-    for (let i = 1; i < bays; i++) {
-      const lx = (-0.5 + i / bays) * s.w
-      const p = lotPoint(lot, lx, s.d / 2 + out)
-      b.box({
-        x: p.x, y: s.y, z: p.z,
-        w: pw * 0.7, h: s.h * 0.96, d: pw * 0.55,
-        ry: lot.ry, color, rect, faces: SIDES,
-      })
-    }
+  // One mid pilaster on the street face when the front is wide (not every bay).
+  if (bays >= 4 && s.w >= 12) {
+    const p = lotPoint(lot, 0, s.d / 2 + out)
+    b.box({
+      x: p.x, y: s.y, z: p.z,
+      w: pw * 0.75, h: s.h * 0.96, d: pw * 0.55,
+      ry: lot.ry, color, rect, faces: SIDES,
+    })
   }
 }
 
@@ -348,14 +353,18 @@ function addWindowGrid(b, atlas, lot, ctx) {
   const white = atlas.uv('white')
 
   let placed = 0
-  const maxPlaced = Math.min(48, Math.round(totalH / fh) * bays * 1.6)
+  // Hard cap — towers used to place 40+ full boxes × 3 parts.
+  const maxPlaced = Math.min(
+    style === 'curtain' ? 28 : 22,
+    Math.round((totalH / fh) * bays * (style === 'curtain' ? 0.55 : 0.7))
+  )
 
   for (const s of shells) {
     if (s.role === 'base' && skipGround) continue
     const shellBot = s.y - s.h / 2
     const shellTop = s.y + s.h / 2
     const step = s.floorH || fh
-    const faceBays = Math.max(1, Math.round(s.w / (s.w / bays || 3.5)))
+    const faceBays = Math.max(1, Math.min(bays, Math.round(s.w / Math.max(s.w / bays, 2.8))))
     const bayW = s.w / faceBays
     const winW = style === 'curtain'
       ? Math.min(bayW * 0.78, 3.2)
@@ -363,79 +372,74 @@ function addWindowGrid(b, atlas, lot, ctx) {
     const winH = style === 'curtain'
       ? Math.min(step * 0.72, 2.6)
       : Math.min(step * 0.46, 1.65)
-    const depth = style === 'curtain' ? 0.12 : 0.2
+    const depth = 0.06
 
-    // Street faces (local ±Z) always; sides if wide enough.
+    // Street-facing ±Z always. Sides only on low/wide shells (not full towers).
     const faces = [
       { axis: 'z', sign: 1, span: s.w },
       { axis: 'z', sign: -1, span: s.w },
     ]
-    if (s.w >= 16) {
+    if (s.h < 28 && s.w >= 18) {
       faces.push(
         { axis: 'x', sign: 1, span: s.d },
         { axis: 'x', sign: -1, span: s.d },
       )
     }
 
+    // Upper floors: skip every other floor (atlas still shows window grid).
+    const floorStride = s.h > 30 || style === 'curtain' ? 2 : 1
+
     for (const face of faces) {
       const nBays = face.axis === 'z'
         ? faceBays
-        : Math.max(1, Math.round(s.d / Math.max(bayW, 2.5)))
-      for (let f = 0; ; f++) {
+        : Math.max(1, Math.min(4, Math.round(s.d / Math.max(bayW, 3.2))))
+      // Side faces: fewer bays.
+      const bayStride = face.axis === 'x' || s.h > 36 ? 2 : 1
+
+      for (let f = 0; ; f += floorStride) {
         const y = shellBot + step * (f + 0.55)
         if (y > shellTop - 0.45) break
         if (y > totalH - 0.5) break
+        // Above ~45m: glass only every 3rd floor.
+        if (y > 45 && f % 3 !== 0) continue
 
-        for (let i = 0; i < nBays; i++) {
+        for (let i = 0; i < nBays; i += bayStride) {
           if (placed >= maxPlaced) return
-          if (rng.chance(style === 'curtain' ? 0.04 : 0.1)) continue
+          if (rng.chance(style === 'curtain' ? 0.08 : 0.12)) continue
 
           const t = (-0.5 + (i + 0.5) / nBays) * face.span
           let localX = 0
           let localZ = 0
+          let ry = lot.ry
           if (face.axis === 'z') {
             localX = t
-            localZ = face.sign * (s.d / 2 - depth * 0.45)
+            localZ = face.sign * (s.d / 2 + depth)
+            ry = lot.ry + (face.sign < 0 ? Math.PI : 0)
           } else {
             localZ = t
-            localX = face.sign * (s.w / 2 - depth * 0.45)
+            localX = face.sign * (s.w / 2 + depth)
+            ry = lot.ry + Math.PI / 2 + (face.sign < 0 ? Math.PI : 0)
           }
           const p = lotPoint(lot, localX, localZ)
 
-          b.box({
+          // Single vertical plane (2 tris) instead of a 4-face box (8 tris).
+          b.billboard({
             x: p.x, y, z: p.z,
-            w: face.axis === 'z' ? winW : depth,
-            h: winH,
-            d: face.axis === 'z' ? depth : winW,
-            ry: lot.ry,
+            w: winW, h: winH,
+            ry,
             color: darkPane,
             rect: paneRect,
-            faces: SIDES,
           })
 
-          // Sill + lintel only (cheap frame that still sells depth).
-          if (style !== 'curtain') {
-            const lip = 0.07
-            let flx = localX
-            let flz = localZ
-            if (face.axis === 'z') flz = face.sign * (s.d / 2 + 0.02)
-            else flx = face.sign * (s.w / 2 + 0.02)
-            const fp = lotPoint(lot, flx, flz)
-            // lintel
+          // One lintel on low street stock only — towers skip frames.
+          if (style !== 'curtain' && y < 22 && face.axis === 'z') {
+            const lip = 0.08
+            const flz = face.sign * (s.d / 2 + 0.03)
+            const fp = lotPoint(lot, localX, flz)
             b.box({
               x: fp.x, y: y + winH * 0.5 + lip * 0.5, z: fp.z,
-              w: face.axis === 'z' ? winW + lip * 2 : 0.1,
-              h: lip,
-              d: face.axis === 'z' ? 0.1 : winW + lip * 2,
-              ry: lot.ry, color: frameColor, rect: white, faces: SIDES_TOP,
-            })
-            // sill
-            b.box({
-              x: fp.x, y: y - winH * 0.5 - lip * 0.35, z: fp.z,
-              w: face.axis === 'z' ? winW + lip * 1.5 : 0.1,
-              h: lip * 0.7,
-              d: face.axis === 'z' ? 0.12 : winW + lip * 1.5,
-              ry: lot.ry, color: frameColor, rect: white, faces: SIDES_TOP,
+              w: winW + lip * 2, h: lip, d: 0.1,
+              ry: lot.ry, color: frameColor, rect: white, faces: ['up', 'south', 'north'],
             })
           }
 
@@ -450,13 +454,13 @@ function addDeckBands(b, lot, shells, fh, rect) {
   for (const s of shells) {
     const bot = s.y - s.h / 2
     const top = s.y + s.h / 2
-    for (let y = bot + fh * 0.5; y < top - 0.2; y += fh) {
-      // Dark open band on long faces.
+    // Every other deck band is enough to read as open garage.
+    for (let y = bot + fh * 0.5; y < top - 0.2; y += fh * 2) {
       for (const sign of [1, -1]) {
         const p = lotPoint(lot, 0, sign * (s.d / 2 + 0.04))
         b.box({
           x: p.x, y, z: p.z,
-          w: s.w * 0.92, h: fh * 0.42, d: 0.12,
+          w: s.w * 0.92, h: fh * 0.55, d: 0.12,
           ry: lot.ry, color: '#1a1c20', rect, faces: SIDES,
         })
       }
@@ -651,7 +655,8 @@ function addRollDoors(b, lot, ground, atlas, rng) {
 function addLitWindows(set, atlas, lot, ctx) {
   const { floors, fh, bays, totalH, litChance, rng, shells } = ctx
   const litRect = atlas.uv('litwindow')
-  const maxLit = Math.min(14, Math.round(floors * bays * litChance * 0.55))
+  // Emissive billboards are cheap but still add draw cost via builder verts.
+  const maxLit = Math.min(8, Math.round(floors * bays * litChance * 0.35))
   const main = shells[0]
   for (let i = 0; i < maxLit; i++) {
     const f = rng.int(0, Math.max(0, floors - 1))

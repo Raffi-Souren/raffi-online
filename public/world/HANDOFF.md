@@ -1,5 +1,20 @@
 # RAFFI WORLD — Handoff
 
+## [2026-08-02 ~19:20 EDT] FROM: grok — PERF PASS AFTER MASSING
+
+**Why:** InfiniTown massing raised window/ledge/pilaster tris. City was already
+merged per district (≤3 meshes) — cost was **triangle density**, not draw calls.
+
+**Shipped in `gen/buildings.js` + tower floors in `blocks.json`:**
+- Window glass = **billboard plane** (2 tris) not 4-face boxes
+- Tall towers: every-other-floor windows, no side faces above ~28m, no sills
+- Belts every 2 floors on tall shafts; corner pilasters only (+1 mid)
+- Lit windows cap 8; deck bands every other floor
+- Glass/setback tower floor max lowered (12–22 / 9–16)
+- Budget target back toward 70k tris / 120 draws in `world.json`
+
+**Keep massing silhouette** — do not strip base/shaft/crown.
+
 ## [2026-08-02 19:11 EDT] FROM: grok — INFINITOWN MASSING + KICKFLIP + SHARP POST
 
 **Read first for Codex (dated handoff):**  

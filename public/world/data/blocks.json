@@ -46,28 +46,28 @@
     "glass-tower": {
       "$comment": "Downtown. Plinth + curtain shaft + top setback + mech crown.",
       "footprint": { "wMin": 26, "wMax": 44, "dMin": 26, "dMax": 44 },
-      "floors": { "min": 14, "max": 28 },
+      "floors": { "min": 12, "max": 22 },
       "floorHeight": 4.0,
       "setback": { "mode": "single", "atFraction": 0.76, "inset": 0.14 },
       "massing": { "baseFloors": 2, "baseOutset": 0.22, "baseHeightScale": 1.15, "windowStyle": "curtain", "belts": true, "ledgeColor": "#8a9aaa", "baseColor": "#d0d6dc" },
       "cap": { "type": "mech-box", "height": 5.0, "inset": 0.28 },
-      "windows": { "tile": "window-curtain", "colsPer": 4.2, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.3, "night": 0.45 } },
+      "windows": { "tile": "window-curtain", "colsPer": 4.5, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.28, "night": 0.4 } },
       "facade": ["glass-blue", "glass-teal", "glass-smoke", "glass-bronze"],
-      "roofProps": { "chance": 0.9, "types": ["mast", "hvac", "beacon"], "max": 3 },
-      "triBudget": 700
+      "roofProps": { "chance": 0.85, "types": ["mast", "hvac", "beacon"], "max": 2 },
+      "triBudget": 480
     },
     "setback-tower": {
       "$comment": "Wedding-cake massing with plinth — classic InfiniTown downtown.",
       "footprint": { "wMin": 30, "wMax": 46, "dMin": 28, "dMax": 42 },
-      "floors": { "min": 10, "max": 20 },
+      "floors": { "min": 9, "max": 16 },
       "floorHeight": 3.9,
       "setback": { "mode": "stepped", "steps": 3, "inset": 0.12 },
       "massing": { "baseFloors": 1, "baseOutset": 0.18, "baseHeightScale": 1.2, "windowStyle": "recessed", "ledgeColor": "#c8c2b4", "baseColor": "#e4dfd4" },
       "cap": { "type": "crown", "height": 5.5, "inset": 0.4 },
-      "windows": { "tile": "window-grid", "colsPer": 3.6, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.35, "night": 0.5 } },
+      "windows": { "tile": "window-grid", "colsPer": 3.8, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.3, "night": 0.45 } },
       "facade": ["stone-cream", "stone-grey", "brick-grey"],
-      "roofProps": { "chance": 0.8, "types": ["mast", "water-tank", "beacon"], "max": 2 },
-      "triBudget": 780
+      "roofProps": { "chance": 0.75, "types": ["mast", "water-tank", "beacon"], "max": 2 },
+      "triBudget": 520
     },
     "lowrise-retail": {
       "$comment": "Storefront plinth + short upper shaft, parapet crown.",
