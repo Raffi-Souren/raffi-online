@@ -1,5 +1,27 @@
 # RAFFI WORLD — Handoff
 
+## [2026-08-02 ~session] FROM: grok — INFINITOWN MASSING + KICKFLIP + SHARP POST + CODEX ARCHIVE
+
+**Read first for Codex:** `public/world/CODEX-ARCHIVE.md` — full file map, commit stack,
+owner decisions, deferred work, controls, and “where is X?”.
+
+**Shipped this arc (branch `grok/camera-modes`, worktree `raffi-online-grok-pursuit`):**
+
+1. **InfiniTown-style building grammar** (`gen/buildings.js` + `data/blocks.json` `massing`)
+   - Base / shaft / crown shells, storey ledges, pilasters, recessed windows,
+     storefront glass, layered cornices. Goal: less extruded Minecraft cube.
+2. **Sharp presentation** (`post.js` / `render.js` / `world.json`)
+   - Killed smear/softness after owner rejected blurry pass; 960×540 internal;
+     distance fog; form lighting in `blocks.vertexLighting` + `builder.heightAmb`.
+3. **Skateboard kickflip** — F / FLIP (`player.tryKickflip`, main second edge).
+4. **Camera modes + movement basis + tank cars** — prior commits on same branch.
+
+**Owner aesthetic lock:** InfiniTown city vibe + sharp GTA/Spidey readability.
+Do **not** re-add multi-tap blur. Overdrive = systems inspo later (instance/merge),
+not ped style.
+
+**Not pushed** unless owner asks. Branch may be several commits ahead of origin.
+
 ## [2026-08-02 19:45] FROM: grok — CAMERA MODES + MISSION BEACON
 
 **Why:** DEAL CLOCK "drive to marker (1/4)" goals sit between buildings under
