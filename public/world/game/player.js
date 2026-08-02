@@ -332,19 +332,22 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   const inputMag = Math.hypot(input.move.x, input.move.y)
   const microRide = v.kind === 'skateboard' || v.kind === 'scooter'
 
-  // Cars: tank controls — A/D steer the nose, W/S gas/brake. Point-to-go made
-  // every W press spin the car under iso/chase. Micro-rides keep soft aim.
+  // Cars: tank controls — A/D steer the nose, W/S gas/brake.
+  // Steer sign: +A (move.x < 0) must turn left relative to the vehicle's nose
+  // when the camera is behind you (natural "lean left on stick").
+  // Micro-rides: soft aim into the stick direction on screen.
   let steer = 0
   if (microRide && inputMag > 0.12) {
-    const screenRight = basis.rx * input.move.x + basis.fx * input.move.y
-    const screenFwd = basis.rz * input.move.x + basis.fz * input.move.y
-    const desiredYaw = Math.atan2(screenRight, screenFwd)
+    const wantX = basis.rx * input.move.x + basis.fx * input.move.y
+    const wantZ = basis.rz * input.move.x + basis.fz * input.move.y
+    const desiredYaw = Math.atan2(wantX, wantZ)
     let diff = desiredYaw - v.yaw
     while (diff > Math.PI) diff -= Math.PI * 2
     while (diff < -Math.PI) diff += Math.PI * 2
-    steer = clamp(diff * 1.35 * 0.72 + input.move.x * 0.45, -1, 1)
+    // Pure aim-to-stick — no raw A/D add (that re-inverted under chase).
+    steer = clamp(diff * 1.55, -1, 1)
   } else {
-    // Prefer pure A/D; if only stick X is used it's the same axis.
+    // Tank: A = left turn, D = right (negative move.x → negative angular).
     steer = clamp(input.move.x, -1, 1)
   }
   if (Math.abs(steer) < 0.08) steer = 0

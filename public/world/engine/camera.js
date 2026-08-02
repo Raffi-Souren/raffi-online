@@ -297,30 +297,41 @@ function updatePerspRig(mode, sx, sy, focus = null) {
 
 /**
  * Screen-relative movement axes from the *actual* camera pose.
- * W / stick-up always moves into the scene (away from the viewer), never
- * inverted under chase/free. Deriving from camera.position → target avoids the
- * lag/invert bugs that came from hand-rolled yaw offsets.
+ * W / stick-up = into the scene (away from viewer).
+ * A/D / stick-left-right = true screen left/right (natural GTA feel).
+ *
+ * Right vector is up × look on XZ so D always walks toward the right edge
+ * of the frame under iso, chase, and free. (look × up was inverted.)
  */
 export function movementBasis() {
   const camera = cam.camera
   if (camera) {
+    // Look = camera → focus (into the world / "forward on screen").
     let lx = cam.target.x - camera.position.x
     let lz = cam.target.z - camera.position.z
+    // Prefer the live look-at for persp (slightly biased look target).
+    if (camera.isPerspectiveCamera) {
+      const e = camera.matrixWorld.elements
+      // Camera -Z axis in world (Three.js forward).
+      lx = -e[8]
+      lz = -e[10]
+    }
     const len = Math.hypot(lx, lz)
     if (len > 1e-4) {
       lx /= len
       lz /= len
-      // Screen-right = look × up on XZ (RH): looking -Z → right is +X.
-      const rx = -lz
-      const rz = lx
+      // Screen-right = up × look on XZ (Y-up): looking -Z → right is +X.
+      const rx = lz
+      const rz = -lx
       return { fx: lx, fz: lz, rx, rz }
     }
   }
-  // Fallback if camera not ready.
+  // Fallback from orbit yaw (camera sits at yaw from target).
   const y = cam.currentYaw
+  // Into scene from behind-the-player cam: opposite of camera offset dir.
   const fx = -Math.sin(y)
   const fz = -Math.cos(y)
-  return { fx, fz, rx: -fz, rz: fx }
+  return { fx, fz, rx: fz, rz: -fx }
 }
 
 export function viewExtents(aspect) {
