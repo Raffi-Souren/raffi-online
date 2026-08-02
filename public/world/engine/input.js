@@ -243,7 +243,11 @@ export function initInput(elements) {
 }
 
 /** Folds keyboard and touch into the shared input struct. Call once per frame. */
-export function updateInput(mode) {
+/**
+ * @param mode         'foot' | 'vehicle'
+ * @param vehicleKind  optional archetype kind (e.g. 'skateboard') when mounted
+ */
+export function updateInput(mode, vehicleKind = null) {
   let mx = 0
   let my = 0
 
@@ -269,7 +273,9 @@ export function updateInput(mode) {
 
   if (mode === 'vehicle') {
     const gasBtn = input.held.has('primary') ? 1 : 0
-    const brakeBtn = input.held.has('second') ? 1 : 0
+    // Skateboard: secondary is kickflip (edge in main), not continuous brake.
+    // Stick/S still brakes so you can stop without tricking.
+    const brakeBtn = vehicleKind === 'skateboard' ? 0 : (input.held.has('second') ? 1 : 0)
     let throttle = Math.max(gasBtn, my > 0.12 ? my : 0)
     let brake = Math.max(brakeBtn, my < -0.12 ? -my : 0)
     // Panic mash: brake/reverse wins over gas so walls are escapable.

@@ -176,7 +176,7 @@
       "mapRadius": 125,
       "collisionRadius": 0.62,
       "mountLine": "ride-board",
-      "controls": { "enter": "RIDE", "action": "KICK", "second": "BRAKE", "cam": "CARVE" },
+      "controls": { "enter": "RIDE", "action": "KICK", "second": "FLIP", "cam": "CARVE" },
       "silhouette": { "length": 1.78, "width": 0.58, "deckHeight": 0.16, "wheelRadius": 0.09, "wheelbase": 1.18 },
       "handling": { "accel": 8.4, "topSpeed": 12.5, "reverse": 3.5, "grip": 12.0, "handbrakeGrip": 5.0, "steerRate": 4.4, "steerFalloff": 0.34, "steerSpeed": 1.1, "brake": 11, "mass": 85, "drag": 0.24, "coastFriction": 1.35 },
       "colors": [["#FF3D8A", "#FFE347"], ["#39E6FF", "#B14BFF"], ["#3DFF9E", "#FF8A3A"]]

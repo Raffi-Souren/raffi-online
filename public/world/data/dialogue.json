@@ -24,7 +24,7 @@
     "greeter-brief": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Five districts, one ring road, and a wanted level made entirely of meetings. Pick a ride at the crib garage." },
     "greeter-quest": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Board, scooter, car, or subway. Explore if you want. The bright route gets you to the work." },
     "garage-choice": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Your commute has options. Board for shortcuts, scooter for side streets, car for distance — or take the train straight to the pin." },
-    "ride-board": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Low overhead. High ankle exposure. Follow the gold route. Space or E hops off." },
+    "ride-board": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Low overhead. High ankle exposure. F kickflips when you're rolling. Space or E hops off." },
     "ride-scooter": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Fast enough to matter, small enough to ignore parking. Space or E hops off." },
     "ride-car": { "voice": "narrator", "speaker": "mentor", "delivery": "talk", "text": "Four doors, one destination. The map will reroute if you wander." },
     "onboard-manager-call": { "voice": "dispatch", "speaker": "manager", "delivery": "call", "text": "First assignment: DEAL CLOCK at Vantage Plaza. I sent the route. The timer starts only when you accept." },

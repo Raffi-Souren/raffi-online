@@ -24,6 +24,7 @@ import { makeRng } from './state.js'
 import {
   initPlayer, updatePlayer, spawnVehicle, contextAction,
   enterVehicle, exitVehicle, teleportPlayer, player,
+  tryKickflip, isBoardTrickActive,
 } from '../game/player.js'
 import {
   initHud, updateHud, setCompliance, setRadio, setWaypoint, getWaypoint,
@@ -531,7 +532,7 @@ function loop(now) {
 
   const aspect = els.canvas.clientWidth / Math.max(els.canvas.clientHeight, 1)
 
-  updateInput(state.mode)
+  updateInput(state.mode, player.vehicle?.kind || null)
 
   if (consume('pause')) {
     setPaused(!state.paused)
@@ -569,6 +570,7 @@ function loop(now) {
     const keyboardAction = consume('action')
     const touchPrimary = consume('primary')
     const spacePressed = consume('space')
+    const secondPressed = consume('second')
     const spaceAction = state.mode !== 'vehicle' && spacePressed
     const spaceMicroExit = state.mode === 'vehicle' &&
       (player.vehicle?.kind === 'skateboard' || player.vehicle?.kind === 'scooter') &&
@@ -579,12 +581,17 @@ function loop(now) {
     const dialogueHandled = dialogueBlocking &&
       (keyboardAction || touchPrimary || spaceAction) && advanceDialogue()
 
+    // Skateboard: F / secondary button = kickflip (need a little speed).
+    if (!dialogueHandled && !isDialogueBlocking() && secondPressed) {
+      tryKickflip()
+    }
+
     // All context inputs are edge-triggered, so a time lock is unnecessary.
     // Keeping transitions immediately responsive also means a control that is
     // already visible can never swallow the player's first press.
     if (!dialogueHandled && !isDialogueBlocking()) {
       if ((keyboardAction || exitPressed || spaceMicroExit) && state.mode === 'vehicle') {
-        exitVehicle(world.collision)
+        if (!isBoardTrickActive()) exitVehicle(world.collision)
       } else if ((keyboardAction || touchPrimary || spaceAction) && state.mode !== 'vehicle') {
         if (ctx.kind === 'enter' && enterVehicle(ctx.target)) onRideMounted(ctx.target)
         else if (ctx.kind === 'transit') void beginFastTravel(ctx.target)

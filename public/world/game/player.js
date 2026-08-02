@@ -7,7 +7,7 @@
  */
 
 import * as THREE from 'three'
-import { state, data, damp, clamp } from '../engine/state.js'
+import { state, data, damp, clamp, bus } from '../engine/state.js'
 import { movementBasis } from '../engine/camera.js'
 import { resolveCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
 import { makePed, animatePed } from '../gen/peds.js'
@@ -24,6 +24,16 @@ export const player = {
   vehicle: null,
   nearbyVehicle: null,
   animState: 'idle',
+  /** Active board trick, if any: { name, t, duration, boost }. */
+  trick: null,
+}
+
+const KICKFLIP = {
+  name: 'kickflip',
+  duration: 0.58,
+  hop: 0.95,
+  boost: 3.8,
+  minSpeed: 1.2,
 }
 
 export function initPlayer(scene, materials, atlas) {
@@ -156,9 +166,40 @@ export function enterVehicle(v) {
   return true
 }
 
+/**
+ * Start a skateboard kickflip if moving and not already tricking.
+ * @returns {boolean} whether the trick began
+ */
+export function tryKickflip() {
+  const v = player.vehicle
+  if (!v || v.kind !== 'skateboard') return false
+  if (player.trick) return false
+  if (Math.abs(v.speed) < KICKFLIP.minSpeed) return false
+
+  player.trick = {
+    name: KICKFLIP.name,
+    t: 0,
+    duration: KICKFLIP.duration,
+    hop: KICKFLIP.hop,
+    boost: KICKFLIP.boost,
+  }
+  // Pop forward a bit mid-trick energy.
+  v.speed = Math.sign(v.speed || 1) * Math.min(
+    Math.abs(v.speed) + KICKFLIP.boost * 0.35,
+    (v.handling?.topSpeed || 12) * 1.15
+  )
+  bus.emit('toast', 'KICKFLIP!')
+  return true
+}
+
+export function isBoardTrickActive() {
+  return !!player.trick
+}
+
 export function exitVehicle(collisionWorld = null) {
   const v = player.vehicle
   if (!v) return false
+  if (player.trick) return false // finish the flip first
   const off = v.exitOffset || data.vehicles.player.exitOffset
   const sideX = Math.cos(v.yaw)
   const sideZ = -Math.sin(v.yaw)
@@ -225,7 +266,7 @@ export function teleportPlayer(x, z, yaw = state.player.yaw) {
  */
 export function updatePlayer(dt, input, world, beatPhase) {
   if (state.mode === 'vehicle' && player.vehicle) {
-    updateDriving(dt, input, world)
+    updateDriving(dt, input, world, beatPhase)
     return
   }
   updateWalking(dt, input, world, beatPhase)
@@ -285,7 +326,7 @@ function updateWalking(dt, input, world, beatPhase) {
   animatePed(player.ped, data.npcs, st, dt, p.speed, beatPhase)
 }
 
-function updateDriving(dt, input, world) {
+function updateDriving(dt, input, world, beatPhase = 0) {
   const v = player.vehicle
   const basis = movementBasis()
   const inputMag = Math.hypot(input.move.x, input.move.y)
@@ -308,13 +349,17 @@ function updateDriving(dt, input, world) {
   }
   if (Math.abs(steer) < 0.08) steer = 0
 
+  // During a kickflip, keep rolling forward — no brake cut mid-air.
+  const tricking = !!player.trick
   const ctl = {
-    throttle: input.throttle > 0.01
-      ? input.throttle
-      : (microRide && inputMag > 0.15 ? inputMag : 0),
-    brake: input.brake,
-    steer,
-    handbrake: input.handbrake,
+    throttle: tricking
+      ? Math.max(input.throttle, 0.55)
+      : (input.throttle > 0.01
+        ? input.throttle
+        : (microRide && inputMag > 0.15 ? inputMag : 0)),
+    brake: tricking ? 0 : input.brake,
+    steer: tricking ? steer * 0.35 : steer,
+    handbrake: tricking ? false : input.handbrake,
   }
 
   stepVehicle(v, v.handling, ctl, dt, world)
@@ -323,30 +368,65 @@ function updateDriving(dt, input, world) {
   v.x = bounded.x
   v.z = bounded.z
 
-  v.mesh.position.set(v.x, v.y, v.z)
+  // Base pose, then trick overlay (kickflip = full spin about the long axis).
+  let hop = 0
+  let flip = 0
+  if (player.trick) {
+    player.trick.t += dt
+    const u = clamp(player.trick.t / player.trick.duration, 0, 1)
+    // Smooth hop arc + one clean longitudinal flip.
+    hop = Math.sin(u * Math.PI) * (player.trick.hop || 0.9)
+    flip = u * Math.PI * 2
+    if (u >= 1) {
+      player.trick = null
+      hop = 0
+      flip = 0
+    }
+  }
+
+  v.y = hop
+  v.mesh.position.set(v.x, hop, v.z)
+  v.mesh.rotation.order = 'YXZ'
   v.mesh.rotation.y = v.yaw
-  animateVehicle(v.mesh, dt, v.speed, steer, ctl.brake > 0.05)
+  v.mesh.rotation.x = 0
+  // Kickflip: rotate around the board's forward axis (local Z after yaw).
+  v.mesh.rotation.z = flip
+  if (!player.trick) {
+    animateVehicle(v.mesh, dt, v.speed, steer, ctl.brake > 0.05)
+    v.mesh.rotation.z = 0
+  }
 
   const p = state.player
   p.x = v.x
   p.z = v.z
-  p.y = v.y
+  p.y = hop
   p.yaw = v.yaw
   p.speed = Math.abs(v.speed)
   p.vx = Math.sin(v.yaw) * v.speed
   p.vz = Math.cos(v.yaw) * v.speed
 
   if (v.riderVisible) {
-    syncRiderVisual(v)
-    animatePed(player.ped, data.npcs, 'idle', dt, Math.abs(v.speed) * 0.22, state.radio.beatPhase)
+    syncRiderVisual(v, hop, flip)
+    animatePed(
+      player.ped,
+      data.npcs,
+      player.trick ? 'idle' : 'idle',
+      dt,
+      Math.abs(v.speed) * 0.22,
+      beatPhase
+    )
   }
-  syncMarker(v.x, v.y, v.z, v.kind === 'car' || !v.kind ? 1.7 : 1.08)
+  syncMarker(v.x, hop, v.z, v.kind === 'car' || !v.kind ? 1.7 : 1.08)
 }
 
-function syncRiderVisual(v) {
+function syncRiderVisual(v, hop = 0, flip = 0) {
   if (!v?.riderVisible || !player.group) return
-  player.group.position.set(v.x, v.y + v.riderHeight, v.z)
+  // Rider rides the board: same hop, slight crouch spin feel.
+  player.group.position.set(v.x, (v.riderHeight || 0) + hop, v.z)
+  player.group.rotation.order = 'YXZ'
   player.group.rotation.y = v.yaw
+  player.group.rotation.z = flip * 0.15
+  player.group.rotation.x = player.trick ? -0.25 : 0
 }
 
 /** What the context button should say right now. */
