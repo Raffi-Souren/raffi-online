@@ -15,6 +15,12 @@ const missions = JSON.parse(await fs.readFile(new URL('../data/missions.json', i
 const dialogue = JSON.parse(await fs.readFile(new URL('../data/dialogue.json', import.meta.url), 'utf8'))
 const hub = world.landmarks.find((landmark) => landmark.type === 'mobility-hub')
 const dealClock = missions.missions.find((mission) => mission.id === 'deal-clock')
+const repaintTuning = world.repaint || {}
+const repaintShops = world.repaintShops || []
+const nearestShopToSpawn = [...repaintShops].sort((a, b) =>
+  Math.hypot(a.at.x - world.spawn.x, a.at.z - world.spawn.z) -
+  Math.hypot(b.at.x - world.spawn.x, b.at.z - world.spawn.z)
+)[0]
 
 const executableCandidates = [
   process.env.RAFFI_AUDIT_CHROME,
@@ -328,6 +334,248 @@ const finished = await desktop.evaluate(() => ({
 assert.equal(finished.mission.active, null)
 assert.ok(finished.mission.completed.includes('deal-clock'))
 assert.equal(finished.state.compliance.tier, 4)
+
+// --- Reply All Repaint: clear COMPLIANCE after DEAL CLOCK heat ---------------
+// Free-roam guidance must point at an authored shop without hardcoding coords
+// in the engine (data-driven nearest shop).
+await desktop.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
+await desktop.waitForTimeout(120)
+const repaintGuide = await desktop.evaluate(() => ({
+  label: document.querySelector('#minimap-label')?.textContent,
+  waypoint: window.RAFFI_WORLD.getWaypoint(),
+  compliance: window.RAFFI_WORLD.getState().compliance,
+}))
+assert.ok(repaintGuide.compliance.tier > 0, 'DEAL CLOCK should leave nonzero COMPLIANCE for the repaint loop')
+assert.match(repaintGuide.label || '', /REPLY ALL REPAINT/i, 'nonzero COMPLIANCE without active mission must route to Reply All Repaint')
+assert.ok(repaintGuide.waypoint, 'repaint guidance missing waypoint')
+assert.ok(
+  repaintShops.some((shop) =>
+    Math.hypot(shop.at.x - repaintGuide.waypoint.x, shop.at.z - repaintGuide.waypoint.z) < 0.5
+  ),
+  'repaint waypoint is not an authored shop from data/world.json'
+)
+
+// Stay mounted in the mission loaner (generated mesh with paint ranges).
+assert.equal(
+  (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
+  dealClock.startVehicle.archetype
+)
+
+const paintBefore = await desktop.evaluate(async () => {
+  const { player } = await import('/world/game/player.js')
+  const color = player.vehicle.mesh.geometry.getAttribute('color')
+  const range = player.vehicle.mesh.userData.paintRanges.hull
+  const sample = []
+  for (let i = range.start; i < Math.min(range.start + 6, range.end); i++) {
+    sample.push(color.getX(i), color.getY(i), color.getZ(i))
+  }
+  return {
+    sample,
+    paint: player.vehicle.mesh.userData.paint ? [...player.vehicle.mesh.userData.paint] : null,
+    archetype: player.vehicle.archetypeId,
+  }
+})
+
+// Active-mission waypoint preservation: raise heat mid-mission is covered above
+// via STOP labels; re-check with an explicit active run + shop teleport.
+await desktop.evaluate(() => {
+  window.RAFFI_WORLD.setComplianceTier(2)
+})
+await desktop.evaluate(async () => {
+  const { startMission, missionSnapshot } = await import('/world/game/missions.js')
+  // Mission already completed — use debug compliance only for foot/speed negatives.
+})
+
+// On-foot negative: exit, sit in bay, must not clear.
+await pressKey(desktop, 'e')
+await desktop.waitForTimeout(120)
+assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, null)
+await desktop.evaluate((shop) => {
+  window.RAFFI_WORLD.setComplianceTier(3)
+  window.RAFFI_WORLD.teleport(shop.at.x, shop.at.z)
+}, nearestShopToSpawn)
+await desktop.waitForTimeout(350)
+assert.equal(
+  (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier,
+  3,
+  'on-foot Reply All Repaint entry cleared COMPLIANCE'
+)
+
+// Remount generated grand tourer at the crib, then park in the bay.
+const repaintCar = hub.rides.find((ride) => ride.archetype === 'grand-tourer')
+await desktop.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), repaintCar.at)
+await desktop.waitForTimeout(80)
+await pressKey(desktop, 'e')
+await desktop.waitForTimeout(150)
+assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'grand-tourer')
+
+// High-speed negative: enter bay too fast — must not clear.
+await desktop.evaluate(async (shop) => {
+  const { player } = await import('/world/game/player.js')
+  const { updateCompliance } = await import('/world/game/compliance.js')
+  player.vehicle.x = shop.at.x
+  player.vehicle.z = shop.at.z
+  player.vehicle.speed = 12
+  player.vehicle.mesh.position.set(shop.at.x, 0, shop.at.z)
+  const { state } = await import('/world/engine/state.js')
+  state.player.x = shop.at.x
+  state.player.z = shop.at.z
+  state.player.speed = 12
+  updateCompliance(0.016)
+}, nearestShopToSpawn)
+assert.equal(
+  (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier,
+  3,
+  'high-speed bay drive-through cleared COMPLIANCE'
+)
+
+// Honest clear: crawl into bay with heat.
+const paintMountedBefore = await desktop.evaluate(async () => {
+  const { player } = await import('/world/game/player.js')
+  const color = player.vehicle.mesh.geometry.getAttribute('color')
+  const range = player.vehicle.mesh.userData.paintRanges.hull
+  const sample = []
+  for (let i = range.start; i < Math.min(range.start + 8, range.end); i++) {
+    sample.push(color.getX(i), color.getY(i), color.getZ(i))
+  }
+  return { sample, paint: player.vehicle.mesh.userData.paint ? [...player.vehicle.mesh.userData.paint] : null }
+})
+
+await desktop.evaluate(async (shop) => {
+  const { player } = await import('/world/game/player.js')
+  const { updateCompliance } = await import('/world/game/compliance.js')
+  player.vehicle.x = shop.at.x
+  player.vehicle.z = shop.at.z
+  player.vehicle.speed = 0.4
+  player.vehicle.mesh.position.set(shop.at.x, 0, shop.at.z)
+  const { state } = await import('/world/engine/state.js')
+  state.player.x = shop.at.x
+  state.player.z = shop.at.z
+  state.player.speed = 0.4
+  updateCompliance(0.016)
+}, nearestShopToSpawn)
+await desktop.waitForTimeout(80)
+
+const cleared = await desktop.evaluate(async () => {
+  const { player } = await import('/world/game/player.js')
+  const color = player.vehicle.mesh.geometry.getAttribute('color')
+  const range = player.vehicle.mesh.userData.paintRanges.hull
+  const sample = []
+  for (let i = range.start; i < Math.min(range.start + 8, range.end); i++) {
+    sample.push(color.getX(i), color.getY(i), color.getZ(i))
+  }
+  return {
+    compliance: window.RAFFI_WORLD.getState().compliance,
+    snap: window.RAFFI_WORLD.complianceSnapshot(),
+    sample,
+    paint: player.vehicle.mesh.userData.paint ? [...player.vehicle.mesh.userData.paint] : null,
+    pipsOn: [...document.querySelectorAll('#compliance .cl-pips i.on')].length,
+  }
+})
+assert.equal(cleared.compliance.tier, 0, 'parked repaint did not reset COMPLIANCE tier')
+assert.equal(cleared.compliance.heat, 0, 'parked repaint did not reset COMPLIANCE heat')
+assert.equal(cleared.pipsOn, 0, 'HUD COMPLIANCE pips did not clear')
+assert.ok(cleared.snap.clearCount >= 1, 'compliance clear was not counted')
+const paintChanged =
+  JSON.stringify(cleared.sample) !== JSON.stringify(paintMountedBefore.sample) ||
+  JSON.stringify(cleared.paint) !== JSON.stringify(paintMountedBefore.paint)
+assert.ok(
+  paintChanged && cleared.paint,
+  'vehicle colour buffer / paint metadata did not change after Reply All Repaint'
+)
+
+// One-shot latch: remain stopped with re-applied heat — no second clear.
+await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(2))
+await desktop.evaluate(async () => {
+  const { updateCompliance } = await import('/world/game/compliance.js')
+  updateCompliance(0.016)
+})
+assert.equal(
+  (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier,
+  2,
+  'remaining in the bay re-triggered clear while latched'
+)
+
+// Leave bay, re-enter with heat — second clear allowed.
+await desktop.evaluate(async (shop) => {
+  const { player } = await import('/world/game/player.js')
+  const { updateCompliance } = await import('/world/game/compliance.js')
+  const { state } = await import('/world/engine/state.js')
+  const x = shop.at.x + 40
+  const z = shop.at.z
+  player.vehicle.x = x
+  player.vehicle.z = z
+  player.vehicle.speed = 0.2
+  player.vehicle.mesh.position.set(x, 0, z)
+  state.player.x = x
+  state.player.z = z
+  updateCompliance(0.016)
+}, nearestShopToSpawn)
+await desktop.evaluate(async (shop) => {
+  const { player } = await import('/world/game/player.js')
+  const { updateCompliance } = await import('/world/game/compliance.js')
+  const { state } = await import('/world/engine/state.js')
+  player.vehicle.x = shop.at.x
+  player.vehicle.z = shop.at.z
+  player.vehicle.speed = 0.2
+  player.vehicle.mesh.position.set(shop.at.x, 0, shop.at.z)
+  state.player.x = shop.at.x
+  state.player.z = shop.at.z
+  updateCompliance(0.016)
+}, nearestShopToSpawn)
+assert.equal(
+  (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier,
+  0,
+  're-entry with COMPLIANCE did not clear after leave'
+)
+
+// Active mission waypoint must not be overwritten by repaint guidance.
+await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(3))
+await desktop.evaluate(async () => {
+  // Force an active mission snapshot waypoint via public API if possible.
+  const snap = window.RAFFI_WORLD.missionSnapshot()
+  if (!snap.completed.includes('deal-clock')) return
+})
+// Use setWaypoint after marking mission active through state for the guard.
+const missionLabel = 'DEAL CLOCK · STOP 1'
+await desktop.evaluate(async (label) => {
+  const { state } = await import('/world/engine/state.js')
+  state.mission.active = 'deal-clock'
+  window.RAFFI_WORLD.setWaypoint({ x: 60, z: -380 }, label)
+  const { updateCompliance } = await import('/world/game/compliance.js')
+  updateCompliance(0.016)
+}, missionLabel)
+assert.equal(
+  await desktop.locator('#minimap-label').textContent(),
+  missionLabel,
+  'repaint guidance overwrote an active mission waypoint'
+)
+await desktop.evaluate(async () => {
+  const { state } = await import('/world/engine/state.js')
+  state.mission.active = null
+})
+
+// Visual evidence at a generated shop — dusk + night, desktop.
+for (const grade of ['dusk', 'night']) {
+  await desktop.evaluate(async (payload) => {
+    window.RAFFI_WORLD.setGrade(payload.grade)
+    const { player } = await import('/world/game/player.js')
+    const { state } = await import('/world/engine/state.js')
+    player.vehicle.x = payload.shop.at.x
+    player.vehicle.z = payload.shop.at.z
+    player.vehicle.speed = 0
+    player.vehicle.mesh.position.set(payload.shop.at.x, 0, payload.shop.at.z)
+    state.player.x = payload.shop.at.x
+    state.player.z = payload.shop.at.z
+  }, { grade, shop: nearestShopToSpawn })
+  await desktop.waitForTimeout(80)
+  await desktop.screenshot({ path: OUT + `/raffi-world-repaint-desktop-${grade}.png` })
+}
+
+const budgets = await desktop.evaluate(() => window.RAFFI_WORLD.stats())
+assert.ok(budgets.drawCalls < 120, `draw calls ${budgets.drawCalls} >= 120`)
+assert.ok(budgets.triangles < 60_000, `triangles ${budgets.triangles} >= 60000`)
+
 await desktop.screenshot({ path: OUT + '/raffi-world-onboarding-desktop.png' })
 await desktopContext.close()
 
@@ -453,10 +701,39 @@ assert.ok(
   `dialogue overlaps touch action button (${JSON.stringify(mobileLayout)})`
 )
 await mobile.screenshot({ path: OUT + '/raffi-world-onboarding-mobile.png' })
+
+// Reply All Repaint visual check on 390×844 — car in bay, dusk/night grades.
+await mobile.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
+const mobileCar = hub.rides.find((ride) => ride.archetype === 'grand-tourer')
+await mobile.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), mobileCar.at)
+await mobile.waitForTimeout(80)
+await mobile.locator('#btn-action').tap()
+await mobile.waitForTimeout(150)
+assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'grand-tourer')
+await mobile.evaluate(() => window.RAFFI_WORLD.setComplianceTier(2))
+await mobile.evaluate(async (shop) => {
+  const { player } = await import('/world/game/player.js')
+  const { updateCompliance } = await import('/world/game/compliance.js')
+  const { state } = await import('/world/engine/state.js')
+  player.vehicle.x = shop.at.x
+  player.vehicle.z = shop.at.z
+  player.vehicle.speed = 0.3
+  player.vehicle.mesh.position.set(shop.at.x, 0, shop.at.z)
+  state.player.x = shop.at.x
+  state.player.z = shop.at.z
+  updateCompliance(0.016)
+}, nearestShopToSpawn)
+assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier, 0)
+for (const grade of ['dusk', 'night']) {
+  await mobile.evaluate((g) => window.RAFFI_WORLD.setGrade(g), grade)
+  await mobile.waitForTimeout(60)
+  await mobile.screenshot({ path: OUT + `/raffi-world-repaint-mobile-${grade}.png` })
+}
+
 await mobileContext.close()
 
 assert.deepEqual(errors, [])
-console.info('RAFFI WORLD onboarding smoke: pause, immediate/moving ride remounts, subway, DEAL CLOCK, and mobile controls passed')
+console.info('RAFFI WORLD onboarding smoke: pause, rides, subway, DEAL CLOCK, Reply All Repaint, and mobile controls passed')
 } finally {
   await browser.close()
 }

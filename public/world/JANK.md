@@ -66,3 +66,22 @@ mission also mutation-failed by name when its on-foot, unique-stop, and
 briefing-timer guards were deliberately removed, then passed after restoration.
 The ride-cycle guard likewise failed by name when a dropped board was
 deliberately left occupied, then passed after the production state was restored.
+
+## Phase 3b — Reply All Repaint compliance clear
+
+Browser smoke screenshots (not committed): `/tmp/raffi-world-repaint/raffi-world-repaint-{desktop,mobile}-{dusk,night}.png`
+at the Heights shop (`repaint-heights`, seed=FIXED). Budgets on those frames:
+12–14 draw calls, ~29–30k visible triangles.
+
+| Screenshot | Issue | Severity | Fixed |
+|---|---|---|---|
+| `repaint-desktop-dusk/night` | Dark asphalt bay pad + cyan player locator read clearly; `REPLY ALL REPAINT` minimap label routes heat without mission waypoint stomps. | — | Yes (behavior) |
+| `repaint-desktop-dusk/night` | The generated `repaint-sign` is a thin pole + board that is easy to miss under fixed iso when a mentor caption covers the lower third; bay pad colour is the stronger landmark. | visible | No — content: raise sign, add bay stripes, or ground decal text without new assets |
+| `repaint-mobile-dusk/night` | After clear, minimap returns to FREE ROAM; COMPLIANCE pips empty. Touch GAS/BRAKE/EXIT remain usable. Shop sign often off-frame on 390×844 because the camera follows the car on the pad. | charm→visible | No — optional slight look-ahead toward shop sign while latched; camera law unchanged |
+| `repaint-desktop-*` | Mentor ride caption can still cover the bay while parked (nonblocking). | charm | Kept — does not steal throttle or block clear |
+| Compliance clear SFX | `radio.json` defines `compliance-clear` metadata but no audio engine plays it yet. | charm | Deferred with radio/audio phase |
+| G-03 (gameplay audit) | COMPLIANCE could stick at tier 4 with no clear path. | visible | Yes — Reply All Repaint loop ships |
+
+No repaint frame breached the 120 draw-call / 60k triangle budgets. On-foot and
+high-speed negatives are browser-guarded; mounted-only and tier-reset rules are
+mutation-tested in `compliance-core.test.mjs`.

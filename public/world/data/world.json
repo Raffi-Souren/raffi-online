@@ -225,7 +225,16 @@
     ]
   },
 
-  "$repaintComment": "Reply All Repaint — parking here clears COMPLIANCE and repaints the vehicle.",
+  "$repaintComment": "Reply All Repaint — parking here clears COMPLIANCE and repaints the vehicle. Geometry is generated from repaintShops; bayRadius/maxClearSpeed live in repaint so the engine hardcodes no world facts.",
+  "repaint": {
+    "bayRadius": 6.5,
+    "maxClearSpeed": 2.5,
+    "label": "REPLY ALL REPAINT",
+    "objective": "PARK AT REPLY ALL REPAINT",
+    "toast": "COMPLIANCE CLEARED · FRESH COAT",
+    "clearLines": ["repaint-1", "repaint-2"],
+    "sfx": "compliance-clear"
+  },
   "repaintShops": [
     { "id": "repaint-heights", "district": "heights", "at": { "x": -560, "z": -120 }, "yaw": 1.5708 },
     { "id": "repaint-strip", "district": "strip", "at": { "x": 250, "z": 60 }, "yaw": 0 },

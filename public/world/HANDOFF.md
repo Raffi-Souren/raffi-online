@@ -1,5 +1,36 @@
 # RAFFI WORLD — Handoff
 
+## [2026-08-02 18:15] FROM: grok — REPLY ALL REPAINT COMPLIANCE CLEAR
+
+**Shipped:** the first honest COMPLIANCE clear loop. `game/compliance-core.js`
+holds pure mounted-only / speed / latch / nearest-shop rules; `game/compliance.js`
+wires HUD pips, authored `repaint-1`/`repaint-2` dialogue, toast, and
+`gen/vehicles.js` `repaint()` on the mounted mesh. Shop locations, bay radius,
+and max clear speed compile from `data/world.json` (`repaint` + `repaintShops`)
+— no hardcoded shop IDs, coordinates, districts, or radii in engine code.
+
+**Behavior:** a mounted vehicle crawling at or under `repaint.maxClearSpeed`
+inside an authored bay zeros tier + heat, repaints hull/cabin vertex colours,
+fires dialogue/toast, and latches until the actor leaves the bay. On-foot and
+high-speed drive-throughs do nothing. Active mission waypoints are never
+overwritten; with heat and no active mission the minimap routes to the nearest
+data shop as `REPLY ALL REPAINT`. Debug exposes `setComplianceTier` /
+`complianceSnapshot` under `?debug=1`.
+
+**Guards:** seven pure compliance-core tests (mounted-only, speed boundary,
+clear/reset, latch, leave/re-enter, data-driven nearest shop). Browser smoke
+extends DEAL CLOCK → heat → on-foot negative → high-speed negative → park clear
+→ colour-buffer change → latch → re-enter → mission waypoint preservation, plus
+desktop/mobile dusk+night shop screenshots. Mutation: removing mounted-only
+fails its named unit test; skipping tier reset fails clear-reset; skipping
+`repaint()` leaves the colour buffer unchanged. All restored before green.
+
+**Budgets (shop view, seed=FIXED):** ≤14 draw calls, ~30k tris (under 120 / 60k).
+
+**Deferred:** pursuers/catches, Replay All Repaint audio playback of
+`compliance-clear` SFX metadata, interiors, remaining missions. Shop sign
+readability under fixed iso remains a content jank item (see JANK.md).
+
 ## [2026-08-02 17:57] FROM: codex — PAUSE TRAP FIXED AND AUDITED
 
 **Root cause:** the pause panel rendered five enabled buttons but the engine

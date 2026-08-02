@@ -34,6 +34,9 @@ import {
   initMissions, updateMissions, missionContext, startMission,
   focusFirstMission, missionSnapshot,
 } from '../game/missions.js'
+import {
+  initCompliance, updateCompliance, setComplianceTier, complianceSnapshot,
+} from '../game/compliance.js'
 import { initDebug, updateDebugCamera, updateDebugReadout, debugState, exposeAuditApi } from './debug.js'
 
 const els = {}
@@ -426,6 +429,7 @@ async function boot() {
     spawnVehicle,
     onStart: startMissionPresentation,
   })
+  initCompliance()
   initDebug({ root: els.debugRoot, readout: els.debugReadout, buttons: els.debugButtons }, collision)
 
   applyGrade(state.grade.current, 1)
@@ -444,6 +448,8 @@ async function boot() {
     startMission,
     missionSnapshot,
     dismissDialogue,
+    setComplianceTier,
+    complianceSnapshot,
   })
 
   setBoot(1, 'ready')
@@ -558,6 +564,7 @@ function loop(now) {
     }
 
     if (!world.transitBusy && !isDialogueBlocking()) updateMissions(dt)
+    if (!world.transitBusy && !isDialogueBlocking()) updateCompliance(dt)
 
     const focus = flying
       ? { x: debugState.flyX, y: debugState.flyY, z: debugState.flyZ }
