@@ -26,6 +26,35 @@ export const RAFS_CRATE: Track[] = CRATE_TRACKS
 // Back-compat alias: existing imports of SOUNDCLOUD_TRACKS keep working.
 export const SOUNDCLOUD_TRACKS: Track[] = CRATE_TRACKS
 
+const FEATURED_OVERRIDES: ReadonlyArray<{
+  id: string
+  artist: string
+  title?: string
+}> = [
+  { id: "yukon-x-up-dj-hunny-bee-remix", artist: "DJ Hunny Bee" },
+  { id: "four-tet-insect-near-piha-beach", artist: "Four Tet" },
+  { id: "habibi-funk-beirut", artist: "DJ Sweeterman" },
+  { id: "chopsuey", artist: "Osive" },
+  { id: "gordos-dilemma", artist: "Gordo" },
+  { id: "08-compton-state-of-mind", artist: "Miles Davis" },
+  { id: "fidde-i-wonder-yuno-hu-vision", artist: "Fidde" },
+  { id: "sango2", artist: "Pinche Por Vida" },
+  { id: "dipset-x-future-i-really-mean", artist: "Sango" },
+  { id: "mos-def-auditorium-2", title: "Auditorium", artist: "Mos Def" },
+  { id: "blemforreal", artist: "David Mackay" },
+  { id: "tems-me-u-blk-remix", title: "Me & U (BLK Remix)", artist: "Tems" },
+  { id: "first-day-of-my-life-bright", artist: "Mac Miller" },
+]
+
+/**
+ * The curated short crate shown in the iPod. URLs and base metadata stay
+ * single-sourced in the canonical library; only display metadata is overridden.
+ */
+export const FEATURED_RAFS_CRATE: Track[] = FEATURED_OVERRIDES.flatMap(({ id, title, artist }) => {
+  const track = CRATE_TRACKS.find((candidate) => candidate.id === id)
+  return track ? [{ ...track, title: title ?? track.title, artist }] : []
+})
+
 /**
  * Pick a random track index that differs from `current` (when possible).
  *

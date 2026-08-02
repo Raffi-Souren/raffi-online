@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 
-import { getRandomTrackIndex } from "../data/audio-library"
+import { FEATURED_RAFS_CRATE, getRandomTrackIndex } from "../data/audio-library"
 import { resolveTrackEnd } from "./audio-engine"
 
 // --- getRandomTrackIndex ----------------------------------------------------
@@ -33,6 +33,25 @@ test("getRandomTrackIndex never repeats the current index", () => {
 test("getRandomTrackIndex tolerates an out-of-range current index", () => {
   const index = getRandomTrackIndex(3, 99)
   assert.ok(index >= 0 && index < 3)
+})
+
+// --- featured crate ---------------------------------------------------------
+
+test("FEATURED_RAFS_CRATE resolves all 13 canonical tracks", () => {
+  assert.equal(FEATURED_RAFS_CRATE.length, 13)
+  assert.equal(new Set(FEATURED_RAFS_CRATE.map((track) => track.id)).size, 13)
+  assert.ok(FEATURED_RAFS_CRATE.every((track) => track.url.startsWith("https://soundcloud.com/")))
+})
+
+test("FEATURED_RAFS_CRATE applies curated display metadata", () => {
+  const auditorium = FEATURED_RAFS_CRATE.find((track) => track.id === "mos-def-auditorium-2")
+  const tems = FEATURED_RAFS_CRATE.find((track) => track.id === "tems-me-u-blk-remix")
+
+  assert.deepEqual({ title: auditorium?.title, artist: auditorium?.artist }, { title: "Auditorium", artist: "Mos Def" })
+  assert.deepEqual(
+    { title: tems?.title, artist: tems?.artist },
+    { title: "Me & U (BLK Remix)", artist: "Tems" },
+  )
 })
 
 // --- resolveTrackEnd --------------------------------------------------------
