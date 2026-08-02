@@ -150,6 +150,11 @@ const ARTICLES: Article[] = [
 
 const RESEARCH_PAPERS: ResearchPaper[] = [
   {
+    title: "DFAH-Bench: Benchmarking Observable Agent Instability in Financial Decision-Making",
+    url: "https://arxiv.org/abs/2607.20491",
+    date: "Jun 2026",
+  },
+  {
     title: "Forecasting Future Language: Context Design for Mention Markets",
     url: "https://arxiv.org/abs/2602.21229",
     date: "Feb 2026",

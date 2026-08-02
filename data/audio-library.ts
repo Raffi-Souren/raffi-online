@@ -27,7 +27,7 @@ export const RAFS_CRATE: Track[] = CRATE_TRACKS
 export const SOUNDCLOUD_TRACKS: Track[] = CRATE_TRACKS
 
 /** Pick a random track index that differs from `current` (when possible). */
-export function getRandomTrackIndex(length: number, current: number): number {
+export function getRandomTrackIndex(length: number, current = -1): number {
   if (length <= 1) return 0
   let next = current
   while (next === current) {
