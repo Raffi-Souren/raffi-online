@@ -1,13 +1,9 @@
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
-import { Shuffle, X, CheckCircle } from "lucide-react"
-import { type Track, SOUNDCLOUD_TRACKS } from "@/data/crates-tracks"
-
-const scEmbed = (url: string) =>
-  `https://w.soundcloud.com/player/?url=${encodeURIComponent(
-    url,
-  )}&auto_play=false&show_teaser=true&show_user=true&visual=false`
+import { useCallback, useEffect, useRef } from "react"
+import { Shuffle, X, CheckCircle, Pause, Play } from "lucide-react"
+import { useAudio } from "../context/AudioContext"
+import { SOUNDCLOUD_TRACKS, getRandomTrackIndex } from "@/data/audio-library"
 
 interface DiggingInTheCratesProps {
   isOpen: boolean
@@ -15,16 +11,24 @@ interface DiggingInTheCratesProps {
 }
 
 export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
-  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
+  const { currentTrack, isPlaying, playTrack, setPlaylist, togglePlay } = useAudio()
   const dialogRef = useRef<HTMLDivElement>(null)
   const prevFocusRef = useRef<HTMLElement | null>(null)
+  // Tracks whether we've already seeded a pick for this open session.
+  const seededRef = useRef(false)
 
+  // On open, load the crate into the global player and play a random record.
   useEffect(() => {
-    if (isOpen && !currentTrack) {
-      const randomIndex = Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)
-      setCurrentTrack(SOUNDCLOUD_TRACKS[randomIndex])
+    if (isOpen && !seededRef.current) {
+      seededRef.current = true
+      setPlaylist(SOUNDCLOUD_TRACKS)
+      const randomIndex = getRandomTrackIndex(SOUNDCLOUD_TRACKS.length)
+      playTrack(SOUNDCLOUD_TRACKS[randomIndex])
     }
-  }, [isOpen, currentTrack])
+    if (!isOpen) {
+      seededRef.current = false
+    }
+  }, [isOpen, setPlaylist, playTrack])
 
   // Focus management
   useEffect(() => {
@@ -45,12 +49,13 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
   }, [isOpen, onClose])
 
   const handleShuffle = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * SOUNDCLOUD_TRACKS.length)
-    setCurrentTrack(SOUNDCLOUD_TRACKS[randomIndex])
-  }, [])
+    const currentIndex = currentTrack ? SOUNDCLOUD_TRACKS.findIndex((t) => t.id === currentTrack.id) : -1
+    const randomIndex = getRandomTrackIndex(SOUNDCLOUD_TRACKS.length, currentIndex)
+    playTrack(SOUNDCLOUD_TRACKS[randomIndex])
+  }, [currentTrack, playTrack])
 
+  // Closing the crate keeps the music playing via the global NowPlaying bar.
   const handleClose = () => {
-    setCurrentTrack(null)
     onClose?.()
   }
 
@@ -188,26 +193,32 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                     style={{
                       fontSize: "0.875rem",
                       color: "#666",
-                      marginBottom: "1rem",
+                      marginBottom: "0.5rem",
                     }}
                   >
                     {currentTrack.artist}
                   </p>
 
-                  <div
+                  <button
+                    onClick={togglePlay}
+                    aria-label={isPlaying ? "Pause" : "Play"}
                     style={{
-                      width: "100%",
-                      marginBottom: "1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.5rem",
+                      width: "3.5rem",
+                      height: "3.5rem",
+                      borderRadius: "50%",
+                      backgroundColor: "#ff5500",
+                      color: "white",
+                      border: "none",
+                      cursor: "pointer",
+                      marginBottom: "0.5rem",
                     }}
                   >
-                    <iframe
-                      src={scEmbed(currentTrack.url)}
-                      width="100%"
-                      height="166"
-                      allow="autoplay"
-                      style={{ border: "none" }}
-                    />
-                  </div>
+                    {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+                  </button>
 
                   <div
                     style={{
@@ -230,7 +241,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                         color: "#666",
                       }}
                     >
-                      SoundCloud
+                      Playing on SoundCloud
                     </span>
                   </div>
                 </>
@@ -242,7 +253,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                     textAlign: "center",
                   }}
                 >
-                  Click "Shuffle" to discover a random track!
+                  Click &quot;Shuffle&quot; to discover a random track!
                 </p>
               )}
             </div>

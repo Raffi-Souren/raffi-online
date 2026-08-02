@@ -30,7 +30,7 @@ function loadSoundCloudApi(): Promise<void> {
 }
 
 export default function GlobalAudioPlayer() {
-  const { currentTrack, isPlaying, nextTrack, setCurrentTime, setDuration, setLoading, setError } = useAudio()
+  const { currentTrack, isPlaying, handleTrackEnd, setCurrentTime, setDuration, setLoading, setError } = useAudio()
 
   const [playerUrl, setPlayerUrl] = useState<string | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -41,13 +41,13 @@ export default function GlobalAudioPlayer() {
   // Keep the latest callbacks/state in refs so the widget's bound listeners
   // always use fresh values without needing to rebind.
   const isPlayingRef = useRef(isPlaying)
-  const nextTrackRef = useRef(nextTrack)
+  const handleTrackEndRef = useRef(handleTrackEnd)
   useEffect(() => {
     isPlayingRef.current = isPlaying
   }, [isPlaying])
   useEffect(() => {
-    nextTrackRef.current = nextTrack
-  }, [nextTrack])
+    handleTrackEndRef.current = handleTrackEnd
+  }, [handleTrackEnd])
 
   // Mount the hidden iframe once, using the first track that gets selected.
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function GlobalAudioPlayer() {
         })
 
         widget.bind(SC.Widget.Events.FINISH, () => {
-          nextTrackRef.current()
+          handleTrackEndRef.current()
         })
 
         widget.bind(SC.Widget.Events.ERROR, () => {

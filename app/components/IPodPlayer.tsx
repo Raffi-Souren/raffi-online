@@ -324,6 +324,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const lastAngleRef = useRef<number | null>(null)
   const accumulatedRotationRef = useRef(0)
   const videoIframeRef = useRef<HTMLIFrameElement>(null)
+  const selectedItemRef = useRef<HTMLDivElement>(null)
 
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00"
@@ -486,18 +487,22 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
         accumulatedRotationRef.current += delta
 
-        if (Math.abs(accumulatedRotationRef.current) >= 30) {
-          const direction = accumulatedRotationRef.current > 0 ? 1 : -1
+        const STEP = 30
+        if (Math.abs(accumulatedRotationRef.current) >= STEP) {
+          // Advance by however many full steps were rotated so a fast spin
+          // moves multiple items instead of getting stuck on one.
+          const steps = Math.trunc(accumulatedRotationRef.current / STEP)
           const maxIndex = currentScreen === "nowPlaying" || currentScreen === "videoPlayer" ? 0 : menuItems.length - 1
 
           setSelectedIndex((prev) => {
-            const newIndex = prev + direction
+            const newIndex = prev + steps
             if (newIndex < 0) return 0
             if (newIndex > maxIndex) return maxIndex
             return newIndex
           })
 
-          accumulatedRotationRef.current = 0
+          // Keep the leftover rotation so movement stays smooth.
+          accumulatedRotationRef.current -= steps * STEP
         }
       }
 
@@ -514,6 +519,20 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const handleWheelEnd = () => {
     lastAngleRef.current = null
   }
+
+  // Keep the highlighted row in view when scrolling long lists so the
+  // selection never disappears off-screen.
+  useEffect(() => {
+    selectedItemRef.current?.scrollIntoView({ block: "nearest" })
+  }, [selectedIndex])
+
+  // Guard against a stale selectedIndex when moving to a shorter menu.
+  useEffect(() => {
+    setSelectedIndex((prev) => {
+      const maxIndex = Math.max(0, menuItems.length - 1)
+      return prev > maxIndex ? maxIndex : prev
+    })
+  }, [menuItems.length])
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (e.buttons === 1) {
@@ -812,6 +831,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                 {menuItems.map((item, index) => (
                   <div
                     key={index}
+                    ref={selectedIndex === index ? selectedItemRef : null}
                     className="flex items-center justify-between px-2 py-1"
                     style={{
                       background: selectedIndex === index ? "#3366cc" : "transparent",

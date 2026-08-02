@@ -1,11 +1,24 @@
 "use client"
 
 import { useAudio } from "../context/AudioContext"
-import { Pause, Play, X, SkipBack, SkipForward } from "lucide-react"
+import { Pause, Play, X, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from "lucide-react"
 
 export default function NowPlaying() {
-  const { currentTrack, isPlaying, togglePlay, stopTrack, nextTrack, previousTrack, playlist, currentTime, duration } =
-    useAudio()
+  const {
+    currentTrack,
+    isPlaying,
+    togglePlay,
+    stopTrack,
+    nextTrack,
+    previousTrack,
+    playlist,
+    currentTime,
+    duration,
+    shuffle,
+    repeatMode,
+    toggleShuffle,
+    cycleRepeatMode,
+  } = useAudio()
 
   if (!currentTrack) return null
 
@@ -35,6 +48,25 @@ export default function NowPlaying() {
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+        <button
+          onClick={toggleShuffle}
+          className="hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#FF5500] rounded"
+          aria-label={shuffle ? "Shuffle on" : "Shuffle off"}
+          aria-pressed={shuffle}
+          title={shuffle ? "Shuffle: On" : "Shuffle: Off"}
+          style={{
+            background: "none",
+            border: "none",
+            color: "white",
+            cursor: "pointer",
+            padding: 0,
+            marginTop: "4px",
+            opacity: shuffle ? 1 : 0.45,
+          }}
+        >
+          <Shuffle size={16} />
+        </button>
+
         <button
           onClick={previousTrack}
           disabled={!hasPlaylist}
@@ -87,6 +119,26 @@ export default function NowPlaying() {
           }}
         >
           <SkipForward size={18} fill="currentColor" />
+        </button>
+
+        <button
+          onClick={cycleRepeatMode}
+          className="hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#FF5500] rounded"
+          aria-label={`Repeat: ${repeatMode}`}
+          title={
+            repeatMode === "off" ? "Repeat: Off" : repeatMode === "all" ? "Repeat: All" : "Repeat: One"
+          }
+          style={{
+            background: "none",
+            border: "none",
+            color: "white",
+            cursor: "pointer",
+            padding: 0,
+            marginTop: "4px",
+            opacity: repeatMode === "off" ? 0.45 : 1,
+          }}
+        >
+          {repeatMode === "one" ? <Repeat1 size={16} /> : <Repeat size={16} />}
         </button>
 
         <div style={{ flex: 1, minWidth: 0 }}>

@@ -1,9 +1,5 @@
-export interface Track {
-  id: string
-  title: string
-  artist: string
-  url: string
-}
+import type { Track } from "./audio-library"
+export type { Track }
 
 export const SOUNDCLOUD_TRACKS: Track[] = [
   {
