@@ -268,46 +268,64 @@
 
   "grades": {
     "dusk": {
-      "fogColor": "#B77E99",
+      "$comment": "Spider-Man PS2 golden-hour city: dense mauve haze, soft bloom on windows.",
+      "fogColor": "#C48A9E",
       "fogColor2": "#F7B873",
-      "fogNear": 260,
-      "fogFar": 650,
+      "fogNear": 90,
+      "fogFar": 480,
       "key": "#FFF1D0",
       "keyDir": { "x": -0.45, "y": -0.78, "z": 0.44 },
-      "ambient": "#736C9A",
-      "shadowTint": "#35486E",
-      "skyTop": "#566FA6",
+      "ambient": "#7A6C9A",
+      "shadowTint": "#3A4A72",
+      "skyTop": "#5A6FB0",
       "skyBottom": "#F7B873",
       "waterColor": "#2E8FA8",
-      "post": { "shadowStrength": 0.08, "keyStrength": 0.05, "saturation": 1.14, "contrast": 1.04, "exposure": 0.95, "gamma": 1, "vignette": 0.06 }
+      "post": {
+        "shadowStrength": 0.12, "keyStrength": 0.08, "saturation": 1.22, "contrast": 1.05,
+        "exposure": 0.98, "gamma": 0.98, "vignette": 0.2,
+        "bloomStrength": 0.38, "bloomThreshold": 0.48, "softness": 0.72, "grain": 0.032,
+        "quantize": 0.28, "dither": 0.4
+      }
     },
     "haze": {
-      "fogColor": "#BDD3CE",
+      "$comment": "Midday soft overcast — still atmospheric, never hard pixel skyline.",
+      "fogColor": "#B8D0CC",
       "fogColor2": "#F4D39C",
-      "fogNear": 360,
-      "fogFar": 720,
+      "fogNear": 120,
+      "fogFar": 560,
       "key": "#FFF0BF",
       "keyDir": { "x": -0.3, "y": -0.9, "z": 0.31 },
-      "ambient": "#78A4A4",
-      "shadowTint": "#496981",
-      "skyTop": "#58B9D2",
+      "ambient": "#7AA8A8",
+      "shadowTint": "#4A6A82",
+      "skyTop": "#5BB8D0",
       "skyBottom": "#F4D39C",
       "waterColor": "#2996A6",
-      "post": { "shadowStrength": 0.04, "keyStrength": 0.04, "saturation": 1.1, "contrast": 1.03, "exposure": 1, "gamma": 1, "vignette": 0.04 }
+      "post": {
+        "shadowStrength": 0.08, "keyStrength": 0.06, "saturation": 1.14, "contrast": 1.04,
+        "exposure": 1.02, "gamma": 1, "vignette": 0.14,
+        "bloomStrength": 0.22, "bloomThreshold": 0.58, "softness": 0.55, "grain": 0.022,
+        "quantize": 0.22, "dither": 0.32
+      }
     },
     "night": {
-      "fogColor": "#27345D",
+      "$comment": "Night city glow — Spidey NYC purple fog + lit windows blooming.",
+      "fogColor": "#1E2A52",
       "fogColor2": "#59356F",
-      "fogNear": 270,
-      "fogFar": 620,
+      "fogNear": 70,
+      "fogFar": 420,
       "key": "#72D7FF",
       "keyDir": { "x": 0.35, "y": -0.85, "z": -0.39 },
       "ambient": "#3B4E80",
-      "shadowTint": "#141638",
-      "skyTop": "#11143B",
+      "shadowTint": "#10122E",
+      "skyTop": "#0C0F30",
       "skyBottom": "#59356F",
       "waterColor": "#123F60",
-      "post": { "shadowStrength": 0.1, "keyStrength": 0.05, "saturation": 1.18, "contrast": 1.06, "exposure": 0.72, "gamma": 0.96, "vignette": 0.08 }
+      "post": {
+        "shadowStrength": 0.16, "keyStrength": 0.1, "saturation": 1.28, "contrast": 1.08,
+        "exposure": 0.78, "gamma": 0.94, "vignette": 0.24,
+        "bloomStrength": 0.55, "bloomThreshold": 0.42, "softness": 0.78, "grain": 0.04,
+        "quantize": 0.32, "dither": 0.45
+      }
     },
     "mainframe": {
       "$comment": "Interior-only. No fog by design — the visual opposite of the surface.",
@@ -322,7 +340,12 @@
       "skyTop": "#04080F",
       "skyBottom": "#04080F",
       "waterColor": "#04080F",
-      "post": { "shadowStrength": 0.18, "keyStrength": 0.08, "saturation": 1.12, "contrast": 1.08, "exposure": 1, "gamma": 1, "vignette": 0.08 }
+      "post": {
+        "shadowStrength": 0.18, "keyStrength": 0.08, "saturation": 1.12, "contrast": 1.08,
+        "exposure": 1, "gamma": 1, "vignette": 0.12,
+        "bloomStrength": 0.25, "bloomThreshold": 0.5, "softness": 0.35, "grain": 0.02,
+        "quantize": 0.2, "dither": 0.25
+      }
     }
   },
 
@@ -338,12 +361,16 @@
   },
 
   "render": {
-    "internalWidth": 512,
-    "internalHeight": 288,
-    "mobileInternalWidth": 426,
-    "mobileInternalHeight": 240,
-    "quantizeBits": { "r": 5, "g": 6, "b": 5 },
-    "ditherMatrix": 4,
+    "$comment": "Soft early-2000s city presentation (Spider-Man PS2 vibe). Higher internal res + linear upscale + mild bloom. Not Minecraft nearest 512x288.",
+    "internalWidth": 720,
+    "internalHeight": 405,
+    "mobileInternalWidth": 540,
+    "mobileInternalHeight": 304,
+    "quantize": 0.3,
+    "dither": 0.4,
+    "softness": 0.68,
+    "grain": 0.03,
+    "bloom": { "strength": 0.34, "threshold": 0.5 },
     "maxPixelRatio": 1,
     "budget": { "drawCalls": 120, "triangles": 60000 }
   }

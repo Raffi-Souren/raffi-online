@@ -5,6 +5,10 @@
  * contains **no** THREE lights at all. Every surface is a MeshBasicMaterial
  * with `vertexColors: true` sampling one shared atlas. That is what keeps the
  * draw call and triangle budgets in WORLD-BIBLE §9 reachable on a phone.
+ *
+ * Presentation aims at soft early-2000s city games (Spider-Man PS2 vibe):
+ * bilinear internal buffer, mild bloom in post, atmospheric fog — not
+ * nearest-neighbour Minecraft crunch.
  */
 
 import * as THREE from 'three'
@@ -68,13 +72,17 @@ export function initRenderer(canvas) {
   renderer.info.autoReset = false
 
   const scene = new THREE.Scene()
-  scene.fog = new THREE.Fog(0x000000, 100, 400)
+  // Dense atmospheric haze — the Spidey PS2 city tell. Linear fog keeps far
+  // towers melting into the sky card instead of hard Minecraft cutoffs.
+  scene.fog = new THREE.Fog(0x000000, 80, 420)
 
   const aspect = canvas.clientWidth / Math.max(canvas.clientHeight, 1)
   const internal = internalSizeFor(aspect)
+  // Linear filter = soft PS2 upscale. Nearest made the whole game read as
+  // a voxel/Minecraft screenshot even though the geometry is low-poly city.
   const rt = new THREE.WebGLRenderTarget(internal.w, internal.h, {
-    minFilter: THREE.NearestFilter,
-    magFilter: THREE.NearestFilter,
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
     generateMipmaps: false,
     depthBuffer: true,
     colorSpace: THREE.SRGBColorSpace,
@@ -82,6 +90,7 @@ export function initRenderer(canvas) {
 
   const post = createPostPass()
   post.setInternalSize(internal.w, internal.h)
+  post.setPresentation(data.world?.render || {})
 
   gfx.renderer = renderer
   gfx.scene = scene
@@ -224,6 +233,8 @@ export function renderFrame(camera) {
   r.setRenderTarget(gfx.rt)
   r.clear()
   r.render(gfx.scene, camera)
+  // Grain seed + any time-based presentation wobble.
+  gfx.post.setTime?.(state.time || 0)
   gfx.post.render(r, gfx.rt)
 
   state.stats.drawCalls = r.info.render.calls

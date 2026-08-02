@@ -223,9 +223,11 @@
 
   "$vertexLightComment": "Baked at generation time. One key, one fill, plus a cheap per-face AO darkening on downward and inward faces. No realtime lights anywhere in this build.",
   "vertexLighting": {
-    "keyStrength": 0.62,
-    "fillStrength": 0.62,
-    "faceAO": { "down": 0.62, "north": 0.86, "east": 0.96, "south": 1.0, "west": 0.92, "up": 1.0 },
-    "groundContact": { "height": 2.5, "darken": 0.86 }
+    "$comment": "Baked Gouraud-ish shade. Soft face AO + height wash = early-2000s city, not Minecraft flat boxes.",
+    "keyStrength": 0.58,
+    "fillStrength": 0.68,
+    "faceAO": { "down": 0.68, "north": 0.9, "east": 0.98, "south": 1.0, "west": 0.94, "up": 1.04 },
+    "groundContact": { "height": 3.2, "darken": 0.82 },
+    "heightAmbient": { "minY": 0, "maxY": 90, "bottom": 0.9, "top": 1.14 }
   }
 }

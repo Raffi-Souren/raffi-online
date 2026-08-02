@@ -32,8 +32,9 @@ function nextCell(name) {
   if (i >= COLS * COLS) throw new Error('atlas full — raise ATLAS_SIZE or shrink CELL')
   const cx = (i % COLS) * CELL
   const cy = Math.floor(i / COLS) * CELL
-  // Half-texel inset stops neighbouring cells bleeding under nearest filtering.
-  const e = 0.5 / ATLAS_SIZE
+  // Slightly larger inset so bilinear filtering (soft PS2 look) does not bleed
+  // neighbouring facade cells into each other.
+  const e = 1.5 / ATLAS_SIZE
   uvRects.set(name, {
     u0: cx / ATLAS_SIZE + e,
     v0: 1 - (cy + CELL) / ATLAS_SIZE + e,
@@ -404,10 +405,11 @@ export function buildAtlas(blocks, dialogue, seed = 'atlas') {
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  texture.magFilter = THREE.NearestFilter
+  // Linear mag = soft early-2000s city texture, not Minecraft nearest pixels.
+  texture.magFilter = THREE.LinearFilter
   texture.minFilter = THREE.LinearMipmapLinearFilter
   texture.generateMipmaps = true
-  texture.anisotropy = 1
+  texture.anisotropy = 2
   texture.needsUpdate = true
 
   return { texture, canvas, uv, uvAt, shopCount: SHOP_WORDS.length, billboardCount: (signage.billboards || []).length }

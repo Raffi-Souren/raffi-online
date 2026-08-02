@@ -101,6 +101,20 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
       faces: SIDES,
       topRect: flatRect,
     })
+
+    // Thin floor belts break pure extruded Minecraft slabs into readable
+    // storeys — classic low-poly city massing (Spider-Man PS2 / GTA III era).
+    const shellBot = s.y - s.h / 2
+    const shellTop = s.y + s.h / 2
+    const beltH = Math.min(0.18, fh * 0.06)
+    const beltOut = 0.11
+    for (let y = shellBot + fh; y < shellTop - 0.35; y += fh) {
+      b.box({
+        x: lot.x, y, z: lot.z,
+        w: s.w + beltOut * 2, h: beltH, d: s.d + beltOut * 2,
+        ry: lot.ry, color: wallColor, rect: flatRect, faces: SIDES,
+      })
+    }
   }
 
   // Roof slab (only the top shell needs one).

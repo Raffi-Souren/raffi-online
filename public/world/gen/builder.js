@@ -68,6 +68,20 @@ export class MeshBuilder {
   }
 
   /**
+   * Soft sky-fill along height — upper facades wash brighter, like Gouraud
+   * ambient on early-2000s city games. Breaks the flat Minecraft slab read.
+   */
+  heightAmb(y) {
+    const ha = this.lighting.heightAmbient
+    if (!ha) return 1
+    const span = Math.max(0.001, (ha.maxY ?? 80) - (ha.minY ?? 0))
+    const t = Math.max(0, Math.min(1, (y - (ha.minY ?? 0)) / span))
+    const bottom = ha.bottom ?? 0.9
+    const top = ha.top ?? 1.12
+    return bottom + (top - bottom) * t
+  }
+
+  /**
    * Appends one quad. Vertices must be given counter-clockwise when seen from
    * the visible side.
    * @param verts  four {x,y,z}
@@ -102,8 +116,11 @@ export class MeshBuilder {
       this.uvs.push(uu, vv)
       // Contact darkening grounds vertical walls and prop sides. Applying it
       // to horizontal roads/plazas merely muddies every surface at y=0.
-      const contact = Math.abs(ny) < 0.5 ? this.contact(v.y) : 1
-      const s = baseShade * (opts.emissive ? 1 : contact)
+      // Height ambient gives walls a soft top-to-bottom wash (PS2 Gouraud).
+      const wall = Math.abs(ny) < 0.5
+      const contact = wall ? this.contact(v.y) : 1
+      const height = wall && !opts.emissive ? this.heightAmb(v.y) : 1
+      const s = baseShade * (opts.emissive ? 1 : contact * height)
       this.col.push(rgb.r * s, rgb.g * s, rgb.b * s)
     }
 
