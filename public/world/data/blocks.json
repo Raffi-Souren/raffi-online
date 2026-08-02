@@ -16,81 +16,87 @@
 
   "archetypes": {
     "brownstone": {
-      "$comment": "The Heights. Narrow, repetitive, stoops facing the street. Reads as a row when packed.",
+      "$comment": "The Heights. InfiniTown-style base + shaft, pilasters, stoops. Reads as a row when packed.",
       "footprint": { "wMin": 9, "wMax": 14, "dMin": 16, "dMax": 24 },
       "floors": { "min": 3, "max": 5 },
       "floorHeight": 3.6,
       "setback": { "mode": "none" },
-      "cap": { "type": "cornice", "height": 0.9, "overhang": 0.45 },
+      "massing": { "baseFloors": 1, "baseOutset": 0.1, "baseHeightScale": 1.18, "pilasters": true, "windowStyle": "recessed", "ledgeColor": "#c4b8a8", "frameColor": "#d8cfc0" },
+      "cap": { "type": "cornice", "height": 1.0, "overhang": 0.5 },
       "windows": { "tile": "window-brownstone", "colsPer": 3.1, "rowsPerFloor": 1, "litChance": { "haze": 0.02, "dusk": 0.35, "night": 0.6 } },
       "facade": ["brick-red", "brick-brown", "brownstone-tan", "brick-grey"],
       "stoop": { "chance": 0.85, "width": 3.2, "depth": 2.6, "steps": 5 },
       "roofProps": { "chance": 0.4, "types": ["chimney", "water-tank", "vent"], "max": 2 },
-      "triBudget": 220
+      "triBudget": 420
     },
     "rowhouse-corner": {
-      "$comment": "Wider corner variant with ground-floor retail. Anchors block ends.",
+      "$comment": "Wider corner with storefront base + residential shaft.",
       "footprint": { "wMin": 16, "wMax": 24, "dMin": 18, "dMax": 26 },
       "floors": { "min": 3, "max": 6 },
       "floorHeight": 3.6,
       "setback": { "mode": "none" },
-      "cap": { "type": "cornice", "height": 1.1, "overhang": 0.5 },
+      "massing": { "baseFloors": 1, "baseOutset": 0.14, "baseHeightScale": 1.25, "pilasters": true, "windowStyle": "recessed", "ledgeColor": "#c4b8a8" },
+      "cap": { "type": "cornice", "height": 1.15, "overhang": 0.55 },
       "windows": { "tile": "window-brownstone", "colsPer": 3.4, "rowsPerFloor": 1, "litChance": { "haze": 0.04, "dusk": 0.4, "night": 0.62 } },
       "facade": ["brick-red", "brick-grey", "brownstone-tan"],
       "ground": { "type": "retail", "awningChance": 0.7, "signChance": 0.8 },
       "roofProps": { "chance": 0.5, "types": ["water-tank", "vent", "aerial"], "max": 2 },
-      "triBudget": 300
+      "triBudget": 520
     },
     "glass-tower": {
-      "$comment": "Downtown. Flat curtain wall, strong vertical mullions, single setback near the top.",
+      "$comment": "Downtown. Plinth + curtain shaft + top setback + mech crown.",
       "footprint": { "wMin": 26, "wMax": 44, "dMin": 26, "dMax": 44 },
-      "floors": { "min": 14, "max": 34 },
+      "floors": { "min": 14, "max": 28 },
       "floorHeight": 4.0,
-      "setback": { "mode": "single", "atFraction": 0.78, "inset": 0.16 },
-      "cap": { "type": "mech-box", "height": 5.0, "inset": 0.3 },
+      "setback": { "mode": "single", "atFraction": 0.76, "inset": 0.14 },
+      "massing": { "baseFloors": 2, "baseOutset": 0.22, "baseHeightScale": 1.15, "windowStyle": "curtain", "belts": true, "ledgeColor": "#8a9aaa", "baseColor": "#d0d6dc" },
+      "cap": { "type": "mech-box", "height": 5.0, "inset": 0.28 },
       "windows": { "tile": "window-curtain", "colsPer": 4.2, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.3, "night": 0.45 } },
       "facade": ["glass-blue", "glass-teal", "glass-smoke", "glass-bronze"],
       "roofProps": { "chance": 0.9, "types": ["mast", "hvac", "beacon"], "max": 3 },
-      "triBudget": 340
+      "triBudget": 700
     },
     "setback-tower": {
-      "$comment": "Older Downtown stock. Wedding-cake massing, three setbacks.",
+      "$comment": "Wedding-cake massing with plinth — classic InfiniTown downtown.",
       "footprint": { "wMin": 30, "wMax": 46, "dMin": 28, "dMax": 42 },
-      "floors": { "min": 10, "max": 22 },
+      "floors": { "min": 10, "max": 20 },
       "floorHeight": 3.9,
-      "setback": { "mode": "stepped", "steps": 3, "inset": 0.13 },
-      "cap": { "type": "crown", "height": 6.0, "inset": 0.45 },
+      "setback": { "mode": "stepped", "steps": 3, "inset": 0.12 },
+      "massing": { "baseFloors": 1, "baseOutset": 0.18, "baseHeightScale": 1.2, "windowStyle": "recessed", "ledgeColor": "#c8c2b4", "baseColor": "#e4dfd4" },
+      "cap": { "type": "crown", "height": 5.5, "inset": 0.4 },
       "windows": { "tile": "window-grid", "colsPer": 3.6, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.35, "night": 0.5 } },
       "facade": ["stone-cream", "stone-grey", "brick-grey"],
       "roofProps": { "chance": 0.8, "types": ["mast", "water-tank", "beacon"], "max": 2 },
-      "triBudget": 420
+      "triBudget": 780
     },
     "lowrise-retail": {
-      "$comment": "Everywhere. Two-storey filler with signage doing the talking.",
+      "$comment": "Storefront plinth + short upper shaft, parapet crown.",
       "footprint": { "wMin": 14, "wMax": 30, "dMin": 14, "dMax": 24 },
-      "floors": { "min": 1, "max": 3 },
-      "floorHeight": 4.2,
+      "floors": { "min": 2, "max": 3 },
+      "floorHeight": 4.0,
       "setback": { "mode": "none" },
-      "cap": { "type": "parapet", "height": 0.8, "overhang": 0.15 },
+      "massing": { "baseFloors": 1, "baseOutset": 0.12, "baseHeightScale": 1.3, "windowStyle": "recessed", "ledgeColor": "#d0c8b8" },
+      "cap": { "type": "parapet", "height": 0.9, "overhang": 0.18 },
       "windows": { "tile": "window-shop", "colsPer": 3.8, "rowsPerFloor": 1, "litChance": { "haze": 0.1, "dusk": 0.5, "night": 0.7 } },
       "facade": ["stucco-cream", "stucco-mint", "brick-red", "panel-grey"],
       "ground": { "type": "retail", "awningChance": 0.55, "signChance": 0.95 },
       "roofProps": { "chance": 0.35, "types": ["hvac", "vent"], "max": 2 },
-      "triBudget": 190
+      "triBudget": 380
     },
     "neon-lowrise": {
-      "$comment": "The Strip. Same massing as lowrise-retail but every sign is emissive and the palette is saturated.",
+      "$comment": "Strip retail — bold base, emissive signs, flat parapet.",
       "footprint": { "wMin": 14, "wMax": 32, "dMin": 14, "dMax": 26 },
-      "floors": { "min": 1, "max": 3 },
-      "floorHeight": 4.2,
+      "floors": { "min": 2, "max": 3 },
+      "floorHeight": 4.0,
       "setback": { "mode": "none" },
-      "cap": { "type": "parapet", "height": 1.2, "overhang": 0.2 },
+      "massing": { "baseFloors": 1, "baseOutset": 0.16, "baseHeightScale": 1.35, "windowStyle": "recessed", "ledgeColor": "#6a6070", "baseColor": "#3a3540", "frameColor": "#e8e0f0" },
+      "cap": { "type": "parapet", "height": 1.25, "overhang": 0.22 },
       "windows": { "tile": "window-shop", "colsPer": 3.6, "rowsPerFloor": 1, "litChance": { "haze": 0.2, "dusk": 0.7, "night": 0.95 } },
       "facade": ["panel-black", "stucco-plum", "panel-teal", "brick-grey"],
       "ground": { "type": "retail", "awningChance": 0.4, "signChance": 1.0 },
       "neon": { "chance": 1.0, "types": ["blade-sign", "box-sign", "tube-outline"], "palette": ["#FF3D8A", "#39E6FF", "#FFE347", "#B14BFF", "#3DFF9E"], "flickerChance": 0.22 },
       "roofProps": { "chance": 0.55, "types": ["blade-sign", "hvac", "aerial"], "max": 2 },
-      "triBudget": 240
+      "triBudget": 420
     },
     "warehouse": {
       "$comment": "The Yards. Long, low, corrugated. Roll-up doors face the lot.",
@@ -98,36 +104,39 @@
       "floors": { "min": 1, "max": 1 },
       "floorHeight": 11.0,
       "setback": { "mode": "none" },
+      "massing": { "baseFloors": 0, "windowStyle": "recessed", "belts": false },
       "cap": { "type": "sawtooth", "height": 2.4, "teeth": 5 },
       "windows": { "tile": "window-clerestory", "colsPer": 6.5, "rowsPerFloor": 1, "litChance": { "haze": 0.05, "dusk": 0.2, "night": 0.35 } },
       "facade": ["corrugated-blue", "corrugated-rust", "corrugated-grey"],
       "ground": { "type": "roll-door", "count": 3 },
       "roofProps": { "chance": 0.6, "types": ["vent", "hvac"], "max": 3 },
-      "triBudget": 260
+      "triBudget": 320
     },
     "parking-structure": {
-      "$comment": "Open-deck garage. Reads as horizontal bands with cars parked inside on the visible faces only.",
+      "$comment": "Open-deck garage. Horizontal bands, no punched windows.",
       "footprint": { "wMin": 34, "wMax": 52, "dMin": 30, "dMax": 44 },
       "floors": { "min": 3, "max": 6 },
       "floorHeight": 3.2,
       "setback": { "mode": "none" },
+      "massing": { "baseFloors": 0, "windowStyle": "none", "belts": true, "ledgeColor": "#9a9890" },
       "cap": { "type": "open-deck", "height": 1.0 },
       "windows": { "tile": "deck-band", "colsPer": 1, "rowsPerFloor": 1, "litChance": { "haze": 0, "dusk": 0.3, "night": 0.55 } },
       "facade": ["concrete-pale", "concrete-stain"],
       "roofProps": { "chance": 0.3, "types": ["light-mast"], "max": 4 },
-      "triBudget": 210
+      "triBudget": 280
     },
     "shed": {
-      "$comment": "Small industrial filler; also used for tailgate lot structures in The Bowl.",
+      "$comment": "Small industrial filler; gable roof sells non-cube silhouette.",
       "footprint": { "wMin": 8, "wMax": 18, "dMin": 8, "dMax": 16 },
       "floors": { "min": 1, "max": 1 },
       "floorHeight": 4.5,
       "setback": { "mode": "none" },
+      "massing": { "baseFloors": 0, "windowStyle": "recessed", "belts": false },
       "cap": { "type": "gable", "height": 1.8 },
       "windows": { "tile": "window-clerestory", "colsPer": 5, "rowsPerFloor": 1, "litChance": { "haze": 0.02, "dusk": 0.1, "night": 0.2 } },
       "facade": ["corrugated-grey", "corrugated-rust", "panel-grey"],
       "roofProps": { "chance": 0.2, "types": ["vent"], "max": 1 },
-      "triBudget": 90
+      "triBudget": 120
     }
   },
 
