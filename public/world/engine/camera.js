@@ -1,11 +1,11 @@
 /**
  * RAFFI WORLD — camera rig with selectable modes.
  *
- * Modes (cycle with CAM / C):
- *   classic — original fixed 3/4 orthographic iso (WORLD-BIBLE default)
- *   birds   — high bird's-eye ortho so streets between buildings read
- *   chase   — third-person behind the player (perspective, GTA/Vice City vibe)
- *   free    — free-look third person; Q/X orbit yaw, pitch stays comfortable
+ * Modes (cycle with CAM / C / V) — first C jumps into real 3D:
+ *   classic — fixed 3/4 orthographic iso (default)
+ *   chase   — third-person perspective behind the player (GTA / Spidey vibe)
+ *   free    — free-look third person; Q/X orbit yaw
+ *   birds   — high bird's-eye ortho
  *
  * Movement input stays screen-relative via movementBasis() using currentYaw.
  */
@@ -15,12 +15,12 @@ import { data, state, damp, clamp, lerp } from './state.js'
 
 const DEG = Math.PI / 180
 
-/** Ordered camera modes. Labels are for HUD / toast. */
+/** Ordered camera modes. Labels are for HUD / toast. First cycle step = 3D. */
 export const CAMERA_MODES = [
   { id: 'classic', label: 'CLASSIC ISO', kind: 'ortho' },
-  { id: 'birds', label: "BIRD'S EYE", kind: 'ortho' },
-  { id: 'chase', label: 'CHASE CAM', kind: 'persp' },
+  { id: 'chase', label: 'CHASE 3D', kind: 'persp' },
   { id: 'free', label: 'FREE 3D', kind: 'persp' },
+  { id: 'birds', label: "BIRD'S EYE", kind: 'ortho' },
 ]
 
 export const cam = {
@@ -63,7 +63,7 @@ export function getCameraMode() {
   return CAMERA_MODES[cam.modeIndex] || CAMERA_MODES[0]
 }
 
-/** Cycle classic → birds → chase → free → classic. Returns new mode descriptor. */
+/** Cycle classic → chase 3D → free 3D → birds → classic. Returns mode descriptor. */
 export function cycleCameraMode(dir = 1) {
   const n = CAMERA_MODES.length
   cam.modeIndex = (cam.modeIndex + (dir >= 0 ? 1 : n - 1)) % n
@@ -77,14 +77,19 @@ export function cycleCameraMode(dir = 1) {
     if (mode.id === 'classic') {
       const snap = (data.world.camera.yawSnapDeg || 90) * DEG
       cam.desiredYaw = Math.round(cam.currentYaw / snap) * snap
+      cam.desiredPitch = (data.world.camera.pitchDeg || 55) * DEG
+    } else if (mode.id === 'birds') {
+      cam.desiredPitch = (data.world.camera.birdsPitchDeg || 72) * DEG
     }
   } else {
     cam.camera = cam.persp
-    if (mode.id === 'chase') {
-      // Align behind player facing.
-      cam.desiredYaw = (state.player.yaw || 0) + Math.PI
-      cam.desiredPitch = 0.38
-    }
+    // Snap behind the actor so the first frame of 3D is readable.
+    cam.desiredYaw = (state.player.yaw || 0) + Math.PI
+    cam.currentYaw = cam.desiredYaw
+    cam.desiredPitch = mode.id === 'free' ? 0.42 : 0.36
+    cam.pitch = cam.desiredPitch
+    // Pull chase distance into a street-level range immediately.
+    if (cam.chaseDistance < 14 || cam.chaseDistance > 28) cam.chaseDistance = 18
   }
   return mode
 }

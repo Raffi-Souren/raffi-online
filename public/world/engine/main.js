@@ -505,7 +505,7 @@ function startGame() {
   bus.emit('start')
   const d = districtAt(state.player.x, state.player.z)
   if (d) bus.emit('district', d)
-  if (!query.auto) toast('WASD / stick to move  ·  E to interact', 4)
+  if (!query.auto) toast('WASD move  ·  E interact  ·  C camera (3D)', 4.5)
   if (query.to) {
     queueDialogue(['greeter-hello', 'greeter-brief', 'greeter-quest'], {
       substitutions: { name: query.to },
@@ -543,11 +543,15 @@ function loop(now) {
     updateTransport(dt)
 
     if (consume('radio')) cycleStation(1)
-    // CAM / C cycles classic iso → bird's eye → chase → free 3D (GTA-style).
-    // Q / X still snap (iso) or orbit (chase/free).
+    // CAM / C / V: classic → CHASE 3D → FREE 3D → birds → classic.
+    // First press leaves iso into real perspective (what players expect from C).
+    // Q / X snap (iso) or orbit (chase/free).
     if (consume('cam')) {
       const mode = cycleCameraMode(1)
-      toast('CAMERA · ' + mode.label, 1.8)
+      const tip = mode.kind === 'persp'
+        ? (mode.id === 'chase' ? ' · Q/X orbit · C again FREE' : ' · Q/X orbit · C again')
+        : ' · C again for 3D'
+      toast('CAMERA · ' + mode.label + tip, 2.2)
     }
     if (consume('rotate-left')) rotateView(1)
     if (consume('rotate-right')) rotateView(-1)
