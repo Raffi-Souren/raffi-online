@@ -319,9 +319,12 @@
       "collide": null,
       "instanced": false,
       "spins": true,
+      "$comment": "Tall beacon so GPS goals stay visible between buildings under iso/chase cams.",
       "parts": [
-        { "shape": "cyl", "r": 1.6, "h": 0.06, "y": 0.06, "seg": 12, "color": "#FFE347", "emissive": 0.7, "alpha": 0.5 },
-        { "shape": "cone", "r": 0.9, "h": 2.2, "y": 2.6, "seg": 6, "color": "#FFE347", "emissive": 1, "flipY": true }
+        { "shape": "cyl", "r": 1.8, "h": 0.08, "y": 0.06, "seg": 12, "color": "#FFE347", "emissive": 0.75, "alpha": 0.55 },
+        { "shape": "cyl", "r": 0.22, "h": 14.0, "y": 7.0, "seg": 8, "color": "#FFE347", "emissive": 1.0 },
+        { "shape": "cyl", "r": 0.55, "h": 0.35, "y": 14.2, "seg": 8, "color": "#FF3D8A", "emissive": 1.0 },
+        { "shape": "cone", "r": 1.0, "h": 2.4, "y": 16.0, "seg": 6, "color": "#FFE347", "emissive": 1, "flipY": true }
       ]
     },
     "garage-pad": {

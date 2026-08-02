@@ -50,8 +50,8 @@ export function initDebug(elements, collisionWorld) {
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyF') toggle('fly')
     else if (e.code === 'KeyG') toggle('wire')
-    else if (e.code === 'KeyC') toggle('collide')
-    else if (e.code === 'KeyV') toggle('grade')
+    else if (e.code === 'KeyB') toggle('collide')
+    // KeyV / KeyC cycle play cameras in main; grade still via debug panel button.
     else return
     syncButtons()
   })

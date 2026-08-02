@@ -10,7 +10,10 @@ import {
   districtAt, gradeForHour, currentHour, clamp,
 } from './state.js'
 import { initRenderer, initMaterials, applyGrade, resize, renderFrame, gfx } from './render.js'
-import { initCamera, updateCamera, rotateView, setPinch, cam } from './camera.js'
+import {
+  initCamera, updateCamera, rotateView, setPinch, cam,
+  cycleCameraMode, getCameraMode, setCameraMode,
+} from './camera.js'
 import { initInput, updateInput, endInputFrame, input, consume, setActionLabel, setSecondLabel, setCamLabel } from './input.js'
 import { CollisionWorld, resolveCircle, clampToBounds } from './physics.js'
 import { buildAtlas } from '../gen/atlas.js'
@@ -469,6 +472,9 @@ async function boot() {
     setComplianceTier,
     complianceSnapshot,
     pursuitSnapshot,
+    cycleCameraMode,
+    getCameraMode,
+    setCameraMode,
     debugPullPursuersToPlayer: async () => {
       const mod = await import('../game/pursuit.js')
       mod.debugPullPursuersToPlayer()
@@ -535,7 +541,12 @@ function loop(now) {
     updateTransport(dt)
 
     if (consume('radio')) cycleStation(1)
-    if (consume('cam') && state.mode !== 'vehicle') rotateView(1)
+    // CAM / C cycles classic iso → bird's eye → chase → free 3D (GTA-style).
+    // Q / X still snap (iso) or orbit (chase/free).
+    if (consume('cam')) {
+      const mode = cycleCameraMode(1)
+      toast('CAMERA · ' + mode.label, 1.8)
+    }
     if (consume('rotate-left')) rotateView(1)
     if (consume('rotate-right')) rotateView(-1)
 
@@ -546,7 +557,7 @@ function loop(now) {
     const dialogueBlocking = isDialogueBlocking()
     setActionLabel(dialogueBlocking ? 'NEXT' : state.mode === 'vehicle' ? controls?.action || 'GAS' : ctx.label)
     setSecondLabel(state.mode === 'vehicle' ? controls?.second || 'BRAKE' : 'RUN')
-    setCamLabel(state.mode === 'vehicle' ? controls?.cam || 'DRIFT' : 'CAM')
+    setCamLabel(getCameraMode().label.split(' ')[0] || 'CAM')
     els.exit?.classList.toggle('hidden', state.mode !== 'vehicle')
     els.touchRoot?.classList.toggle('mounted', state.mode === 'vehicle')
     els.touchRoot?.classList.toggle('dialogue', dialogueBlocking)

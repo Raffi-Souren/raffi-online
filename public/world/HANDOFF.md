@@ -1,5 +1,30 @@
 # RAFFI WORLD — Handoff
 
+## [2026-08-02 19:45] FROM: grok — CAMERA MODES + MISSION BEACON
+
+**Why:** DEAL CLOCK "drive to marker (1/4)" goals sit between buildings under
+fixed iso and disappear behind roofs. Players also asked for GTA III / Vice
+City style third-person options.
+
+**Shipped:** four selectable camera modes (cycle **CAM** button / **C** / **V**):
+
+| Mode | Kind | Notes |
+|---|---|---|
+| CLASSIC ISO | ortho | Original 3/4 fixed iso (default) |
+| BIRD'S EYE | ortho | Higher pitch + wider ortho so streets between blocks read |
+| CHASE CAM | perspective | Behind player/vehicle, follows yaw |
+| FREE 3D | perspective | Orbit with **Q/X**, Vice City–style free third person |
+
+**Waypoint visibility:** mission marker is a tall generated beacon; an X-ray
+column (`depthTest: false`) draws through buildings so the active GPS goal
+stays visible. Minimap route remains the navigation source of truth.
+
+**Controls:** Q/X snap (iso) or orbit (chase/free). Space still handbrake.
+CAM no longer doubles as vehicle drift.
+
+**Not claimed:** full free-look mouse orbit, first-person, or Kimi-style
+cinematic tools — those stay out of scope. Classic iso remains the default.
+
 ## [2026-08-02 19:10] FROM: grok — COMPLIANCE PURSUIT + CALENDAR CATCH
 
 **Shipped:** COMPLIANCE is now a real pursuit loop. `game/pursuit-core.js`

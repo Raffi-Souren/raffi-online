@@ -6,6 +6,7 @@
  * never offered, so authored future missions cannot masquerade as finished.
  */
 
+import * as THREE from 'three'
 import { state, data, bus, clamp } from '../engine/state.js'
 import { setWaypoint, setObjective, setCompliance } from './hud.js'
 import { queueDialogue } from './dialogue.js'
@@ -23,6 +24,8 @@ const SUPPORTED_KINDS = new Set(['timer', 'goto', 'goto-vehicle'])
 
 let deps = null
 let marker = null
+/** See-through beacon so goals between buildings stay visible under iso/chase. */
+let beacon = null
 let offered = null
 let run = null
 let loaners = new Map()
@@ -49,6 +52,40 @@ export function initMissions(options) {
     marker.name = 'active-mission-marker'
     options.scene.add(marker)
   }
+
+  // X-ray column: depthTest off so "drive to marker 1/4" is never lost behind
+  // a brownstone. Generated geometry only — no sprites.
+  beacon = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.35, 0.55, 22, 8),
+    new THREE.MeshBasicMaterial({
+      color: '#FFE347',
+      transparent: true,
+      opacity: 0.42,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  )
+  beacon.name = 'mission-beacon-xray'
+  beacon.visible = false
+  beacon.frustumCulled = false
+  beacon.renderOrder = 30
+  options.scene.add(beacon)
+
+  const tip = new THREE.Mesh(
+    new THREE.ConeGeometry(1.1, 2.2, 6),
+    new THREE.MeshBasicMaterial({
+      color: '#FF3D8A',
+      transparent: true,
+      opacity: 0.85,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  )
+  tip.position.y = 12.2
+  tip.rotation.x = Math.PI
+  beacon.add(tip)
 
   offered = nextSupportedMission()
   setMarker(offered?.marker || null)
@@ -210,9 +247,14 @@ function completeMission() {
 }
 
 function setMarker(point) {
-  if (!marker) return
-  marker.visible = !!point
-  if (point) marker.position.set(point.x, 0.04, point.z)
+  if (marker) {
+    marker.visible = !!point
+    if (point) marker.position.set(point.x, 0.04, point.z)
+  }
+  if (beacon) {
+    beacon.visible = !!point
+    if (point) beacon.position.set(point.x, 11, point.z)
+  }
 }
 
 export function missionSnapshot() {

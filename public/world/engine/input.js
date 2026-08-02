@@ -44,6 +44,9 @@ const keyMap = {
   Tab: 'pause', Escape: 'pause',
   KeyQ: 'rotate-left',
   KeyX: 'rotate-right',
+  // Cycle camera mode (classic / birds / chase / free). Touch uses #btn-cam.
+  KeyC: 'cam',
+  KeyV: 'cam',
 }
 
 const keys = new Set()
@@ -261,7 +264,8 @@ export function updateInput(mode) {
   input.moveAmount = Math.min(len, 1)
 
   input.run = keys.has('run') || (mode !== 'vehicle' && input.held.has('second'))
-  input.handbrake = keys.has('space') || keys.has('handbrake') || (mode === 'vehicle' && input.held.has('cam'))
+  // Space = handbrake. CAM is reserved for camera-mode cycling, not drift.
+  input.handbrake = keys.has('space') || keys.has('handbrake')
 
   if (mode === 'vehicle') {
     // On touch the right thumb drives; on desktop the stick's Y axis does.

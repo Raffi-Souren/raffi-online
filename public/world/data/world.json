@@ -249,6 +249,8 @@
   "camera": {
     "$comment": "Fixed 3/4 iso. Pitch and yaw are law — see WORLD-BIBLE §4. Yaw snaps in 90° steps only.",
     "pitchDeg": 55,
+    "birdsPitchDeg": 72,
+    "birdsOrthoScale": 1.9,
     "yawDeg": 45,
     "yawSnapDeg": 90,
     "orthoHeightFoot": 46,
