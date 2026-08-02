@@ -462,7 +462,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   )
 
   const handleJogWheelScroll = useCallback(
-    (event: React.WheelEvent<HTMLDivElement>) => {
+    (event: WheelEvent) => {
       event.preventDefault()
 
       const now = performance.now()
@@ -593,6 +593,14 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     wheel.addEventListener("touchmove", handleTouchMove, { passive: false })
     return () => wheel.removeEventListener("touchmove", handleTouchMove)
   }, [handleWheelMove])
+
+  useEffect(() => {
+    const wheel = wheelRef.current
+    if (!wheel) return
+
+    wheel.addEventListener("wheel", handleJogWheelScroll, { passive: false })
+    return () => wheel.removeEventListener("wheel", handleJogWheelScroll)
+  }, [handleJogWheelScroll])
 
   const getScreenTitle = () => {
     switch (currentScreen) {
@@ -950,7 +958,6 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        onWheel={handleJogWheelScroll}
       >
         <button
           type="button"
