@@ -86,10 +86,13 @@ export function cycleCameraMode(dir = 1) {
     // Snap behind the actor so the first frame of 3D is readable.
     cam.desiredYaw = (state.player.yaw || 0) + Math.PI
     cam.currentYaw = cam.desiredYaw
-    cam.desiredPitch = mode.id === 'free' ? 0.42 : 0.36
+    const mounted = state.mode === 'vehicle'
+    cam.desiredPitch = mounted
+      ? (mode.id === 'free' ? 0.48 : 0.52)
+      : (mode.id === 'free' ? 0.42 : 0.38)
     cam.pitch = cam.desiredPitch
-    // Pull chase distance into a street-level range immediately.
-    if (cam.chaseDistance < 14 || cam.chaseDistance > 28) cam.chaseDistance = 18
+    // Street-level chase pullback; rides need more room than foot.
+    cam.chaseDistance = mounted ? 20 : 16
   }
   return mode
 }
@@ -158,14 +161,19 @@ export function addShake(amount) {
 export function updateCamera(dt, focus, velocity, aspect) {
   const c = data.world.camera
   const mode = getCameraMode()
+  const mounted = state.mode === 'vehicle'
+  const persp = mode.kind === 'persp'
 
   // Ortho zoom target (foot vs vehicle).
-  const wantHeight = state.mode === 'vehicle'
+  const wantHeight = mounted
     ? state.player.mountCameraHeight || c.orthoHeightVehicle
     : c.orthoHeightFoot
   state.camera.orthoHeight = damp(state.camera.orthoHeight, wantHeight, c.zoomLerp, dt)
 
-  const laScale = state.mode === 'vehicle' ? c.lookAheadVehicle : c.lookAheadFoot
+  // Chase/free: almost no look-ahead — big look-ahead shoved the focus past the
+  // car and parked the ride under the bottom of the frame ("behind the screen").
+  let laScale = mounted ? c.lookAheadVehicle : c.lookAheadFoot
+  if (persp) laScale = mounted ? 0.12 : 0.18
   const ax = clamp(velocity.x * laScale, -c.lookAheadMax, c.lookAheadMax)
   const az = clamp(velocity.z * laScale, -c.lookAheadMax, c.lookAheadMax)
 
@@ -177,28 +185,36 @@ export function updateCamera(dt, focus, velocity, aspect) {
     while (dy > Math.PI) dy -= Math.PI * 2
     while (dy < -Math.PI) dy += Math.PI * 2
     // Fast catch-up so turning doesn't fight movementBasis lag.
-    cam.desiredYaw += dy * Math.min(1, dt * 8.5)
-    cam.desiredPitch = 0.34
+    cam.desiredYaw += dy * Math.min(1, dt * (mounted ? 11 : 8.5))
+    // Higher pitch when mounted = look down more, car sits mid/lower-third.
+    cam.desiredPitch = mounted ? 0.52 : 0.38
   } else if (mode.id === 'free') {
-    cam.desiredPitch = clamp(cam.desiredPitch, 0.12, 1.1)
+    // Keep free cam from going flat on the road when riding.
+    const minP = mounted ? 0.28 : 0.16
+    cam.desiredPitch = clamp(cam.desiredPitch, minP, 1.15)
+    if (mounted && cam.desiredPitch < 0.4) cam.desiredPitch = 0.44
   } else if (mode.id === 'birds') {
     cam.desiredPitch = (c.birdsPitchDeg || 72) * DEG
   } else {
     cam.desiredPitch = (c.pitchDeg || 55) * DEG
   }
 
-  const yawFollow = mode.id === 'chase' ? 14 : mode.kind === 'persp' ? 8 : 7.5
+  const yawFollow = mode.id === 'chase' ? (mounted ? 16 : 14) : mode.kind === 'persp' ? 8 : 7.5
   cam.currentYaw = damp(cam.currentYaw, cam.desiredYaw, yawFollow, dt)
-  cam.pitch = damp(cam.pitch, cam.desiredPitch, 8, dt)
+  cam.pitch = damp(cam.pitch, cam.desiredPitch, 9, dt)
   state.camera.yaw = cam.currentYaw
   state.camera.mode = mode.id
 
   const focusY = focus.y || 0
-  // Tighter follow in chase so the character doesn't skate under a lagging rig.
-  const follow = mode.id === 'chase' ? Math.max(c.followLerp, 11) : c.followLerp
+  // Stick hard to the actor in 3D so the mount never races past the lens.
+  const follow = mode.id === 'chase'
+    ? Math.max(c.followLerp, mounted ? 16 : 12)
+    : (persp ? Math.max(c.followLerp, 10) : c.followLerp)
+  // Aim the follow point slightly *above* the deck/roof so look-at isn't floor-level.
+  const aimLift = persp ? (mounted ? 1.35 : 1.1) : 0
   cam.target.x = damp(cam.target.x, focus.x + ax, follow, dt)
   cam.target.z = damp(cam.target.z, focus.z + az, follow, dt)
-  cam.target.y = damp(cam.target.y, focusY + (mode.kind === 'persp' ? 1.15 : 0), follow, dt)
+  cam.target.y = damp(cam.target.y, focusY + aimLift, follow, dt)
 
   let sx = 0
   let sy = 0
@@ -209,8 +225,8 @@ export function updateCamera(dt, focus, velocity, aspect) {
     cam.shake = damp(cam.shake, 0, 6, dt)
   }
 
-  if (mode.kind === 'persp') {
-    updatePerspRig(mode, sx, sy)
+  if (persp) {
+    updatePerspRig(mode, sx, sy, focus)
   } else {
     updateOrthoRig(mode, c, sx, sy)
   }
@@ -239,25 +255,41 @@ function updateOrthoRig(mode, c, sx, sy) {
   cam.camera = cam.ortho
 }
 
-function updatePerspRig(mode, sx, sy) {
-  const dist = cam.chaseDistance * (state.mode === 'vehicle' ? 1.45 : 1.05)
+function updatePerspRig(mode, sx, sy, focus = null) {
+  const mounted = state.mode === 'vehicle'
+  // Pull back + up on rides so the body never sits under the bottom edge
+  // or slips "behind" the near plane while accelerating.
+  const distMul = mounted ? (mode.id === 'free' ? 2.15 : 2.35) : 1.12
+  const dist = Math.max(mounted ? 22 : 14, cam.chaseDistance * distMul)
   const pitch = cam.pitch
   const yaw = cam.currentYaw
   // Camera sits on the orbit ring and looks at the actor (GTA III / VC style).
   const horiz = Math.cos(pitch)
   const ox = Math.sin(yaw) * horiz * dist
-  const oy = Math.sin(pitch) * dist + (state.mode === 'vehicle' ? 1.6 : 0.85)
+  const oy = Math.sin(pitch) * dist + (mounted ? 3.4 : 1.15)
   const oz = Math.cos(yaw) * horiz * dist
 
-  cam.persp.position.set(
-    cam.target.x + ox + sx * 0.12,
-    Math.max(1.2, cam.target.y + oy + sy * 0.12),
-    cam.target.z + oz
-  )
+  // Anchor orbit on the actor when we have a fresh focus (not a lagging aim).
+  const ax = focus ? focus.x : cam.target.x
+  const az = focus ? focus.z : cam.target.z
+  const ay = focus ? (focus.y || 0) : cam.target.y
+
+  const camX = ax + ox + sx * 0.12
+  const camY = Math.max(mounted ? 4.2 : 2.0, ay + oy + sy * 0.12)
+  const camZ = az + oz
+
+  cam.persp.position.set(camX, camY, camZ)
+
+  // Look slightly above the ride and a touch toward the lens so the vehicle
+  // lands in the lower-middle of the frame, never off the bottom.
+  const lookY = ay + (mounted ? 1.15 : 1.35)
+  const toCamX = camX - ax
+  const toCamZ = camZ - az
+  const back = 0.12 // bias look back toward camera
   const look = new THREE.Vector3(
-    cam.target.x,
-    cam.target.y + (mode.id === 'free' ? 1.25 : 1.45),
-    cam.target.z
+    ax + toCamX * back,
+    lookY,
+    az + toCamZ * back
   )
   cam.persp.lookAt(look)
   cam.camera = cam.persp
