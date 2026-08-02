@@ -2,7 +2,7 @@
   "$schema": "props",
   "$comment": "Prop archetypes as primitive recipes. gen/props.js is a dumb interpreter: it reads `parts` and emits geometry, so a new prop needs zero new code. Shapes: box(w,h,d) cyl(r,rTop,h,seg) cone(r,h,seg) sphere(r,seg) plane(w,d). Transform keys: x y z rx ry rz. `emissive` marks a part as unlit-bright (neon, screens, headlights) and exempts it from vertex lighting.",
 
-  "defaults": { "seg": 5, "emissive": 0, "collide": null, "instanced": true },
+  "defaults": { "seg": 4, "emissive": 0, "collide": null, "instanced": true },
 
   "props": {
     "streetlight-heritage": {
@@ -244,9 +244,8 @@
       "collide": { "type": "circle", "r": 0.5 },
       "castsBlob": true,
       "parts": [
-        { "shape": "cyl", "r": 0.24, "rTop": 0.18, "h": 3.2, "y": 1.6, "seg": 5, "color": "#4A3A2A" },
-        { "shape": "sphere", "r": 2.1, "y": 4.4, "seg": 5, "color": "#3E6B34", "paletteRole": "leaf" },
-        { "shape": "sphere", "r": 1.5, "y": 5.6, "x": 0.6, "seg": 5, "color": "#4A7A3E", "paletteRole": "leaf" }
+        { "shape": "cyl", "r": 0.24, "rTop": 0.18, "h": 3.2, "y": 1.6, "seg": 4, "color": "#4A3A2A", "caps": false },
+        { "shape": "cone", "r": 2.2, "h": 3.4, "y": 4.6, "seg": 4, "color": "#3E6B34", "paletteRole": "leaf" }
       ],
       "palette": { "leaf": ["#3E6B34", "#4A7A3E", "#577A32", "#356428"] }
     },
@@ -254,9 +253,8 @@
       "collide": { "type": "circle", "r": 0.5 },
       "castsBlob": true,
       "parts": [
-        { "shape": "cyl", "r": 0.26, "rTop": 0.18, "h": 4.6, "y": 2.3, "seg": 5, "color": "#4A3A2A" },
-        { "shape": "sphere", "r": 2.4, "y": 6.2, "seg": 5, "color": "#3E6B34", "paletteRole": "leaf" },
-        { "shape": "sphere", "r": 1.6, "y": 7.6, "x": -0.7, "seg": 5, "color": "#4A7A3E", "paletteRole": "leaf" }
+        { "shape": "cyl", "r": 0.26, "rTop": 0.18, "h": 4.6, "y": 2.3, "seg": 4, "color": "#4A3A2A", "caps": false },
+        { "shape": "cone", "r": 2.5, "h": 4.0, "y": 6.0, "seg": 4, "color": "#3E6B34", "paletteRole": "leaf" }
       ],
       "palette": { "leaf": ["#3E6B34", "#4A7A3E", "#577A32"] }
     },
@@ -265,8 +263,8 @@
       "castsBlob": true,
       "parts": [
         { "shape": "box", "w": 1.8, "h": 0.5, "d": 1.8, "y": 0.25, "color": "#9A958C" },
-        { "shape": "cyl", "r": 0.2, "h": 2.8, "y": 1.9, "seg": 5, "color": "#4A3A2A" },
-        { "shape": "sphere", "r": 1.5, "y": 3.9, "seg": 5, "color": "#456B38", "paletteRole": "leaf" }
+        { "shape": "cyl", "r": 0.2, "h": 2.8, "y": 1.9, "seg": 4, "color": "#4A3A2A", "caps": false },
+        { "shape": "cone", "r": 1.6, "h": 2.4, "y": 4.0, "seg": 4, "color": "#456B38", "paletteRole": "leaf" }
       ],
       "palette": { "leaf": ["#456B38", "#3E6B34"] }
     },
@@ -274,14 +272,13 @@
       "collide": { "type": "circle", "r": 0.4 },
       "castsBlob": true,
       "parts": [
-        { "shape": "cyl", "r": 0.22, "rTop": 0.16, "h": 7.0, "y": 3.5, "seg": 5, "color": "#6E5A3E" },
-        { "shape": "cone", "r": 2.2, "h": 1.1, "y": 7.3, "seg": 5, "color": "#3E6B4A" },
-        { "shape": "cone", "r": 1.5, "h": 0.8, "y": 7.9, "seg": 5, "color": "#4A7A56" }
+        { "shape": "cyl", "r": 0.22, "rTop": 0.16, "h": 7.0, "y": 3.5, "seg": 4, "color": "#6E5A3E", "caps": false },
+        { "shape": "cone", "r": 2.0, "h": 1.4, "y": 7.4, "seg": 4, "color": "#3E6B4A" }
       ]
     },
     "scrub": {
       "collide": null,
-      "parts": [{ "shape": "sphere", "r": 0.8, "y": 0.5, "seg": 4, "color": "#6E6B44" }]
+      "parts": [{ "shape": "cone", "r": 0.9, "h": 1.1, "y": 0.55, "seg": 4, "color": "#6E6B44" }]
     },
     "traffic-light": {
       "collide": { "type": "circle", "r": 0.3 },

@@ -36,7 +36,8 @@ function buildWater(scene, world, materials) {
 function buildFogCards(set, atlas, world) {
   for (const card of world.fogCards || []) {
     const rng = makeRng('card:' + card.id + ':' + card.seed)
-    const count = Math.floor(card.width / 26)
+    // ~half the silhouettes — backdrop should haze, not compete with city tris.
+    const count = Math.max(8, Math.floor(card.width / 48))
     const facingZ = card.facing === 'south' || card.facing === 'north'
     for (let i = 0; i < count; i++) {
       const t = i / count
@@ -44,7 +45,7 @@ function buildFogCards(set, atlas, world) {
       const h = card.silhouette === 'cranes'
         ? card.height * rng.range(0.4, 0.8)
         : card.height * rng.range(0.28, 1.0)
-      const w = rng.range(14, 30)
+      const w = rng.range(18, 36)
       const x = facingZ ? card.at.x + along : card.at.x
       const z = facingZ ? card.at.z : card.at.z + along
       set.opaque.box({
@@ -326,12 +327,15 @@ export function buildDistrict(district, ctx) {
     emitProp(set, atlas, data.props, 'repaint-sign', shop.at.x, 0, shop.at.z + 8, shop.yaw, rngShop)
   }
 
-  // A little scatter so open ground is not empty.
-  const scatter = findOpenSpots(district, lots, ctx.graph, data.world, district.id === 'yards' ? 60 : 18, 'scatter')
+  // A little scatter so open ground is not empty (capped for perf).
+  const scatterN = district.id === 'yards' ? 24 : district.id === 'bowl' ? 12 : 8
+  const scatter = findOpenSpots(district, lots, ctx.graph, data.world, scatterN, 'scatter')
   const rngScatter = makeRng('scatter:' + district.id)
   for (const spot of scatter) {
     const name = rngScatter.weighted(dcfg.propWeights)
     if (!data.props.props[name]) continue
+    // Skip heavy multi-part props in scatter (containers still ok in yards).
+    if (name === 'crane-small' || name === 'bus-shelter' || name === 'bleacher') continue
     const c = emitProp(set, atlas, data.props, name, spot.x, 0, spot.z, rngScatter.range(0, 6.28), rngScatter)
     if (c) colliders.push(c)
   }

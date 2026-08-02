@@ -126,7 +126,8 @@ function spawnParkedCars(scene, materials, atlas) {
     weights[id] = a.weight
   }
 
-  const perDistrict = device.mobile ? 4 : 7
+  // Each parked car is a full merged mesh + runtime animate — keep sparse.
+  const perDistrict = device.mobile ? 3 : 5
   for (const district of data.world.districts) {
     const lots = world.districts.get(district.id)?.lots || []
     const spots = findOpenSpots(district, lots, world.graph, data.world, perDistrict * 3, 'cars', 6)

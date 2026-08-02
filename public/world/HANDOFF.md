@@ -1,5 +1,14 @@
 # RAFFI WORLD — Handoff
 
+## [2026-08-02] FROM: grok — PERF PASS 2 (props / density / fill)
+
+**Shipped:** second perf cut after building LOD.
+- Street furniture: wider light spacing, one side alternate, lower chances
+- Fewer traffic signals per intersection; less scatter; fewer parked cars
+- Trees: cone canopies not multi-spheres; lower segs; skip tiny blobs
+- District density / tileSize slightly lower; fog cards half count
+- Internal res 854×480 (mobile 540×304); budget ~55k tris target
+
 ## [2026-08-02 ~19:20 EDT] FROM: grok — PERF PASS AFTER MASSING
 
 **Why:** InfiniTown massing raised window/ledge/pilaster tris. City was already

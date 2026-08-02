@@ -14,8 +14,8 @@
 
   "$fogCardComment": "Unreachable painted backdrop geometry. Always stays a card — never model behind it.",
   "fogCards": [
-    { "id": "far-skyline", "at": { "x": 0, "z": -620 }, "width": 1600, "height": 150, "facing": "south", "silhouette": "towers", "seed": 41 },
-    { "id": "east-cranes", "at": { "x": 900, "z": 120 }, "width": 900, "height": 90, "facing": "west", "silhouette": "cranes", "seed": 17 }
+    { "id": "far-skyline", "at": { "x": 0, "z": -620 }, "width": 1400, "height": 130, "facing": "south", "silhouette": "towers", "seed": 41 },
+    { "id": "east-cranes", "at": { "x": 900, "z": 120 }, "width": 700, "height": 80, "facing": "west", "silhouette": "cranes", "seed": 17 }
   ],
 
   "districts": [
@@ -362,14 +362,14 @@
 
   "render": {
     "$comment": "Sharp early-2000s city (GTA/Spidey PS2): higher internal res, no smear. Form comes from geometry + lighting, not blur.",
-    "internalWidth": 960,
-    "internalHeight": 540,
-    "mobileInternalWidth": 640,
-    "mobileInternalHeight": 360,
+    "internalWidth": 854,
+    "internalHeight": 480,
+    "mobileInternalWidth": 540,
+    "mobileInternalHeight": 304,
     "quantize": 0.15,
     "dither": 0.25,
     "bloom": { "strength": 0.1, "threshold": 0.65 },
     "maxPixelRatio": 1,
-    "budget": { "drawCalls": 120, "triangles": 70000 }
+    "budget": { "drawCalls": 100, "triangles": 55000 }
   }
 }

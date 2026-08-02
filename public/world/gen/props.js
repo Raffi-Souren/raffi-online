@@ -4,6 +4,9 @@
  * This module contains no knowledge of what a hydrant looks like. It reads the
  * `parts` recipe out of props.json and emits primitives, which means a new prop
  * is a data edit, never a code edit.
+ *
+ * PERF: street furniture is thinned (wider light spacing, lower chance rolls).
+ * Blobs skip on tiny props. Segment counts live in props.json defaults.
  */
 
 import { makeRng } from '../engine/state.js'
@@ -57,6 +60,7 @@ export function emitProp(set, atlas, propsData, name, x, y, z, ry = 0, rng = nul
         target.cylinder({
           x: px, y: py, z: pz, r: part.r, rTop: part.rTop ?? null, h: part.h,
           seg, ry: pry, color, rect, emissive,
+          caps: part.caps !== false,
         })
         break
       case 'cone':
@@ -76,10 +80,14 @@ export function emitProp(set, atlas, propsData, name, x, y, z, ry = 0, rng = nul
     }
   }
 
-  // Blob shadow — the only shadow in the build.
+  // Blob shadow — only for larger props (trees, carts, shelters). Tiny kerb
+  // clutter does not need a second alpha quad each.
   if (def.castsBlob) {
-    const size = def.collide?.r ? def.collide.r * 3.2 : 2.2
-    set.alpha.plane({ x, y: y + 0.04, z, w: size, d: size, color: '#000000', rect: atlas.uv('blob') })
+    const r = def.collide?.r || 0
+    const size = r ? r * 3.2 : 2.2
+    if (size >= 1.6) {
+      set.alpha.plane({ x, y: y + 0.04, z, w: size, d: size, color: '#000000', rect: atlas.uv('blob') })
+    }
   }
 
   if (!def.collide) return null
@@ -134,7 +142,8 @@ export function placeStreetFurniture(set, atlas, propsData, district, graph, cfg
   // The light archetype this district uses, picked once from propWeights.
   const lightName =
     Object.keys(dcfg.propWeights).find((k) => k.startsWith('streetlight')) || 'streetlight-modern'
-  const lightSpacing = district.id === 'yards' ? 46 : 30
+  // Wider spacing = fewer high-seg streetlights (big tri sink with trees).
+  const lightSpacing = district.id === 'yards' ? 56 : district.id === 'downtown' ? 38 : 36
 
   for (const seg of graph.segments) {
     const midX = (seg.ax + seg.bx) / 2
@@ -148,22 +157,24 @@ export function placeStreetFurniture(set, atlas, propsData, district, graph, cfg
       const z = seg.az + (seg.bz - seg.az) * t
       if (!inBounds(x, z)) continue
 
-      for (const side of [-1, 1]) {
+      // One side of the street only on alternate steps — still reads as a row.
+      const sides = (i % 2 === 0) ? [-1] : [1]
+      for (const side of sides) {
         const ox = seg.horizontal ? 0 : side * (seg.halfWidth + sw * 0.55)
         const oz = seg.horizontal ? side * (seg.halfWidth + sw * 0.55) : 0
         const px = x + ox
         const pz = z + oz
         if (!inBounds(px, pz)) continue
 
-        if (rng.chance(0.72)) {
+        if (rng.chance(0.55)) {
           // Lamp head points at the road.
           const ry = seg.horizontal ? (side < 0 ? 0 : Math.PI) : side < 0 ? Math.PI / 2 : -Math.PI / 2
           const c = emitProp(set, atlas, propsData, lightName, px, 0, pz, ry, rng)
           if (c) colliders.push(c)
         }
 
-        // Trees between the lights.
-        if (trees.types.length && rng.chance(trees.chance * 0.5)) {
+        // Trees between the lights (district chance already high in Heights).
+        if (trees.types.length && rng.chance(trees.chance * 0.32)) {
           const toff = seg.horizontal ? lightSpacing * 0.4 : 0
           const toff2 = seg.horizontal ? 0 : lightSpacing * 0.4
           const tx = px + toff
@@ -175,7 +186,7 @@ export function placeStreetFurniture(set, atlas, propsData, district, graph, cfg
         }
 
         // Small furniture, weighted per district.
-        if (rng.chance(0.3)) {
+        if (rng.chance(0.16)) {
           const name = rng.weighted(dcfg.propWeights)
           if (propsData.props[name] && !name.startsWith('streetlight') && !name.startsWith('parking-stripe')) {
             const jx = px + rng.range(-2, 2)
@@ -190,23 +201,18 @@ export function placeStreetFurniture(set, atlas, propsData, district, graph, cfg
     }
   }
 
-  // Traffic signals + crosswalk signals at intersections inside this district.
+  // Traffic signals at major intersections only (degree ≥ 3 already).
+  // One light + one walk signal per node instead of two of each.
   for (const node of graph.nodes.values()) {
     if (!inBounds(node.x, node.z)) continue
     if (node.edges.length < 3) continue
     let maxHw = 0
     for (const e of node.edges) maxHw = Math.max(maxHw, graph.halfWidthAt(e.lanes))
     const off = maxHw + sw * 0.5
-    for (const [sx, sz, ry] of [
-      [-1, -1, 0], [1, 1, Math.PI],
-    ]) {
-      const c = emitProp(set, atlas, propsData, 'traffic-light', node.x + sx * off, 0, node.z + sz * off, ry, rng)
-      if (c) colliders.push(c)
-    }
-    for (const [sx, sz] of [[1, -1], [-1, 1]]) {
-      const c = emitProp(set, atlas, propsData, 'crosswalk-signal', node.x + sx * off, 0, node.z + sz * off, Math.atan2(-sz, -sx), rng)
-      if (c) colliders.push(c)
-    }
+    const c1 = emitProp(set, atlas, propsData, 'traffic-light', node.x - off, 0, node.z - off, 0, rng)
+    if (c1) colliders.push(c1)
+    const c2 = emitProp(set, atlas, propsData, 'crosswalk-signal', node.x + off, 0, node.z - off, Math.atan2(1, -1), rng)
+    if (c2) colliders.push(c2)
   }
 
   return colliders
