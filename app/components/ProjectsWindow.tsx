@@ -18,6 +18,7 @@ const projects: Project[] = [
     description:
       "A local-only two-deck DJ experiment: record every control move, then replay the set as an animated ghost mix.",
     github: "https://github.com/Raffi-Souren/ghost-deck",
+    demo: "https://raffi-souren.github.io/ghost-deck/",
     madeWith: "Vite + React + Web Audio",
     year: "Aug 2026",
   },
