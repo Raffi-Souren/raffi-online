@@ -26,29 +26,36 @@ export const RAFS_CRATE: Track[] = CRATE_TRACKS
 // Back-compat alias: existing imports of SOUNDCLOUD_TRACKS keep working.
 export const SOUNDCLOUD_TRACKS: Track[] = CRATE_TRACKS
 
+/** The stable, hand-picked opening sequence for the curated iPod crate. */
+export const FEATURED_TRACK_IDS = [
+  "yukon-x-up-dj-hunny-bee-remix",
+  "four-tet-insect-near-piha-beach",
+  "habibi-funk-beirut",
+  "chopsuey",
+  "gordos-dilemma",
+  "08-compton-state-of-mind",
+  "sango2",
+  "dipset-x-future-i-really-mean",
+  "mos-def-auditorium-2",
+  "blemforreal",
+  "tems-me-u-blk-remix",
+  "first-day-of-my-life-bright",
+] as const
+
 /**
- * Display-metadata overrides for the head of the curated crate. Ids reference
- * the canonical library, so a rename there must be mirrored here — the tests
- * assert every id still resolves, because an unresolved one degrades silently.
+ * Intentional editorial exceptions for the featured crate. Artist names now
+ * live in the canonical library; this sparse list only changes credits/titles
+ * where the curated presentation intentionally differs from SoundCloud's
+ * uploader metadata.
  */
 export const FEATURED_OVERRIDES: ReadonlyArray<{
   id: string
-  artist: string
+  artist?: string
   title?: string
 }> = [
-  { id: "yukon-x-up-dj-hunny-bee-remix", artist: "DJ Hunny Bee" },
   { id: "four-tet-insect-near-piha-beach", artist: "Four Tet" },
-  { id: "habibi-funk-beirut", artist: "DJ Sweeterman" },
-  { id: "chopsuey", artist: "Osive" },
-  { id: "gordos-dilemma", artist: "Gordo" },
-  { id: "08-compton-state-of-mind", artist: "Miles Davis" },
-  { id: "fidde-i-wonder-yuno-hu-vision", artist: "Fidde" },
-  { id: "sango2", artist: "Pinche Por Vida" },
-  { id: "dipset-x-future-i-really-mean", artist: "Sango" },
   { id: "mos-def-auditorium-2", title: "Auditorium", artist: "Mos Def" },
-  { id: "blemforreal", artist: "David Mackay" },
   { id: "tems-me-u-blk-remix", title: "Me & U (BLK Remix)", artist: "Tems" },
-  { id: "first-day-of-my-life-bright", artist: "Mac Miller" },
 ]
 
 /**
@@ -57,20 +64,29 @@ export const FEATURED_OVERRIDES: ReadonlyArray<{
  */
 const CURATED_CRATE_SIZE = 50
 
-const handPickedTracks = FEATURED_OVERRIDES.flatMap(({ id, title, artist }) => {
+const featuredOverrideById = new Map(FEATURED_OVERRIDES.map((override) => [override.id, override]))
+
+const handPickedTracks = FEATURED_TRACK_IDS.flatMap((id) => {
   const track = CRATE_TRACKS.find((candidate) => candidate.id === id)
-  return track ? [{ ...track, title: title ?? track.title, artist }] : []
+  const override = featuredOverrideById.get(id)
+  return track
+    ? [
+        {
+          ...track,
+          title: override?.title ?? track.title,
+          artist: override?.artist ?? track.artist,
+        },
+      ]
+    : []
 })
 
 export const HOMIE_DISCOVERY_IDS = [
-  "rich-baby-daddy-pherris-edit-a-side",
   "texas-speed-white-ferrari0",
   "kdot-x-radiohead",
   "beyonce-x-stardust-break-my-soul-sango-mix",
   "brent-faiyaz-all-mine-dwells-rmx",
   "semi-on-em-1979",
   "caffeine-vitamins",
-  "habibi-funk-plus",
 ] as const
 
 const homieDiscoveryTracks = HOMIE_DISCOVERY_IDS.flatMap((id) => {
