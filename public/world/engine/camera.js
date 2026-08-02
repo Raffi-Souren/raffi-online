@@ -86,16 +86,25 @@ export function updateCamera(dt, focus, velocity, aspect) {
   const ax = clamp(velocity.x * laScale, -c.lookAheadMax, c.lookAheadMax)
   const az = clamp(velocity.z * laScale, -c.lookAheadMax, c.lookAheadMax)
 
-  cam.target.x = damp(cam.target.x, focus.x + ax, c.followLerp, dt)
-  cam.target.z = damp(cam.target.z, focus.z + az, c.followLerp, dt)
+  // Screen-space bias: shift the focus slightly *away* from the camera so the
+  // player sits a bit lower on the frame and more of the street in front of
+  // them is visible. Fixed pitch/yaw law unchanged — Q/X still snap view only.
+  const pitch = c.pitchDeg * DEG
+  const horiz = Math.cos(pitch)
+  const camBackX = horiz * Math.sin(cam.currentYaw)
+  const camBackZ = horiz * Math.cos(cam.currentYaw)
+  const viewBias = state.mode === 'vehicle' ? (c.viewBiasVehicle ?? 4.5) : (c.viewBiasFoot ?? 3.2)
+  const biasX = -camBackX * viewBias
+  const biasZ = -camBackZ * viewBias
+
+  cam.target.x = damp(cam.target.x, focus.x + ax + biasX, c.followLerp, dt)
+  cam.target.z = damp(cam.target.z, focus.z + az + biasZ, c.followLerp, dt)
   cam.target.y = damp(cam.target.y, focus.y || 0, c.followLerp, dt)
 
   // Yaw eases to the nearest snap; nothing else may write currentYaw.
   cam.currentYaw = damp(cam.currentYaw, cam.desiredYaw, 7.5, dt)
   state.camera.yaw = cam.currentYaw
 
-  const pitch = c.pitchDeg * DEG
-  const horiz = Math.cos(pitch)
   const dirX = horiz * Math.sin(cam.currentYaw)
   const dirY = Math.sin(pitch)
   const dirZ = horiz * Math.cos(cam.currentYaw)
