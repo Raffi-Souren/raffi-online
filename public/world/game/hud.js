@@ -103,7 +103,13 @@ export function setObjective(text) {
 export function setInteractionPrompt(action) {
   const visible = action && action.kind !== 'none'
   els.interactionPrompt?.classList.toggle('show', !!visible)
-  if (!visible) return
+  if (!visible) {
+    // Clear stale EXIT/ENTER copy so tests and players do not read a hidden
+    // previous prompt after dismounting mid-drive.
+    if (els.interactionLabel) els.interactionLabel.textContent = ''
+    if (els.interactionKey) els.interactionKey.textContent = ''
+    return
+  }
   if (els.interactionKey) els.interactionKey.textContent = device.touch ? 'TAP' : action.key || 'SPACE'
   if (els.interactionLabel) els.interactionLabel.textContent = action.prompt || action.label || 'INTERACT'
 }

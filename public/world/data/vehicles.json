@@ -234,8 +234,8 @@
   "parked": { "maxPerDistrict": 60, "mobileMaxPerDistrict": 34, "curbOffset": 2.4 },
 
   "player": {
-    "enterRadius": 3.0,
-    "exitOffset": 1.6,
+    "enterRadius": 3.2,
+    "exitOffset": 2.15,
     "cameraZoom": "vehicle",
     "engineAudio": { "sawPair": true, "detuneCents": 11, "rpmMin": 0.18, "rpmMax": 1.0, "idleHz": 46, "revHz": 190 },
     "tireSqueal": { "slipThreshold": 0.42, "noiseQ": 7.5, "baseHz": 1800 }

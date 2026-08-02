@@ -548,10 +548,17 @@ function loop(now) {
     // All context inputs are edge-triggered, so a time lock is unnecessary.
     // Keeping transitions immediately responsive also means a control that is
     // already visible can never swallow the player's first press.
-    if (!dialogueHandled && !isDialogueBlocking()) {
-      if ((keyboardAction || exitPressed || spaceMicroExit) && state.mode === 'vehicle') {
+    // Exit works at any speed. Dedicated EXIT / micro Space always eject; E
+    // ejects unless a blocking dialogue currently owns the action key.
+    if (!dialogueHandled) {
+      const wantExit = state.mode === 'vehicle' && (
+        exitPressed ||
+        spaceMicroExit ||
+        (keyboardAction && !isDialogueBlocking())
+      )
+      if (wantExit) {
         exitVehicle(world.collision)
-      } else if ((keyboardAction || touchPrimary || spaceAction) && state.mode !== 'vehicle') {
+      } else if (!isDialogueBlocking() && state.mode !== 'vehicle' && (keyboardAction || touchPrimary || spaceAction)) {
         if (ctx.kind === 'enter' && enterVehicle(ctx.target)) onRideMounted(ctx.target)
         else if (ctx.kind === 'transit') void beginFastTravel(ctx.target)
         else if (ctx.kind === 'mission') startMission(ctx.target)

@@ -23,6 +23,8 @@ export const player = {
   marker: null,
   vehicle: null,
   nearbyVehicle: null,
+  /** Last ride exited — preferred for remount so exit offset never steals the scooter. */
+  lastExited: null,
   animState: 'idle',
 }
 
@@ -102,6 +104,9 @@ export function spawnVehicle(scene, materials, atlas, archetypeId, x, z, yaw, se
   mesh.position.set(x, 0, z)
   mesh.rotation.y = yaw
   scene.add(mesh)
+  const sil = archetype.silhouette || {}
+  const length = sil.length || (archetype.kind === 'skateboard' || archetype.kind === 'scooter' ? 1.7 : 4.4)
+  const width = sil.width || (archetype.kind === 'skateboard' || archetype.kind === 'scooter' ? 0.55 : 1.85)
   return {
     mesh,
     archetypeId,
@@ -115,6 +120,8 @@ export function spawnVehicle(scene, materials, atlas, archetypeId, x, z, yaw, se
     damage: 0,
     handling: archetype.handling,
     kind: archetype.kind || 'car',
+    length,
+    width,
     collisionRadius: archetype.collisionRadius || archetype.handling?.collisionRadius || 1.7,
     riderVisible: !!archetype.riderVisible,
     riderHeight: archetype.riderHeight || 0,
@@ -125,26 +132,40 @@ export function spawnVehicle(scene, materials, atlas, archetypeId, x, z, yaw, se
     enterRadius: archetype.enterRadius || data.vehicles.player.enterRadius,
     exitOffset: archetype.exitOffset || data.vehicles.player.exitOffset,
     occupied: false,
+    remountAfter: 0,
   }
+}
+
+function canEnterVehicle(v, x, z) {
+  if (!v || v.occupied) return false
+  if (v.remountAfter && state.time < v.remountAfter) return false
+  const enterRadius = v.enterRadius || data.vehicles.player.enterRadius
+  const d = (v.x - x) ** 2 + (v.z - z) ** 2
+  return d <= enterRadius * enterRadius
 }
 
 /** Nearest enterable car within the archetype's enter radius. */
 export function findNearbyVehicle(vehicles, x, z) {
+  // Prefer the ride just exited when still in range (garage is crowded).
+  if (player.lastExited && canEnterVehicle(player.lastExited, x, z)) {
+    return player.lastExited
+  }
   const r = data.vehicles.player.enterRadius
   let best = null
   let bestD = Infinity
   for (const v of vehicles) {
-    if (v.occupied) continue
+    if (!canEnterVehicle(v, x, z)) continue
     const d = (v.x - x) ** 2 + (v.z - z) ** 2
-    const enterRadius = v.enterRadius || r
-    if (d < enterRadius * enterRadius && d < bestD) { bestD = d; best = v }
+    if (d < bestD) { bestD = d; best = v }
   }
   return best
 }
 
 export function enterVehicle(v) {
   if (!v) return false
+  if (v.remountAfter && state.time < v.remountAfter) return false
   v.occupied = true
+  v.stuckFrames = 0
   player.vehicle = v
   state.mode = 'vehicle'
   state.player.vehicle = v.archetypeId
@@ -156,32 +177,117 @@ export function enterVehicle(v) {
   return true
 }
 
+/**
+ * Step off a ride. Works at any speed: motion is zeroed, then the player is
+ * placed on the freest door / rear slot so they are not left inside the
+ * vehicle footprint or shoved into a wall (the old left/right-only exit).
+ */
 export function exitVehicle(collisionWorld = null) {
   const v = player.vehicle
   if (!v) return false
-  const off = v.exitOffset || data.vehicles.player.exitOffset
-  const sideX = Math.cos(v.yaw)
-  const sideZ = -Math.sin(v.yaw)
-  const candidates = [
-    { x: v.x - sideX * off, z: v.z - sideZ * off },
-    { x: v.x + sideX * off, z: v.z + sideZ * off },
-  ]
-  let exit = { ...candidates[0], y: v.y || 0 }
 
-  // Prefer the authored side, but use the opposite door when a wall or world
-  // edge would swallow the player. Vehicles are dynamic and intentionally not
-  // part of the static collision hash, so testing both sides is sufficient.
-  if (collisionWorld) {
-    let bestCorrection = Infinity
-    for (const candidate of candidates) {
-      const resolved = resolveCircle(collisionWorld, candidate.x, candidate.z, PLAYER_RADIUS, 4)
+  const micro = v.kind === 'skateboard' || v.kind === 'scooter'
+  const halfW = (v.width || (micro ? 0.55 : 1.85)) * 0.5
+  const halfL = (v.length || (micro ? 1.7 : 4.4)) * 0.5
+  // Micro-rides stay tight so the garage board remount still finds the board.
+  const sideOff = micro
+    ? Math.max(v.exitOffset || 1.1, halfW + 0.55)
+    : Math.max(v.exitOffset || data.vehicles.player.exitOffset, halfW + 0.95)
+  const rearOff = halfL + (micro ? 0.7 : 1.15)
+  const fwdOff = halfL + (micro ? 0.55 : 1.05)
+
+  // Forward / right basis matches stepVehicle (yaw 0 → +Z).
+  const fx = Math.sin(v.yaw)
+  const fz = Math.cos(v.yaw)
+  const rx = Math.cos(v.yaw)
+  const rz = -Math.sin(v.yaw)
+
+  // Rank: doors first when slow; when moving, prefer rear so the body is not
+  // left "in front of" the car the player just leapt out of.
+  const moving = Math.abs(v.speed) > 1.2
+  const spots = [
+    { x: v.x - rx * sideOff, z: v.z - rz * sideOff, rank: moving ? 2 : 0 },
+    { x: v.x + rx * sideOff, z: v.z + rz * sideOff, rank: moving ? 2 : 0 },
+    { x: v.x - rx * sideOff - fx * rearOff * 0.4, z: v.z - rz * sideOff - fz * rearOff * 0.4, rank: 1 },
+    { x: v.x + rx * sideOff - fx * rearOff * 0.4, z: v.z + rz * sideOff - fz * rearOff * 0.4, rank: 1 },
+    { x: v.x - fx * rearOff, z: v.z - fz * rearOff, rank: moving ? 0 : 2 },
+    { x: v.x - rx * (sideOff + 0.7), z: v.z - rz * (sideOff + 0.7), rank: 3 },
+    { x: v.x + rx * (sideOff + 0.7), z: v.z + rz * (sideOff + 0.7), rank: 3 },
+    // Last resorts: further rear / slightly forward-side (not dead ahead).
+    { x: v.x - fx * (rearOff + 0.8), z: v.z - fz * (rearOff + 0.8), rank: 4 },
+    { x: v.x - rx * sideOff + fx * fwdOff * 0.25, z: v.z - rz * sideOff + fz * fwdOff * 0.25, rank: 5 },
+    { x: v.x + rx * sideOff + fx * fwdOff * 0.25, z: v.z + rz * sideOff + fz * fwdOff * 0.25, rank: 5 },
+  ]
+
+  let exit = { x: spots[0].x, z: spots[0].z, y: v.y || 0 }
+  let bestScore = Infinity
+
+  for (const spot of spots) {
+    let x = spot.x
+    let z = spot.z
+    let y = v.y || 0
+    let correction = 0
+    if (collisionWorld) {
+      const resolved = resolveCircle(collisionWorld, x, z, PLAYER_RADIUS, 5)
       const bounded = clampToBounds(resolved.x, resolved.z, data.world.bounds, 6)
-      const correction = (bounded.x - candidate.x) ** 2 + (bounded.z - candidate.z) ** 2
-      if (correction < bestCorrection) {
-        bestCorrection = correction
-        exit = { x: bounded.x, z: bounded.z, y: resolved.y }
-      }
+      correction = (bounded.x - spot.x) ** 2 + (bounded.z - spot.z) ** 2
+      x = bounded.x
+      z = bounded.z
+      y = resolved.y
     }
+    // Reject slots still inside the vehicle rectangle (front/back of hatchback).
+    if (insideVehicleFootprint(x, z, v, halfW + 0.35, halfL + 0.35)) {
+      correction += 40
+    }
+    const score = correction + spot.rank * 0.35
+    if (score < bestScore) {
+      bestScore = score
+      exit = { x, z, y }
+    }
+  }
+
+  // Keep the landing spot enterable so E remounts the same ride after a
+  // moving exit, without dropping the player back inside the hull.
+  const enterR = v.enterRadius || data.vehicles.player.enterRadius
+  const maxRemountD = Math.max(sideOff, Math.min(enterR * 0.88, halfW + 1.35))
+  let edx = exit.x - v.x
+  let edz = exit.z - v.z
+  let ed = Math.hypot(edx, edz)
+  if (ed > maxRemountD && ed > 0.001) {
+    exit.x = v.x + (edx / ed) * maxRemountD
+    exit.z = v.z + (edz / ed) * maxRemountD
+    if (collisionWorld) {
+      const resolved = resolveCircle(collisionWorld, exit.x, exit.z, PLAYER_RADIUS, 4)
+      const bounded = clampToBounds(resolved.x, resolved.z, data.world.bounds, 6)
+      exit.x = bounded.x
+      exit.z = bounded.z
+      exit.y = resolved.y
+    }
+  }
+  // Final footprint reject: nudge sideways if still inside the car rectangle.
+  if (insideVehicleFootprint(exit.x, exit.z, v, halfW + 0.2, halfL + 0.2)) {
+    exit.x = v.x - rx * maxRemountD
+    exit.z = v.z - rz * maxRemountD
+    if (collisionWorld) {
+      const resolved = resolveCircle(collisionWorld, exit.x, exit.z, PLAYER_RADIUS, 4)
+      const bounded = clampToBounds(resolved.x, resolved.z, data.world.bounds, 6)
+      exit = { x: bounded.x, z: bounded.z, y: resolved.y }
+    }
+  }
+
+  // Full stop — no residual car velocity in on-foot or the parked hull.
+  v.speed = 0
+  v.lateral = 0
+  v.angularVel = 0
+  v.stuckFrames = 0
+  v.occupied = false
+  // Brief remount lock so a held/double E does not re-enter the same frame.
+  // Short enough that onboarding remounts (~100ms later) still pass.
+  v.remountAfter = state.time + 0.05
+  player.lastExited = v
+  if (v.mesh) {
+    v.mesh.position.set(v.x, v.y || 0, v.z)
+    v.mesh.rotation.y = v.yaw
   }
 
   state.player.x = exit.x
@@ -191,8 +297,6 @@ export function exitVehicle(collisionWorld = null) {
   state.player.vx = 0
   state.player.vz = 0
   state.player.speed = 0
-  v.occupied = false
-  v.speed = 0
   player.vehicle = null
   state.mode = 'foot'
   state.player.vehicle = null
@@ -201,6 +305,17 @@ export function exitVehicle(collisionWorld = null) {
   player.group.visible = true
   syncPlayerVisual()
   return true
+}
+
+function insideVehicleFootprint(px, pz, v, halfW, halfL) {
+  const dx = px - v.x
+  const dz = pz - v.z
+  const c = Math.cos(v.yaw)
+  const s = Math.sin(v.yaw)
+  // Local X = right, local Z = forward (matches fx/fz convention).
+  const localRight = dx * c + dz * (-s)
+  const localFwd = dx * s + dz * c
+  return Math.abs(localRight) <= halfW && Math.abs(localFwd) <= halfL
 }
 
 /** Moves the on-foot player safely between world-space interaction points. */
@@ -373,17 +488,36 @@ export function contextAction(vehicles, extraActions = []) {
   let best = null
   let bestD = Infinity
 
-  for (const v of vehicles) {
-    if (v.occupied) continue
+  // Prefer the ride just exited when still in range (crib garage is crowded).
+  const pool = player.lastExited && canEnterVehicle(player.lastExited, px, pz)
+    ? [player.lastExited]
+    : vehicles
+  for (const v of pool) {
+    if (!canEnterVehicle(v, px, pz)) continue
     const d = (v.x - px) ** 2 + (v.z - pz) ** 2
-    const radius = v.enterRadius || data.vehicles.player.enterRadius
-    if (d <= radius * radius && d < bestD) {
+    if (d < bestD) {
       bestD = d
       best = {
         label: v.controls?.enter || (v.riderVisible ? 'RIDE' : 'ENTER'),
         prompt: (v.controls?.enter || (v.riderVisible ? 'RIDE' : 'ENTER')) + ' ' + v.label.toUpperCase(),
         kind: 'enter',
         target: v,
+      }
+    }
+  }
+  // If preferred last-exited is locked, fall back to any free ride.
+  if (!best) {
+    for (const v of vehicles) {
+      if (!canEnterVehicle(v, px, pz)) continue
+      const d = (v.x - px) ** 2 + (v.z - pz) ** 2
+      if (d < bestD) {
+        bestD = d
+        best = {
+          label: v.controls?.enter || (v.riderVisible ? 'RIDE' : 'ENTER'),
+          prompt: (v.controls?.enter || (v.riderVisible ? 'RIDE' : 'ENTER')) + ' ' + v.label.toUpperCase(),
+          kind: 'enter',
+          target: v,
+        }
       }
     }
   }
