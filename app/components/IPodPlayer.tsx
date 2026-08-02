@@ -732,23 +732,31 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         }}
       >
         <div
-          className="w-full h-full overflow-hidden"
+          className="flex h-full w-full flex-col overflow-hidden"
           style={{
             background: "linear-gradient(180deg, #b8c8b8 0%, #a8b8a8 100%)",
             borderRadius: "2px",
           }}
         >
           <div
-            className="flex items-center justify-between px-2 py-1"
+            className="flex flex-shrink-0 items-center justify-between gap-1 px-2 py-1"
             style={{
               background: "linear-gradient(180deg, #8898a8 0%, #7888a8 100%)",
               borderBottom: "1px solid #6878a8",
             }}
           >
-            <span className="text-xs font-bold" style={{ color: "#000", fontFamily: "Chicago, system-ui" }}>
+            {/* truncate + min-w-0: a long title like "Fred again.. — Boiler
+                Room London" used to wrap onto a second line, making this bar
+                taller than the 24px the screen below assumed and pushing the
+                Expand button out through the bezel. */}
+            <span
+              className="min-w-0 truncate text-xs font-bold"
+              style={{ color: "#000", fontFamily: "Chicago, system-ui" }}
+              title={getScreenTitle()}
+            >
               {getScreenTitle()}
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-shrink-0 items-center gap-1">
           {shuffle && (
             <span className="text-xs font-bold" style={{ color: "#000" }} title="Shuffle on">
               S
@@ -770,10 +778,18 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
             </div>
           </div>
 
-          <div className="p-1 h-[calc(100%-24px)] overflow-hidden">
+          {/* flex-1 rather than calc(100% - 24px): the content area now derives
+              its height from whatever the header actually measures, so a taller
+              status bar can never overflow the screen. */}
+          <div className="min-h-0 flex-1 overflow-hidden p-1">
             {currentScreen === "videoPlayer" && currentVideo ? (
-              <div className="h-full flex flex-col items-center justify-center">
-                <div className="w-full bg-black rounded overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              // The video absorbs all leftover height; the caption and Expand
+              // button are flex-shrink-0 so they can never be clipped off the
+              // bottom. The old layout gave the frame a fixed 16:9 box that
+              // could not shrink (flex items default to min-height:auto), so on
+              // a long title the button overflowed a hidden container.
+              <div className="flex h-full flex-col items-center justify-center gap-1">
+                <div className="min-h-0 w-full flex-1 overflow-hidden rounded bg-black">
                   <iframe
                     ref={videoIframeRef}
                     width="100%"
@@ -785,13 +801,16 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                     allowFullScreen
                   />
                 </div>
-                <p className="text-xs mt-1 truncate w-full text-center" style={{ color: "#000", fontSize: "9px" }}>
+                <p
+                  className="w-full flex-shrink-0 truncate text-center text-xs"
+                  style={{ color: "#000", fontSize: "9px" }}
+                >
                   {currentVideo.title} ({currentVideoIndex + 1}/{currentVideoPlaylist.length})
                 </p>
                 {onExpandVideo && (
                   <button
                     onClick={() => onExpandVideo(currentVideo.youtubeId, currentVideo.title)}
-                    className="mt-1 px-2 py-0.5 text-xs rounded"
+                    className="flex-shrink-0 rounded px-2 py-0.5 text-xs"
                     style={{
                       background: "#3366cc",
                       color: "#fff",
