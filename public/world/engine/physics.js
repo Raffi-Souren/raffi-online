@@ -187,10 +187,21 @@ export function stepVehicle(v, h, ctl, dt, world) {
   const handbrake = ctl.handbrake ? 1 : 0
 
   // Longitudinal.
+  // S / BRAKE: decelerate while rolling forward, then reverse. The old 0.4 m/s
+  // gate + 60% reverse power left drivers nose-into-walls with a long dead zone
+  // before reverse engaged — felt like "I can't go back".
   let accel = throttle * h.accel
   if (brake > 0) {
-    if (v.speed > 0.4) accel -= brake * h.brake
-    else accel -= brake * h.accel * 0.6 // reverse
+    if (v.speed > 0.12) {
+      accel -= brake * h.brake
+    } else {
+      // Full reverse bite once nearly stopped (or already reversing).
+      accel -= brake * h.accel * (h.reversePower ?? 0.95)
+    }
+  }
+  // Throttle while reversing flips to forward braking/accel the natural way.
+  if (throttle > 0.01 && v.speed < -0.12) {
+    accel = throttle * h.brake * 0.85
   }
   accel -= v.speed * h.drag * 0.12
   v.speed += accel * dt
@@ -241,16 +252,49 @@ export function stepVehicle(v, h, ctl, dt, world) {
   let nx = v.x + (fx * v.speed + rx * v.lateral) * dt
   let nz = v.z + (fz * v.speed + rz * v.lateral) * dt
 
-  const res = resolveCircle(world, nx, nz, v.collisionRadius || h.collisionRadius || 1.7, 2)
+  // Extra resolve iterations when jammed so push-out actually clears the hull.
+  const radius = v.collisionRadius || h.collisionRadius || 1.7
+  const stuckFrames = v.stuckFrames || 0
+  const res = resolveCircle(world, nx, nz, radius, stuckFrames > 4 ? 5 : 3)
   if (res.hit) {
-    // Push and slow. Never destroy.
-    const impact = Math.abs(v.speed) * 0.5
-    v.speed *= 0.55
-    v.lateral *= 0.4
+    // Cancel only velocity *into* the surface. Blind speed*=0.55 also killed
+    // reverse when the nose was still overlapping a wall, so S could not free you.
+    let vx = fx * v.speed + rx * v.lateral
+    let vz = fz * v.speed + rz * v.lateral
+    const intoWall = -(vx * res.normalX + vz * res.normalZ)
+    if (intoWall > 0) {
+      vx += res.normalX * intoWall
+      vz += res.normalZ * intoWall
+    }
+    // Reproject onto car axes after the slide.
+    v.speed = vx * fx + vz * fz
+    v.lateral = vx * rx + vz * rz
+
+    // Escape assist: holding reverse while pinned adds a push along the wall
+    // normal so the first S press actually backs you free.
+    if (brake > 0.2 && throttle < 0.05 && intoWall > -0.5) {
+      const escape = (h.escapeBoost ?? 3.2) * brake * dt
+      res.x += res.normalX * escape
+      res.z += res.normalZ * escape
+      if (v.speed > -0.5) v.speed = Math.min(v.speed, -h.accel * 0.15 * brake)
+    }
+
+    const impact = Math.max(0, intoWall)
     v.damage = Math.min(1, (v.damage || 0) + impact * 0.012)
     v.lastImpact = impact
+    v.stuckFrames = stuckFrames + 1
   } else {
     v.lastImpact = 0
+    v.stuckFrames = 0
+  }
+
+  // If still overlapping after resolve (corner wedge), force a second push-out
+  // from the resolved point so reverse has room to work next frame.
+  if (world && (v.stuckFrames || 0) > 8) {
+    const free = resolveCircle(world, res.x, res.z, radius * 1.02, 4)
+    res.x = free.x
+    res.z = free.z
+    res.y = free.y
   }
 
   v.x = res.x

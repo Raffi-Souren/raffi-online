@@ -270,10 +270,15 @@ export function updateInput(mode) {
     // reorienting the car to "screen up".
     const gasBtn = input.held.has('primary') ? 1 : 0
     const brakeBtn = input.held.has('second') ? 1 : 0
-    // Mild stick-forward gas helps touch when GAS is held lightly; keyboard W
-    // still wins via my.
-    input.throttle = Math.max(gasBtn, my > 0.12 ? my : 0)
-    input.brake = Math.max(brakeBtn, my < -0.12 ? -my : 0)
+    let throttle = Math.max(gasBtn, my > 0.12 ? my : 0)
+    let brake = Math.max(brakeBtn, my < -0.12 ? -my : 0)
+    // If both W and S (or GAS+BRAKE) are held, reverse/brake wins so a panicked
+    // mash still backs you out of a wall instead of fighting forward.
+    if (brake > 0.05 && throttle > 0.05) {
+      throttle = 0
+    }
+    input.throttle = throttle
+    input.brake = brake
   } else {
     input.throttle = 0
     input.brake = 0
