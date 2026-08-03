@@ -78,7 +78,7 @@ findings.
 
 | # | Predicted issue | Where | Severity | How a human spots it |
 |---|---|---|---|---|
-| 16 | The always-readable player locator can show through a very tall foreground roof before the actor itself does. | `game/player.js` | charm→visible | Cyan ring appears detached from the actor during deep occlusion; keep unless it confuses navigation. |
+| 16 | The always-readable player locator can show through a very tall foreground roof before the actor itself does. | `game/player.js` | resolved | Actor and locator now use scene depth; buildings occlude both while the minimap retains navigation context. |
 | 17 | The fixed 205px dialogue-action shelf may crowd the caption in short landscape phone viewports. | `style.css` touch dialogue mode | visible | NEXT touches or covers the dialogue border after rotating a phone. |
 | 18 | Dijkstra scans every road node when the player moves 18m; a denser Phase 3 expressway graph may make map updates spike. | `game/hud.js` route rebuild | visible | Frame-time sampler spikes while driving quickly and the route recalculates. |
 | 19 | Subway mission express has one contextual destination, not an unlocked stop menu. Later missions may need data-authored destinations without turning the HUD into a spreadsheet. | `engine/main.js`, `data/world.json` | visible | Transit becomes ambiguous after more than one supported mission is active. |
