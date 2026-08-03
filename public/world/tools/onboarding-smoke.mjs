@@ -103,12 +103,18 @@ assert.equal(
 )
 await desktop.keyboard.press('Tab')
 await desktop.waitForTimeout(30)
-assert.equal(
-  await desktop.evaluate(() => document.activeElement?.getAttribute('data-pause')),
-  'grade',
-  'Tab closed pause instead of moving focus to the next available control'
+// Next focus may be REWIND (when a run is recorded) or GRADE (when rewind is disabled).
+const nextPause = await desktop.evaluate(() => document.activeElement?.getAttribute('data-pause'))
+assert.ok(
+  nextPause === 'grade' || nextPause === 'rewind',
+  'Tab closed pause instead of moving focus to the next available control (got ' + nextPause + ')',
 )
 assert.equal(await desktop.evaluate(async () => (await import('/world/engine/state.js')).state.paused), true)
+// Land on grade for the cycle test (skip rewind if focused).
+if (nextPause === 'rewind') {
+  await desktop.keyboard.press('Tab')
+  await desktop.waitForTimeout(30)
+}
 for (const expected of ['DUSK', 'HAZE', 'NIGHT', 'AUTO']) {
   await gradeButton.click()
   await desktop.waitForTimeout(30)
@@ -124,11 +130,15 @@ for (const expected of ['DUSK', 'HAZE', 'NIGHT', 'AUTO']) {
     `pause grade state did not become ${expected}`
   )
 }
-for (const action of ['rewind', 'map', 'quit']) {
+// REWIND is a real mechanic (may be enabled once a run is recorded).
+// MAP / QUIT remain deferred chrome.
+for (const action of ['map', 'quit']) {
   const deferred = desktop.locator(`[data-pause="${action}"]`)
   assert.equal(await deferred.isDisabled(), true, `deferred pause action ${action} still presents as enabled`)
   assert.match(await deferred.textContent(), /COMING SOON/)
 }
+const rewindBtn = desktop.locator('[data-pause="rewind"]')
+assert.match(await rewindBtn.textContent(), /REWIND/)
 await desktop.keyboard.press('Escape')
 await desktop.waitForTimeout(60)
 assert.equal(await desktop.evaluate(async () => (await import('/world/engine/state.js')).state.paused), false)
