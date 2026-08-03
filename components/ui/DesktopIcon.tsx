@@ -10,7 +10,7 @@ interface DesktopIconProps {
 
 export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) {
   const iconMap: Record<string, string> = {
-    "👤": "/icons/user.jpg",
+    "👤": "/icons/raf-logo.png",
     "🌐": "/icons/globe.jpg", 
     "🎮": "/icons/gamepad.jpg",
     "📝": "/icons/notepad.jpg",
