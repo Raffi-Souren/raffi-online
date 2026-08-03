@@ -24,6 +24,8 @@ interface WindowShellProps {
   fullBleed?: boolean
   /** Override the standard desktop width cap. */
   maxWidth?: string
+  /** Trim chrome so full-bleed apps remain usable in short landscape views. */
+  compact?: boolean
 }
 
 export default function WindowShell({
@@ -36,7 +38,11 @@ export default function WindowShell({
   hidden = false,
   fullBleed = false,
   maxWidth = "1024px",
+  compact = false,
 }: WindowShellProps) {
+  const edgeInset = compact ? "0px" : "8px"
+  const titlePadding = compact ? "0.25rem 0.5rem" : "0.75rem 1rem"
+  const closeSize = compact ? "34px" : "44px"
   const windowRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll while window is open
@@ -99,12 +105,13 @@ export default function WindowShell({
       <div
         style={{
           position: "fixed",
-          top: "max(8px, env(safe-area-inset-top, 0px))",
-          left: "max(8px, env(safe-area-inset-left, 0px))",
-          right: "max(8px, env(safe-area-inset-right, 0px))",
-          bottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
-          maxHeight:
-            "calc(100dvh - max(8px, env(safe-area-inset-top, 0px)) - 48px - env(safe-area-inset-bottom, 0px))",
+          top: `max(${edgeInset}, env(safe-area-inset-top, 0px))`,
+          left: `max(${edgeInset}, env(safe-area-inset-left, 0px))`,
+          right: `max(${edgeInset}, env(safe-area-inset-right, 0px))`,
+          bottom: `calc(${compact ? "42px" : "48px"} + env(safe-area-inset-bottom, 0px))`,
+          maxHeight: `calc(100dvh - max(${edgeInset}, env(safe-area-inset-top, 0px)) - ${
+            compact ? "42px" : "48px"
+          } - env(safe-area-inset-bottom, 0px))`,
           zIndex: 101,
           display: hidden ? "none" : "flex",
           alignItems: "center",
@@ -141,7 +148,7 @@ export default function WindowShell({
             style={{
               background: "linear-gradient(to right, #2563eb, #1d4ed8)",
               color: "white",
-              padding: "0.75rem 1rem",
+              padding: titlePadding,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -183,10 +190,10 @@ export default function WindowShell({
                 justifyContent: "center",
                 position: "relative",
                 zIndex: 102,
-                minWidth: "44px",
-                minHeight: "44px",
-                width: "44px",
-                height: "44px",
+                minWidth: closeSize,
+                minHeight: closeSize,
+                width: closeSize,
+                height: closeSize,
                 boxSizing: "border-box",
                 WebkitTapHighlightColor: "transparent",
               }}

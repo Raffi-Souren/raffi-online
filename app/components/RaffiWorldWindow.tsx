@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import WindowShell from "../../components/ui/WindowShell"
 
@@ -27,6 +27,15 @@ function resolveWorldSrc() {
 export default function RaffiWorldWindow({ isOpen, onClose }: RaffiWorldWindowProps) {
   // Resolve once: changing iframe src would restart the game.
   const [src] = useState(resolveWorldSrc)
+  const [compact, setCompact] = useState(false)
+
+  useEffect(() => {
+    const shortViewport = window.matchMedia("(max-height: 520px)")
+    const sync = () => setCompact(shortViewport.matches)
+    sync()
+    shortViewport.addEventListener("change", sync)
+    return () => shortViewport.removeEventListener("change", sync)
+  }, [])
 
   return (
     <WindowShell
@@ -35,6 +44,7 @@ export default function RaffiWorldWindow({ isOpen, onClose }: RaffiWorldWindowPr
       hidden={!isOpen}
       fullBleed
       fill
+      compact={compact}
       maxWidth="min(1400px, 100%)"
     >
       <iframe

@@ -49,6 +49,24 @@
   .desktop-shortcut-world { top: 8rem; left: 50%; transform: translateX(-50%); }
 }
 
+/* Wide phones do not have enough vertical room for the absolute desktop
+   placements. Use the same single DOM tree in a compact grid instead. */
+@media (min-width: 768px) and (max-height: 500px) {
+  .desktop-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-content: start;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem 4rem;
+    overflow-y: auto;
+  }
+
+  .desktop-shortcut {
+    position: static;
+    transform: none;
+  }
+}
+
 /* Removed .sc-player-wrapper CSS - using inline styles in component for SoundCloud widget */
 
 /* Mario Question Block Styles */
