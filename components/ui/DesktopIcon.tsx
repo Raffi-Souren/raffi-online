@@ -15,6 +15,7 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
     "🎮": "/icons/gamepad.jpg",
     "📝": "/icons/notepad.jpg",
     "💡": "/icons/lightbulb.jpg",
+    "🎧": "/icons/ipod.png",
   }
 
   const iconSrc = iconMap[icon]
