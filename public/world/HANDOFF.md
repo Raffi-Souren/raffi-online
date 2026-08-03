@@ -1,5 +1,38 @@
 # RAFFI WORLD — Handoff
 
+## [2026-08-02] FROM: grok — REPLAY GHOSTS (DAR / TAR)
+
+**Branch:** `grok/replay-ghosts` (from `origin/grok/camera-budget`). Port **3025**.
+
+**Shipped:** real two-run REWIND mechanic.
+- Ambient NPC pool (`game/npc-sim.js`) runs policies over the six verbs.
+- Ring buffers record decisions + transforms at `npcs.replay.sampleHz`.
+- REWIND freezes run A, restores spawn + NPC start snapshot, shows cyan additive
+  ghosts, records run B.
+- Live **DAR** (decision agreement) and **TAR** (trajectory agreement within
+  `pathAgreementRadius`) from `game/replay-core.js` — never hardcoded.
+- Divergence from same-kind goal-score ties (`Math.random` pickBestScore) +
+  order-dependent soft separation in collision — not cosmetic noise.
+- Pause: REWIND enables when a valid run exists; MAP/QUIT remain COMING SOON.
+
+**Formulas:**
+- DAR = matched verbs / compared decision pairs (aligned by actor + time window
+  `decisionMatchWindow`).
+- TAR = positions within `pathAgreementRadius` / compared transform pairs
+  (aligned by actor + ~1.5/sampleHz). Missing peers skipped (do not inflate).
+  Empty → `--%` / null, never 100 or NaN.
+
+**Observed (Playwright, seed=FIXED, 3025):**
+- Short dual run: DAR 100%, TAR 96%
+- Divergence window (~6s×2): DAR 100%, TAR 90%
+- Compare budget: 71 draws / 19,100 tris
+- Full camera budget smoke: maxDraws **83**, maxTris **44,537** (under 120 / 60k)
+- Mutation: hardcode DAR → named test fails; hardcode TAR → named test fails
+
+**Tests:** `tools/replay-core.test.mjs`, `tools/replay-browser-smoke.mjs`,
+`npm run test:world:replay`. Scripts pin `RAFFI_WORLD_URL` to 3025.
+
+
 ## [2026-08-02] FROM: grok — PERF PASS 2 (props / density / fill)
 
 **Shipped:** second perf cut after building LOD.

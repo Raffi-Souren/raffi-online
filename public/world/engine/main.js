@@ -47,6 +47,11 @@ import {
 } from '../game/pursuit.js'
 import { initDebug, updateDebugCamera, updateDebugReadout, debugState, exposeAuditApi } from './debug.js'
 import { updateOpaqueFogCull } from './cull-opaque.js'
+import {
+  initReplay, disposeReplay, beginRecordingRun, endRecordingRun,
+  startRewindCompare, stopCompare, updateReplay, hasValidRun,
+  getReplayPhase, getLastMetrics, replaySnapshot,
+} from '../game/replay.js'
 
 const els = {}
 const world = {
@@ -257,6 +262,8 @@ function setPaused(paused) {
   els.pause?.classList.toggle('hidden', !state.paused)
   els.pause?.setAttribute('aria-hidden', String(!state.paused))
   if (state.paused) {
+    // Freeze run A when the player opens pause mid-record so REWIND can arm.
+    if (getReplayPhase() === 'recording') endRecordingRun()
     els.pause?.querySelector('[data-pause="resume"]')?.focus({ preventScroll: true })
   } else if (document.activeElement instanceof HTMLElement && els.pause?.contains(document.activeElement)) {
     document.activeElement.blur()
@@ -271,6 +278,10 @@ function initPauseMenu() {
     if (!button || button.disabled) return
     if (button.dataset.pause === 'resume') setPaused(false)
     else if (button.dataset.pause === 'grade') cyclePauseGrade()
+    else if (button.dataset.pause === 'rewind') {
+      if (!hasValidRun() && getReplayPhase() === 'recording') endRecordingRun()
+      if (startRewindCompare()) setPaused(false)
+    }
   })
 }
 
@@ -455,6 +466,17 @@ async function boot() {
     onClear: () => onComplianceCleared(),
     onTierChange: (next) => onComplianceTierChange(next),
   })
+  initReplay({
+    scene: gfx.scene,
+    materials,
+    atlas,
+    collision,
+    seed: state.seed,
+    elements: {
+      rewind: document.getElementById('rewind'),
+      rewindBtn: document.querySelector('[data-pause="rewind"]'),
+    },
+  })
   initDebug({ root: els.debugRoot, readout: els.debugReadout, buttons: els.debugButtons }, collision)
 
   applyGrade(state.grade.current, 1)
@@ -479,6 +501,14 @@ async function boot() {
     cycleCameraMode,
     getCameraMode,
     setCameraMode,
+    beginRecordingRun,
+    endRecordingRun,
+    startRewindCompare,
+    stopCompare,
+    hasValidRun,
+    getReplayPhase,
+    getLastMetrics,
+    replaySnapshot,
     debugPullPursuersToPlayer: async () => {
       const mod = await import('../game/pursuit.js')
       mod.debugPullPursuersToPlayer()
@@ -505,6 +535,7 @@ function startGame() {
   els.boot?.classList.add('hidden')
   els.hud?.setAttribute('aria-hidden', 'false')
   bus.emit('start')
+  beginRecordingRun()
   const d = districtAt(state.player.x, state.player.z)
   if (d) bus.emit('district', d)
   if (!query.auto) toast('WASD move  ·  E interact  ·  C camera (3D)', 4.5)
@@ -614,6 +645,20 @@ function loop(now) {
     if (!world.transitBusy && !isDialogueBlocking()) updateMissions(dt)
     if (!world.transitBusy) updateCompliance(dt)
     if (!world.transitBusy) updatePursuit(dt)
+
+    // Ambient NPCs + replay buffers / ghosts (signature mechanic).
+    updateReplay(dt, {
+      hour: currentHour(),
+      threatNear: (x, z, r) => {
+        // Soft threat from nearby pursuers if any.
+        const snap = pursuitSnapshot()
+        if (!snap?.actors?.length) return false
+        for (const a of snap.actors) {
+          if (Math.hypot((a.x ?? 0) - x, (a.z ?? 0) - z) < r) return true
+        }
+        return false
+      },
+    })
 
     // Catch freeze owns locomotion for the invite beat.
     if (pursuitBlocksControl()) {

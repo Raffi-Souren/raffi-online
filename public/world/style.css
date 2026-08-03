@@ -559,14 +559,15 @@ html, body {
 
 #rewind {
   position: absolute;
-  right: calc(12px + var(--safe-r));
-  bottom: calc(12px + var(--safe-b));
+  left: calc(12px + var(--safe-l));
+  top: calc(72px + var(--safe-t));
   z-index: 45;
-  width: min(300px, 74vw);
+  width: min(280px, 70vw);
   padding: 12px 14px;
-  background: rgba(6, 12, 20, 0.86);
+  background: rgba(6, 12, 20, 0.9);
   border: 1px solid #6be3ff;
   font-size: 11px;
+  pointer-events: none;
 }
 .rw-title { color: #6be3ff; letter-spacing: 0.12em; margin-bottom: 9px; }
 .rw-row { display: flex; justify-content: space-between; margin-bottom: 5px; color: #c8d8e4; }
@@ -574,6 +575,18 @@ html, body {
 .rw-note { margin-top: 8px; font-size: 10px; color: #6e8898; line-height: 1.5; }
 .rw-bar { margin-top: 10px; height: 3px; background: #14202c; }
 .rw-bar i { display: block; height: 100%; width: 0%; background: #6be3ff; }
+
+@media (max-width: 720px) {
+  #rewind {
+    left: calc(10px + var(--safe-l));
+    right: auto;
+    /* Minimap sits top-left on mobile (~72–204). Sit fully under it. */
+    top: calc(214px + var(--safe-t));
+    width: min(200px, 48vw);
+    max-height: 22vh;
+    overflow: hidden;
+  }
+}
 
 /* -------------------------------------------------------------- boot --- */
 

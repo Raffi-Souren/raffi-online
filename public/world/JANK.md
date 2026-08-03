@@ -54,7 +54,8 @@ touch-only vehicle controls.
 | Mounted desktop car | The car supported E-to-exit but hid every mounted keyboard prompt; Space remained the handbrake, making the car appear inescapable. | blocker (affordance) | Yes — cars keep `E · EXIT` visible; skateboard/scooter show `SPACE / E · EXIT`. |
 | Moving ride exit | On-foot state inherited vehicle velocity, and the fixed exit side could place the player into nearby static geometry, carrying or ejecting them beyond remount range. | blocker | Yes — dismount clears motion and picks the less-obstructed collision-resolved side. Moving board and car remounts are browser-guarded. |
 | Pause overlay | All five visible pause buttons accepted focus/clicks but had no handlers; RESUME left the game silently trapped in paused state. | blocker | Yes — RESUME and Escape share one state transition; keyboard focus stays inside the live controls. |
-| Pause promises | REWIND, MAP, and QUIT advertised systems whose replay math, full map, and XP shell contract do not exist yet. | visible (trust) | Yes — unavailable actions are disabled and honestly labeled COMING SOON; no fake replay percentages or guessed navigation were added. |
+| Pause promises | REWIND, MAP, and QUIT advertised systems whose replay math, full map, and XP shell contract do not exist yet. | visible (trust) | Partial — REWIND is real (two-run DAR/TAR + ghosts). MAP and QUIT remain disabled / COMING SOON. |
+| Replay sample density | Short runs may yield sparse decision samples (reconsider 3–13s) so DAR compared count is low. | mild | Documented; buffer still honest; TAR has denser transform samples at 10Hz. |
 | Touch pause | The mobile-first build had no touch affordance capable of opening pause. | blocker | Yes — a safe-area-aware PAUSE control opens the same bounded modal; the 390×844 browser guard taps PAUSE and RESUME through live state. |
 | Fresh mobile boot | The previous mission dot was over 500m from the crib with no transport lesson. | blocker | Yes — the opening route is now 14m to a garage with skateboard, scooter, grand tourer, and mission-express subway. |
 | `phase3-final/01`, `21`, `41` | The subway stair mouth is deliberately much darker than the surrounding pavement. | charm | Kept — the bright VANTAGE EXPRESS sign and interaction prompt make the entrance legible. |
@@ -104,3 +105,22 @@ and `raffi-world-pursuit-catch-desktop.png`. Tier-4 multi-sedan view budgets:
 
 No blocker found: no actors spawning inside buildings (road-node snap), no invisible
 pursuers, no death-screen catch, no mission wipe on catch.
+
+## Phase 3d — REWIND / replay ghosts
+
+Screenshots (session, not committed): `/tmp/raffi-replay-smoke/replay-complete-desktop.png`,
+`replay-mobile-390.png`. Budgets during compare: ~71 draw calls, ~19k visible triangles.
+Full camera sweep with ambient NPC pool: max **83** draws / **44,537** tris.
+
+| Screenshot | Issue | Severity | Fixed |
+|---|---|---|---|
+| replay-complete-desktop | Cyan additive ghosts track run-one transforms; DAR/TAR overlay live. | — | Yes (behavior) |
+| replay-mobile-390 | REWIND panel sits under minimap (`top: calc(214px + safe)`); no hit with action/radio. | — | Yes |
+| short dual runs | TAR can sit near 100% when path ties have not yet separated actors past 2.5m. | charm | Honest — longer window shows TAR drop (observed 90%) |
+| ambient pool | 16 capsule peds are readable but not dense city crowds. | charm | Kept — budget-friendly pool; denser pool is a later pass |
+| pause freezes run A | Opening pause mid-record freezes the buffer so REWIND can arm. | — | Yes (intended) |
+| MAP / QUIT | Still labelled COMING SOON / disabled. | deferred | Per prior plan |
+
+No blocker: REWIND starts unavailable, enables after a valid run, ghosts dispose on
+stop, empty streams show `--%`, metrics finite 0–100 when ready. Getting caught
+remains a calendar invite (unchanged).
