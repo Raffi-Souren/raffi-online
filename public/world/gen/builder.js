@@ -12,6 +12,12 @@
 
 import * as THREE from 'three'
 import { hexToRgb } from '../engine/state.js'
+import {
+  isOpaqueChunkingEnabled,
+  partitionOpaqueGeometry,
+  DEFAULT_CELL,
+  DEFAULT_SPILL_EXTENT,
+} from './chunk-opaque.js'
 
 const FACE_KEYS = ['east', 'west', 'up', 'down', 'south', 'north']
 
@@ -340,11 +346,38 @@ export function makeBuilderSet(lighting, atlas) {
   }
 }
 
-/** Turns a builder set into up to three meshes on a shared Group. */
+/**
+ * Turns a builder set into meshes on a shared Group.
+ *
+ * OPAQUE is spatially chunked (district buildings) so frustum + fog can drop
+ * off-screen city mass under FREE / high-yaw cameras. EMISSIVE and ALPHA stay
+ * exactly one mesh each with legacy names (`name:emissive`, `name:alpha`) and
+ * the original material objects — splitting alpha would change transparent sort.
+ */
 export function meshesFrom(set, materials, name = 'chunk') {
   const group = new THREE.Group()
   group.name = name
-  for (const key of ['opaque', 'emissive', 'alpha']) {
+
+  // --- opaque (chunked when enabled) ---
+  if (!set.opaque.isEmpty) {
+    if (isOpaqueChunkingEnabled()) {
+      const built = buildChunkedOpaque(set.opaque, materials.opaque, name)
+      for (const mesh of built) group.add(mesh)
+    } else {
+      const geo = set.opaque.build()
+      if (geo) {
+        const mesh = new THREE.Mesh(geo, materials.opaque)
+        mesh.name = `${name}:opaque`
+        mesh.frustumCulled = true
+        mesh.matrixAutoUpdate = false
+        mesh.updateMatrix()
+        group.add(mesh)
+      }
+    }
+  }
+
+  // --- emissive + alpha: always single legacy meshes ---
+  for (const key of ['emissive', 'alpha']) {
     const geo = set[key].build()
     if (!geo) continue
     const mesh = new THREE.Mesh(geo, materials[key])
@@ -354,5 +387,60 @@ export function meshesFrom(set, materials, name = 'chunk') {
     mesh.updateMatrix()
     group.add(mesh)
   }
+
   return group
+}
+
+/**
+ * Build compact opaque chunk meshes from a MeshBuilder's buffers without
+ * going through a single giant geometry first when possible.
+ */
+function buildChunkedOpaque(builder, material, name) {
+  const pos = builder.pos
+  const uvs = builder.uvs
+  const col = builder.col
+  const idx = builder.idx
+  const parts = partitionOpaqueGeometry(pos, uvs, col, idx, {
+    cellSize: DEFAULT_CELL,
+    spillExtent: DEFAULT_SPILL_EXTENT,
+  })
+
+  const meshes = []
+  const all = [...parts.chunks]
+  if (parts.spill) all.push(parts.spill)
+
+  for (const part of all) {
+    const geo = geometryFromChunk(part)
+    if (!geo) continue
+    const mesh = new THREE.Mesh(geo, material)
+    mesh.name = part.key === 'spill'
+      ? `${name}:opaque:spill`
+      : `${name}:opaque:${part.key}`
+    mesh.frustumCulled = true
+    mesh.matrixAutoUpdate = false
+    mesh.updateMatrix()
+    // Tag for runtime fog depth cull (opaque city only).
+    mesh.userData.opaqueChunk = true
+    mesh.userData.chunkKey = part.key
+    meshes.push(mesh)
+  }
+  return meshes
+}
+
+function geometryFromChunk(part) {
+  if (!part.indices.length) return null
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(part.positions, 3))
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(part.uvs, 2))
+  g.setAttribute('color', new THREE.Float32BufferAttribute(part.colors, 3))
+  const use32 = part.positions.length / 3 > 65535
+  g.setIndex(
+    use32
+      ? new THREE.Uint32BufferAttribute(part.indices, 1)
+      : new THREE.Uint16BufferAttribute(part.indices, 1)
+  )
+  // Tight bounds — the whole reason chunking reduces visible tris under FREE.
+  g.computeBoundingBox()
+  g.computeBoundingSphere()
+  return g
 }

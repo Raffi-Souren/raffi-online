@@ -46,6 +46,7 @@ import {
   pursuitSnapshot, pursuitBlocksControl,
 } from '../game/pursuit.js'
 import { initDebug, updateDebugCamera, updateDebugReadout, debugState, exposeAuditApi } from './debug.js'
+import { updateOpaqueFogCull } from './cull-opaque.js'
 
 const els = {}
 const world = {
@@ -392,6 +393,7 @@ async function boot() {
   })
   world.graph = built.graph
   world.districts = built.districts
+  world.cityRoot = built.root
 
   setBoot(0.78, 'building collision…')
   const collision = new CollisionWorld()
@@ -646,6 +648,12 @@ function loop(now) {
     }
 
     updateGrade(dt)
+  }
+
+  // Fog-depth cull opaque city chunks only (never emissive/alpha/actors).
+  if (world.cityRoot && cam.camera) {
+    cam.camera.updateMatrixWorld(true)
+    updateOpaqueFogCull(cam.camera, world.cityRoot)
   }
 
   renderFrame(cam.camera)
