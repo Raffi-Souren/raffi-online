@@ -9,28 +9,61 @@ interface WindowShellProps {
   children: ReactNode
   className?: string
   id?: string
+  /**
+   * Fill the whole window with the child instead of sizing to content.
+   *
+   * Normal windows (About, Notes) size to their content, so the dialog has no
+   * explicit height and `height: 100%` on any descendant collapses to `auto`.
+   * Games need the opposite: a definite height to stretch into, and no padding
+   * eating the frame. Opt in rather than changing every window.
+   */
+  fill?: boolean
+  /** Keep stateful content mounted while its window is minimized. */
+  hidden?: boolean
+  /** Let an app own the content area edge-to-edge. */
+  fullBleed?: boolean
+  /** Override the standard desktop width cap. */
+  maxWidth?: string
+  /** Trim chrome so full-bleed apps remain usable in short landscape views. */
+  compact?: boolean
 }
 
-export default function WindowShell({ title, onClose, children, className = "", id }: WindowShellProps) {
+export default function WindowShell({
+  title,
+  onClose,
+  children,
+  className = "",
+  id,
+  fill = false,
+  hidden = false,
+  fullBleed = false,
+  maxWidth = "1024px",
+  compact = false,
+}: WindowShellProps) {
+  const edgeInset = compact ? "0px" : "8px"
+  const titlePadding = compact ? "0.25rem 0.5rem" : "0.75rem 1rem"
+  const closeSize = compact ? "34px" : "44px"
   const windowRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll while window is open
   useEffect(() => {
+    if (hidden) return
     const originalOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => {
       document.body.style.overflow = originalOverflow
     }
-  }, [])
+  }, [hidden])
 
   // Handle ESC key
   useEffect(() => {
+    if (hidden) return
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
     }
     document.addEventListener("keydown", handleEscape)
     return () => document.removeEventListener("keydown", handleEscape)
-  }, [onClose])
+  }, [hidden, onClose])
 
   // Focus trap
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -56,9 +89,14 @@ export default function WindowShell({ title, onClose, children, className = "", 
       <div
         style={{
           position: "fixed",
-          inset: "0",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
+          maxHeight: "calc(100dvh - 40px - env(safe-area-inset-bottom, 0px))",
           zIndex: 100,
           backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: hidden ? "none" : undefined,
         }}
         onClick={onClose}
         aria-hidden="true"
@@ -67,16 +105,20 @@ export default function WindowShell({ title, onClose, children, className = "", 
       <div
         style={{
           position: "fixed",
-          top: "8px",
-          left: "8px",
-          right: "8px",
-          bottom: "8px",
+          top: `max(${edgeInset}, env(safe-area-inset-top, 0px))`,
+          left: `max(${edgeInset}, env(safe-area-inset-left, 0px))`,
+          right: `max(${edgeInset}, env(safe-area-inset-right, 0px))`,
+          bottom: `calc(${compact ? "42px" : "48px"} + env(safe-area-inset-bottom, 0px))`,
+          maxHeight: `calc(100dvh - max(${edgeInset}, env(safe-area-inset-top, 0px)) - ${
+            compact ? "42px" : "48px"
+          } - env(safe-area-inset-bottom, 0px))`,
           zIndex: 101,
-          display: "flex",
+          display: hidden ? "none" : "flex",
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
         }}
+        aria-hidden={hidden ? "true" : undefined}
       >
         <div
           ref={windowRef}
@@ -91,7 +133,11 @@ export default function WindowShell({ title, onClose, children, className = "", 
             display: "flex",
             flexDirection: "column",
             width: "100%",
-            maxWidth: "1024px",
+            maxWidth,
+            // A definite height is what lets `height: 100%` resolve further
+            // down. Without it the dialog sizes to content and every nested
+            // percentage height silently collapses to auto.
+            height: fill ? "100%" : undefined,
             maxHeight: "100%",
             pointerEvents: "auto",
             overflow: "hidden",
@@ -102,7 +148,7 @@ export default function WindowShell({ title, onClose, children, className = "", 
             style={{
               background: "linear-gradient(to right, #2563eb, #1d4ed8)",
               color: "white",
-              padding: "0.75rem 1rem",
+              padding: titlePadding,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -128,9 +174,10 @@ export default function WindowShell({ title, onClose, children, className = "", 
               {title}
             </h2>
             <button
+              type="button"
               onClick={onClose}
               style={{
-                padding: "0.5rem",
+                padding: 0,
                 borderRadius: "0.25rem",
                 transition: "background-color 0.2s",
                 flexShrink: 0,
@@ -143,8 +190,11 @@ export default function WindowShell({ title, onClose, children, className = "", 
                 justifyContent: "center",
                 position: "relative",
                 zIndex: 102,
-                minWidth: "40px",
-                minHeight: "40px",
+                minWidth: closeSize,
+                minHeight: closeSize,
+                width: closeSize,
+                height: closeSize,
+                boxSizing: "border-box",
                 WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => {
@@ -163,10 +213,18 @@ export default function WindowShell({ title, onClose, children, className = "", 
           <div
             style={{
               flex: "1 1 auto",
-              overflowY: "auto",
+              overflowY: fullBleed ? "hidden" : "auto",
               overflowX: "hidden",
-              padding: "1rem",
-              backgroundColor: "#ffffff",
+              // Containing block for any child's `absolute inset-0` overlay.
+              // Without it those resolve against the fixed outer positioner and
+              // escape the window frame entirely, covering the title bar.
+              position: "relative",
+              // Games own their whole frame; padding would letterbox them in
+              // white and the scrollbar would sit on top of the canvas.
+              padding: fullBleed || fill ? 0 : "1rem",
+              display: fill ? "flex" : undefined,
+              flexDirection: fill ? "column" : undefined,
+              backgroundColor: fullBleed ? "#000000" : "#ffffff",
               color: "#111827",
               minHeight: 0,
             }}

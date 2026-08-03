@@ -1,0 +1,183 @@
+{
+  "$schema": "radio",
+  "$comment": "Six stations. Nothing is sampled — engine/audio.js synthesises each station from the patterns below, so the whole soundtrack costs zero payload. Drop real files into `stems` and they take precedence over synthesis. `bpm` drives the world clock: streetlight flicker, crosswalk signals, club lighting and pedestrian walk cycles all quantise to whatever is playing. `grade` overrides the world colour grade while the station is on.",
+
+  "clock": {
+    "$comment": "One transport for the whole game. Everything visual that pulses subscribes to this.",
+    "subdivision": 4,
+    "swing": 0.0,
+    "lookaheadMs": 120,
+    "scheduleAheadSec": 0.22,
+    "subscribers": ["streetlight-flicker", "crosswalk-signal", "club-lighting", "ped-walk-cycle", "neon-flicker", "hud-pulse"]
+  },
+
+  "mix": {
+    "masterGain": 0.55,
+    "duckUnderDialogue": 0.28,
+    "duckAttack": 0.08,
+    "duckRelease": 0.5,
+    "crossfadeSeconds": 0.9,
+    "engineBusGain": 0.5,
+    "sfxBusGain": 0.7,
+    "inVehicleBoost": 1.25,
+    "outOfVehicleMuffle": { "type": "lowpass", "hz": 900, "q": 0.7 }
+  },
+
+  "stations": [
+    {
+      "id": "WGRD",
+      "name": "GROUND FLOOR",
+      "tagline": "Entry level, senior sound",
+      "bpm": 92,
+      "grade": "dusk",
+      "unlocked": true,
+      "idLine": "radio-id-wgrd",
+      "ads": ["ad-deli", "ad-vantage"],
+      "key": "F",
+      "scale": "minorPentatonic",
+      "stems": [],
+      "synth": {
+        "kick": { "steps": "1000000010000000", "type": "sine", "hz": 52, "decay": 0.34, "pitchEnv": 2.6, "gain": 0.9 },
+        "snare": { "steps": "0000100000001000", "type": "noise", "decay": 0.16, "hpf": 1400, "gain": 0.55 },
+        "hat": { "steps": "0010001000100010", "type": "noise", "decay": 0.045, "hpf": 7000, "gain": 0.22 },
+        "bass": { "steps": "1000010010000100", "type": "triangle", "octave": 2, "notes": [0, 0, 3, 5], "decay": 0.4, "gain": 0.45 },
+        "chord": { "steps": "0010000000100000", "type": "sawtooth", "octave": 4, "voicing": [0, 3, 7, 10], "decay": 1.1, "lpf": 1800, "gain": 0.16 },
+        "lead": null
+      }
+    },
+    {
+      "id": "KFLP",
+      "name": "FLIP SIDE",
+      "tagline": "We only play the edit",
+      "bpm": 124,
+      "grade": "night",
+      "unlocked": false,
+      "unlockedBy": "crate-dig",
+      "idLine": "radio-id-kflp",
+      "ads": ["ad-repaint"],
+      "key": "A",
+      "scale": "minor",
+      "stems": [],
+      "synth": {
+        "kick": { "steps": "1000100010001000", "type": "sine", "hz": 48, "decay": 0.3, "pitchEnv": 3.0, "gain": 1.0 },
+        "snare": { "steps": "0000100000001000", "type": "noise", "decay": 0.14, "hpf": 1800, "gain": 0.5 },
+        "hat": { "steps": "0010101010101010", "type": "noise", "decay": 0.035, "hpf": 8200, "gain": 0.26 },
+        "bass": { "steps": "1010101010101010", "type": "sawtooth", "octave": 2, "notes": [0, 0, 7, 5], "decay": 0.16, "lpf": 620, "gain": 0.42 },
+        "chord": { "steps": "0000100000001000", "type": "sawtooth", "octave": 4, "voicing": [0, 3, 7], "decay": 0.55, "lpf": 2600, "gain": 0.2 },
+        "lead": { "steps": "0000000010000010", "type": "square", "octave": 5, "notes": [7, 5, 3, 0], "decay": 0.3, "gain": 0.12 }
+      }
+    },
+    {
+      "id": "HABI",
+      "name": "HABIBI WAVE",
+      "tagline": "Everything is a reissue and that is fine",
+      "bpm": 104,
+      "grade": "dusk",
+      "unlocked": false,
+      "unlockedBy": "crate-dig",
+      "idLine": "radio-id-habi",
+      "ads": ["ad-deli"],
+      "key": "D",
+      "scale": "hijaz",
+      "stems": [],
+      "synth": {
+        "kick": { "steps": "1000001000100000", "type": "sine", "hz": 56, "decay": 0.3, "pitchEnv": 2.2, "gain": 0.85 },
+        "snare": { "steps": "0000100000001010", "type": "noise", "decay": 0.13, "hpf": 1200, "gain": 0.42 },
+        "hat": { "steps": "1010101010101011", "type": "noise", "decay": 0.04, "hpf": 6400, "gain": 0.2 },
+        "bass": { "steps": "1000100000100100", "type": "triangle", "octave": 2, "notes": [0, 1, 5, 4], "decay": 0.36, "gain": 0.44 },
+        "chord": { "steps": "0010000010000000", "type": "sawtooth", "octave": 4, "voicing": [0, 1, 5, 8], "decay": 0.9, "lpf": 2000, "gain": 0.18 },
+        "lead": { "steps": "0000100000100001", "type": "sawtooth", "octave": 5, "notes": [0, 1, 4, 5, 8], "decay": 0.42, "lpf": 3200, "gain": 0.14, "vibrato": { "hz": 5.5, "cents": 28 } }
+      }
+    },
+    {
+      "id": "MNFR",
+      "name": "MAINFRAME FM",
+      "tagline": "Broadcasting from a basement with excellent cooling",
+      "bpm": 132,
+      "grade": "night",
+      "unlocked": false,
+      "unlockedBy": "set-time",
+      "idLine": "radio-id-mnfr",
+      "ads": ["ad-consult"],
+      "key": "C",
+      "scale": "minor",
+      "stems": [],
+      "synth": {
+        "kick": { "steps": "1000100010001000", "type": "sine", "hz": 44, "decay": 0.26, "pitchEnv": 3.4, "gain": 1.0 },
+        "snare": { "steps": "0000100000001000", "type": "noise", "decay": 0.1, "hpf": 2400, "gain": 0.46 },
+        "hat": { "steps": "1111111111111111", "type": "noise", "decay": 0.022, "hpf": 9000, "gain": 0.18 },
+        "bass": { "steps": "1001001010010010", "type": "square", "octave": 1, "notes": [0, 0, 3, 0, 5, 3], "decay": 0.14, "lpf": 480, "gain": 0.5 },
+        "chord": { "steps": "0000000000100000", "type": "sawtooth", "octave": 3, "voicing": [0, 7, 12], "decay": 0.4, "lpf": 1400, "gain": 0.14 },
+        "lead": { "steps": "0010001000100010", "type": "square", "octave": 6, "notes": [0, 3, 7, 10, 7, 3], "decay": 0.09, "gain": 0.1 }
+      }
+    },
+    {
+      "id": "TLKR",
+      "name": "ALL-TALK 1010",
+      "tagline": "You're on the air, and you're on mute",
+      "bpm": 100,
+      "grade": "haze",
+      "unlocked": true,
+      "idLine": "radio-id-tlkr",
+      "ads": ["ad-vantage", "ad-consult", "ad-repaint"],
+      "talkStation": true,
+      "$talkComment": "Mostly ad reads and dead air over a bed. bpm still drives the world clock so the city does not stop pulsing on this station.",
+      "key": "G",
+      "scale": "major",
+      "stems": [],
+      "synth": {
+        "kick": { "steps": "1000000000000000", "type": "sine", "hz": 60, "decay": 0.2, "pitchEnv": 1.6, "gain": 0.3 },
+        "snare": null,
+        "hat": { "steps": "0000000010000000", "type": "noise", "decay": 0.03, "hpf": 5000, "gain": 0.08 },
+        "bass": { "steps": "1000000000000000", "type": "sine", "octave": 2, "notes": [0], "decay": 1.6, "gain": 0.2 },
+        "chord": { "steps": "1000000000000000", "type": "triangle", "octave": 4, "voicing": [0, 4, 7], "decay": 2.4, "lpf": 1200, "gain": 0.1 },
+        "lead": null
+      }
+    },
+    {
+      "id": "SUNS",
+      "name": "SUNSET DEBENTURE",
+      "tagline": "Soft rock for people with courtside seats",
+      "bpm": 88,
+      "grade": "dusk",
+      "unlocked": true,
+      "idLine": "radio-id-suns",
+      "ads": ["ad-vantage"],
+      "key": "E",
+      "scale": "major",
+      "stems": [],
+      "synth": {
+        "kick": { "steps": "1000000010000000", "type": "sine", "hz": 54, "decay": 0.32, "pitchEnv": 2.0, "gain": 0.7 },
+        "snare": { "steps": "0000100000001000", "type": "noise", "decay": 0.2, "hpf": 1000, "gain": 0.34 },
+        "hat": { "steps": "0010001000100010", "type": "noise", "decay": 0.06, "hpf": 5600, "gain": 0.14 },
+        "bass": { "steps": "1000010000100000", "type": "triangle", "octave": 2, "notes": [0, 4, 5, 2], "decay": 0.5, "gain": 0.4 },
+        "chord": { "steps": "0010000000100000", "type": "triangle", "octave": 4, "voicing": [0, 4, 7, 11], "decay": 1.6, "lpf": 2200, "gain": 0.2 },
+        "lead": { "steps": "0000000000001000", "type": "sine", "octave": 5, "notes": [11, 9, 7, 4], "decay": 0.8, "gain": 0.12, "vibrato": { "hz": 4.5, "cents": 14 } }
+      }
+    }
+  ],
+
+  "$ambientComment": "Per-district ambient beds, also synthesised. Crossfaded on district transition.",
+  "ambient": {
+    "heights": { "wind": 0.18, "traffic": 0.1, "gulls": 0.12, "hum": 0.05, "tone": 180 },
+    "downtown": { "wind": 0.1, "traffic": 0.3, "gulls": 0.0, "hum": 0.14, "tone": 120 },
+    "strip": { "wind": 0.06, "traffic": 0.22, "gulls": 0.0, "hum": 0.2, "tone": 90 },
+    "yards": { "wind": 0.26, "traffic": 0.06, "gulls": 0.14, "hum": 0.1, "tone": 70 },
+    "bowl": { "wind": 0.22, "traffic": 0.08, "gulls": 0.04, "hum": 0.08, "tone": 150 },
+    "mainframe": { "wind": 0.0, "traffic": 0.0, "gulls": 0.0, "hum": 0.55, "tone": 60, "$comment": "Rack noise. Deliberately oppressive." }
+  },
+
+  "$sfxComment": "All synthesised. No samples anywhere in this build.",
+  "sfx": {
+    "ui-blip": { "type": "sine", "hz": 880, "decay": 0.06, "gain": 0.2 },
+    "ui-confirm": { "type": "sine", "hz": 1320, "decay": 0.12, "gain": 0.22, "slideTo": 1760 },
+    "ui-deny": { "type": "square", "hz": 180, "decay": 0.14, "gain": 0.16 },
+    "pickup": { "type": "sine", "hz": 660, "decay": 0.22, "gain": 0.26, "slideTo": 1320 },
+    "door": { "type": "noise", "decay": 0.3, "lpf": 700, "gain": 0.3 },
+    "crash": { "type": "noise", "decay": 0.42, "hpf": 300, "gain": 0.45, "distort": 0.4 },
+    "squeal": { "type": "noise", "decay": 0.5, "bpf": 1800, "q": 7.5, "gain": 0.3 },
+    "compliance-up": { "type": "square", "hz": 220, "decay": 0.3, "gain": 0.24, "slideTo": 330 },
+    "compliance-clear": { "type": "sine", "hz": 523, "decay": 0.5, "gain": 0.28, "arp": [0, 4, 7, 12] },
+    "beat-flash": { "type": "sine", "hz": 1200, "decay": 0.03, "gain": 0.05 }
+  }
+}

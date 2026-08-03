@@ -215,6 +215,53 @@ interface IPodPlayerProps {
   onExpandVideo?: (youtubeId: string, title: string) => void
 }
 
+const IPOD_WIDTH = 280
+const IPOD_HEIGHT = 460
+const MIN_USABLE_SCALE = 0.75
+
+// One detent per 30 degrees — twelve rows per full turn. Coarse enough that a
+// resting hand never registers, fine enough that a flick walks a long list.
+const WHEEL_DETENT_DEGREES = 30
+// Angles are unstable near the hub, where a pixel of travel swings the bearing
+// wildly. Ignore samples inside this fraction of the radius; 0.4 of the 160px
+// wheel clears the 60px Select button.
+const WHEEL_DEAD_ZONE_RATIO = 0.4
+// Pixels of copy to move per detent on screens that scroll text instead of
+// highlighting rows.
+const WHEEL_SCROLL_PIXELS_PER_DETENT = 28
+// Total swept rotation that promotes a press from "tap" to "spin". Below this a
+// press is left completely alone so it lands on MENU, a skip button or
+// play/pause; above it the wheel takes over the pointer and eats the closing
+// click. Both effects share this one threshold so a press can never fall
+// between them and do nothing at all.
+const WHEEL_GESTURE_CONFIRM_DEGREES = 8
+
+/**
+ * Bearing of a point on the wheel, in degrees clockwise from 3 o'clock.
+ *
+ * Returns 0-359 so the seam sits at 3 o'clock, and `null` inside the dead zone
+ * so callers can drop the sample instead of acting on a meaningless angle.
+ */
+function wheelBearingDegrees(dx: number, dy: number, radius: number) {
+  if (Math.hypot(dx, dy) < radius * WHEEL_DEAD_ZONE_RATIO) return null
+  const degrees = Math.atan2(dy, dx) * (180 / Math.PI)
+  return (degrees + 360) % 360
+}
+
+/**
+ * Signed shortest rotation from one bearing to another.
+ *
+ * Bearings wrap at the 359/0 seam, so a pointer crossing it reads as a ~359
+ * degree jump in the wrong direction. Folding the raw difference back into
+ * (-180, 180] keeps one continuous drag continuous.
+ */
+function shortestAngleDelta(fromDegrees: number, toDegrees: number) {
+  let delta = (toDegrees - fromDegrees) % 360
+  if (delta > 180) delta -= 360
+  if (delta <= -180) delta += 360
+  return delta
+}
+
 export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const {
     currentTrack,
@@ -241,12 +288,34 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const [currentVideoPlaylist, setCurrentVideoPlaylist] = useState<Video[]>(ANALOG_DIGITAL_VIDEOS)
   const [isVideoPlaying, setIsVideoPlaying] = useState(true)
   const [currentPodcast, setCurrentPodcast] = useState<Podcast | null>(null)
+  const [playerLayout, setPlayerLayout] = useState({ scale: 1, needsVerticalScroll: false })
 
+  const playerViewportRef = useRef<HTMLDivElement>(null)
   const wheelRef = useRef<HTMLDivElement>(null)
   const lastAngleRef = useRef<number | null>(null)
   const accumulatedRotationRef = useRef(0)
+  const sweptRotationRef = useRef(0)
+  const scrollRotationRef = useRef(0)
+  const lastScrollAtRef = useRef(0)
+  const wheelDidRotateRef = useRef(false)
+  // Mouse, touch and pen all arrive as pointer events, so one captured pointer
+  // id is the whole gesture bookkeeping.
+  const wheelPointerIdRef = useRef<number | null>(null)
   const videoIframeRef = useRef<HTMLIFrameElement>(null)
   const selectedItemRef = useRef<HTMLDivElement>(null)
+  const menuListRef = useRef<HTMLDivElement>(null)
+  const screenScrollRef = useRef<HTMLDivElement>(null)
+
+  const handleVideoPlayPause = useCallback(() => {
+    if (videoIframeRef.current?.contentWindow) {
+      if (isVideoPlaying) {
+        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*")
+      } else {
+        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', "*")
+      }
+      setIsVideoPlaying(!isVideoPlaying)
+    }
+  }, [isVideoPlaying])
 
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00"
@@ -353,6 +422,15 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
   const menuItems = getMenuItems()
 
+  // The wheel only ever moves something that already exists on screen. Now
+  // Playing and the video player have no rows and no scrollable copy, so the
+  // wheel stays inert there rather than inventing navigation or interrupting
+  // whatever is playing.
+  const hasSelectableRows =
+    currentScreen !== "nowPlaying" && currentScreen !== "videoPlayer" && menuItems.length > 0
+  const hasScrollableCopy = currentScreen === "podcastDetail"
+  const wheelCanRotate = hasSelectableRows || hasScrollableCopy
+
   // Seed the default playlist once, but never hijack a session that's already
   // playing (e.g. a record dug out of the crate).
   const seededPlaylistRef = useRef(false)
@@ -385,7 +463,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       setCurrentScreen(item.submenu)
       setSelectedIndex(0)
     }
-  }, [currentScreen, menuItems, selectedIndex, isPlaying, pauseTrack, resumeTrack])
+  }, [currentScreen, menuItems, selectedIndex, isPlaying, pauseTrack, resumeTrack, handleVideoPlayPause])
 
   const handleBack = useCallback(() => {
     if (menuStack.length > 0) {
@@ -396,62 +474,157 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     }
   }, [menuStack])
 
-  const handleWheelMove = useCallback(
-    (clientX: number, clientY: number) => {
-      if (!wheelRef.current) return
+  const navigateByWheel = useCallback(
+    (steps: number) => {
+      if (!steps) return
 
-      const rect = wheelRef.current.getBoundingClientRect()
-      const centerX = rect.left + rect.width / 2
-      const centerY = rect.top + rect.height / 2
-
-      const angle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI)
-
-      if (lastAngleRef.current !== null) {
-        let delta = angle - lastAngleRef.current
-
-        if (delta > 180) delta -= 360
-        if (delta < -180) delta += 360
-
-        accumulatedRotationRef.current += delta
-
-        const STEP = 30
-        if (Math.abs(accumulatedRotationRef.current) >= STEP) {
-          // Advance by however many full steps were rotated so a fast spin
-          // moves multiple items instead of getting stuck on one.
-          const steps = Math.trunc(accumulatedRotationRef.current / STEP)
-          const maxIndex = currentScreen === "nowPlaying" || currentScreen === "videoPlayer" ? 0 : menuItems.length - 1
-
-          setSelectedIndex((prev) => {
-            const newIndex = prev + steps
-            if (newIndex < 0) return 0
-            if (newIndex > maxIndex) return maxIndex
-            return newIndex
-          })
-
-          // Keep the leftover rotation so movement stays smooth.
-          accumulatedRotationRef.current -= steps * STEP
-        }
+      if (hasSelectableRows) {
+        setSelectedIndex((prev) => Math.max(0, Math.min(menuItems.length - 1, prev + steps)))
+        return
       }
 
-      lastAngleRef.current = angle
+      if (hasScrollableCopy) {
+        // Detail screens have no highlighted rows, but the click wheel should
+        // still work like an iPod wheel and move their scrollable copy.
+        screenScrollRef.current?.scrollBy({
+          top: steps * WHEEL_SCROLL_PIXELS_PER_DETENT,
+          behavior: "auto",
+        })
+      }
     },
-    [menuItems.length, currentScreen],
+    [hasScrollableCopy, hasSelectableRows, menuItems.length],
   )
 
-  const handleWheelStart = () => {
-    lastAngleRef.current = null
-    accumulatedRotationRef.current = 0
-  }
+  // Bearing of a client point on the wheel, or null if the wheel is gone or the
+  // point sits in the hub dead zone.
+  const readWheelBearing = useCallback((clientX: number, clientY: number) => {
+    const wheel = wheelRef.current
+    if (!wheel) return null
 
-  const handleWheelEnd = () => {
-    lastAngleRef.current = null
-  }
+    const rect = wheel.getBoundingClientRect()
+    const radius = rect.width / 2
+    if (radius <= 0) return null
 
-  // Keep the highlighted row in view when scrolling long lists so the
-  // selection never disappears off-screen.
+    return wheelBearingDegrees(clientX - (rect.left + radius), clientY - (rect.top + rect.height / 2), radius)
+  }, [])
+
+  const trackWheelRotation = useCallback(
+    (clientX: number, clientY: number) => {
+      const bearing = readWheelBearing(clientX, clientY)
+
+      if (bearing === null) {
+        // Inside the dead zone: pause the gesture rather than end it, and
+        // re-seed on the way out so crossing the hub emits nothing.
+        lastAngleRef.current = null
+        return
+      }
+
+      const previousBearing = lastAngleRef.current
+      lastAngleRef.current = bearing
+      if (previousBearing === null) return
+
+      const delta = shortestAngleDelta(previousBearing, bearing)
+      accumulatedRotationRef.current += delta
+      sweptRotationRef.current += Math.abs(delta)
+      if (sweptRotationRef.current >= WHEEL_GESTURE_CONFIRM_DEGREES) {
+        wheelDidRotateRef.current = true
+      }
+
+      // Emit every whole detent the pointer swept, so a fast spin moves several
+      // rows instead of getting stuck on one.
+      const steps = Math.trunc(accumulatedRotationRef.current / WHEEL_DETENT_DEGREES)
+      if (!steps) return
+
+      // Keep the leftover rotation so slow movement stays smooth.
+      accumulatedRotationRef.current -= steps * WHEEL_DETENT_DEGREES
+      navigateByWheel(steps)
+    },
+    [navigateByWheel, readWheelBearing],
+  )
+
+  const handleJogWheelScroll = useCallback(
+    (event: WheelEvent) => {
+      // Screens with nothing to move keep native scrolling.
+      if (!wheelCanRotate) return
+      event.preventDefault()
+
+      const now = performance.now()
+      if (now - lastScrollAtRef.current > 180) scrollRotationRef.current = 0
+      lastScrollAtRef.current = now
+
+      const multiplier = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1
+      scrollRotationRef.current += event.deltaY * multiplier
+
+      const STEP = 36
+      const steps = Math.max(-3, Math.min(3, Math.trunc(scrollRotationRef.current / STEP)))
+      if (!steps) return
+
+      navigateByWheel(steps)
+      scrollRotationRef.current -= steps * STEP
+    },
+    [navigateByWheel, wheelCanRotate],
+  )
+
   useEffect(() => {
-    selectedItemRef.current?.scrollIntoView({ block: "nearest" })
-  }, [selectedIndex])
+    const viewport = playerViewportRef.current
+    if (!viewport) return
+
+    const updatePlayerLayout = () => {
+      const availableWidth = viewport.clientWidth
+      const availableHeight = viewport.clientHeight
+      if (availableWidth <= 0 || availableHeight <= 0) return
+
+      const widthScale = availableWidth / IPOD_WIDTH
+      const heightScale = availableHeight / IPOD_HEIGHT
+      const fitScale = Math.min(1, widthScale, heightScale)
+      // Never create horizontal overflow. On short screens, preserve a usable
+      // click wheel and let this local viewport scroll vertically instead.
+      const minimumScale = Math.min(1, widthScale, MIN_USABLE_SCALE)
+      const scale = Math.max(fitScale, minimumScale)
+      const needsVerticalScroll = IPOD_HEIGHT * scale > availableHeight + 1
+
+      setPlayerLayout((previous) => {
+        if (Math.abs(previous.scale - scale) < 0.001 && previous.needsVerticalScroll === needsVerticalScroll) {
+          return previous
+        }
+        return { scale, needsVerticalScroll }
+      })
+    }
+
+    updatePlayerLayout()
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updatePlayerLayout)
+      return () => window.removeEventListener("resize", updatePlayerLayout)
+    }
+
+    const resizeObserver = new ResizeObserver(updatePlayerLayout)
+    resizeObserver.observe(viewport)
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  // Keep the highlighted row in view when scrolling long lists so the selection
+  // never disappears off-screen. This nudges the list's own scrollTop instead of
+  // calling scrollIntoView, which would also drag the surrounding window and the
+  // page around while the wheel is being spun.
+  useEffect(() => {
+    const row = selectedItemRef.current
+    const list = menuListRef.current
+    if (!row || !list) return
+
+    const listRect = list.getBoundingClientRect()
+    if (listRect.height <= 0) return
+    const rowRect = row.getBoundingClientRect()
+    // The chassis is CSS-scaled, so convert measured client pixels back into
+    // the list's own unscaled scroll pixels.
+    const toScrollPixels = list.clientHeight / listRect.height
+
+    if (rowRect.top < listRect.top) {
+      list.scrollTop -= (listRect.top - rowRect.top) * toScrollPixels
+    } else if (rowRect.bottom > listRect.bottom) {
+      list.scrollTop += (rowRect.bottom - listRect.bottom) * toScrollPixels
+    }
+  }, [currentScreen, selectedIndex])
 
   // Guard against a stale selectedIndex when moving to a shorter menu.
   useEffect(() => {
@@ -461,16 +634,79 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     })
   }, [menuItems.length])
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (e.buttons === 1) {
-      handleWheelMove(e.clientX, e.clientY)
+  const isCenterControl = (target: EventTarget | null) =>
+    target instanceof Element && target.closest("[data-wheel-center]") !== null
+
+  const handleWheelPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // Secondary mouse buttons are not a spin. Touch and pen always report 0.
+    if (event.button > 0) return
+
+    // A fresh press ends the "this was a drag" state so the tap that follows
+    // reaches its button normally.
+    wheelDidRotateRef.current = false
+
+    // The hub owns Select; only the annulus rotates.
+    if (isCenterControl(event.target)) return
+    if (!wheelCanRotate) return
+    if (wheelPointerIdRef.current !== null) return
+    if (readWheelBearing(event.clientX, event.clientY) === null) return
+
+    wheelPointerIdRef.current = event.pointerId
+    lastAngleRef.current = null
+    accumulatedRotationRef.current = 0
+    sweptRotationRef.current = 0
+    // No pointer capture yet — capturing here would retarget the closing click
+    // to the wheel and kill every ordinary tap on the controls it covers.
+    trackWheelRotation(event.clientX, event.clientY)
+  }
+
+  const handleWheelPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (wheelPointerIdRef.current !== event.pointerId) return
+    // Suppress page scrolling and text selection only while a spin is actually
+    // running; an idle pointer over the wheel behaves normally.
+    if (event.cancelable) event.preventDefault()
+    trackWheelRotation(event.clientX, event.clientY)
+
+    // Once this is definitely a spin, take the pointer so it survives leaving
+    // the 160px wheel — which happens constantly on the scaled-down phone
+    // layout — and so the release lands here to have its click swallowed.
+    //
+    // Only pointerup and pointercancel end the gesture. lostpointercapture must
+    // not: touch pointers are implicitly captured at pointerdown, so claiming
+    // them explicitly here fires a lostpointercapture for the implicit capture
+    // and would otherwise cancel the spin on its very first move.
+    if (wheelDidRotateRef.current && !event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.setPointerCapture(event.pointerId)
     }
   }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const touch = e.touches[0]
-    handleWheelMove(touch.clientX, touch.clientY)
+  const handleWheelPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (wheelPointerIdRef.current !== event.pointerId) return
+    wheelPointerIdRef.current = null
+    lastAngleRef.current = null
+    accumulatedRotationRef.current = 0
+    sweptRotationRef.current = 0
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    // wheelDidRotateRef stays set so the click this release generates is
+    // swallowed below instead of firing MENU, play/pause or a skip button.
   }
+
+  const handleWheelClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!wheelDidRotateRef.current) return
+    wheelDidRotateRef.current = false
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  useEffect(() => {
+    const wheel = wheelRef.current
+    if (!wheel) return
+
+    wheel.addEventListener("wheel", handleJogWheelScroll, { passive: false })
+    return () => wheel.removeEventListener("wheel", handleJogWheelScroll)
+  }, [handleJogWheelScroll])
 
   const getScreenTitle = () => {
     switch (currentScreen) {
@@ -509,17 +745,6 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     }
   }
 
-  const handleVideoPlayPause = useCallback(() => {
-    if (videoIframeRef.current?.contentWindow) {
-      if (isVideoPlaying) {
-        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*")
-      } else {
-        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', "*")
-      }
-      setIsVideoPlaying(!isVideoPlaying)
-    }
-  }, [isVideoPlaying])
-
   const handleNextVideo = useCallback(() => {
     const nextIndex = (currentVideoIndex + 1) % currentVideoPlaylist.length
     setCurrentVideoIndex(nextIndex)
@@ -534,18 +759,46 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     setIsVideoPlaying(true)
   }, [currentVideoIndex, currentVideoPlaylist])
 
+  const renderedWidth = IPOD_WIDTH * playerLayout.scale
+  const renderedHeight = IPOD_HEIGHT * playerLayout.scale
+
   return (
     <div
-      className="relative mx-auto select-none"
+      ref={playerViewportRef}
       style={{
-        width: "280px",
-        height: "460px",
-        background: "linear-gradient(180deg, #e8e8e8 0%, #d4d4d4 50%, #c0c0c0 100%)",
-        borderRadius: "24px",
-        boxShadow: "0 10px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)",
-        border: "1px solid #999",
+        alignItems: "center",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        justifyContent: playerLayout.needsVerticalScroll ? "flex-start" : "center",
+        minHeight: 0,
+        overflowX: "hidden",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        width: "100%",
       }}
     >
+      <div
+        style={{
+          flex: "0 0 auto",
+          height: `${renderedHeight}px`,
+          position: "relative",
+          width: `${renderedWidth}px`,
+        }}
+      >
+        <div
+          className="relative select-none"
+          style={{
+            width: `${IPOD_WIDTH}px`,
+            height: `${IPOD_HEIGHT}px`,
+            background: "linear-gradient(180deg, #e8e8e8 0%, #d4d4d4 50%, #c0c0c0 100%)",
+            borderRadius: "24px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)",
+            border: "1px solid #999",
+            transform: `scale(${playerLayout.scale})`,
+            transformOrigin: "top left",
+          }}
+        >
       <div
         className="absolute"
         style={{
@@ -560,23 +813,31 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         }}
       >
         <div
-          className="w-full h-full overflow-hidden"
+          className="flex h-full w-full flex-col overflow-hidden"
           style={{
             background: "linear-gradient(180deg, #b8c8b8 0%, #a8b8a8 100%)",
             borderRadius: "2px",
           }}
         >
           <div
-            className="flex items-center justify-between px-2 py-1"
+            className="flex flex-shrink-0 items-center justify-between gap-1 px-2 py-1"
             style={{
               background: "linear-gradient(180deg, #8898a8 0%, #7888a8 100%)",
               borderBottom: "1px solid #6878a8",
             }}
           >
-            <span className="text-xs font-bold" style={{ color: "#000", fontFamily: "Chicago, system-ui" }}>
+            {/* truncate + min-w-0: a long title like "Fred again.. — Boiler
+                Room London" used to wrap onto a second line, making this bar
+                taller than the 24px the screen below assumed and pushing the
+                Expand button out through the bezel. */}
+            <span
+              className="min-w-0 truncate text-xs font-bold"
+              style={{ color: "#000", fontFamily: "Chicago, system-ui" }}
+              title={getScreenTitle()}
+            >
               {getScreenTitle()}
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-shrink-0 items-center gap-1">
           {shuffle && (
             <span className="text-xs font-bold" style={{ color: "#000" }} title="Shuffle on">
               S
@@ -598,10 +859,18 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
             </div>
           </div>
 
-          <div className="p-1 h-[calc(100%-24px)] overflow-hidden">
+          {/* flex-1 rather than calc(100% - 24px): the content area now derives
+              its height from whatever the header actually measures, so a taller
+              status bar can never overflow the screen. */}
+          <div className="min-h-0 flex-1 overflow-hidden p-1">
             {currentScreen === "videoPlayer" && currentVideo ? (
-              <div className="h-full flex flex-col items-center justify-center">
-                <div className="w-full bg-black rounded overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              // The video absorbs all leftover height; the caption and Expand
+              // button are flex-shrink-0 so they can never be clipped off the
+              // bottom. The old layout gave the frame a fixed 16:9 box that
+              // could not shrink (flex items default to min-height:auto), so on
+              // a long title the button overflowed a hidden container.
+              <div className="flex h-full flex-col items-center justify-center gap-1">
+                <div className="min-h-0 w-full flex-1 overflow-hidden rounded bg-black">
                   <iframe
                     ref={videoIframeRef}
                     width="100%"
@@ -613,13 +882,16 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                     allowFullScreen
                   />
                 </div>
-                <p className="text-xs mt-1 truncate w-full text-center" style={{ color: "#000", fontSize: "9px" }}>
+                <p
+                  className="w-full flex-shrink-0 truncate text-center text-xs"
+                  style={{ color: "#000", fontSize: "9px" }}
+                >
                   {currentVideo.title} ({currentVideoIndex + 1}/{currentVideoPlaylist.length})
                 </p>
                 {onExpandVideo && (
                   <button
                     onClick={() => onExpandVideo(currentVideo.youtubeId, currentVideo.title)}
-                    className="mt-1 px-2 py-0.5 text-xs rounded"
+                    className="flex-shrink-0 rounded px-2 py-0.5 text-xs"
                     style={{
                       background: "#3366cc",
                       color: "#fff",
@@ -632,7 +904,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                 )}
               </div>
             ) : currentScreen === "podcastDetail" && currentPodcast ? (
-              <div className="h-full overflow-y-auto px-2 py-1 text-left">
+              <div ref={screenScrollRef} className="h-full overflow-y-auto px-2 py-1 text-left">
                 <p
                   className="font-bold leading-tight"
                   style={{ color: "#000", fontFamily: "Chicago, system-ui", fontSize: "11px" }}
@@ -754,11 +1026,13 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
                 )}
               </div>
             ) : (
-              <div className="space-y-0 overflow-y-auto h-full">
+              <div ref={menuListRef} className="space-y-0 overflow-y-auto h-full">
                 {menuItems.map((item, index) => (
                   <div
                     key={index}
                     ref={selectedIndex === index ? selectedItemRef : null}
+                    data-ipod-row
+                    data-selected={selectedIndex === index}
                     className="flex items-center justify-between px-2 py-1"
                     style={{
                       background: selectedIndex === index ? "#3366cc" : "transparent",
@@ -779,6 +1053,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
       <div
         ref={wheelRef}
+        aria-label="iPod click wheel. Rotate or scroll to navigate."
         className="absolute cursor-pointer"
         style={{
           bottom: "40px",
@@ -789,38 +1064,61 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
           background: "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 50%, #ccc 100%)",
           borderRadius: "50%",
           boxShadow: "inset 0 2px 10px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.1)",
+          // Only claim the touch gesture on screens the wheel can actually
+          // move; elsewhere a swipe over the wheel still scrolls the page.
+          touchAction: wheelCanRotate ? "none" : "auto",
+          WebkitTapHighlightColor: "transparent",
         }}
-        onMouseDown={handleWheelStart}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleWheelEnd}
-        onMouseLeave={handleWheelEnd}
-        onTouchStart={handleWheelStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleWheelEnd}
+        onPointerDown={handleWheelPointerDown}
+        onPointerMove={handleWheelPointerMove}
+        onPointerUp={handleWheelPointerEnd}
+        onPointerCancel={handleWheelPointerEnd}
+        onClickCapture={handleWheelClickCapture}
       >
         <button
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-95"
+          data-wheel-center
+          type="button"
+          aria-label={
+            currentScreen === "videoPlayer"
+              ? "Play or pause video"
+              : currentScreen === "nowPlaying"
+                ? "Play or pause track"
+                : "Select highlighted item"
+          }
+          className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            width: "50px",
-            height: "50px",
+            width: "60px",
+            height: "60px",
             background: "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)",
             borderRadius: "50%",
             boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
             border: "none",
+            cursor: "pointer",
+            WebkitTapHighlightColor: "transparent",
           }}
           onClick={handleSelect}
         />
 
         <button
-          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label="Back to previous menu"
+          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            top: "8px",
+            alignItems: "flex-start",
+            cursor: "pointer",
+            display: "flex",
             fontSize: "10px",
             fontWeight: "bold",
             color: "#333",
             background: "none",
             border: "none",
             fontFamily: "system-ui",
+            height: "60px",
+            justifyContent: "center",
+            paddingTop: "8px",
+            top: 0,
+            WebkitTapHighlightColor: "transparent",
+            width: "80px",
           }}
           onClick={handleBack}
         >
@@ -828,13 +1126,23 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         </button>
 
         <button
-          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label={currentScreen === "videoPlayer" ? "Previous video" : "Previous track"}
+          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            left: "12px",
+            alignItems: "center",
+            cursor: "pointer",
+            display: "flex",
             fontSize: "14px",
             color: "#333",
             background: "none",
             border: "none",
+            height: "80px",
+            justifyContent: "flex-start",
+            left: 0,
+            paddingLeft: "12px",
+            WebkitTapHighlightColor: "transparent",
+            width: "50px",
           }}
           onClick={currentScreen === "videoPlayer" ? handlePrevVideo : previousTrack}
         >
@@ -842,13 +1150,23 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         </button>
 
         <button
-          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label={currentScreen === "videoPlayer" ? "Next video" : "Next track"}
+          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            right: "12px",
+            alignItems: "center",
+            cursor: "pointer",
+            display: "flex",
             fontSize: "14px",
             color: "#333",
             background: "none",
             border: "none",
+            height: "80px",
+            justifyContent: "flex-end",
+            paddingRight: "12px",
+            right: 0,
+            WebkitTapHighlightColor: "transparent",
+            width: "50px",
           }}
           onClick={currentScreen === "videoPlayer" ? handleNextVideo : nextTrack}
         >
@@ -856,13 +1174,23 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         </button>
 
         <button
-          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70"
+          type="button"
+          aria-label={currentScreen === "videoPlayer" ? "Play or pause video" : "Play or pause track"}
+          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
           style={{
-            bottom: "8px",
+            alignItems: "flex-end",
+            bottom: 0,
+            cursor: "pointer",
+            display: "flex",
             fontSize: "12px",
             color: "#333",
             background: "none",
             border: "none",
+            height: "60px",
+            justifyContent: "center",
+            paddingBottom: "8px",
+            WebkitTapHighlightColor: "transparent",
+            width: "80px",
           }}
           onClick={
             currentScreen === "videoPlayer" ? handleVideoPlayPause : () => (isPlaying ? pauseTrack() : resumeTrack())
@@ -883,6 +1211,8 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         }}
       >
         iPod
+      </div>
+        </div>
       </div>
     </div>
   )

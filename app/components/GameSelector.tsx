@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import WindowShell from "../../components/ui/WindowShell"
 import SnakeGame from "./SnakeGame"
 import ParachuteGame from "./ParachuteGame"
@@ -9,6 +10,14 @@ import MinesweeperGame from "./MinesweeperGame"
 import DoomGame from "./DoomGame"
 import AgeOfEmpires2 from "./AgeOfEmpires2"
 import XMenArcade from "./XMenArcade"
+
+const SnakeGame = dynamic(() => import("./SnakeGame"))
+const ParachuteGame = dynamic(() => import("./ParachuteGame"))
+const Brickbreaker = dynamic(() => import("./Brickbreaker"))
+const MinesweeperGame = dynamic(() => import("./MinesweeperGame"))
+const DoomGame = dynamic(() => import("./DoomGame"))
+const AgeOfEmpires2 = dynamic(() => import("./AgeOfEmpires2"))
+const XMenArcade = dynamic(() => import("./XMenArcade"))
 
 interface Game {
   id: string
@@ -83,6 +92,19 @@ const RETRO_GAMES: Game[] = [
   },
 ]
 
+/**
+ * Games that embed a third-party full-frame viewport (an iframe that has no
+ * intrinsic height) and therefore need the window to hand them a definite one.
+ *
+ * Everything else is an intrinsic React/canvas game that sizes to its own
+ * content. Forcing the `fill` contract onto those centred them inside a
+ * fixed-height flex box, so anything taller than the window overflowed equally
+ * above and below — and the overflow above a centred flex item is unreachable
+ * by scrolling. Intrinsic games stay top-aligned in a normally scrolling
+ * window instead.
+ */
+const EMBEDDED_VIEWPORT_GAMES = new Set(["doom", "xmen-arcade"])
+
 export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDevice, setSelectedDevice] = useState("All")
@@ -103,14 +125,29 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
     }[activeGame]
 
     if (GameComponent) {
+      const embedded = EMBEDDED_VIEWPORT_GAMES.has(activeGame)
       return (
         <WindowShell
+          key={`game-${activeGame}`}
           title={`${RETRO_GAMES.find((g) => g.id === activeGame)?.name.toUpperCase()} - ${RETRO_GAMES.find((g) => g.id === activeGame)?.device}`}
           onClose={() => setActiveGame(null)}
+          fill={embedded}
         >
-          <div className="w-full h-full min-h-[300px] flex items-center justify-center">
+          {embedded ? (
+            // The embedded game owns the frame and manages its own floor.
             <GameComponent />
-          </div>
+          ) : (
+            // items-start, never items-center: content taller than the window
+            // must scroll from the top with every control reachable.
+            //
+            // `relative` anchors each game's own `absolute inset-0` start/pause
+            // overlays to this box rather than to the window frame, and the
+            // 360px floor is tall enough that those overlays' vertically
+            // centred contents fit instead of spilling above the scroll origin.
+            <div className="relative flex w-full min-h-[360px] items-start justify-center">
+              <GameComponent />
+            </div>
+          )}
         </WindowShell>
       )
     }
@@ -134,7 +171,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
   }
 
   return (
-    <WindowShell title="RETRO GAMES" onClose={onClose}>
+    <WindowShell key="game-picker" title="RETRO GAMES" onClose={onClose}>
       <div className="space-y-4 overflow-x-hidden">
         {/* Header */}
         <div className="text-center">

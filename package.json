@@ -7,7 +7,10 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "test": "tsc -p tsconfig.test.json && node --test .test-build/lib/audio-engine.test.js"
+    "test:world:browser": "node public/world/tools/onboarding-smoke.mjs",
+    "test": "tsc -p tsconfig.test.json && node --test .test-build/lib/audio-engine.test.js && node --test public/world/tools/lot-placement.test.mjs public/world/tools/mission-core.test.mjs public/world/tools/compliance-core.test.mjs public/world/tools/pursuit-core.test.mjs public/world/tools/opaque-chunk.test.mjs public/world/tools/replay-core.test.mjs",
+    "test:world:budget": "node public/world/tools/camera-budget-smoke.mjs",
+    "test:world:replay": "node public/world/tools/replay-browser-smoke.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "1.0.2",
@@ -33,6 +36,7 @@
     "autoprefixer": "^10",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "playwright": "^1.62.1",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"

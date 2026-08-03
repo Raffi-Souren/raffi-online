@@ -1,0 +1,441 @@
+{
+  "$schema": "props",
+  "$comment": "Prop archetypes as primitive recipes. gen/props.js is a dumb interpreter: it reads `parts` and emits geometry, so a new prop needs zero new code. Shapes: box(w,h,d) cyl(r,rTop,h,seg) cone(r,h,seg) sphere(r,seg) plane(w,d). Transform keys: x y z rx ry rz. `emissive` marks a part as unlit-bright (neon, screens, headlights) and exempts it from vertex lighting.",
+
+  "defaults": { "seg": 4, "emissive": 0, "collide": null, "instanced": true },
+
+  "props": {
+    "streetlight-heritage": {
+      "collide": { "type": "circle", "r": 0.3 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.26, "rTop": 0.18, "h": 0.5, "y": 0.25, "color": "#2B2B30" },
+        { "shape": "cyl", "r": 0.13, "h": 5.2, "y": 2.85, "color": "#33333A" },
+        { "shape": "sphere", "r": 0.42, "y": 5.7, "color": "#FFF0C4", "emissive": 1, "lightSource": true },
+        { "shape": "cone", "r": 0.5, "h": 0.4, "y": 6.1, "color": "#2B2B30" }
+      ]
+    },
+    "streetlight-modern": {
+      "collide": { "type": "circle", "r": 0.3 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.16, "h": 8.0, "y": 4.0, "color": "#4A4E52" },
+        { "shape": "box", "w": 2.6, "h": 0.18, "d": 0.3, "x": 1.2, "y": 8.0, "color": "#4A4E52" },
+        { "shape": "box", "w": 1.1, "h": 0.22, "d": 0.44, "x": 2.2, "y": 7.86, "color": "#FFF6DA", "emissive": 1, "lightSource": true }
+      ]
+    },
+    "streetlight-strip": {
+      "collide": { "type": "circle", "r": 0.3 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.15, "h": 6.4, "y": 3.2, "color": "#26232C" },
+        { "shape": "box", "w": 0.5, "h": 1.8, "d": 0.14, "y": 5.4, "z": 0.16, "color": "#FF3D8A", "emissive": 1 },
+        { "shape": "box", "w": 1.6, "h": 0.2, "d": 0.36, "x": 0.7, "y": 6.4, "color": "#39E6FF", "emissive": 1, "lightSource": true }
+      ]
+    },
+    "streetlight-mast": {
+      "collide": { "type": "circle", "r": 0.4 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.24, "h": 11.0, "y": 5.5, "color": "#5A5E62" },
+        { "shape": "box", "w": 3.4, "h": 0.2, "d": 0.3, "x": 1.6, "y": 11.0, "color": "#5A5E62" },
+        { "shape": "box", "w": 1.3, "h": 0.3, "d": 0.6, "x": 3.0, "y": 10.8, "color": "#FFF2C0", "emissive": 1, "lightSource": true }
+      ]
+    },
+    "floodlight-pylon": {
+      "collide": { "type": "circle", "r": 1.0 },
+      "instanced": true,
+      "parts": [
+        { "shape": "box", "w": 1.8, "h": 1.2, "d": 1.8, "y": 0.6, "color": "#8A8A86" },
+        { "shape": "cyl", "r": 0.5, "rTop": 0.32, "h": 26, "y": 13.6, "color": "#6E7276" },
+        { "shape": "box", "w": 7.0, "h": 3.2, "d": 0.5, "y": 27.6, "color": "#3A3E42" },
+        { "shape": "box", "w": 6.6, "h": 2.8, "d": 0.2, "y": 27.6, "z": 0.3, "color": "#FFFBE8", "emissive": 1, "lightSource": true }
+      ]
+    },
+    "hydrant": {
+      "collide": { "type": "circle", "r": 0.42 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.34, "h": 0.16, "y": 0.08, "color": "#8E2B22" },
+        { "shape": "cyl", "r": 0.24, "h": 0.72, "y": 0.46, "color": "#B23A2E" },
+        { "shape": "sphere", "r": 0.24, "y": 0.86, "color": "#B23A2E" },
+        { "shape": "cyl", "r": 0.1, "h": 0.5, "rx": 1.5708, "y": 0.6, "color": "#B23A2E" }
+      ]
+    },
+    "bollard": {
+      "collide": { "type": "circle", "r": 0.28 },
+      "parts": [
+        { "shape": "cyl", "r": 0.18, "h": 0.95, "y": 0.48, "color": "#4A4E52" },
+        { "shape": "sphere", "r": 0.18, "y": 0.95, "color": "#5A5E62" }
+      ]
+    },
+    "bench": {
+      "collide": { "type": "box", "w": 2.2, "d": 0.7 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "box", "w": 2.2, "h": 0.12, "d": 0.62, "y": 0.46, "color": "#6E5136" },
+        { "shape": "box", "w": 2.2, "h": 0.5, "d": 0.1, "y": 0.72, "z": -0.26, "color": "#6E5136" },
+        { "shape": "box", "w": 0.12, "h": 0.46, "d": 0.6, "x": -0.95, "y": 0.23, "color": "#3A3E42" },
+        { "shape": "box", "w": 0.12, "h": 0.46, "d": 0.6, "x": 0.95, "y": 0.23, "color": "#3A3E42" }
+      ]
+    },
+    "trash": {
+      "collide": { "type": "circle", "r": 0.45 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.42, "rTop": 0.46, "h": 1.0, "y": 0.5, "seg": 8, "color": "#3F4A3F" },
+        { "shape": "cyl", "r": 0.48, "h": 0.08, "y": 1.02, "seg": 8, "color": "#2E3730" }
+      ]
+    },
+    "planter": {
+      "collide": { "type": "box", "w": 1.6, "d": 1.6 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "box", "w": 1.6, "h": 0.7, "d": 1.6, "y": 0.35, "color": "#9A958C" },
+        { "shape": "box", "w": 1.35, "h": 0.1, "d": 1.35, "y": 0.72, "color": "#4A3A28" },
+        { "shape": "sphere", "r": 0.75, "y": 1.35, "color": "#4E6B3A" }
+      ]
+    },
+    "newsbox": {
+      "collide": { "type": "box", "w": 0.7, "d": 0.6 },
+      "parts": [
+        { "shape": "box", "w": 0.66, "h": 1.1, "d": 0.56, "y": 0.62, "color": "#2E5A8A" },
+        { "shape": "box", "w": 0.5, "h": 0.34, "d": 0.04, "y": 0.95, "z": 0.29, "color": "#C9C4B4" },
+        { "shape": "box", "w": 0.1, "h": 0.14, "d": 0.1, "x": -0.22, "y": 0.06, "color": "#1E1E22" },
+        { "shape": "box", "w": 0.1, "h": 0.14, "d": 0.1, "x": 0.22, "y": 0.06, "color": "#1E1E22" }
+      ]
+    },
+    "bus-shelter": {
+      "collide": { "type": "box", "w": 4.4, "d": 1.6 },
+      "instanced": false,
+      "parts": [
+        { "shape": "box", "w": 4.4, "h": 0.14, "d": 1.7, "y": 2.6, "color": "#3A3E42" },
+        { "shape": "box", "w": 0.12, "h": 2.6, "d": 0.12, "x": -2.1, "y": 1.3, "color": "#3A3E42" },
+        { "shape": "box", "w": 0.12, "h": 2.6, "d": 0.12, "x": 2.1, "y": 1.3, "color": "#3A3E42" },
+        { "shape": "box", "w": 4.2, "h": 2.2, "d": 0.06, "y": 1.4, "z": -0.78, "color": "#8FAEC4", "alpha": 0.45 },
+        { "shape": "box", "w": 1.1, "h": 1.7, "d": 0.08, "x": 1.6, "y": 1.5, "z": 0.78, "color": "#FFEFAE", "emissive": 1 },
+        { "shape": "box", "w": 3.2, "h": 0.1, "d": 0.5, "y": 0.5, "z": -0.5, "color": "#5A5E62" }
+      ]
+    },
+    "phone-box": {
+      "collide": { "type": "box", "w": 0.9, "d": 0.9 },
+      "parts": [
+        { "shape": "box", "w": 0.9, "h": 2.3, "d": 0.9, "y": 1.15, "color": "#38343E" },
+        { "shape": "box", "w": 0.7, "h": 1.5, "d": 0.05, "y": 1.4, "z": 0.46, "color": "#39E6FF", "emissive": 0.6 }
+      ]
+    },
+    "food-cart": {
+      "collide": { "type": "box", "w": 2.4, "d": 1.4 },
+      "instanced": false,
+      "castsBlob": true,
+      "parts": [
+        { "shape": "box", "w": 2.3, "h": 1.0, "d": 1.3, "y": 0.75, "color": "#B8B2A4" },
+        { "shape": "box", "w": 2.6, "h": 0.1, "d": 1.6, "y": 2.1, "color": "#C4453A" },
+        { "shape": "box", "w": 0.08, "h": 0.9, "d": 0.08, "x": -1.1, "y": 1.7, "color": "#8A8A86" },
+        { "shape": "box", "w": 0.08, "h": 0.9, "d": 0.08, "x": 1.1, "y": 1.7, "color": "#8A8A86" },
+        { "shape": "cyl", "r": 0.22, "h": 0.12, "rx": 1.5708, "x": -0.85, "y": 0.22, "color": "#26262A" },
+        { "shape": "cyl", "r": 0.22, "h": 0.12, "rx": 1.5708, "x": 0.85, "y": 0.22, "color": "#26262A" },
+        { "shape": "box", "w": 1.2, "h": 0.34, "d": 0.06, "y": 2.32, "color": "#FFE347", "emissive": 1 }
+      ]
+    },
+    "neon-pole": {
+      "collide": { "type": "circle", "r": 0.3 },
+      "parts": [
+        { "shape": "cyl", "r": 0.16, "h": 7.0, "y": 3.5, "color": "#26232C" },
+        { "shape": "box", "w": 0.16, "h": 3.4, "d": 1.0, "y": 5.2, "z": 0.6, "color": "#B14BFF", "emissive": 1 },
+        { "shape": "box", "w": 0.2, "h": 0.2, "d": 1.2, "y": 6.9, "z": 0.6, "color": "#FFE347", "emissive": 1 }
+      ]
+    },
+    "container": {
+      "collide": { "type": "box", "w": 6.1, "d": 2.44 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "box", "w": 6.1, "h": 2.59, "d": 2.44, "y": 1.3, "color": "#B0563A", "paletteRole": "container" },
+        { "shape": "box", "w": 6.16, "h": 0.12, "d": 2.5, "y": 2.6, "color": "#8A4630", "paletteRole": "container-dark" },
+        { "shape": "box", "w": 0.1, "h": 2.4, "d": 2.46, "x": 3.0, "y": 1.3, "color": "#8A4630", "paletteRole": "container-dark" }
+      ],
+      "palette": { "container": ["#B0563A", "#3F6C8A", "#5E7A4A", "#8A7A3A", "#7A4A6A", "#9A9A94"], "container-dark": ["#8A4630", "#325670", "#4A6238", "#6E602E", "#603A52", "#787872"] }
+    },
+    "pallet": {
+      "collide": { "type": "box", "w": 1.2, "d": 1.0 },
+      "parts": [
+        { "shape": "box", "w": 1.2, "h": 0.14, "d": 1.0, "y": 0.14, "color": "#8A7048" },
+        { "shape": "box", "w": 1.2, "h": 0.1, "d": 0.14, "z": -0.4, "y": 0.05, "color": "#6E5836" },
+        { "shape": "box", "w": 1.2, "h": 0.1, "d": 0.14, "z": 0.4, "y": 0.05, "color": "#6E5836" }
+      ]
+    },
+    "drum": {
+      "collide": { "type": "circle", "r": 0.35 },
+      "parts": [
+        { "shape": "cyl", "r": 0.32, "h": 0.9, "y": 0.45, "seg": 8, "color": "#4A6E4A" },
+        { "shape": "cyl", "r": 0.34, "h": 0.06, "y": 0.9, "seg": 8, "color": "#3A5A3A" }
+      ]
+    },
+    "chainlink": {
+      "collide": { "type": "box", "w": 4.0, "d": 0.12 },
+      "parts": [
+        { "shape": "box", "w": 0.08, "h": 2.4, "d": 0.08, "x": -2.0, "y": 1.2, "color": "#6E7276" },
+        { "shape": "box", "w": 0.08, "h": 2.4, "d": 0.08, "x": 2.0, "y": 1.2, "color": "#6E7276" },
+        { "shape": "plane", "w": 4.0, "d": 2.3, "y": 1.2, "rx": 1.5708, "color": "#9AA0A4", "alpha": 0.34, "tile": "chainlink" }
+      ]
+    },
+    "rail-track": {
+      "collide": null,
+      "parts": [
+        { "shape": "box", "w": 8.0, "h": 0.06, "d": 0.12, "z": -0.72, "y": 0.05, "color": "#6E6259" },
+        { "shape": "box", "w": 8.0, "h": 0.06, "d": 0.12, "z": 0.72, "y": 0.05, "color": "#6E6259" },
+        { "shape": "box", "w": 0.24, "h": 0.1, "d": 2.0, "x": -2.6, "y": 0.02, "color": "#4A3A2A" },
+        { "shape": "box", "w": 0.24, "h": 0.1, "d": 2.0, "x": 0, "y": 0.02, "color": "#4A3A2A" },
+        { "shape": "box", "w": 0.24, "h": 0.1, "d": 2.0, "x": 2.6, "y": 0.02, "color": "#4A3A2A" }
+      ]
+    },
+    "ramp": {
+      "collide": { "type": "ramp", "w": 6.0, "d": 9.0, "h": 2.4 },
+      "drivable": true,
+      "parts": [
+        { "shape": "ramp", "w": 6.0, "h": 2.4, "d": 9.0, "y": 1.2, "color": "#8A8378" }
+      ]
+    },
+    "crane-small": {
+      "collide": { "type": "box", "w": 3.0, "d": 3.0 },
+      "instanced": false,
+      "parts": [
+        { "shape": "box", "w": 3.0, "h": 1.0, "d": 3.0, "y": 0.5, "color": "#8A6A2A" },
+        { "shape": "cyl", "r": 0.4, "h": 12, "y": 6.5, "color": "#C4952E" },
+        { "shape": "box", "w": 10, "h": 0.5, "d": 0.5, "x": 3.4, "y": 12.4, "color": "#C4952E" },
+        { "shape": "box", "w": 0.14, "h": 3.0, "d": 0.14, "x": 7.6, "y": 10.8, "color": "#4A4E52" },
+        { "shape": "box", "w": 1.0, "h": 0.8, "d": 1.0, "x": 7.6, "y": 9.1, "color": "#3A3E42" }
+      ]
+    },
+    "tailgate-tent": {
+      "collide": { "type": "box", "w": 3.0, "d": 3.0 },
+      "instanced": false,
+      "parts": [
+        { "shape": "box", "w": 0.08, "h": 2.2, "d": 0.08, "x": -1.5, "z": -1.5, "y": 1.1, "color": "#6E7276" },
+        { "shape": "box", "w": 0.08, "h": 2.2, "d": 0.08, "x": 1.5, "z": -1.5, "y": 1.1, "color": "#6E7276" },
+        { "shape": "box", "w": 0.08, "h": 2.2, "d": 0.08, "x": -1.5, "z": 1.5, "y": 1.1, "color": "#6E7276" },
+        { "shape": "box", "w": 0.08, "h": 2.2, "d": 0.08, "x": 1.5, "z": 1.5, "y": 1.1, "color": "#6E7276" },
+        { "shape": "cone", "r": 2.4, "h": 0.8, "y": 2.6, "seg": 4, "ry": 0.785, "color": "#C4453A", "paletteRole": "tent" }
+      ],
+      "palette": { "tent": ["#C4453A", "#2E5A8A", "#4E7A3A", "#C49A2E"] }
+    },
+    "bleacher": {
+      "collide": { "type": "box", "w": 8.0, "d": 3.0 },
+      "parts": [
+        { "shape": "box", "w": 8.0, "h": 0.4, "d": 1.0, "z": -1.0, "y": 0.2, "color": "#9A958C" },
+        { "shape": "box", "w": 8.0, "h": 0.4, "d": 1.0, "z": 0, "y": 0.6, "color": "#9A958C" },
+        { "shape": "box", "w": 8.0, "h": 0.4, "d": 1.0, "z": 1.0, "y": 1.0, "color": "#9A958C" }
+      ]
+    },
+    "parking-stripe": {
+      "collide": null,
+      "decal": true,
+      "parts": [{ "shape": "plane", "w": 0.16, "d": 5.0, "y": 0.02, "color": "#D8D2BE" }]
+    },
+    "stoop-rail": {
+      "collide": null,
+      "parts": [
+        { "shape": "box", "w": 0.08, "h": 1.0, "d": 0.08, "x": -1.5, "y": 0.5, "color": "#2E2E32" },
+        { "shape": "box", "w": 0.08, "h": 1.0, "d": 0.08, "x": 1.5, "y": 0.5, "color": "#2E2E32" },
+        { "shape": "box", "w": 3.1, "h": 0.08, "d": 0.08, "y": 1.0, "color": "#2E2E32" }
+      ]
+    },
+    "broadleaf": {
+      "collide": { "type": "circle", "r": 0.5 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.24, "rTop": 0.18, "h": 3.2, "y": 1.6, "seg": 4, "color": "#4A3A2A", "caps": false },
+        { "shape": "cone", "r": 2.2, "h": 3.4, "y": 4.6, "seg": 4, "color": "#3E6B34", "paletteRole": "leaf" }
+      ],
+      "palette": { "leaf": ["#3E6B34", "#4A7A3E", "#577A32", "#356428"] }
+    },
+    "broadleaf-tall": {
+      "collide": { "type": "circle", "r": 0.5 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.26, "rTop": 0.18, "h": 4.6, "y": 2.3, "seg": 4, "color": "#4A3A2A", "caps": false },
+        { "shape": "cone", "r": 2.5, "h": 4.0, "y": 6.0, "seg": 4, "color": "#3E6B34", "paletteRole": "leaf" }
+      ],
+      "palette": { "leaf": ["#3E6B34", "#4A7A3E", "#577A32"] }
+    },
+    "planter-tree": {
+      "collide": { "type": "box", "w": 1.8, "d": 1.8 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "box", "w": 1.8, "h": 0.5, "d": 1.8, "y": 0.25, "color": "#9A958C" },
+        { "shape": "cyl", "r": 0.2, "h": 2.8, "y": 1.9, "seg": 4, "color": "#4A3A2A", "caps": false },
+        { "shape": "cone", "r": 1.6, "h": 2.4, "y": 4.0, "seg": 4, "color": "#456B38", "paletteRole": "leaf" }
+      ],
+      "palette": { "leaf": ["#456B38", "#3E6B34"] }
+    },
+    "palm-thin": {
+      "collide": { "type": "circle", "r": 0.4 },
+      "castsBlob": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.22, "rTop": 0.16, "h": 7.0, "y": 3.5, "seg": 4, "color": "#6E5A3E", "caps": false },
+        { "shape": "cone", "r": 2.0, "h": 1.4, "y": 7.4, "seg": 4, "color": "#3E6B4A" }
+      ]
+    },
+    "scrub": {
+      "collide": null,
+      "parts": [{ "shape": "cone", "r": 0.9, "h": 1.1, "y": 0.55, "seg": 4, "color": "#6E6B44" }]
+    },
+    "traffic-light": {
+      "collide": { "type": "circle", "r": 0.3 },
+      "instanced": false,
+      "signal": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.18, "h": 6.0, "y": 3.0, "color": "#3A3E42" },
+        { "shape": "box", "w": 3.6, "h": 0.16, "d": 0.16, "x": 1.7, "y": 6.0, "color": "#3A3E42" },
+        { "shape": "box", "w": 0.44, "h": 1.2, "d": 0.36, "x": 3.3, "y": 5.4, "color": "#26262A" },
+        { "shape": "sphere", "r": 0.13, "x": 3.3, "y": 5.82, "z": 0.2, "color": "#FF4436", "emissive": 1, "signalLamp": "red" },
+        { "shape": "sphere", "r": 0.13, "x": 3.3, "y": 5.42, "z": 0.2, "color": "#FFC23A", "emissive": 1, "signalLamp": "amber" },
+        { "shape": "sphere", "r": 0.13, "x": 3.3, "y": 5.02, "z": 0.2, "color": "#3DFF9E", "emissive": 1, "signalLamp": "green" }
+      ]
+    },
+    "crosswalk-signal": {
+      "collide": { "type": "circle", "r": 0.25 },
+      "signal": true,
+      "beatSync": true,
+      "parts": [
+        { "shape": "cyl", "r": 0.14, "h": 3.0, "y": 1.5, "color": "#3A3E42" },
+        { "shape": "box", "w": 0.5, "h": 0.6, "d": 0.36, "y": 3.2, "color": "#26262A" },
+        { "shape": "box", "w": 0.34, "h": 0.44, "d": 0.06, "y": 3.2, "z": 0.2, "color": "#FF8A3A", "emissive": 1, "signalLamp": "walk" }
+      ]
+    },
+    "repaint-sign": {
+      "collide": { "type": "box", "w": 0.6, "d": 0.6 },
+      "instanced": false,
+      "parts": [
+        { "shape": "cyl", "r": 0.2, "h": 4.0, "y": 2.0, "color": "#4A4E52" },
+        { "shape": "box", "w": 5.2, "h": 1.6, "d": 0.18, "y": 4.6, "color": "#1E4A8A" },
+        { "shape": "box", "w": 5.0, "h": 1.4, "d": 0.06, "y": 4.6, "z": 0.12, "color": "#FFE347", "emissive": 0.8, "tile": "sign-repaint" }
+      ]
+    },
+    "mission-marker": {
+      "collide": null,
+      "instanced": false,
+      "spins": true,
+      "$comment": "Tall beacon so GPS goals stay visible between buildings under iso/chase cams.",
+      "parts": [
+        { "shape": "cyl", "r": 1.8, "h": 0.08, "y": 0.06, "seg": 12, "color": "#FFE347", "emissive": 0.75, "alpha": 0.55 },
+        { "shape": "cyl", "r": 0.22, "h": 14.0, "y": 7.0, "seg": 8, "color": "#FFE347", "emissive": 1.0 },
+        { "shape": "cyl", "r": 0.55, "h": 0.35, "y": 14.2, "seg": 8, "color": "#FF3D8A", "emissive": 1.0 },
+        { "shape": "cone", "r": 1.0, "h": 2.4, "y": 16.0, "seg": 6, "color": "#FFE347", "emissive": 1, "flipY": true }
+      ]
+    },
+    "garage-pad": {
+      "collide": null,
+      "instanced": false,
+      "parts": [
+        { "shape": "plane", "w": 18.0, "d": 26.0, "y": 0.035, "color": "#E4F4FA", "tile": "road" },
+        { "shape": "plane", "w": 0.18, "d": 20.0, "x": -3.2, "y": 0.055, "color": "#39E6FF", "emissive": 0.45 },
+        { "shape": "plane", "w": 0.18, "d": 20.0, "x": 1.2, "y": 0.055, "color": "#FF3D8A", "emissive": 0.45 },
+        { "shape": "plane", "w": 0.18, "d": 20.0, "x": 5.6, "y": 0.055, "color": "#FFE347", "emissive": 0.45 }
+      ]
+    },
+    "garage-sign": {
+      "collide": null,
+      "instanced": false,
+      "parts": [
+        { "shape": "cyl", "r": 0.16, "h": 3.4, "y": 1.7, "color": "#39404A" },
+        { "shape": "box", "w": 5.6, "h": 1.5, "d": 0.22, "y": 3.8, "color": "#111827" },
+        { "shape": "box", "w": 5.3, "h": 1.25, "d": 0.06, "y": 3.8, "z": 0.15, "color": "#39E6FF", "emissive": 0.85, "tile": "sign-garage" }
+      ]
+    },
+    "subway-entrance": {
+      "collide": null,
+      "instanced": false,
+      "parts": [
+        { "shape": "plane", "w": 8.0, "d": 10.0, "y": 0.045, "color": "#10151D" },
+        { "shape": "box", "w": 0.22, "h": 0.28, "d": 9.2, "x": -3.7, "y": 0.14, "color": "#F2D5A7" },
+        { "shape": "box", "w": 0.22, "h": 0.28, "d": 9.2, "x": 3.7, "y": 0.14, "color": "#F2D5A7" },
+        { "shape": "box", "w": 6.8, "h": 0.12, "d": 0.45, "z": -3.5, "y": 0.18, "color": "#58606B" },
+        { "shape": "box", "w": 6.8, "h": 0.12, "d": 0.45, "z": -2.5, "y": 0.14, "color": "#4B535E" },
+        { "shape": "box", "w": 6.8, "h": 0.12, "d": 0.45, "z": -1.5, "y": 0.1, "color": "#3E4650" },
+        { "shape": "cyl", "r": 0.13, "h": 3.6, "x": -3.5, "z": 3.7, "y": 1.8, "color": "#39404A" },
+        { "shape": "box", "w": 6.6, "h": 1.4, "d": 0.22, "z": 3.7, "y": 3.8, "color": "#111827" },
+        { "shape": "box", "w": 6.3, "h": 1.15, "d": 0.06, "z": 3.55, "y": 3.8, "color": "#FF3D8A", "emissive": 0.9, "tile": "sign-subway" }
+      ]
+    },
+    "record-crate": {
+      "collide": { "type": "box", "w": 1.2, "d": 0.8 },
+      "instanced": false,
+      "parts": [
+        { "shape": "box", "w": 1.2, "h": 0.7, "d": 0.8, "y": 0.85, "color": "#6E5136" },
+        { "shape": "box", "w": 1.1, "h": 0.6, "d": 0.06, "y": 0.9, "z": 0.2, "color": "#2A2830" },
+        { "shape": "box", "w": 1.2, "h": 0.9, "d": 0.8, "y": 0.45, "color": "#4A4E52" }
+      ]
+    },
+    "water-tank": {
+      "collide": null,
+      "parts": [
+        { "shape": "box", "w": 0.14, "h": 2.0, "d": 0.14, "x": -1.2, "z": -1.2, "y": 1.0, "color": "#4A3A2A" },
+        { "shape": "box", "w": 0.14, "h": 2.0, "d": 0.14, "x": 1.2, "z": -1.2, "y": 1.0, "color": "#4A3A2A" },
+        { "shape": "box", "w": 0.14, "h": 2.0, "d": 0.14, "x": -1.2, "z": 1.2, "y": 1.0, "color": "#4A3A2A" },
+        { "shape": "box", "w": 0.14, "h": 2.0, "d": 0.14, "x": 1.2, "z": 1.2, "y": 1.0, "color": "#4A3A2A" },
+        { "shape": "cyl", "r": 1.7, "h": 3.2, "y": 3.6, "seg": 8, "color": "#5E4630" },
+        { "shape": "cone", "r": 1.8, "h": 0.9, "y": 5.6, "seg": 8, "color": "#4A3A26" }
+      ]
+    },
+    "chimney": { "collide": null, "parts": [{ "shape": "box", "w": 0.9, "h": 1.8, "d": 0.9, "y": 0.9, "color": "#6E4A3A" }] },
+    "vent": { "collide": null, "parts": [{ "shape": "box", "w": 0.7, "h": 0.5, "d": 0.7, "y": 0.25, "color": "#7E8288" }] },
+    "hvac": {
+      "collide": null,
+      "parts": [
+        { "shape": "box", "w": 2.6, "h": 1.2, "d": 2.0, "y": 0.6, "color": "#8A8E92" },
+        { "shape": "cyl", "r": 0.6, "h": 0.3, "y": 1.35, "seg": 8, "color": "#6E7276" }
+      ]
+    },
+    "mast": {
+      "collide": null,
+      "parts": [
+        { "shape": "cyl", "r": 0.16, "h": 9.0, "y": 4.5, "seg": 4, "color": "#8A8E92" },
+        { "shape": "sphere", "r": 0.3, "y": 9.2, "color": "#FF4436", "emissive": 1, "blink": 1.4 }
+      ]
+    },
+    "beacon": { "collide": null, "parts": [{ "shape": "sphere", "r": 0.35, "y": 0.35, "color": "#FF4436", "emissive": 1, "blink": 1.1 }] },
+    "aerial": {
+      "collide": null,
+      "parts": [
+        { "shape": "cyl", "r": 0.06, "h": 3.0, "y": 1.5, "seg": 4, "color": "#8A8E92" },
+        { "shape": "box", "w": 1.4, "h": 0.06, "d": 0.06, "y": 2.6, "color": "#8A8E92" },
+        { "shape": "box", "w": 1.0, "h": 0.06, "d": 0.06, "y": 2.2, "color": "#8A8E92" }
+      ]
+    },
+    "light-mast": {
+      "collide": null,
+      "parts": [
+        { "shape": "cyl", "r": 0.1, "h": 2.4, "y": 1.2, "color": "#6E7276" },
+        { "shape": "box", "w": 0.6, "h": 0.16, "d": 0.3, "y": 2.4, "color": "#FFF2C0", "emissive": 1 }
+      ]
+    },
+    "blade-sign": {
+      "collide": null,
+      "parts": [
+        { "shape": "box", "w": 0.2, "h": 3.6, "d": 1.2, "y": 1.8, "color": "#26232C" },
+        { "shape": "box", "w": 0.08, "h": 3.4, "d": 1.05, "x": 0.14, "y": 1.8, "color": "#FF3D8A", "emissive": 1, "paletteRole": "neon" },
+        { "shape": "box", "w": 0.08, "h": 3.4, "d": 1.05, "x": -0.14, "y": 1.8, "color": "#FF3D8A", "emissive": 1, "paletteRole": "neon" }
+      ],
+      "palette": { "neon": ["#FF3D8A", "#39E6FF", "#FFE347", "#B14BFF", "#3DFF9E"] }
+    },
+    "box-sign": {
+      "collide": null,
+      "parts": [
+        { "shape": "box", "w": 3.2, "h": 1.0, "d": 0.3, "y": 0.5, "color": "#26232C" },
+        { "shape": "box", "w": 3.0, "h": 0.8, "d": 0.06, "y": 0.5, "z": 0.18, "color": "#39E6FF", "emissive": 1, "paletteRole": "neon" }
+      ],
+      "palette": { "neon": ["#FF3D8A", "#39E6FF", "#FFE347", "#B14BFF", "#3DFF9E"] }
+    },
+    "tube-outline": {
+      "collide": null,
+      "parts": [
+        { "shape": "box", "w": 4.0, "h": 0.12, "d": 0.12, "y": 1.4, "color": "#B14BFF", "emissive": 1, "paletteRole": "neon" },
+        { "shape": "box", "w": 4.0, "h": 0.12, "d": 0.12, "y": 0, "color": "#B14BFF", "emissive": 1, "paletteRole": "neon" },
+        { "shape": "box", "w": 0.12, "h": 1.4, "d": 0.12, "x": -1.95, "y": 0.7, "color": "#B14BFF", "emissive": 1, "paletteRole": "neon" },
+        { "shape": "box", "w": 0.12, "h": 1.4, "d": 0.12, "x": 1.95, "y": 0.7, "color": "#B14BFF", "emissive": 1, "paletteRole": "neon" }
+      ],
+      "palette": { "neon": ["#FF3D8A", "#39E6FF", "#FFE347", "#B14BFF", "#3DFF9E"] }
+    }
+  }
+}

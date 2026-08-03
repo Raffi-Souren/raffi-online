@@ -1,0 +1,302 @@
+{
+  "$schema": "npcs",
+  "$comment": "Pedestrian archetypes. Bodies are capsule-and-box rigs generated from `body`; animation is procedural (no clips). Every NPC runs a policy over the six tools — walk, enter, talk, buy, flee, idle — and every decision is written to the replay ring buffer. Archetypes only: no real named individuals, ever.",
+
+  "tools": {
+    "$comment": "The complete verb set. game/replay.js compares decision streams over exactly these; adding a seventh verb means updating the agreement metric.",
+    "walk": { "duration": [2.5, 9.0], "needsTarget": true },
+    "enter": { "duration": [0.6, 1.2], "needsTarget": true, "requiresDoor": true },
+    "talk": { "duration": [3.0, 8.0], "needsPeer": true, "radius": 2.2 },
+    "buy": { "duration": [2.0, 5.0], "needsTarget": true, "requiresVendor": true },
+    "flee": { "duration": [1.5, 4.0], "trigger": "threat", "speedMultiplier": 1.85 },
+    "idle": { "duration": [1.5, 6.0] }
+  },
+
+  "$animComment": "Procedural states driven by one phase accumulator. Walk-cycle phase quantises to the active radio bpm — see radio.json.",
+  "animation": {
+    "states": ["idle", "walk", "run", "talk", "sit", "flee"],
+    "walkCycleHz": 1.85,
+    "runCycleHz": 2.9,
+    "armSwingDeg": 26,
+    "legSwingDeg": 34,
+    "bobAmplitude": 0.055,
+    "talkNodHz": 0.9,
+    "idleSwayHz": 0.28,
+    "beatQuantize": { "enabled": true, "strength": 0.65, "subdivision": 2 }
+  },
+
+  "body": {
+    "$comment": "Default rig proportions in metres; each archetype scales them.",
+    "height": 1.78,
+    "headRadius": 0.115,
+    "torso": { "w": 0.38, "h": 0.56, "d": 0.21 },
+    "hips": { "w": 0.32, "h": 0.16, "d": 0.2 },
+    "arm": { "r": 0.055, "length": 0.62 },
+    "leg": { "r": 0.075, "length": 0.84 },
+    "segments": 5,
+    "blobShadow": { "scale": 0.72, "opacity": 0.34 },
+    "triBudget": 120
+  },
+
+  "palettes": {
+    "skin": ["#E8C4A0", "#D8A87E", "#B9835A", "#8C5E3C", "#6B4529", "#F0D6BC"],
+    "hair": ["#2A2016", "#4A3020", "#6E5236", "#1A1A1E", "#8A6E4A", "#A89A8A"],
+    "shirtNeutral": ["#5A6470", "#7A7266", "#4A5A6A", "#6E6458", "#8A8378", "#3E4A54"],
+    "shirtBright": ["#C4453A", "#3E7A9E", "#C49A2E", "#4E7A3E", "#8A4A8A", "#D8683A"],
+    "shirtSuit": ["#2A2E38", "#1E2430", "#38343E", "#2E3440"],
+    "shirtHiVis": ["#D8E63A", "#FF8A2E", "#E6D03A"],
+    "pants": ["#2E3440", "#3A3E42", "#4A4030", "#5A5044", "#26303A", "#6E6458"]
+  },
+
+  "archetypes": {
+    "commuter": {
+      "label": "Commuter",
+      "weight": 10,
+      "districts": { "heights": 1.0, "downtown": 1.4, "strip": 0.6, "yards": 0.2, "bowl": 0.4 },
+      "scale": 1.0,
+      "speed": { "walk": 1.42, "run": 3.4 },
+      "palette": { "shirt": "shirtNeutral", "pants": "pants" },
+      "accessory": { "bag": 0.55, "coffee": 0.3, "headphones": 0.35 },
+      "tools": ["walk", "enter", "talk", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "transit-stop": 4, "lobby-door": 3, "crosswalk": 2, "wander": 2, "vendor": 1 },
+        "toolWeights": { "walk": 6, "idle": 2, "enter": 2, "talk": 1, "flee": 0 },
+        "reconsiderSeconds": [4, 11],
+        "fleeRadius": 7.0,
+        "$tiebreak": "Ties between equally-scored goals resolve by frame-order arrival, which is genuinely non-deterministic across runs. This is the source of the path divergence the rewind visualises — do not seed it away."
+      },
+      "barks": ["commuter-1", "commuter-2", "commuter-3", "commuter-4"]
+    },
+    "suit": {
+      "label": "Stakeholder",
+      "weight": 7,
+      "districts": { "heights": 0.3, "downtown": 2.0, "strip": 0.4, "yards": 0.1, "bowl": 0.2 },
+      "scale": 1.02,
+      "speed": { "walk": 1.55, "run": 3.6 },
+      "palette": { "shirt": "shirtSuit", "pants": "shirtSuit" },
+      "accessory": { "bag": 0.7, "coffee": 0.5, "lanyard": 0.6 },
+      "tools": ["walk", "enter", "talk", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "lobby-door": 5, "plaza": 3, "vendor": 2, "wander": 1 },
+        "toolWeights": { "walk": 6, "talk": 3, "enter": 3, "idle": 2, "flee": 0 },
+        "reconsiderSeconds": [5, 13],
+        "fleeRadius": 6.0
+      },
+      "barks": ["suit-1", "suit-2", "suit-3", "suit-4"]
+    },
+    "digger": {
+      "label": "Digger",
+      "weight": 5,
+      "districts": { "heights": 0.6, "downtown": 0.3, "strip": 2.0, "yards": 0.2, "bowl": 0.3 },
+      "scale": 0.99,
+      "speed": { "walk": 1.28, "run": 3.1 },
+      "palette": { "shirt": "shirtBright", "pants": "pants" },
+      "accessory": { "bag": 0.85, "headphones": 0.6 },
+      "tools": ["walk", "enter", "buy", "talk", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "record-store": 5, "vendor": 3, "wander": 2, "crosswalk": 1 },
+        "toolWeights": { "walk": 5, "buy": 4, "idle": 3, "talk": 2, "enter": 2, "flee": 0 },
+        "reconsiderSeconds": [3, 9],
+        "fleeRadius": 7.5,
+        "refuseChance": 0.35,
+        "$refuseComment": "A `buy` that resolves to refuse still counts as the same decision for agreement scoring — the outcome differs, the decision does not."
+      },
+      "barks": ["digger-1", "digger-2", "digger-3", "digger-4"]
+    },
+    "raver": {
+      "label": "Night out",
+      "weight": 6,
+      "districts": { "heights": 0.2, "downtown": 0.2, "strip": 2.4, "yards": 0.1, "bowl": 0.3 },
+      "scale": 0.995,
+      "speed": { "walk": 1.35, "run": 3.5 },
+      "palette": { "shirt": "shirtBright", "pants": "pants" },
+      "accessory": { "headphones": 0.2 },
+      "tools": ["walk", "enter", "talk", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "club-door": 5, "vendor": 3, "wander": 3, "queue": 4 },
+        "toolWeights": { "walk": 5, "idle": 4, "talk": 4, "enter": 3, "flee": 0 },
+        "reconsiderSeconds": [3, 8],
+        "fleeRadius": 8.0,
+        "activeHours": [19, 4]
+      },
+      "barks": ["raver-1", "raver-2", "raver-3", "raver-4"]
+    },
+    "delegate": {
+      "label": "Conference delegate",
+      "weight": 5,
+      "districts": { "heights": 0.2, "downtown": 1.6, "strip": 0.5, "yards": 0.1, "bowl": 0.6 },
+      "scale": 1.0,
+      "speed": { "walk": 1.32, "run": 3.0 },
+      "palette": { "shirt": "shirtNeutral", "pants": "shirtSuit" },
+      "accessory": { "lanyard": 1.0, "coffee": 0.65, "bag": 0.4 },
+      "tools": ["walk", "enter", "talk", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "plaza": 4, "lobby-door": 3, "vendor": 3, "wander": 2 },
+        "toolWeights": { "walk": 5, "talk": 4, "idle": 3, "enter": 2, "flee": 0 },
+        "reconsiderSeconds": [4, 12],
+        "fleeRadius": 6.5
+      },
+      "barks": ["delegate-1", "delegate-2", "delegate-3", "delegate-4"]
+    },
+    "dockworker": {
+      "label": "Dock worker",
+      "weight": 4,
+      "districts": { "heights": 0.1, "downtown": 0.1, "strip": 0.2, "yards": 2.6, "bowl": 0.3 },
+      "scale": 1.03,
+      "speed": { "walk": 1.3, "run": 3.2 },
+      "palette": { "shirt": "shirtHiVis", "pants": "pants" },
+      "accessory": { "hardhat": 0.9, "clipboard": 0.35 },
+      "tools": ["walk", "talk", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "container-row": 4, "shed-door": 3, "wander": 2 },
+        "toolWeights": { "walk": 5, "idle": 4, "talk": 2, "flee": 0 },
+        "reconsiderSeconds": [6, 15],
+        "fleeRadius": 9.0
+      },
+      "barks": ["dock-1", "dock-2", "dock-3"]
+    },
+    "jogger": {
+      "label": "Jogger",
+      "weight": 3,
+      "districts": { "heights": 1.6, "downtown": 0.4, "strip": 0.3, "yards": 0.2, "bowl": 0.8 },
+      "scale": 0.99,
+      "speed": { "walk": 2.5, "run": 3.9 },
+      "palette": { "shirt": "shirtBright", "pants": "pants" },
+      "accessory": { "headphones": 0.8 },
+      "tools": ["walk", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "promenade": 5, "wander": 3, "crosswalk": 1 },
+        "toolWeights": { "walk": 8, "idle": 1, "flee": 0 },
+        "reconsiderSeconds": [6, 14],
+        "fleeRadius": 6.0,
+        "defaultState": "run"
+      },
+      "barks": ["jogger-1", "jogger-2"]
+    },
+    "tailgater": {
+      "label": "Tailgater",
+      "weight": 3,
+      "districts": { "heights": 0.1, "downtown": 0.1, "strip": 0.4, "yards": 0.2, "bowl": 2.6 },
+      "scale": 1.01,
+      "speed": { "walk": 1.2, "run": 2.9 },
+      "palette": { "shirt": "shirtBright", "pants": "pants" },
+      "accessory": { "cup": 0.8, "foamFinger": 0.25 },
+      "tools": ["walk", "talk", "buy", "idle", "flee"],
+      "policy": {
+        "goalWeights": { "tent": 5, "vendor": 3, "wander": 2, "stadium-gate": 3 },
+        "toolWeights": { "idle": 5, "talk": 5, "walk": 3, "buy": 2, "flee": 0 },
+        "reconsiderSeconds": [5, 14],
+        "fleeRadius": 7.0
+      },
+      "barks": ["tailgate-1", "tailgate-2", "tailgate-3"]
+    },
+    "bodega-cat": {
+      "$comment": "One per world. Quadruped rig, full behaviour tree, refuses most things. Named in dialogue.json as MERCH.",
+      "label": "Cat",
+      "weight": 1,
+      "unique": true,
+      "districts": { "strip": 1.0 },
+      "scale": 0.33,
+      "rig": "quadruped",
+      "speed": { "walk": 0.9, "run": 4.2 },
+      "palette": { "shirt": "shirtNeutral" },
+      "colors": ["#D9A441", "#3A3330", "#C9C2B6", "#8A7A6A"],
+      "tools": ["walk", "idle", "flee", "talk"],
+      "policy": {
+        "goalWeights": { "vendor": 5, "sunspot": 6, "wander": 2, "record-store": 3 },
+        "toolWeights": { "idle": 8, "walk": 4, "flee": 1, "talk": 1 },
+        "reconsiderSeconds": [8, 30],
+        "fleeRadius": 3.5,
+        "loafChance": 0.55
+      },
+      "barks": ["cat-1", "cat-2", "cat-3", "cat-4"]
+    }
+  },
+
+  "$pursuerComment": "COMPLIANCE pursuers. Escalate through five tiers; see WORLD-BIBLE §6. Dry, procedural, never mean.",
+  "pursuers": {
+    "notification-drone": {
+      "tier": 1,
+      "label": "Slack message",
+      "kind": "drone",
+      "speed": 4.2,
+      "hoverY": 5.5,
+      "behaviour": "follow-only",
+      "interceptRadius": 0,
+      "lines": ["pursuer-t1-a", "pursuer-t1-b", "pursuer-t1-c"]
+    },
+    "coordinator": {
+      "tier": 2,
+      "label": "Calendar hold",
+      "kind": "foot",
+      "archetype": "suit",
+      "speed": 3.5,
+      "behaviour": "chase-foot",
+      "interceptRadius": 2.2,
+      "lines": ["pursuer-t2-a", "pursuer-t2-b", "pursuer-t2-c"]
+    },
+    "skip-level": {
+      "tier": 3,
+      "label": "Skip level",
+      "kind": "vehicle",
+      "vehicle": "compliance-sedan",
+      "count": 1,
+      "behaviour": "pull-alongside",
+      "interceptRadius": 3.0,
+      "lines": ["pursuer-t3-a", "pursuer-t3-b", "pursuer-t3-c"]
+    },
+    "steering-committee": {
+      "tier": 4,
+      "label": "Steering committee",
+      "kind": "vehicle",
+      "vehicle": "compliance-sedan",
+      "count": 3,
+      "behaviour": "box-in",
+      "interceptRadius": 3.2,
+      "lines": ["pursuer-t4-a", "pursuer-t4-b", "pursuer-t4-c"]
+    },
+    "legal-review": {
+      "tier": 5,
+      "label": "Legal review",
+      "kind": "mixed",
+      "vehicle": "compliance-sedan",
+      "count": 4,
+      "drones": 1,
+      "behaviour": "block-intersections",
+      "interceptRadius": 3.4,
+      "lines": ["pursuer-t5-a", "pursuer-t5-b", "pursuer-t5-c"]
+    }
+  },
+
+  "compliance": {
+    "$comment": "Tuning for game/compliance.js. Caught = accepted calendar invite + fade, never a death screen.",
+    "decaySecondsPerTier": 28,
+    "decayRequiresNoContact": 9,
+    "escalateOn": { "speedingNearPursuer": 0.4, "collisionWithPursuer": 1, "missionTrigger": 1 },
+    "caughtHoldSeconds": 2.2,
+    "repaintClearsAll": true,
+    "spawnDistance": { "min": 55, "max": 110 }
+  },
+
+  "$populationComment": "Pooled and recycled. Never allocate an NPC mid-frame.",
+  "population": {
+    "poolSize": 48,
+    "mobilePoolSize": 28,
+    "spawnRadius": 90,
+    "despawnRadius": 145,
+    "minSeparation": 1.1,
+    "densityByHour": { "0": 0.35, "3": 0.15, "6": 0.5, "9": 1.0, "12": 1.15, "15": 1.0, "18": 1.1, "21": 0.8 }
+  },
+
+  "$replayComment": "The signature mechanic. Ring buffer of decisions + sampled transforms. Agreement is computed live from two runs; never hardcode the percentages.",
+  "replay": {
+    "bufferSeconds": 90,
+    "sampleHz": 10,
+    "ghostOpacity": 0.42,
+    "ghostTint": "#6BE3FF",
+    "trailLength": 90,
+    "decisionMatchWindow": 1.5,
+    "pathAgreementRadius": 2.5,
+    "maxGhostActors": 24
+  }
+}
