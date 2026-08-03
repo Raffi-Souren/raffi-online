@@ -67,12 +67,14 @@ jobs:
           done
 
           curl --fail --silent http://127.0.0.1:3100/world/index.html > /dev/null
-          mkdir -p /tmp/raffi-world-smoke /tmp/raffi-camera-budget
+          mkdir -p /tmp/raffi-world-smoke /tmp/raffi-camera-budget /tmp/raffi-replay-smoke
           export RAFFI_WORLD_URL=http://127.0.0.1:3100/world/index.html
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-smoke
           pnpm run test:world:browser
           export RAFFI_SMOKE_OUT=/tmp/raffi-camera-budget
           pnpm run test:world:budget
+          export RAFFI_SMOKE_OUT=/tmp/raffi-replay-smoke
+          pnpm run test:world:replay
 
       - name: Upload browser evidence on failure
         if: failure()
@@ -83,4 +85,5 @@ jobs:
             /tmp/raffi-next.log
             /tmp/raffi-world-smoke
             /tmp/raffi-camera-budget
+            /tmp/raffi-replay-smoke
           if-no-files-found: ignore
