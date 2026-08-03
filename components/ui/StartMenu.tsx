@@ -22,6 +22,7 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
     { icon: "🎮", label: "Games", action: () => onOpenWindow("games") },
     { icon: "🎧", label: "iPod", action: () => onOpenWindow("ipod") },
     { icon: "🛠️", label: "Projects", action: () => onOpenWindow("projects") },
+    { icon: "🌆", label: "Raffi World", action: () => onOpenWindow("world") },
     { icon: "📝", label: "Notes", action: () => onOpenWindow("notes") },
     { icon: "💡", label: "Pitch Startup", action: handlePitchStartup },
   ]
