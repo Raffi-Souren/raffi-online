@@ -53,7 +53,7 @@ jobs:
         run: |
           pnpm start --hostname 127.0.0.1 --port 3100 > /tmp/raffi-next.log 2>&1 &
           server_pid=$!
-          trap 'kill "$server_pid"' EXIT
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
 
           for attempt in {1..60}; do
             if curl --fail --silent http://127.0.0.1:3100/world/index.html > /dev/null; then
@@ -67,6 +67,7 @@ jobs:
           done
 
           curl --fail --silent http://127.0.0.1:3100/world/index.html > /dev/null
+          mkdir -p /tmp/raffi-world-smoke /tmp/raffi-camera-budget
           export RAFFI_WORLD_URL=http://127.0.0.1:3100/world/index.html
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-smoke
           pnpm run test:world:browser
