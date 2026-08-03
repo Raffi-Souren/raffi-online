@@ -634,11 +634,12 @@ html, body {
   }
   #subtitle-text { font-size: 13px; }
 
+  /* Keep prompt clear of the right-hand action cluster (primary / second / radio). */
   #interaction-prompt {
-    right: calc(16px + var(--safe-r));
-    left: auto;
-    bottom: calc(132px + var(--safe-b));
-    max-width: 220px;
+    left: calc(14px + var(--safe-l));
+    right: auto;
+    bottom: calc(210px + var(--safe-b));
+    max-width: min(200px, 46vw);
     transform: translateY(6px);
   }
   #interaction-prompt.show { transform: translateY(0); }
