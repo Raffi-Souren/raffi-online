@@ -3,6 +3,13 @@
 import { useState } from "react"
 import dynamic from "next/dynamic"
 import WindowShell from "../../components/ui/WindowShell"
+import SnakeGame from "./SnakeGame"
+import ParachuteGame from "./ParachuteGame"
+import Brickbreaker from "./Brickbreaker"
+import MinesweeperGame from "./MinesweeperGame"
+import DoomGame from "./DoomGame"
+import AgeOfEmpires2 from "./AgeOfEmpires2"
+import XMenArcade from "./XMenArcade"
 
 const SnakeGame = dynamic(() => import("./SnakeGame"))
 const ParachuteGame = dynamic(() => import("./ParachuteGame"))
