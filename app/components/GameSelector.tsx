@@ -9,7 +9,6 @@ const ParachuteGame = dynamic(() => import("./ParachuteGame"))
 const Brickbreaker = dynamic(() => import("./Brickbreaker"))
 const MinesweeperGame = dynamic(() => import("./MinesweeperGame"))
 const DoomGame = dynamic(() => import("./DoomGame"))
-const GTA2 = dynamic(() => import("./GTA2"))
 const AgeOfEmpires2 = dynamic(() => import("./AgeOfEmpires2"))
 const XMenArcade = dynamic(() => import("./XMenArcade"))
 
@@ -69,14 +68,6 @@ const RETRO_GAMES: Game[] = [
     available: true,
   },
   {
-    id: "gta-2",
-    name: "GTA 2",
-    device: "DOS Browser",
-    description: "Top-down crime action in a dystopian city",
-    icon: "🚗",
-    available: true,
-  },
-  {
     id: "age-of-empires-2",
     name: "Age of Empires II",
     device: "DOS Browser",
@@ -122,7 +113,6 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
       parachute: ParachuteGame,
       brickbreaker: Brickbreaker,
       minesweeper: MinesweeperGame,
-      "gta-2": GTA2,
       "age-of-empires-2": AgeOfEmpires2,
       "xmen-arcade": XMenArcade,
     }[activeGame]
