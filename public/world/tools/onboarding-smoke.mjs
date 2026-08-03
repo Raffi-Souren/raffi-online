@@ -94,7 +94,13 @@ assert.equal(
 assert.equal(await desktop.locator('#pause').isVisible(), false)
 
 await pressKey(desktop, 'Tab')
-await desktop.waitForTimeout(60)
+// CI runners can take longer than one frame to service the key edge. Wait for
+// the observable focus contract instead of racing it with a fixed sleep.
+await desktop.waitForFunction(
+  () => document.activeElement?.getAttribute('data-pause') === 'resume',
+  null,
+  { timeout: 5_000 },
+)
 const gradeButton = desktop.locator('[data-pause="grade"]')
 assert.equal(
   await desktop.evaluate(() => document.activeElement?.getAttribute('data-pause')),
