@@ -296,42 +296,55 @@ function updatePerspRig(mode, sx, sy, focus = null) {
 }
 
 /**
- * Screen-relative movement axes from the *actual* camera pose.
- * W / stick-up = into the scene (away from viewer).
- * A/D / stick-left-right = true screen left/right (natural GTA feel).
+ * Movement axes for WASD / stick.
  *
- * Right vector is up × look on XZ so D always walks toward the right edge
- * of the frame under iso, chase, and free. (look × up was inverted.)
+ * CHASE 3D — body-relative ("moves with you"):
+ *   W = face forward, A/D = strafe left/right of facing. Turning around does
+ *   not invert left/right the way a lagging camera basis does.
+ *
+ * FREE / CLASSIC / BIRDS — camera matrix axes:
+ *   W = into the frame, D = toward the right edge of the screen.
+ *   Uses the camera's world +X / -Z so signs stay stable in every yaw.
  */
 export function movementBasis() {
+  const mode = getCameraMode()
+
+  // Behind-the-back chase: stick follows the actor, not a delayed orbit rig.
+  if (mode.id === 'chase') {
+    return bodyRelativeBasis(state.player.yaw || 0)
+  }
+
   const camera = cam.camera
-  if (camera) {
-    // Look = camera → focus (into the world / "forward on screen").
-    let lx = cam.target.x - camera.position.x
-    let lz = cam.target.z - camera.position.z
-    // Prefer the live look-at for persp (slightly biased look target).
-    if (camera.isPerspectiveCamera) {
-      const e = camera.matrixWorld.elements
-      // Camera -Z axis in world (Three.js forward).
-      lx = -e[8]
-      lz = -e[10]
-    }
-    const len = Math.hypot(lx, lz)
-    if (len > 1e-4) {
-      lx /= len
-      lz /= len
-      // Screen-right = up × look on XZ (Y-up): looking -Z → right is +X.
-      const rx = lz
-      const rz = -lx
-      return { fx: lx, fz: lz, rx, rz }
+  if (camera?.matrixWorld) {
+    camera.updateMatrixWorld(true)
+    const e = camera.matrixWorld.elements
+    // Three.js: local -Z = look into the scene (flatten to XZ).
+    let fx = -e[8]
+    let fz = -e[10]
+    const fLen = Math.hypot(fx, fz)
+    if (fLen > 1e-4) {
+      fx /= fLen
+      fz /= fLen
+      // Screen-right = look × world-up on XZ (RH): looking -Z → +X.
+      const rx = -fz
+      const rz = fx
+      return { fx, fz, rx, rz }
     }
   }
-  // Fallback from orbit yaw (camera sits at yaw from target).
-  const y = cam.currentYaw
-  // Into scene from behind-the-player cam: opposite of camera offset dir.
-  const fx = -Math.sin(y)
-  const fz = -Math.cos(y)
-  return { fx, fz, rx: fz, rz: -fx }
+
+  // Fallbacks if the camera matrix is not ready yet.
+  if (mode.kind === 'persp') return bodyRelativeBasis(state.player.yaw || 0)
+  return bodyRelativeBasis(cam.currentYaw + Math.PI)
+}
+
+/** Forward / right on XZ from a facing yaw (atan2(vx,vz) convention). */
+function bodyRelativeBasis(yaw) {
+  const fx = Math.sin(yaw)
+  const fz = Math.cos(yaw)
+  // Character right when facing +Z (yaw=0): +X.
+  const rx = Math.cos(yaw)
+  const rz = -Math.sin(yaw)
+  return { fx, fz, rx, rz }
 }
 
 export function viewExtents(aspect) {

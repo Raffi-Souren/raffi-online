@@ -289,10 +289,9 @@ function syncMarker(x, y, z, scale) {
 
 function updateWalking(dt, input, world, beatPhase) {
   const p = state.player
+  // Chase: body-relative (turns with you). Free/iso: camera screen axes.
   const basis = movementBasis()
 
-  // Camera-relative: stick/WASD are mapped through the live view axes so chase
-  // and free modes feel like GTA (W = into the screen), not inverted iso.
   const wantX = basis.rx * input.move.x + basis.fx * input.move.y
   const wantZ = basis.rz * input.move.x + basis.fz * input.move.y
   const mag = Math.hypot(wantX, wantZ)
@@ -332,10 +331,9 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   const inputMag = Math.hypot(input.move.x, input.move.y)
   const microRide = v.kind === 'skateboard' || v.kind === 'scooter'
 
-  // Cars: tank controls — A/D steer the nose, W/S gas/brake.
-  // Steer sign: +A (move.x < 0) must turn left relative to the vehicle's nose
-  // when the camera is behind you (natural "lean left on stick").
-  // Micro-rides: soft aim into the stick direction on screen.
+  // Cars: tank A/D = turn relative to the vehicle nose (not the camera).
+  // Board/scooter: aim into the stick direction in the active movement basis
+  // (chase = your facing, free/iso = screen).
   let steer = 0
   if (microRide && inputMag > 0.12) {
     const wantX = basis.rx * input.move.x + basis.fx * input.move.y
@@ -344,10 +342,9 @@ function updateDriving(dt, input, world, beatPhase = 0) {
     let diff = desiredYaw - v.yaw
     while (diff > Math.PI) diff -= Math.PI * 2
     while (diff < -Math.PI) diff += Math.PI * 2
-    // Pure aim-to-stick — no raw A/D add (that re-inverted under chase).
     steer = clamp(diff * 1.55, -1, 1)
   } else {
-    // Tank: A = left turn, D = right (negative move.x → negative angular).
+    // A = left of nose, D = right of nose (same whether camera is behind or not).
     steer = clamp(input.move.x, -1, 1)
   }
   if (Math.abs(steer) < 0.08) steer = 0
