@@ -13,6 +13,8 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
   const [currentTime, setCurrentTime] = useState("12:00 AM")
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>
+
     const updateTime = () => {
       const now = new Date()
       setCurrentTime(
@@ -22,14 +24,14 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
           hour12: true,
         }),
       )
+      // Self-correcting: schedule the next tick for the top of the next minute
+      // instead of polling every second.
+      const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds()
+      timeoutId = setTimeout(updateTime, msUntilNextMinute)
     }
 
-    // Initial update
     updateTime()
-
-    // Sync with seconds to update exactly on the minute change if possible, otherwise just every second
-    const interval = setInterval(updateTime, 1000)
-    return () => clearInterval(interval)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   return (
@@ -202,9 +204,13 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
             {Object.entries(openWindows)
               .filter(([, isOpen]) => isOpen)
               .map(([name]) => (
-                <div
+                <button
                   key={name}
+                  type="button"
+                  onClick={() => onWindowClick(name)}
                   className="hover:bg-[#2860D6] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] transition-colors"
+                  title={name.toUpperCase()}
+                  aria-label={`Switch to ${name} window`}
                   style={{
                     padding: "4px 16px",
                     backgroundColor: "#1F50B8",
@@ -216,13 +222,15 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
+                    border: "none",
                     borderBottom: "2px solid #153885",
                     display: "flex",
                     alignItems: "center",
+                    textAlign: "left",
                   }}
                 >
                   {name.toUpperCase()}
-                </div>
+                </button>
               ))}
           </div>
         )}

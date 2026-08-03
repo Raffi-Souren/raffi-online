@@ -6,9 +6,20 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Single source of truth for security headers (deduped from vercel.json).
         source: '/:path*',
         headers: [
           {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            // SAMEORIGIN keeps RAFFI WORLD (a same-origin iframe) working while
+            // blocking off-origin framing/clickjacking.
             key: 'X-Frame-Options',
             value: 'SAMEORIGIN',
           },

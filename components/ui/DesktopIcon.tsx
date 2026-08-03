@@ -57,16 +57,33 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
           background: 'transparent'
         }}
       >
-        <span 
-          style={{
-            fontSize: '2.5rem',
-            userSelect: 'none',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-            background: 'transparent'
-          }}
-        >
-          {icon}
-        </span>
+        {iconSrc ? (
+          <Image
+            src={iconSrc || "/placeholder.svg"}
+            alt=""
+            width={48}
+            height={48}
+            draggable={false}
+            style={{
+              width: '48px',
+              height: '48px',
+              objectFit: 'contain',
+              userSelect: 'none',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          />
+        ) : (
+          <span 
+            style={{
+              fontSize: '2.5rem',
+              userSelect: 'none',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+              background: 'transparent'
+            }}
+          >
+            {icon}
+          </span>
+        )}
       </div>
       
       {/* Label */}

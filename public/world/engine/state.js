@@ -86,8 +86,16 @@ export function hexToInt(hex) { return parseInt(hex.slice(1), 16) }
 /** Sanitised, length-capped visitor name for ?to=NAME. Never trust the URL. */
 export function sanitizeName(raw) {
   if (!raw) return null
-  const cleaned = String(raw).replace(/[^\p{L}\p{N} '\-]/gu, '').trim().slice(0, 24)
-  if (!cleaned) return null
+  const cleaned = String(raw)
+    // Allow only letters, numbers, spaces, apostrophes and hyphens.
+    .replace(/[^\p{L}\p{N} '\-]/gu, '')
+    // Collapse runs of whitespace so "?to=a%20%20%20b" can't pad the greeter.
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 24)
+  // Reject names that are only punctuation/whitespace (e.g. "?to=---"): a real
+  // name needs at least one letter or number.
+  if (!cleaned || !/[\p{L}\p{N}]/u.test(cleaned)) return null
   return cleaned.replace(/\b\p{L}/gu, (c) => c.toUpperCase())
 }
 
