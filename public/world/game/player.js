@@ -53,14 +53,14 @@ export function initPlayer(scene, materials, atlas) {
       },
     }
   )
-  // Player-only readability: a larger Vice-bright silhouette that cannot be
-  // swallowed by fog or a foreground building under the fixed iso camera.
-  ped.scale.setScalar(1.24)
+  // Keep the player bright and readable in the open, while honoring scene
+  // depth so walls and roofs correctly occlude the body.
+  ped.scale.setScalar(1.18)
   ped.material = ped.material.clone()
-  ped.material.depthTest = false
-  ped.material.depthWrite = false
-  ped.material.fog = false
-  ped.renderOrder = 20
+  ped.material.depthTest = true
+  ped.material.depthWrite = true
+  ped.material.fog = true
+  ped.renderOrder = 0
   const group = new THREE.Group()
   group.name = 'player'
   group.add(ped)
@@ -68,24 +68,22 @@ export function initPlayer(scene, materials, atlas) {
   group.position.set(state.player.x, 0, state.player.z)
   scene.add(group)
 
-  // A small world-space locator keeps the controlled actor readable against
-  // roofs, asphalt, and neon paint without turning it into a floating HUD pin.
-  // It deliberately ignores depth so foreground buildings cannot swallow the
-  // player under the fixed isometric camera.
+  // The ground locator follows the same depth rules: the minimap remains the
+  // navigation aid while the player is legitimately behind a building.
   const marker = new THREE.Mesh(
-    new THREE.RingGeometry(0.68, 0.88, 16),
+    new THREE.RingGeometry(0.62, 0.82, 16),
     new THREE.MeshBasicMaterial({
       color: '#39E6FF',
       transparent: true,
-      opacity: 0.82,
-      depthTest: false,
+      opacity: 0.72,
+      depthTest: true,
       depthWrite: false,
       toneMapped: false,
     })
   )
   marker.name = 'player-locator'
   marker.rotation.x = -Math.PI / 2
-  marker.renderOrder = 19
+  marker.renderOrder = 1
   marker.frustumCulled = false
   scene.add(marker)
 
