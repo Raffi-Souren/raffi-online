@@ -9,28 +9,64 @@ interface WindowShellProps {
   children: ReactNode
   className?: string
   id?: string
+  /**
+   * Render the window tree but keep it off-screen. Used by windows that must
+   * survive being dismissed — an iframe unmounted here would lose all of its
+   * state — so closing hides instead of destroying. Every default below is the
+   * pre-existing behaviour, so windows that ignore these props are unchanged.
+   */
+  hidden?: boolean
+  /** Drop the content padding and scrolling so a canvas can reach the bezel. */
+  fullBleed?: boolean
+  /** Take the full available height rather than shrinking to fit content. */
+  fill?: boolean
+  /** Override the 1024px desktop cap for app-sized windows. */
+  maxWidth?: string
+  /**
+   * Trim the window chrome to the minimum. On a short landscape phone the
+   * normal 8px inset and roomy title bar cost ~30px of height, which is enough
+   * to push a full-bleed game's own bottom HUD off its viewport.
+   */
+  compact?: boolean
 }
 
-export default function WindowShell({ title, onClose, children, className = "", id }: WindowShellProps) {
+export default function WindowShell({
+  title,
+  onClose,
+  children,
+  className = "",
+  id,
+  hidden = false,
+  fullBleed = false,
+  fill = false,
+  maxWidth = "1024px",
+  compact = false,
+}: WindowShellProps) {
+  const edgeInset = compact ? "0px" : "8px"
+  const titlePadding = compact ? "0.25rem 0.5rem" : "0.75rem 1rem"
+  const closeSize = compact ? "34px" : "44px"
   const windowRef = useRef<HTMLDivElement>(null)
 
-  // Lock body scroll while window is open
+  // Lock body scroll while window is open. A hidden window is not on screen, so
+  // it must not hold the lock or the desktop behind it would stay frozen.
   useEffect(() => {
+    if (hidden) return
     const originalOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => {
       document.body.style.overflow = originalOverflow
     }
-  }, [])
+  }, [hidden])
 
   // Handle ESC key
   useEffect(() => {
+    if (hidden) return
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
     }
     document.addEventListener("keydown", handleEscape)
     return () => document.removeEventListener("keydown", handleEscape)
-  }, [onClose])
+  }, [hidden, onClose])
 
   // Focus trap
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -63,6 +99,7 @@ export default function WindowShell({ title, onClose, children, className = "", 
           maxHeight: "calc(100dvh - 40px - env(safe-area-inset-bottom, 0px))",
           zIndex: 100,
           backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: hidden ? "none" : undefined,
         }}
         onClick={onClose}
         aria-hidden="true"
@@ -71,18 +108,20 @@ export default function WindowShell({ title, onClose, children, className = "", 
       <div
         style={{
           position: "fixed",
-          top: "max(8px, env(safe-area-inset-top, 0px))",
-          left: "max(8px, env(safe-area-inset-left, 0px))",
-          right: "max(8px, env(safe-area-inset-right, 0px))",
-          bottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
-          maxHeight:
-            "calc(100dvh - max(8px, env(safe-area-inset-top, 0px)) - 48px - env(safe-area-inset-bottom, 0px))",
+          top: `max(${edgeInset}, env(safe-area-inset-top, 0px))`,
+          left: `max(${edgeInset}, env(safe-area-inset-left, 0px))`,
+          right: `max(${edgeInset}, env(safe-area-inset-right, 0px))`,
+          bottom: `calc(${compact ? "42px" : "48px"} + env(safe-area-inset-bottom, 0px))`,
+          maxHeight: `calc(100dvh - max(${edgeInset}, env(safe-area-inset-top, 0px)) - ${
+            compact ? "42px" : "48px"
+          } - env(safe-area-inset-bottom, 0px))`,
           zIndex: 101,
-          display: "flex",
+          display: hidden ? "none" : "flex",
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
         }}
+        aria-hidden={hidden ? "true" : undefined}
       >
         <div
           ref={windowRef}
@@ -97,7 +136,8 @@ export default function WindowShell({ title, onClose, children, className = "", 
             display: "flex",
             flexDirection: "column",
             width: "100%",
-            maxWidth: "1024px",
+            maxWidth,
+            height: fill ? "100%" : undefined,
             maxHeight: "100%",
             pointerEvents: "auto",
             overflow: "hidden",
@@ -108,7 +148,7 @@ export default function WindowShell({ title, onClose, children, className = "", 
             style={{
               background: "linear-gradient(to right, #2563eb, #1d4ed8)",
               color: "white",
-              padding: "0.75rem 1rem",
+              padding: titlePadding,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -150,10 +190,10 @@ export default function WindowShell({ title, onClose, children, className = "", 
                 justifyContent: "center",
                 position: "relative",
                 zIndex: 102,
-                minWidth: "44px",
-                minHeight: "44px",
-                width: "44px",
-                height: "44px",
+                minWidth: closeSize,
+                minHeight: closeSize,
+                width: closeSize,
+                height: closeSize,
                 boxSizing: "border-box",
                 WebkitTapHighlightColor: "transparent",
               }}
@@ -173,10 +213,10 @@ export default function WindowShell({ title, onClose, children, className = "", 
           <div
             style={{
               flex: "1 1 auto",
-              overflowY: "auto",
+              overflowY: fullBleed ? "hidden" : "auto",
               overflowX: "hidden",
-              padding: "1rem",
-              backgroundColor: "#ffffff",
+              padding: fullBleed ? 0 : "1rem",
+              backgroundColor: fullBleed ? "#000000" : "#ffffff",
               color: "#111827",
               minHeight: 0,
             }}

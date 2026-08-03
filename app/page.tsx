@@ -19,6 +19,7 @@ const NotesWindow = dynamic(() => import("./components/NotesWindow"))
 const UnderConstructionWindow = dynamic(() => import("./components/UnderConstructionWindow"))
 const IPodWindow = dynamic(() => import("./components/IPodWindow"))
 const ProjectsWindow = dynamic(() => import("./components/ProjectsWindow"))
+const RaffiWorldWindow = dynamic(() => import("./components/RaffiWorldWindow"))
 
 const DESKTOP_SHORTCUTS = [
   { action: "about", icon: "👤", label: "ABOUT" },
@@ -27,6 +28,7 @@ const DESKTOP_SHORTCUTS = [
   { action: "notes", icon: "📝", label: "NOTES" },
   { action: "ipod", icon: "🎧", label: "iPod" },
   { action: "projects", icon: "🛠️", label: "PROJECTS" },
+  { action: "world", icon: "🌆", label: "RAFFI WORLD" },
   { action: "startup", icon: "💡", label: "PITCH STARTUP" },
 ] as const
 
@@ -42,8 +44,14 @@ export default function Home() {
     counter: false,
     ipod: false,
     projects: false,
+    world: false,
   })
+  // RAFFI WORLD is loaded on first launch and then stays mounted for the rest
+  // of the session, so closing its window minimizes the game instead of
+  // destroying the run. This latch never returns to false.
+  const [worldLaunched, setWorldLaunched] = useState(false)
   const openWindow = (windowName: string) => {
+    if (windowName === "world") setWorldLaunched(true)
     setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
     setShowStartMenu(false)
   }
@@ -148,6 +156,11 @@ export default function Home() {
       {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
       {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
       {openWindows.ipod && <IPodWindow isOpen={openWindows.ipod} onClose={() => closeWindow("ipod")} />}
+      {/* Deliberately not gated on openWindows.world: once launched the game
+          stays mounted and merely hides, so state and audio survive. */}
+      {worldLaunched && (
+        <RaffiWorldWindow isOpen={openWindows.world} onClose={() => closeWindow("world")} />
+      )}
       {openWindows.projects && (
         <WindowShell title="PROJECTS" onClose={() => closeWindow("projects")}>
           <ProjectsWindow />

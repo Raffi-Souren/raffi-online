@@ -46,6 +46,7 @@
   .desktop-shortcut-startup { bottom: 8rem; left: 2rem; }
   .desktop-shortcut-ipod { top: 8rem; left: 2rem; }
   .desktop-shortcut-projects { top: 8rem; right: 2rem; }
+  .desktop-shortcut-world { top: 8rem; left: 50%; transform: translateX(-50%); }
 }
 
 /* Removed .sc-player-wrapper CSS - using inline styles in component for SoundCloud widget */
