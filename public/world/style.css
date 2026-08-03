@@ -553,7 +553,37 @@ html, body {
   opacity: 0.62;
   cursor: not-allowed;
 }
+.pause-controls {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #2a3550;
+}
+.pause-controls h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--amber);
+}
+.pc-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.pc-key { color: #9fe8ff; letter-spacing: 0.08em; white-space: nowrap; }
+.pc-what { color: #b8c0d4; }
+.pc-touch {
+  margin-top: 8px;
+  font-size: 9px;
+  color: #788298;
+  line-height: 1.5;
+}
 .pause-foot { margin-top: 12px; font-size: 10px; color: #6e7890; line-height: 1.5; }
+
+@media (max-height: 620px) {
+  .pause-panel { max-height: 88vh; overflow-y: auto; }
+}
 
 /* ------------------------------------------------------------ rewind --- */
 
