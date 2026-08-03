@@ -306,6 +306,17 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const menuListRef = useRef<HTMLDivElement>(null)
   const screenScrollRef = useRef<HTMLDivElement>(null)
 
+  const handleVideoPlayPause = useCallback(() => {
+    if (videoIframeRef.current?.contentWindow) {
+      if (isVideoPlaying) {
+        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*")
+      } else {
+        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', "*")
+      }
+      setIsVideoPlaying(!isVideoPlaying)
+    }
+  }, [isVideoPlaying])
+
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00"
     const mins = Math.floor(seconds / 60)
@@ -452,7 +463,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
       setCurrentScreen(item.submenu)
       setSelectedIndex(0)
     }
-  }, [currentScreen, menuItems, selectedIndex, isPlaying, pauseTrack, resumeTrack])
+  }, [currentScreen, menuItems, selectedIndex, isPlaying, pauseTrack, resumeTrack, handleVideoPlayPause])
 
   const handleBack = useCallback(() => {
     if (menuStack.length > 0) {
@@ -733,17 +744,6 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         return "iPod"
     }
   }
-
-  const handleVideoPlayPause = useCallback(() => {
-    if (videoIframeRef.current?.contentWindow) {
-      if (isVideoPlaying) {
-        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*")
-      } else {
-        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', "*")
-      }
-      setIsVideoPlaying(!isVideoPlaying)
-    }
-  }, [isVideoPlaying])
 
   const handleNextVideo = useCallback(() => {
     const nextIndex = (currentVideoIndex + 1) % currentVideoPlaylist.length
