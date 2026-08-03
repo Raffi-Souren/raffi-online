@@ -1,0 +1,241 @@
+{
+  "$schema": "missions",
+  "$comment": "Eight missions, two to four minutes each. game/missions.js is a small state machine: a mission is a list of objectives, each with a trigger and a completion test. Adding a mission needs no new code unless it uses a `custom` objective kind.",
+
+  "objectiveKinds": {
+    "goto": "Reach a world position within `radius`.",
+    "goto-vehicle": "Reach a position while driving.",
+    "collect": "Pick up N tagged pickups, order-independent.",
+    "timer": "Survive/finish before `seconds` elapse.",
+    "rhythm": "Hit inputs on the radio clock's beat grid.",
+    "avoid": "Do not enter tagged trigger volumes.",
+    "escort": "Keep a passenger aboard under a constraint.",
+    "evade": "Reduce COMPLIANCE to zero.",
+    "custom": "Handled by a named handler in game/missions.js."
+  },
+
+  "missions": [
+    {
+      "id": "deal-clock",
+      "name": "DEAL CLOCK",
+      "district": "downtown",
+      "unlockedBy": null,
+      "marker": { "x": 60, "z": -250 },
+      "startLine": "m-deal-clock-start",
+      "grade": "haze",
+      "station": "TLKR",
+      "targetSeconds": 165,
+      "startVehicle": { "archetype": "compact", "at": { "x": 72, "z": -258 }, "yaw": 1.5708 },
+      "objectives": [
+        { "kind": "timer", "seconds": 165, "failLine": "m-deal-clock-fail" },
+        {
+          "kind": "goto-vehicle",
+          "repeat": 4,
+          "radius": 7,
+          "onEach": { "line": "m-deal-clock-stop", "complianceDelta": 1 },
+          "points": [
+            { "x": -100, "z": -250 },
+            { "x": 220, "z": -300 },
+            { "x": 60, "z": -380 },
+            { "x": -40, "z": -120 }
+          ]
+        }
+      ],
+      "reward": { "unlocks": ["crate-dig"], "cash": 0, "line": "m-deal-clock-win" }
+    },
+    {
+      "id": "crate-dig",
+      "name": "CRATE DIG",
+      "district": "strip",
+      "unlockedBy": "deal-clock",
+      "marker": { "x": -60, "z": 112 },
+      "startLine": "m-crate-dig-start",
+      "grade": "night",
+      "station": "KFLP",
+      "targetSeconds": 240,
+      "objectives": [
+        {
+          "kind": "collect",
+          "count": 6,
+          "tag": "record",
+          "onEach": { "line": "m-crate-dig-pick" },
+          "points": [
+            { "x": 205, "z": 235, "hint": "parking lot, on a roof rack" },
+            { "x": -430, "z": -205, "hint": "The Heights, apartment stoop" },
+            { "x": 585, "z": 70, "hint": "The Yards, top of a container stack" },
+            { "x": -415, "z": 122, "hint": "The Bowl, base of the ramp spiral" },
+            { "x": 64, "z": -246, "hint": "Downtown, campus plaza planter" },
+            { "x": 148, "z": 152, "hint": "The Strip, behind the club" }
+          ]
+        },
+        { "kind": "goto", "radius": 5, "points": [{ "x": -60, "z": 112 }] }
+      ],
+      "reward": { "unlocks": ["set-time"], "radioUnlock": ["KFLP", "HABI"], "line": "m-crate-dig-win" }
+    },
+    {
+      "id": "set-time",
+      "name": "SET TIME",
+      "district": "strip",
+      "interior": "club-floor",
+      "unlockedBy": "crate-dig",
+      "marker": { "x": 140, "z": 136 },
+      "startLine": "m-set-time-start",
+      "grade": "night",
+      "station": "KFLP",
+      "targetSeconds": 150,
+      "objectives": [
+        {
+          "kind": "rhythm",
+          "bars": 32,
+          "subdivision": 2,
+          "windowMs": 110,
+          "missLine": "m-set-time-miss",
+          "onMiss": { "spawn": "heckler", "max": 5 },
+          "failAfterMisses": 6
+        }
+      ],
+      "reward": { "unlocks": ["cold-boot"], "radioUnlock": ["MNFR"], "line": "m-set-time-win" }
+    },
+    {
+      "id": "cold-boot",
+      "name": "COLD BOOT",
+      "district": "downtown",
+      "interior": "mainframe",
+      "unlockedBy": "set-time",
+      "marker": { "x": 60, "z": -212 },
+      "startLine": "m-cold-boot-start",
+      "grade": "mainframe",
+      "station": "MNFR",
+      "targetSeconds": 180,
+      "objectives": [
+        {
+          "kind": "avoid",
+          "tag": "floor-sensor",
+          "onTrip": { "line": "m-cold-boot-trip", "respawnAtLastSafe": true, "penaltySeconds": 6 },
+          "sensorGrid": { "rows": 7, "cols": 9, "cellSize": 4.0, "activeFraction": 0.34, "shufflePeriod": 5.5 }
+        },
+        { "kind": "goto", "radius": 3, "points": [{ "x": 0, "z": -48 }] }
+      ],
+      "reward": { "unlocks": ["shootout", "yard-run"], "line": "m-cold-boot-win" }
+    },
+    {
+      "id": "shootout",
+      "name": "SHOOTOUT",
+      "district": "bowl",
+      "interior": "pitch",
+      "unlockedBy": "cold-boot",
+      "marker": { "x": -420, "z": 120 },
+      "startLine": "m-shootout-start",
+      "grade": "night",
+      "station": "SUNS",
+      "targetSeconds": 150,
+      "objectives": [
+        {
+          "kind": "custom",
+          "handler": "penaltyShootout",
+          "rounds": 5,
+          "winAt": 3,
+          "keeperTell": { "leadFrames": 14, "readableFraction": 0.75 },
+          "scoreLine": "m-shootout-score",
+          "missLine": "m-shootout-miss"
+        }
+      ],
+      "reward": { "unlocks": ["escort"], "line": "m-shootout-win" }
+    },
+    {
+      "id": "yard-run",
+      "name": "YARD RUN",
+      "district": "yards",
+      "unlockedBy": "cold-boot",
+      "marker": { "x": 360, "z": 40 },
+      "startLine": "m-yard-run-start",
+      "grade": "haze",
+      "station": "MNFR",
+      "targetSeconds": 120,
+      "objectives": [
+        { "kind": "timer", "seconds": 120 },
+        {
+          "kind": "goto-vehicle",
+          "ordered": true,
+          "radius": 9,
+          "onEach": { "line": "m-yard-run-check" },
+          "points": [
+            { "x": 420, "z": 80 },
+            { "x": 560, "z": 140 },
+            { "x": 610, "z": 260 },
+            { "x": 470, "z": 330 },
+            { "x": 380, "z": 220 },
+            { "x": 520, "z": 40 }
+          ]
+        }
+      ],
+      "reward": { "unlocks": ["escort"], "line": "m-yard-run-win" }
+    },
+    {
+      "id": "escort",
+      "name": "ESCORT",
+      "district": "yards",
+      "unlockedBy": "shootout",
+      "marker": { "x": 540, "z": 20 },
+      "startLine": "m-escort-start",
+      "grade": "dusk",
+      "station": "SUNS",
+      "targetSeconds": 210,
+      "objectives": [
+        {
+          "kind": "escort",
+          "passenger": "nervous",
+          "from": { "x": 540, "z": 20 },
+          "to": { "x": -450, "z": -190 },
+          "radius": 8,
+          "speedLimit": 22,
+          "onSpeed": { "line": "m-escort-speed", "complianceDelta": 1, "cooldownSeconds": 6 },
+          "failIfComplianceAtLeast": 5
+        }
+      ],
+      "reward": { "unlocks": ["blackout"], "line": "m-escort-win" }
+    },
+    {
+      "id": "blackout",
+      "name": "BLACKOUT",
+      "district": "heights",
+      "unlockedBy": "escort",
+      "marker": { "x": -400, "z": -380 },
+      "startLine": "m-blackout-start",
+      "grade": "night",
+      "forceNight": true,
+      "station": "MNFR",
+      "targetSeconds": 240,
+      "finale": true,
+      "objectives": [
+        { "kind": "custom", "handler": "blackoutCity", "killLights": true, "keepEmissive": ["headlight", "strobe", "mission-marker"] },
+        { "kind": "goto-vehicle", "ordered": true, "radius": 12, "points": [
+          { "x": 220, "z": -300 },
+          { "x": 560, "z": 140 },
+          { "x": 220, "z": 300 },
+          { "x": -400, "z": 300 },
+          { "x": -420, "z": -395 }
+        ] },
+        { "kind": "evade", "startCompliance": 5 }
+      ],
+      "reward": { "unlocks": [], "line": "m-blackout-win", "endCard": true }
+    }
+  ],
+
+  "$pickupComment": "Shared pickup visual/behaviour for `collect` objectives.",
+  "pickups": {
+    "record": { "prop": "record-crate", "spin": 1.6, "bob": 0.25, "radius": 2.2, "glow": "#FFE347" }
+  },
+
+  "$hudComment": "Objective text is generated from the objective kind; these are the templates.",
+  "templates": {
+    "goto": "GET TO THE MARKER",
+    "goto-vehicle": "DRIVE TO THE MARKER ({done}/{total})",
+    "collect": "RECOVER RECORDS ({done}/{total})",
+    "timer": "TIME {mmss}",
+    "rhythm": "STAY ON THE GRID ({bars} BARS)",
+    "avoid": "DO NOT TRIP A SENSOR",
+    "escort": "DELIVER YOUR PASSENGER",
+    "evade": "LOSE THEM"
+  }
+}
