@@ -146,7 +146,7 @@ for (const action of ['map', 'quit']) {
 const rewindBtn = desktop.locator('[data-pause="rewind"]')
 assert.match(await rewindBtn.textContent(), /REWIND/)
 await desktop.keyboard.press('Escape')
-await desktop.waitForTimeout(60)
+await desktop.waitForFunction(() => window.RAFFI_WORLD.getState().paused === false, null, { timeout: 5_000 })
 assert.equal(await desktop.evaluate(async () => (await import('/world/engine/state.js')).state.paused), false)
 assert.equal(await desktop.locator('#pause').isVisible(), false)
 
