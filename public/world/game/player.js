@@ -8,7 +8,7 @@
 
 import * as THREE from 'three'
 import { state, data, damp, clamp, bus } from '../engine/state.js'
-import { movementBasis } from '../engine/camera.js'
+import { movementBasis, getCameraMode } from '../engine/camera.js'
 import { resolveCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { makeVehicle, animateVehicle } from '../gen/vehicles.js'
@@ -26,6 +26,12 @@ export const player = {
   animState: 'idle',
   /** Active board trick, if any: { name, t, duration, boost }. */
   trick: null,
+  /**
+   * Last committed turn direction (-1 | 0 | 1). Gives U-turns a stable spin:
+   * at ~180° the shortest-arc sign is arbitrary, so we keep turning the way
+   * we already were instead of flip-flopping ("haywire" taps).
+   */
+  steerBias: 0,
 }
 
 const KICKFLIP = {
@@ -329,32 +335,64 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   const inputMag = Math.hypot(input.move.x, input.move.y)
   const microRide = v.kind === 'skateboard' || v.kind === 'scooter'
 
-  // Cars: tank A/D = turn relative to the vehicle nose (not the camera).
-  // Board/scooter: aim into the stick direction in the active movement basis
-  // (chase = your facing, free/iso = screen).
+  // Steering is screen-relative in classic/free/birds: the pressed direction
+  // is where the ride goes on screen — cars included, so Right never reads as
+  // "left" when the nose points at the viewer. Chase 3D stays body-relative
+  // (camera sits behind you, so nose-relative already matches the screen).
+  const chaseCam = getCameraMode().id === 'chase'
   let steer = 0
-  if (microRide && inputMag > 0.12) {
-    const wantX = basis.rx * input.move.x + basis.fx * input.move.y
-    const wantZ = basis.rz * input.move.x + basis.fz * input.move.y
+  /** cos(nose vs stick) — 1 aligned, 0 perpendicular, -1 opposite. */
+  let aimAlignment = 1
+  // While braking to a stop (Down held, still rolling forward), aim only the
+  // lateral axis — otherwise "brake" would read as "U-turn to face the viewer"
+  // and the ride would swerve mid-stop.
+  const brakingForward = input.brake > 0.05 && v.speed > 0.15
+  const aimX = input.move.x
+  const aimY = brakingForward ? 0 : input.move.y
+  const aimMag = Math.hypot(aimX, aimY)
+  if (!chaseCam && aimMag > 0.12) {
+    const wantX = basis.rx * aimX + basis.fx * aimY
+    const wantZ = basis.rz * aimX + basis.fz * aimY
     const desiredYaw = Math.atan2(wantX, wantZ)
-    let diff = desiredYaw - v.yaw
+    const reversing = v.speed < -0.15
+    // Aim the direction of travel: the nose, or the tail while backing up —
+    // so the ride always moves toward the pressed screen direction.
+    const travelYaw = reversing ? v.yaw + Math.PI : v.yaw
+    let diff = desiredYaw - travelYaw
     while (diff > Math.PI) diff -= Math.PI * 2
     while (diff < -Math.PI) diff += Math.PI * 2
-    steer = clamp(diff * 1.55, -1, 1)
+    aimAlignment = Math.cos(diff)
+    // Stable U-turn: near 180° the shortest-arc sign is arbitrary — commit to
+    // the direction we were already turning instead of flip-flopping.
+    if (Math.abs(diff) > 2.75 && player.steerBias !== 0) {
+      diff = Math.abs(diff) * player.steerBias
+    }
+    steer = clamp(diff * 1.4, -1, 1)
+    // stepVehicle flips steer while reversing (reverseSign); cancel that so
+    // the screen-relative aim stays authoritative.
+    if (reversing) steer = -steer
   } else {
-    // A = left of nose, D = right of nose (same whether camera is behind or not).
+    // Chase cam (or no stick): A = left of nose, D = right of nose.
     steer = clamp(input.move.x, -1, 1)
   }
   if (Math.abs(steer) < 0.08) steer = 0
+  if (Math.abs(steer) > 0.1) player.steerBias = Math.sign(steer)
+  else if (inputMag < 0.12) player.steerBias = 0
 
   // During a kickflip, keep rolling forward — no brake cut mid-air.
+  // Board/scooter auto-throttle scales with how aligned the nose already is
+  // with the pressed direction: turn first, then accelerate. Tapping Left or
+  // Right mid-ride pivots the board instead of lurching it sideways.
   const tricking = !!player.trick
+  const aimThrottle = microRide && inputMag > 0.15
+    ? inputMag * Math.max(0, aimAlignment)
+    : 0
   const ctl = {
     throttle: tricking
       ? Math.max(input.throttle, 0.55)
       : (input.throttle > 0.01
         ? input.throttle
-        : (microRide && inputMag > 0.15 ? inputMag : 0)),
+        : aimThrottle),
     brake: tricking ? 0 : input.brake,
     steer: tricking ? steer * 0.35 : steer,
     handbrake: tricking ? false : input.handbrake,
