@@ -152,6 +152,7 @@
       "grade": "haze",
       "station": "MNFR",
       "targetSeconds": 120,
+      "startVehicle": { "archetype": "compact", "at": { "x": 368, "z": 48 }, "yaw": 0.4 },
       "objectives": [
         { "kind": "timer", "seconds": 120 },
         {
@@ -181,6 +182,7 @@
       "grade": "dusk",
       "station": "SUNS",
       "targetSeconds": 210,
+      "startVehicle": { "archetype": "compact", "at": { "x": 548, "z": 26 }, "yaw": 3.0 },
       "objectives": [
         {
           "kind": "escort",
@@ -206,6 +208,7 @@
       "forceNight": true,
       "station": "MNFR",
       "targetSeconds": 240,
+      "startVehicle": { "archetype": "compact", "at": { "x": -392, "z": -372 }, "yaw": 1.2 },
       "finale": true,
       "objectives": [
         { "kind": "custom", "handler": "blackoutCity", "killLights": true, "keepEmissive": ["headlight", "strobe", "mission-marker"] },
