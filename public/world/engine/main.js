@@ -36,8 +36,12 @@ import {
 } from '../game/dialogue.js'
 import {
   initMissions, updateMissions, missionContext, startMission,
-  focusFirstMission, missionSnapshot,
+  focusFirstMission, missionSnapshot, startMissionById, confirmMissionBriefing,
+  missionWantsAction, missionActionLabel, noteMissionPulse, noteMissionKick, noteAimLane,
 } from '../game/missions.js'
+import {
+  initInteriors, enterInterior, exitInterior, interiorDoorContext, interiorSnapshot,
+} from '../game/interiors.js'
 import {
   initCompliance, updateCompliance, setComplianceTier, complianceSnapshot,
 } from '../game/compliance.js'
@@ -445,12 +449,35 @@ async function boot() {
     text: els.subtitleText,
     next: els.subtitleNext,
   })
+  initInteriors({
+    scene: gfx.scene,
+    materials,
+    atlas,
+    cityRoot: built.root,
+    cityCollision: collision,
+    world,
+    onEnter: () => {
+      const water = gfx.scene.getObjectByName('water')
+      if (water) water.visible = false
+      gfx.scene.traverse((obj) => {
+        if (obj.name?.startsWith('ped:') || obj.name?.startsWith('npc')) obj.visible = false
+      })
+    },
+    onExit: () => {
+      const water = gfx.scene.getObjectByName('water')
+      if (water) water.visible = true
+      gfx.scene.traverse((obj) => {
+        if (obj.name?.startsWith('ped:') || obj.name?.startsWith('npc')) obj.visible = true
+      })
+    },
+  })
   initMissions({
     scene: gfx.scene,
     materials,
     atlas,
     vehicles: world.vehicles,
     spawnVehicle,
+    cityRoot: built.root,
     onStart: startMissionPresentation,
   })
   initPursuit({
@@ -493,7 +520,15 @@ async function boot() {
     getWaypoint,
     focusFirstMission,
     startMission,
+    startMissionById,
+    confirmMissionBriefing,
     missionSnapshot,
+    enterInterior,
+    exitInterior,
+    interiorSnapshot,
+    noteMissionPulse,
+    noteMissionKick,
+    noteAimLane,
     dismissDialogue,
     setComplianceTier,
     complianceSnapshot,
@@ -591,10 +626,14 @@ function loop(now) {
 
     // Context priority: dialogue → mission/transit → nearby ride. Touch GAS
     // is a distinct input from keyboard E, so it can never eject the rider.
-    const ctx = contextAction(world.vehicles, [missionContext(), transitAction()])
+    const ctx = contextAction(world.vehicles, [missionContext(), transitAction(), interiorDoorContext()])
     const controls = player.vehicle?.controls
     const dialogueBlocking = isDialogueBlocking()
-    setActionLabel(dialogueBlocking ? 'NEXT' : state.mode === 'vehicle' ? controls?.action || 'GAS' : ctx.label)
+    const missionAction = missionActionLabel()
+    setActionLabel(
+      dialogueBlocking ? 'NEXT'
+        : missionAction || (state.mode === 'vehicle' ? controls?.action || 'GAS' : ctx.label)
+    )
     setSecondLabel(state.mode === 'vehicle' ? controls?.second || 'BRAKE' : 'RUN')
     setCamLabel(getCameraMode().label.split(' ')[0] || 'CAM')
     els.exit?.classList.toggle('hidden', state.mode !== 'vehicle')
@@ -627,13 +666,20 @@ function loop(now) {
     // All context inputs are edge-triggered, so a time lock is unnecessary.
     // Keeping transitions immediately responsive also means a control that is
     // already visible can never swallow the player's first press.
+    if (input.move) noteAimLane(input.move.x)
+
     if (!dialogueHandled && !isDialogueBlocking()) {
-      if ((keyboardAction || exitPressed || spaceMicroExit) && state.mode === 'vehicle') {
+      if (missionWantsAction() && (keyboardAction || touchPrimary || spaceAction)) {
+        noteMissionPulse()
+        noteMissionKick()
+      } else if ((keyboardAction || exitPressed || spaceMicroExit) && state.mode === 'vehicle') {
         if (!isBoardTrickActive()) exitVehicle(world.collision)
       } else if ((keyboardAction || touchPrimary || spaceAction) && state.mode !== 'vehicle') {
         if (ctx.kind === 'enter' && enterVehicle(ctx.target)) onRideMounted(ctx.target)
         else if (ctx.kind === 'transit') void beginFastTravel(ctx.target)
         else if (ctx.kind === 'mission') startMission(ctx.target)
+        else if (ctx.kind === 'interior-enter') enterInterior(ctx.target)
+        else if (ctx.kind === 'interior-exit') exitInterior()
       }
     }
 
@@ -644,7 +690,7 @@ function loop(now) {
 
     if (!world.transitBusy && !isDialogueBlocking()) updateMissions(dt)
     if (!world.transitBusy) updateCompliance(dt)
-    if (!world.transitBusy) updatePursuit(dt)
+    if (!world.transitBusy && !state.interior) updatePursuit(dt)
 
     // Ambient NPCs + replay buffers / ghosts (signature mechanic).
     updateReplay(dt, {

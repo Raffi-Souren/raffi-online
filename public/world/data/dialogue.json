@@ -125,6 +125,7 @@
 
     "m-escort-start": { "voice": "narrator", "text": "Airport road to The Heights. My passenger is nervous and reads the speedometer." },
     "m-escort-speed": { "voice": "narrator", "text": "That's — that's quite fast." },
+    "m-escort-fail": { "voice": "narrator", "text": "They asked to get out. The invite is already on the calendar." },
     "m-escort-win": { "voice": "narrator", "text": "Door to door. No incident report." },
 
     "m-blackout-start": { "voice": "dispatch", "text": "Lights are out across all five. Everyone wants a word. Drive." },
