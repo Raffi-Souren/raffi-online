@@ -304,8 +304,9 @@ function updateWalking(dt, input, world, beatPhase) {
   const desiredX = mag > 0.001 ? (wantX / mag) * target * Math.min(1, mag) : 0
   const desiredZ = mag > 0.001 ? (wantZ / mag) * target * Math.min(1, mag) : 0
 
-  // Snappier accel/stop — the old damp rate felt like ice-skating.
-  const blend = mag > 0.01 ? 18 : 14
+  // Snappier accel/stop — the old damp rate felt like ice-skating. A stronger
+  // stop rate kills the residual slide when the stick is released.
+  const blend = mag > 0.01 ? 20 : 24
   p.vx = damp(p.vx, desiredX, blend, dt)
   p.vz = damp(p.vz, desiredZ, blend, dt)
 
