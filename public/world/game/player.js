@@ -373,27 +373,33 @@ function updateDriving(dt, input, world, beatPhase = 0) {
     // the screen-relative aim stays authoritative.
     if (reversing) steer = -steer
   } else {
-    // Chase cam (or no stick): A = left of nose, D = right of nose.
-    steer = clamp(input.move.x, -1, 1)
+    // Chase cam (behind the car): match the screen like walking does. The rig
+    // sits behind the nose, so a raw +move.x (D) actually swings the nose to
+    // screen-LEFT — verified by projecting the nose through the chase camera.
+    // Negate so D steers screen-right and A steers screen-left, same as on foot.
+    steer = clamp(-input.move.x, -1, 1)
   }
   if (Math.abs(steer) < 0.08) steer = 0
   if (Math.abs(steer) > 0.1) player.steerBias = Math.sign(steer)
   else if (inputMag < 0.12) player.steerBias = 0
 
   // During a kickflip, keep rolling forward — no brake cut mid-air.
-  // Board/scooter auto-throttle scales with how aligned the nose already is
-  // with the pressed direction: turn first, then accelerate. Tapping Left or
-  // Right mid-ride pivots the board instead of lurching it sideways.
+  // Aim-based auto-throttle scales with how aligned the ride already is with
+  // the pressed direction: turn first, then accelerate. It fixes two things a
+  // car needs in screen-relative view: pressing a pure sideways direction now
+  // drives (used to give zero throttle), and a diagonal no longer bogs the car
+  // down — the raw move vector normalizes, so W+D alone was only ~70% gas.
+  // Enabled for the board/scooter and for cars while NOT braking; chase cam and
+  // the explicit GAS/W throttle are untouched.
   const tricking = !!player.trick
-  const aimThrottle = microRide && inputMag > 0.15
+  const aimEligible = (microRide || (!chaseCam && aimMag > 0.12)) && input.brake < 0.05
+  const aimThrottle = aimEligible && inputMag > 0.15
     ? inputMag * Math.max(0, aimAlignment)
     : 0
   const ctl = {
     throttle: tricking
       ? Math.max(input.throttle, 0.55)
-      : (input.throttle > 0.01
-        ? input.throttle
-        : aimThrottle),
+      : Math.max(input.throttle, aimThrottle),
     brake: tricking ? 0 : input.brake,
     steer: tricking ? steer * 0.35 : steer,
     handbrake: tricking ? false : input.handbrake,

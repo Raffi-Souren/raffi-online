@@ -161,7 +161,7 @@
         "grille": { "width": 1.04, "height": 0.3, "color": "#D4D7D8" }
       },
       "jitter": { "length": 0.01, "width": 0.01, "cabinHeight": 0.015 },
-      "handling": { "accel": 9.6, "topSpeed": 38, "reverse": 11, "grip": 12.0, "handbrakeGrip": 2.4, "steerRate": 3.4, "steerFalloff": 0.4, "steerSpeed": 2.0, "minSteerAuthority": 0.7, "brake": 17, "mass": 1480, "drag": 0.33, "coastFriction": 2.4, "reversePower": 0.95, "escapeBoost": 3.2 },
+      "handling": { "accel": 14.0, "topSpeed": 44, "reverse": 12, "grip": 12.0, "handbrakeGrip": 2.4, "steerRate": 4.0, "steerFalloff": 0.32, "steerSpeed": 2.0, "minSteerAuthority": 0.7, "brake": 18, "mass": 1480, "drag": 0.33, "coastFriction": 2.4, "reversePower": 0.95, "escapeBoost": 3.2 },
       "colors": [["#164E3B", "#0E3228"], ["#CDD0CA", "#777D7C"], ["#182A48", "#0F1C31"], ["#4A1E2C", "#2E121C"]]
     },
     "skateboard": {
