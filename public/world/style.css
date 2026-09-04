@@ -1,17 +1,16 @@
-/* RAFFI WORLD — HUD chrome.
-   The 3D view renders at 512x288 and is upscaled with nearest-neighbour; the
-   HUD is DOM on top so text stays crisp at any device pixel ratio. All HUD
-   elements respect env(safe-area-inset-*) — tested at 390x844 and 430x932. */
+/* The game uses a scaled 3D buffer; DOM controls remain sharp above it. */
 
 :root {
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
-  --amber: #ffc23a;
-  --pink: #ff3d8a;
-  --cyan: #39e6ff;
-  --ink: #0b0e16;
+  --amber: #edc777;
+  --pink: #e5a0b2;
+  --cyan: #a2c6df;
+  --ink: #172638;
+  --paper: #eee2c7;
+  --display: Impact, "Arial Narrow", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -23,8 +22,8 @@ html, body {
   overflow: hidden;
   background: #05070c;
   color: #e8e4d8;
-  font-family: "Lucida Console", "DejaVu Sans Mono", Menlo, monospace;
-  -webkit-font-smoothing: none;
+  font-family: Tahoma, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
   overscroll-behavior: none;
@@ -38,11 +37,12 @@ html, body {
   width: 100%;
   height: 100%;
   display: block;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
 }
 
 .hidden { display: none !important; }
+
+button { cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
 
 /* ---------------------------------------------------------------- HUD --- */
 
@@ -51,7 +51,7 @@ html, body {
   inset: 0;
   pointer-events: none;
   font-size: 13px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.75);
 }
 
@@ -59,16 +59,17 @@ html, body {
   position: absolute;
   top: calc(10px + var(--safe-t));
   left: calc(12px + var(--safe-l));
-  max-width: 60vw;
-  padding: 6px 8px;
-  background: rgba(8, 12, 20, 0.54);
-  border-left: 3px solid rgba(255, 194, 58, 0.72);
+  max-width: min(480px, 60vw);
+  padding: 10px 12px;
+  background: rgba(17, 29, 43, 0.88);
+  border-left: 3px solid var(--amber);
 }
 
 #district-name {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-family: var(--display);
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   color: var(--amber);
 }
 
@@ -76,6 +77,7 @@ html, body {
   margin-top: 4px;
   font-size: 12px;
   color: #d8d2c0;
+  line-height: 1.45;
   opacity: 0.95;
 }
 
@@ -85,8 +87,8 @@ html, body {
   right: calc(12px + var(--safe-r));
   text-align: right;
   padding: 6px 8px;
-  background: rgba(8, 12, 20, 0.54);
-  border-right: 3px solid rgba(57, 230, 255, 0.58);
+  background: rgba(17, 29, 43, 0.88);
+  border-right: 3px solid var(--cyan);
 }
 
 #compliance { font-size: 10px; opacity: 0.9; }
@@ -125,11 +127,11 @@ html, body {
   display: block;
   width: 154px;
   height: 154px;
-  border: 4px solid #f39bdc;
+  border: 4px solid #cbb995;
   border-radius: 50%;
   background: rgba(8, 13, 22, 0.9);
   box-shadow:
-    0 0 0 2px rgba(25, 7, 28, 0.9),
+    0 0 0 2px rgba(17, 29, 43, 0.9),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   image-rendering: pixelated;
 }
@@ -558,17 +560,21 @@ html, body {
   background: rgba(4, 6, 12, 0.72);
 }
 .pause-panel {
-  width: min(360px, 86vw);
-  padding: 20px;
-  background: #10141f;
-  border: 2px solid #2a3550;
+  width: min(440px, 90vw);
+  padding: 28px;
+  background: #172638;
+  border-top: 4px solid var(--amber);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
 }
 .pause-panel h2 {
-  margin: 0 0 14px;
-  font-size: 16px;
-  letter-spacing: 0.22em;
-  color: var(--amber);
+  margin: 0;
+  font-family: var(--display);
+  font-size: 44px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--paper);
 }
+.pause-location { margin: 5px 0 24px; font-size: 12px; color: #abbac6; }
 .pause-panel button {
   display: block;
   width: 100%;
@@ -576,12 +582,14 @@ html, body {
   padding: 11px 12px;
   font-family: inherit;
   font-size: 12px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.01em;
   text-align: left;
   color: #e8e4d8;
-  background: #18203050;
-  border: 1px solid #2a3550;
+  background: #223448;
+  border: 1px solid #445263;
 }
+.pause-panel button[data-pause="resume"] { background: var(--amber); color: var(--ink); border-color: var(--amber); font-weight: 700; }
+.pause-panel button:hover:not(:disabled) { filter: brightness(1.15); }
 .pause-panel button:active:not(:disabled) { background: #2a3550; }
 .pause-panel button:disabled {
   color: #788298;
@@ -615,7 +623,7 @@ html, body {
   color: #788298;
   line-height: 1.5;
 }
-.pause-foot { margin-top: 12px; font-size: 10px; color: #6e7890; line-height: 1.5; }
+.pause-foot { margin-top: 12px; font-size: 10px; color: #a5b4c3; line-height: 1.5; }
 
 @media (max-height: 620px) {
   .pause-panel { max-height: 88vh; overflow-y: auto; }
@@ -663,28 +671,71 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #05070c;
+  gap: clamp(20px, 5vw, 90px);
+  padding: calc(30px + var(--safe-t)) calc(40px + var(--safe-r)) calc(30px + var(--safe-b)) calc(40px + var(--safe-l));
+  background: #172638;
+  overflow-y: auto;
 }
-#boot-inner { width: min(420px, 84vw); text-align: center; }
+.boot-art { width: min(48vw, 600px); flex-shrink: 1; }
+.boot-art svg { display: block; width: 100%; height: auto; }
+#boot-inner { width: min(370px, 42vw); text-align: left; flex-shrink: 0; }
 .boot-title {
-  font-size: 30px;
-  letter-spacing: 0.3em;
-  color: var(--amber);
-  margin-bottom: 6px;
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(64px, 8vw, 110px);
+  line-height: 0.89;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  color: var(--paper);
 }
-.boot-sub { font-size: 11px; letter-spacing: 0.4em; color: #6e7890; margin-bottom: 26px; }
-#boot-bar { height: 6px; background: #131a26; border: 1px solid #2a3550; }
+.boot-title span { display: inline-block; margin-left: 12px; vertical-align: top; padding-top: 8px; font-family: Tahoma, sans-serif; font-size: 13px; line-height: 1; letter-spacing: 0; color: var(--amber); }
+.boot-sub { font-size: 14px; color: var(--amber); margin-bottom: 18px; }
+.boot-description { margin: 24px 0 28px; max-width: 260px; font-size: 15px; line-height: 1.6; color: #bac4c9; }
+#boot-bar { height: 3px; background: #35475c; }
 #boot-progress { display: block; height: 100%; width: 0%; background: var(--amber); transition: width 0.2s; }
-#boot-status { margin-top: 12px; font-size: 11px; color: #8e8a7c; min-height: 16px; }
+#boot-status { margin-top: 9px; font-size: 11px; color: #bac4c9; min-height: 16px; }
 #boot-start {
-  margin-top: 22px;
-  padding: 13px 34px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px 20px;
   font-family: inherit;
-  font-size: 14px;
-  letter-spacing: 0.22em;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
   color: var(--ink);
   background: var(--amber);
   border: 0;
+}
+#boot-start span { float: right; }
+#boot-start:hover { background: var(--paper); }
+.boot-controls { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; font-size: 10px; color: #bac4c9; }
+.boot-controls kbd { display: inline-block; padding: 3px 4px; margin-right: 3px; border: 1px solid #607186; border-radius: 2px; font: inherit; color: var(--paper); }
+.boot-touch-controls { display: none; margin: 18px 0 0; color: #bac4c9; font-size: 11px; line-height: 1.6; }
+
+@media (pointer: coarse) {
+  .boot-controls { display: none; }
+  .boot-touch-controls { display: block; }
+}
+
+@media (max-width: 700px) {
+  #boot { flex-direction: column; gap: 0; justify-content: flex-start; padding: calc(16px + var(--safe-t)) 28px calc(28px + var(--safe-b)); }
+  .boot-art { width: min(70vw, 290px); height: min(28vh, 230px); flex-shrink: 0; overflow: hidden; }
+  .boot-art svg { height: 100%; }
+  #boot-inner { width: min(360px, 100%); }
+  .boot-title { font-size: clamp(62px, 13vw, 88px); }
+  .boot-sub { margin: 10px 0 12px; }
+  .boot-description { margin: 18px 0; font-size: 13px; max-width: 100%; }
+  .boot-controls { gap: 10px; }
+  .hud-top-left { padding: 7px 9px; }
+  #objective { font-size: 10px; }
+}
+
+@media (max-height: 540px) and (min-width: 701px) {
+  #boot { padding-top: 20px; padding-bottom: 20px; }
+  .boot-art { max-height: 90vh; }
+  .boot-art svg { max-height: 90vh; }
+  .boot-title { font-size: 62px; }
+  .boot-description { margin: 14px 0; }
 }
 
 @media (max-width: 700px) {
@@ -726,6 +777,9 @@ html, body {
 }
 
 @media (max-width: 520px) {
-  #district-name { font-size: 15px; }
-  .boot-title { font-size: 22px; }
+  #district-name { font-size: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

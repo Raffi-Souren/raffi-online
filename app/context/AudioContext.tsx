@@ -17,12 +17,17 @@ interface AudioContextType {
   error: string | null
   shuffle: boolean
   repeatMode: RepeatMode
+  volume: number
+  setVolume: (volume: number) => void
+  seekTo: (seconds: number) => void
+  seekRequest: { trackId: string; seconds: number; token: number } | null
   /**
    * Increments every time the current track should restart from 0. The player
    * engine watches this and issues an explicit seek — a state toggle alone is
    * not enough to make the SoundCloud widget rewind.
    */
   replayToken: number
+  retryToken: number
   playTrack: (track: Track) => void
   pauseTrack: () => void
   resumeTrack: () => void
@@ -56,6 +61,23 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Default "all" preserves the original wrap-around behavior.
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("all")
   const [replayToken, setReplayToken] = useState(0)
+  const [retryToken, setRetryToken] = useState(0)
+  const [volume, updateVolume] = useState(80)
+  const [seekRequest, setSeekRequest] = useState<AudioContextType["seekRequest"]>(null)
+
+  const setVolume = useCallback((value: number) => {
+    if (Number.isFinite(value)) updateVolume(Math.max(0, Math.min(100, value)))
+  }, [])
+
+  const seekTo = useCallback(
+    (seconds: number) => {
+      if (!currentTrack || duration <= 0 || !Number.isFinite(seconds)) return
+      const position = Math.max(0, Math.min(duration, seconds))
+      setCurrentTime(position)
+      setSeekRequest((previous) => ({ trackId: currentTrack.id, seconds: position, token: (previous?.token ?? 0) + 1 }))
+    },
+    [currentTrack, duration],
+  )
 
   const clearError = useCallback(() => {
     setError(null)
@@ -71,8 +93,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const playTrack = useCallback(
     (track: Track) => {
-      // Clear any previous errors
       setError(null)
+      if (error) {
+        setRetryToken((token) => token + 1)
+        setIsLoading(true)
+      }
 
       // If it's the same track, just resume
       if (currentTrack?.id === track.id) {
@@ -86,8 +111,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setIsPlaying(true)
       setCurrentTime(0)
       setDuration(0)
+      setSeekRequest(null)
     },
-    [currentTrack],
+    [currentTrack, error],
   )
 
   const pauseTrack = useCallback(() => {
@@ -96,26 +122,39 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const resumeTrack = useCallback(() => {
     if (currentTrack) {
+      if (error) {
+        setRetryToken((token) => token + 1)
+        setIsLoading(true)
+      }
       setError(null)
       setIsPlaying(true)
     }
-  }, [currentTrack])
+  }, [currentTrack, error])
 
   const togglePlay = useCallback(() => {
-    if (currentTrack) {
-      setIsPlaying((prev) => !prev)
-    }
-  }, [currentTrack])
+    if (isPlaying) pauseTrack()
+    else resumeTrack()
+  }, [isPlaying, pauseTrack, resumeTrack])
 
   const stopTrack = useCallback(() => {
     setIsPlaying(false)
     setCurrentTrack(null)
     setIsLoading(false)
     setError(null)
+    setCurrentTime(0)
+    setDuration(0)
+    setSeekRequest(null)
+  }, [])
+
+  const requestReplay = useCallback(() => {
+    setCurrentTime(0)
+    setIsPlaying(true)
+    setReplayToken((token) => token + 1)
   }, [])
 
   const nextTrack = useCallback(() => {
     if (!currentTrack || playlist.length === 0) return
+    if (playlist.length === 1 && playlist[0].id === currentTrack.id) return requestReplay()
 
     const currentIndex = playlist.findIndex((track) => track.id === currentTrack.id)
 
@@ -127,10 +166,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     const nextIndex = (currentIndex + 1) % playlist.length
     playTrack(playlist[nextIndex])
-  }, [currentTrack, playlist, playTrack, shuffle])
+  }, [currentTrack, playlist, playTrack, shuffle, requestReplay])
 
   const previousTrack = useCallback(() => {
     if (!currentTrack || playlist.length === 0) return
+    if (currentTime > 3 || (playlist.length === 1 && playlist[0].id === currentTrack.id)) return requestReplay()
 
     const currentIndex = playlist.findIndex((track) => track.id === currentTrack.id)
 
@@ -140,16 +180,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length
+    const prevIndex = currentIndex < 0 ? playlist.length - 1 : (currentIndex - 1 + playlist.length) % playlist.length
     playTrack(playlist[prevIndex])
-  }, [currentTrack, playlist, playTrack, shuffle])
-
-  /** Restart the current track from the top. */
-  const requestReplay = useCallback(() => {
-    setCurrentTime(0)
-    setIsPlaying(true)
-    setReplayToken((token) => token + 1)
-  }, [])
+  }, [currentTrack, playlist, playTrack, shuffle, requestReplay, currentTime])
 
   // Called by the player engine when a track naturally finishes.
   const handleTrackEnd = useCallback(() => {
@@ -197,7 +230,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         error,
         shuffle,
         repeatMode,
+        volume,
+        setVolume,
+        seekTo,
+        seekRequest,
         replayToken,
+        retryToken,
         playTrack,
         pauseTrack,
         resumeTrack,

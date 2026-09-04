@@ -22,7 +22,7 @@ import { findOpenSpots } from '../gen/blocks.js'
 import { nearestRoad } from '../gen/roads.js'
 import { makeRng } from './state.js'
 import {
-  initPlayer, updatePlayer, spawnVehicle, contextAction,
+  initPlayer, updatePlayer, settlePlayerContacts, spawnVehicle, contextAction,
   enterVehicle, exitVehicle, teleportPlayer, player,
   tryKickflip, isBoardTrickActive,
 } from '../game/player.js'
@@ -456,20 +456,8 @@ async function boot() {
     cityRoot: built.root,
     cityCollision: collision,
     world,
-    onEnter: () => {
-      const water = gfx.scene.getObjectByName('water')
-      if (water) water.visible = false
-      gfx.scene.traverse((obj) => {
-        if (obj.name?.startsWith('ped:') || obj.name?.startsWith('npc')) obj.visible = false
-      })
-    },
-    onExit: () => {
-      const water = gfx.scene.getObjectByName('water')
-      if (water) water.visible = true
-      gfx.scene.traverse((obj) => {
-        if (obj.name?.startsWith('ped:') || obj.name?.startsWith('npc')) obj.visible = true
-      })
-    },
+    exteriorRoot: gfx.scene,
+    playerRoot: player.group,
   })
   initMissions({
     scene: gfx.scene,
@@ -573,7 +561,7 @@ function startGame() {
   beginRecordingRun()
   const d = districtAt(state.player.x, state.player.z)
   if (d) bus.emit('district', d)
-  if (!query.auto) toast('WASD move  ·  E interact  ·  C camera (3D)', 4.5)
+  if (!query.auto) toast(device.touch ? 'Left thumb to move · Right buttons to interact' : 'WASD move · E interact · C camera (3D)', 4.5)
   if (query.to) {
     queueDialogue(['greeter-hello', 'greeter-brief', 'greeter-quest'], {
       substitutions: { name: query.to },
@@ -705,6 +693,8 @@ function loop(now) {
         return false
       },
     })
+
+    if (!world.transitBusy) settlePlayerContacts(world.collision)
 
     // Catch freeze owns locomotion for the invite beat.
     if (pursuitBlocksControl()) {

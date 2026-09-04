@@ -5,7 +5,10 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import Leaderboard from "./Leaderboard"
 import GameOverScreen from "./GameOverScreen"
 import GameControls from "./GameControls"
+import HandheldConsole from "../../components/ui/HandheldConsole"
+import { useWindowActivity } from "../../components/ui/WindowShell"
 import { PARACHUTE_LEVELS, loadGameProgress, saveGameProgress, type GameProgress } from "@/lib/game-utils"
+import { createParachute, stepParachute } from "@/lib/handheld-engine"
 
 interface Position {
   x: number
@@ -32,6 +35,7 @@ const MISSILE_SIZE = 8
 const GROUND_Y = CANVAS_HEIGHT - 45
 
 export default function ParachuteGame() {
+  const { active } = useWindowActivity()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [gameView, setGameView] = useState<GameView>("menu")
   const [score, setScore] = useState(0)
@@ -42,12 +46,32 @@ export default function ParachuteGame() {
   const [missiles, setMissiles] = useState<Missile[]>([])
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [landings, setLandings] = useState(0)
+  const [isNewHighScore, setIsNewHighScore] = useState(false)
   const [progress, setProgress] = useState<GameProgress | null>(null)
 
   const [keys, setKeys] = useState<Record<string, boolean>>({})
   const [mobileControls, setMobileControls] = useState({ left: false, right: false })
   const gameLoopRef = useRef<NodeJS.Timeout>()
-  const helicopterSpawnRef = useRef<NodeJS.Timeout>()
+  const simulationRef = useRef(createParachute())
+  const gameOverHandledRef = useRef(false)
+
+  useEffect(() => {
+    const pause = () => {
+      setKeys({})
+      setMobileControls({ left: false, right: false })
+      setGameView((view) => (view === "playing" ? "paused" : view))
+    }
+    if (!active) pause()
+    const visibility = () => {
+      if (document.hidden) pause()
+    }
+    window.addEventListener("blur", pause)
+    document.addEventListener("visibilitychange", visibility)
+    return () => {
+      window.removeEventListener("blur", pause)
+      document.removeEventListener("visibilitychange", visibility)
+    }
+  }, [active])
 
   useEffect(() => {
     setProgress(loadGameProgress("parachute"))
@@ -72,6 +96,11 @@ export default function ParachuteGame() {
   }, [score, level, gameView])
 
   const startGame = useCallback(() => {
+    simulationRef.current = createParachute()
+    gameOverHandledRef.current = false
+    setIsNewHighScore(false)
+    setKeys({})
+    setMobileControls({ left: false, right: false })
     setGameView("playing")
     setScore(0)
     setLevel(1)
@@ -86,6 +115,13 @@ export default function ParachuteGame() {
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLButtonElement && (e.key === " " || e.key === "Enter")) return
+      if (!active || (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return
+      if (e.key === "Escape" && gameView === "paused") {
+        e.preventDefault()
+        setGameView("playing")
+        return
+      }
       if (gameView === "menu" || gameView === "gameover") {
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault()
@@ -94,10 +130,14 @@ export default function ParachuteGame() {
         return
       }
       if (e.key === "Escape" && gameView === "playing") {
+        e.preventDefault()
         setGameView("paused")
         return
       }
-      setKeys((prev) => ({ ...prev, [e.key]: true }))
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault()
+        setKeys((prev) => ({ ...prev, [e.key]: true }))
+      }
     }
     const handleKeyUp = (e: KeyboardEvent) => {
       setKeys((prev) => ({ ...prev, [e.key]: false }))
@@ -109,7 +149,7 @@ export default function ParachuteGame() {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("keyup", handleKeyUp)
     }
-  }, [gameView, startGame])
+  }, [gameView, startGame, active])
 
   // Touch controls
   const handleTouchStart = useCallback(
@@ -131,31 +171,13 @@ export default function ParachuteGame() {
     setMobileControls({ left: false, right: false })
   }, [])
 
-  // Spawn helicopters
-  useEffect(() => {
-    if (gameView !== "playing") return
-    const config = getLevelConfig(level)
-
-    helicopterSpawnRef.current = setInterval(() => {
-      setHelicopters((prev) => [
-        ...prev,
-        {
-          x: Math.random() < 0.5 ? -HELICOPTER_WIDTH : CANVAS_WIDTH + HELICOPTER_WIDTH,
-          y: Math.random() * 120 + 40,
-          direction: Math.random() < 0.5 ? 1 : -1,
-        },
-      ])
-    }, config.spawnRate)
-
-    return () => {
-      if (helicopterSpawnRef.current) clearInterval(helicopterSpawnRef.current)
-    }
-  }, [gameView, level])
-
   const handleGameOver = useCallback(() => {
+    if (gameOverHandledRef.current) return
+    gameOverHandledRef.current = true
     setGameView("gameover")
+    setIsNewHighScore(score > (progress?.highScores[level] || 0))
     if (progress) {
-      const newProgress = { ...progress }
+      const newProgress = { ...progress, highScores: { ...progress.highScores } }
       newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, score)
       newProgress.totalScore += score
       newProgress.gamesPlayed += 1
@@ -164,76 +186,32 @@ export default function ParachuteGame() {
     }
   }, [score, level, progress])
 
-  // Game loop
+  // Update simulation outside React state setters, which may run twice in Strict Mode.
   useEffect(() => {
-    if (gameView !== "playing") return
+    if (gameView !== "playing" || !active) return
     const config = getLevelConfig(level)
-
-    gameLoopRef.current = setInterval(() => {
-      // Move player
-      setPlayer((prev) => {
-        let newX = prev.x
-        const newY = prev.y + 2.5
-
-        if (keys["ArrowLeft"] || mobileControls.left) newX -= 4
-        if (keys["ArrowRight"] || mobileControls.right) newX += 4
-        newX = Math.max(PLAYER_SIZE, Math.min(CANVAS_WIDTH - PLAYER_SIZE, newX))
-
-        if (newY >= GROUND_Y - PLAYER_SIZE) {
-          const points = 10 + level * 5
-          setScore((s) => s + points)
-          setLandings((l) => l + 1)
-          return { x: CANVAS_WIDTH / 2, y: 50 }
-        }
-        return { x: newX, y: newY }
-      })
-
-      // Move helicopters
-      setHelicopters((prev) => {
-        const newHelis = prev
-          .map((h) => ({ ...h, x: h.x + h.direction * config.heliSpeed }))
-          .filter((h) => h.x > -60 && h.x < CANVAS_WIDTH + 60)
-
-        newHelis.forEach((h) => {
-          if (Math.random() < 0.025 + level * 0.005) {
-            setMissiles((m) => [...m, { x: h.x + HELICOPTER_WIDTH / 2, y: h.y + HELICOPTER_HEIGHT }])
-          }
-        })
-        return newHelis
-      })
-
-      // Move missiles
-      setMissiles((prev) =>
-        prev.map((m) => ({ ...m, y: m.y + config.missileSpeed })).filter((m) => m.y < CANVAS_HEIGHT),
+    const interval = setInterval(() => {
+      const state = simulationRef.current
+      stepParachute(
+        state,
+        Boolean(keys["ArrowLeft"] || mobileControls.left),
+        Boolean(keys["ArrowRight"] || mobileControls.right),
+        config,
       )
-
-      // Check collisions
-      setMissiles((prevMissiles) => {
-        return prevMissiles.filter((missile) => {
-          const hit =
-            missile.x < player.x + PLAYER_SIZE &&
-            missile.x + MISSILE_SIZE > player.x - PLAYER_SIZE &&
-            missile.y < player.y + PLAYER_SIZE &&
-            missile.y + MISSILE_SIZE > player.y - PLAYER_SIZE
-
-          if (hit) {
-            setLives((prev) => {
-              const newLives = prev - 1
-              if (newLives <= 0) handleGameOver()
-              return newLives
-            })
-            setPlayer({ x: CANVAS_WIDTH / 2, y: 50 })
-            return false
-          }
-          return true
-        })
-      })
+      setPlayer(state.player)
+      setHelicopters(state.helicopters)
+      setMissiles(state.missiles)
+      setLives(state.lives)
+      setScore(state.score)
+      setLandings(state.landings)
+      if (state.lives <= 0) handleGameOver()
     }, 16)
-
+    gameLoopRef.current = interval
     return () => {
-      if (gameLoopRef.current) clearInterval(gameLoopRef.current)
+      clearInterval(interval)
+      if (gameLoopRef.current === interval) gameLoopRef.current = undefined
     }
-  }, [gameView, keys, mobileControls, player, level, handleGameOver])
+  }, [gameView, keys, mobileControls, level, handleGameOver, active])
 
   // Draw
   useEffect(() => {
@@ -306,8 +284,6 @@ export default function ParachuteGame() {
     }
   }, [gameView, player, helicopters, missiles, score, lives, level, landings])
 
-  const isHighScore = progress ? score > (progress.highScores[level] || 0) : false
-
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto px-2">
       {(gameView === "playing" || gameView === "paused") && (
@@ -324,65 +300,87 @@ export default function ParachuteGame() {
         />
       )}
 
-      <div
-        className="relative w-full"
-        style={{ maxWidth: CANVAS_WIDTH, aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
+      <HandheldConsole
+        title="Parachute"
+        horizontalOnly
+        paused={gameView === "paused"}
+        onStart={() => {
+          if (gameView === "playing") setGameView("paused")
+          else if (gameView === "paused") setGameView("playing")
+          else startGame()
+        }}
+        onDirection={(direction, held) => {
+          if (direction === "LEFT" || direction === "RIGHT")
+            setMobileControls((previous) => ({ ...previous, [direction === "LEFT" ? "left" : "right"]: held }))
+        }}
       >
-        <div className="w-full h-full border-4 border-gray-700 rounded-lg overflow-hidden shadow-inner">
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
-            className="w-full h-full object-contain"
-            style={{ touchAction: "none" }}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onClick={() => gameView === "menu" && startGame()}
-          />
-        </div>
+        <div
+          className="relative w-full"
+          style={{ maxWidth: CANVAS_WIDTH, aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
+        >
+          <div className="w-full h-full border-4 border-gray-700 rounded-lg overflow-hidden shadow-inner">
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              className="w-full h-full object-contain"
+              style={{ touchAction: "none" }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
+              onClick={() => gameView === "menu" && startGame()}
+            />
+          </div>
 
-        {gameView === "paused" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
-            <div className="text-center text-white">
-              <h2 className="text-2xl font-bold mb-2">PAUSED</h2>
-              <p className="text-sm text-gray-300">Press ESC or Resume</p>
+          {gameView === "paused" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
+              <div className="text-center text-white">
+                <h2 className="text-2xl font-bold mb-2">PAUSED</h2>
+                <p className="text-sm text-gray-300">Press ESC or Resume</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {gameView === "gameover" && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-lg">
-            <GameOverScreen
-              score={score}
-              level={level}
-              isHighScore={isHighScore}
-              gameName="parachute"
-              onRestart={startGame}
-              onQuit={() => setGameView("menu")}
-              onViewLeaderboard={() => setGameView("leaderboard")}
-              stats={{ timeElapsed }}
-            />
-          </div>
-        )}
+          {gameView === "gameover" && (
+            <div
+              className="rounded-lg"
+              style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+            >
+              <GameOverScreen
+                score={score}
+                level={level}
+                isHighScore={isNewHighScore}
+                gameName="parachute"
+                onRestart={startGame}
+                onQuit={() => setGameView("menu")}
+                onViewLeaderboard={() => setGameView("leaderboard")}
+                stats={{ timeElapsed }}
+              />
+            </div>
+          )}
 
-        {gameView === "leaderboard" && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-lg overflow-auto">
-            <Leaderboard
-              gameName="parachute"
-              currentScore={score > 0 ? score : undefined}
-              onClose={() => setGameView("menu")}
-            />
-          </div>
-        )}
+          {gameView === "leaderboard" && (
+            <div
+              className="rounded-lg"
+              style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+            >
+              <Leaderboard
+                gameName="parachute"
+                currentScore={score > 0 ? score : undefined}
+                onClose={() => setGameView("menu")}
+              />
+            </div>
+          )}
 
-        {/* Mobile touch areas */}
-        {gameView === "playing" && (
-          <div className="absolute inset-0 pointer-events-none flex md:hidden">
-            <div className={`w-1/2 h-full transition-opacity ${mobileControls.left ? "bg-white/10" : ""}`} />
-            <div className={`w-1/2 h-full transition-opacity ${mobileControls.right ? "bg-white/10" : ""}`} />
-          </div>
-        )}
-      </div>
+          {/* Mobile touch areas */}
+          {gameView === "playing" && (
+            <div className="absolute inset-0 pointer-events-none flex md:hidden">
+              <div className={`w-1/2 h-full transition-opacity ${mobileControls.left ? "bg-white/10" : ""}`} />
+              <div className={`w-1/2 h-full transition-opacity ${mobileControls.right ? "bg-white/10" : ""}`} />
+            </div>
+          )}
+        </div>
+      </HandheldConsole>
 
       <div className="text-sm text-gray-600 font-mono text-center">
         <span className="hidden md:inline">Arrow Keys to Steer • Space to Start</span>

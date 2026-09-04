@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import QuestionBlock from "../components/easter/QuestionBlock"
@@ -9,7 +9,7 @@ import StartMenu from "../components/ui/StartMenu"
 import DesktopContextMenu from "../components/ui/DesktopContextMenu"
 import Taskbar from "./components/Taskbar"
 import NowPlaying from "./components/NowPlaying"
-import WindowShell from "../components/ui/WindowShell"
+import WindowShell, { WindowActivityProvider } from "../components/ui/WindowShell"
 
 const AboutWindow = dynamic(() => import("./components/AboutWindow"))
 const GameSelector = dynamic(() => import("./components/GameSelector"))
@@ -32,6 +32,22 @@ const DESKTOP_SHORTCUTS = [
   { action: "startup", icon: "💡", label: "PITCH STARTUP" },
 ] as const
 
+// Keep every window in a stable DOM slot. Visual ordering is supplied through
+// WindowActivityProvider so bringing the World iframe forward never moves or
+// reloads its browsing context.
+const WINDOW_SLOTS = [
+  "about",
+  "games",
+  "crates",
+  "blogroll",
+  "notes",
+  "ipod",
+  "world",
+  "projects",
+  "startup",
+  "counter",
+] as const
+
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
   const [openWindows, setOpenWindows] = useState<Record<string, boolean>>({
@@ -49,14 +65,91 @@ export default function Home() {
   // Once launched, keep RAFFI WORLD mounted so minimizing it preserves the
   // WebGL context, audio graph, and the player's current run.
   const [worldLaunched, setWorldLaunched] = useState(false)
+  const [crateCatch, setCrateCatch] = useState<number | null>(null)
+  // Oldest to newest. WindowShell consumes the derived layer through context;
+  // taskbar, quick-launch, Start-menu, and desktop launches all use this path.
+  const [windowOrder, setWindowOrder] = useState<string[]>([])
+
+  useEffect(() => {
+    const app = new URLSearchParams(window.location.search).get("app")
+    if (!app || !WINDOW_SLOTS.some((name) => name === app)) return
+    setOpenWindows((previous) => ({ ...previous, [app]: true }))
+    setWindowOrder([app])
+    if (app === "world") setWorldLaunched(true)
+  }, [])
+
+  const bringToFront = (windowName: string) => {
+    setWindowOrder((prev) => {
+      if (prev[prev.length - 1] === windowName) return prev
+      return [...prev.filter((name) => name !== windowName), windowName]
+    })
+  }
+
   const openWindow = (windowName: string) => {
+    if (windowName === "crates") setCrateCatch(null)
     if (windowName === "world") setWorldLaunched(true)
     setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
+    bringToFront(windowName)
     setShowStartMenu(false)
   }
 
   const closeWindow = (windowName: string) => {
     setOpenWindows((prev) => ({ ...prev, [windowName]: false }))
+    // World is minimized rather than destroyed. Keeping its stable slot in the
+    // order preserves the iframe; restoring it simply promotes its layer.
+    if (windowName !== "world") {
+      setWindowOrder((prev) => prev.filter((name) => name !== windowName))
+    }
+  }
+
+  let activeWindow: string | null = null
+  for (let index = windowOrder.length - 1; index >= 0; index--) {
+    const name = windowOrder[index]
+    if (openWindows[name]) {
+      activeWindow = name
+      break
+    }
+  }
+
+  const renderWindow = (windowName: (typeof WINDOW_SLOTS)[number]) => {
+    switch (windowName) {
+      case "about":
+        return <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />
+      case "games":
+        return <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />
+      case "crates":
+        return <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} catchNumber={crateCatch} />
+      case "blogroll":
+        return <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />
+      case "notes":
+        return <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />
+      case "ipod":
+        return <IPodWindow isOpen={openWindows.ipod} onClose={() => closeWindow("ipod")} />
+      case "world":
+        return <RaffiWorldWindow isOpen={openWindows.world} onClose={() => closeWindow("world")} />
+      case "projects":
+        return (
+          <WindowShell title="PROJECTS" onClose={() => closeWindow("projects")}>
+            <ProjectsWindow />
+          </WindowShell>
+        )
+      case "startup":
+        return (
+          <UnderConstructionWindow
+            isOpen={openWindows.startup}
+            onClose={() => closeWindow("startup")}
+            title="Pitch Me a Startup"
+          />
+        )
+      case "counter":
+        return (
+          <UnderConstructionWindow
+            isOpen={openWindows.counter}
+            onClose={() => closeWindow("counter")}
+            title="By the Numbers"
+          />
+        )
+    }
   }
 
   const handleIconClick = (action: string) => {
@@ -76,8 +169,9 @@ export default function Home() {
     }
   }
 
-  const handleEasterEggClick = () => {
+  const handleEasterEggClick = (catchNumber: number) => {
     openWindow("crates")
+    setCrateCatch(catchNumber)
   }
 
   const handleStartMenuToggle = () => {
@@ -86,7 +180,7 @@ export default function Home() {
 
   return (
     <div
-      className="relative min-h-screen h-screen overflow-hidden"
+      className="relative overflow-hidden"
       style={{
         minHeight: "100dvh",
         height: "100dvh",
@@ -100,7 +194,6 @@ export default function Home() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center"
           quality={85}
           style={{ objectFit: "cover", objectPosition: "center", width: "100%", height: "100%" }}
         />
@@ -121,62 +214,46 @@ export default function Home() {
         ))}
       </div>
 
-      <div
-        style={{
-          position: "fixed",
-          bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
-          left: "calc(1rem + env(safe-area-inset-left, 0px))",
-          zIndex: 20,
-        }}
-      >
-        <QuestionBlock onClick={handleEasterEggClick} />
-      </div>
+      <QuestionBlock active={activeWindow === null} onClick={handleEasterEggClick} />
 
       {/* Now Playing Component */}
       <NowPlaying />
 
       {/* Taskbar - z-50 */}
-      <Taskbar onStartClick={handleStartMenuToggle} onWindowClick={openWindow} openWindows={openWindows} />
+      <Taskbar
+        onStartClick={handleStartMenuToggle}
+        onWindowClick={openWindow}
+        openWindows={openWindows}
+        persistentWindows={{ world: worldLaunched }}
+        activeWindow={activeWindow}
+      />
 
       {showStartMenu && (
         <>
           <div
-            style={{ position: "fixed", inset: 0, zIndex: 90, backgroundColor: "transparent" }}
+            style={{ position: "fixed", inset: 0, zIndex: 9000, backgroundColor: "transparent" }}
             onClick={() => setShowStartMenu(false)}
           />
           <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
         </>
       )}
 
-      {/* Windows - z-100/101 via WindowShell */}
-      {openWindows.about && <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />}
-      {openWindows.games && <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />}
-      {openWindows.crates && <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />}
-      {openWindows.blogroll && <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />}
-      {openWindows.notes && <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />}
-      {openWindows.ipod && <IPodWindow isOpen={openWindows.ipod} onClose={() => closeWindow("ipod")} />}
-      {worldLaunched && (
-        <RaffiWorldWindow isOpen={openWindows.world} onClose={() => closeWindow("world")} />
-      )}
-      {openWindows.projects && (
-        <WindowShell title="PROJECTS" onClose={() => closeWindow("projects")}>
-          <ProjectsWindow />
-        </WindowShell>
-      )}
-      {openWindows.startup && (
-        <UnderConstructionWindow
-          isOpen={openWindows.startup}
-          onClose={() => closeWindow("startup")}
-          title="Pitch Me a Startup"
-        />
-      )}
-      {openWindows.counter && (
-        <UnderConstructionWindow
-          isOpen={openWindows.counter}
-          onClose={() => closeWindow("counter")}
-          title="By the Numbers"
-        />
-      )}
+      {/* Stable window slots; their context layer implements foreground order. */}
+      {WINDOW_SLOTS.map((windowName) => {
+        const keepWorldMounted = windowName === "world" && worldLaunched
+        if (!openWindows[windowName] && !keepWorldMounted) return null
+        const orderIndex = Math.max(windowOrder.indexOf(windowName), 0)
+        return (
+          <WindowActivityProvider
+            key={windowName}
+            active={!showStartMenu && activeWindow === windowName}
+            layer={100 + orderIndex * 2}
+            onActivate={() => bringToFront(windowName)}
+          >
+            {renderWindow(windowName)}
+          </WindowActivityProvider>
+        )
+      })}
     </div>
   )
 }

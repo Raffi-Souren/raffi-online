@@ -5,7 +5,10 @@ import Leaderboard from "./Leaderboard"
 import LevelSelector from "./LevelSelector"
 import GameControls from "./GameControls"
 import GameOverScreen from "./GameOverScreen"
+import HandheldConsole from "../../components/ui/HandheldConsole"
+import { useWindowActivity } from "../../components/ui/WindowShell"
 import { BRICKBREAKER_LEVELS, loadGameProgress, saveGameProgress, type GameProgress } from "@/lib/game-utils"
+import { releaseBrickBall } from "@/lib/handheld-engine"
 
 const getCanvasDimensions = () => {
   if (typeof window !== "undefined") {
@@ -17,7 +20,7 @@ const getCanvasDimensions = () => {
       const maxWidth = Math.min(window.innerWidth - 40, 380)
       return {
         width: maxWidth,
-        height: Math.min(maxWidth * 1.58, window.innerHeight - 200),
+        height: Math.max(280, Math.min(maxWidth * 1.58, window.innerHeight - 200)),
       }
     } else if (isTablet) {
       // Tablet: medium size
@@ -72,11 +75,13 @@ interface Ball {
   dx: number
   dy: number
   active: boolean
+  heldSpeed?: number
 }
 
 type GameView = "menu" | "playing" | "paused" | "gameover" | "levelcomplete" | "leaderboard" | "levelselect"
 
 export default function Brickbreaker() {
+  const { active } = useWindowActivity()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [dimensions, setDimensions] = useState(getCanvasDimensions())
   const [gameView, setGameView] = useState<GameView>("menu")
@@ -87,6 +92,16 @@ export default function Brickbreaker() {
   const [combo, setCombo] = useState(0)
   const [maxCombo, setMaxCombo] = useState(0)
   const [progress, setProgress] = useState<GameProgress | null>(null)
+  const livesRef = useRef(3)
+  const terminalHandledRef = useRef(false)
+  const scoreRef = useRef(0)
+  const comboRef = useRef(0)
+  const maxComboRef = useRef(0)
+  const [isNewHighScore, setIsNewHighScore] = useState(false)
+  const addScore = useCallback((points: number) => {
+    scoreRef.current += points
+    setScore(scoreRef.current)
+  }, [])
 
   const CANVAS_WIDTH = dimensions.width
   const CANVAS_HEIGHT = dimensions.height
@@ -116,6 +131,32 @@ export default function Brickbreaker() {
   const getLevelConfig = (lvl: number) => {
     return BRICKBREAKER_LEVELS[Math.min(lvl - 1, BRICKBREAKER_LEVELS.length - 1)]
   }
+
+  useEffect(() => {
+    if (gameView !== "playing") gameStateRef.current.keys = {}
+    const pause = () => {
+      gameStateRef.current.keys = {}
+      setGameView((view) => (view === "playing" ? "paused" : view))
+    }
+    if (!active) pause()
+    const visibility = () => {
+      if (document.hidden) pause()
+    }
+    const resume = (event: KeyboardEvent) => {
+      if (active && event.key === "Escape" && gameView === "paused") {
+        event.preventDefault()
+        setGameView("playing")
+      }
+    }
+    window.addEventListener("blur", pause)
+    window.addEventListener("keydown", resume)
+    document.addEventListener("visibilitychange", visibility)
+    return () => {
+      window.removeEventListener("blur", pause)
+      window.removeEventListener("keydown", resume)
+      document.removeEventListener("visibilitychange", visibility)
+    }
+  }, [active, gameView])
 
   const createBricks = useCallback(
     (currentLevel: number) => {
@@ -180,6 +221,12 @@ export default function Brickbreaker() {
     (startLevel: number) => {
       const config = getLevelConfig(startLevel)
       const baseSpeed = CANVAS_WIDTH * 0.006 * config.ballSpeed // Slower initial speed for authentic feel
+      terminalHandledRef.current = false
+      livesRef.current = 3
+      scoreRef.current = 0
+      comboRef.current = 0
+      maxComboRef.current = 0
+      setIsNewHighScore(false)
 
       gameStateRef.current = {
         paddleX: (CANVAS_WIDTH - PADDLE_WIDTH) / 2,
@@ -219,13 +266,19 @@ export default function Brickbreaker() {
   }
 
   const handleLevelComplete = useCallback(() => {
+    if (terminalHandledRef.current) return
+    terminalHandledRef.current = true
     setGameView("levelcomplete")
 
     // Update progress
     if (progress) {
-      const newProgress = { ...progress }
-      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, score)
-      newProgress.totalScore += score
+      const newProgress = {
+        ...progress,
+        highScores: { ...progress.highScores },
+        unlockedLevels: [...progress.unlockedLevels],
+      }
+      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, scoreRef.current)
+      newProgress.totalScore += scoreRef.current
       newProgress.gamesPlayed += 1
 
       // Unlock next level
@@ -236,23 +289,27 @@ export default function Brickbreaker() {
       saveGameProgress("brickbreaker", newProgress)
       setProgress(newProgress)
     }
-  }, [level, score, progress])
+  }, [level, progress])
 
   const handleGameOver = useCallback(() => {
+    if (terminalHandledRef.current) return
+    terminalHandledRef.current = true
     setGameView("gameover")
+    setIsNewHighScore(scoreRef.current > (progress?.highScores[level] || 0))
 
     // Update progress
     if (progress) {
-      const newProgress = { ...progress }
-      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, score)
-      newProgress.totalScore += score
+      const newProgress = { ...progress, highScores: { ...progress.highScores } }
+      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, scoreRef.current)
+      newProgress.totalScore += scoreRef.current
       newProgress.gamesPlayed += 1
       saveGameProgress("brickbreaker", newProgress)
       setProgress(newProgress)
     }
-  }, [level, score, progress])
+  }, [level, progress])
 
   const nextLevel = () => {
+    terminalHandledRef.current = false
     const newLevel = level + 1
     if (newLevel > BRICKBREAKER_LEVELS.length) {
       // Game completed!
@@ -285,15 +342,26 @@ export default function Brickbreaker() {
     }
 
     setLevel(newLevel)
-    setLives((prev) => Math.min(prev + 1, 5))
+    livesRef.current = Math.min(livesRef.current + 1, 5)
+    setLives(livesRef.current)
+    comboRef.current = 0
     setCombo(0)
     setGameView("playing")
   }
 
+  const releaseBall = useCallback(() => {
+    const state = gameStateRef.current
+    if (!state.caughtBall) return
+    const baseSpeed =
+      CANVAS_WIDTH * 0.006 * BRICKBREAKER_LEVELS[Math.min(level - 1, BRICKBREAKER_LEVELS.length - 1)].ballSpeed
+    releaseBrickBall(state.caughtBall, baseSpeed, CANVAS_HEIGHT - PADDLE_HEIGHT - BALL_RADIUS - 10)
+    state.caughtBall = null
+  }, [CANVAS_WIDTH, CANVAS_HEIGHT, level])
+
   // Main game loop
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || gameView !== "playing") return
+    if (!canvas || gameView !== "playing" || !active) return
 
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -305,14 +373,17 @@ export default function Brickbreaker() {
     const baseSpeed = CANVAS_WIDTH * 0.006 * config.ballSpeed
     const BRICK_WIDTH = (CANVAS_WIDTH - (BRICK_COLUMNS + 1) * BRICK_PADDING) / BRICK_COLUMNS
 
-    const currentPaddleWidth = gameState.activePowerups.has("long") ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH
+    let currentPaddleWidth = gameState.activePowerups.has("long") ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLButtonElement && (e.key === " " || e.key === "Enter")) return
+      if (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return
+      if (["ArrowLeft", "ArrowRight", " ", "Escape"].includes(e.key)) e.preventDefault()
       gameState.keys[e.key] = true
       if (e.key === "Escape") setGameView("paused")
       if (e.key === " " && gameState.activePowerups.has("catch") && gameState.caughtBall) {
         // Release caught ball
-        gameState.caughtBall = null
+        releaseBall()
       }
       if (e.key === " " && gameState.activePowerups.has("laser")) {
         // Fire laser
@@ -503,33 +574,14 @@ export default function Brickbreaker() {
                     }
 
                     // Combo system
-                    if (now - gameState.lastComboTime < 1000) {
-                      setCombo((prev) => {
-                        const newCombo = prev + 1
-                        setMaxCombo((max) => Math.max(max, newCombo))
-                        return newCombo
-                      })
-                    } else {
-                      setCombo(1)
-                    }
+                    comboRef.current = now - gameState.lastComboTime < 1000 ? comboRef.current + 1 : 1
+                    maxComboRef.current = Math.max(maxComboRef.current, comboRef.current)
+                    setCombo(comboRef.current)
+                    setMaxCombo(maxComboRef.current)
                     gameState.lastComboTime = now
 
-                    const comboMultiplier = Math.min(combo + 1, 5)
-                    setScore((prev) => prev + brick.points * comboMultiplier)
-                  }
-
-                  // Check win condition
-                  let remainingBricks = 0
-                  for (let cc = 0; cc < BRICK_COLUMNS; cc++) {
-                    for (let rr = 0; rr < gameState.bricks[cc]?.length; rr++) {
-                      if (gameState.bricks[cc][rr].status === 1 && !gameState.bricks[cc][rr].unbreakable) {
-                        remainingBricks++
-                      }
-                    }
-                  }
-
-                  if (remainingBricks === 0) {
-                    handleLevelComplete()
+                    const comboMultiplier = Math.min(comboRef.current, 5)
+                    addScore(brick.points * comboMultiplier)
                   }
                 }
                 return
@@ -552,7 +604,7 @@ export default function Brickbreaker() {
               ) {
                 brick.status = 0
                 shot.y = -100 // Deactivate shot
-                setScore((prev) => prev + brick.points)
+                addScore(brick.points)
               }
             }
           }
@@ -639,7 +691,8 @@ export default function Brickbreaker() {
           setTimeout(() => gameState.activePowerups.delete("catch"), 20000)
           break
         case "life":
-          setLives((prev) => Math.min(prev + 1, 5))
+          livesRef.current = Math.min(livesRef.current + 1, 5)
+          setLives(livesRef.current)
           break
         case "bomb":
           // Destroy multiple random bricks
@@ -648,7 +701,7 @@ export default function Brickbreaker() {
             for (let r = 0; r < gameState.bricks[c]?.length && destroyed < 5; r++) {
               if (gameState.bricks[c][r].status === 1 && !gameState.bricks[c][r].unbreakable && Math.random() < 0.3) {
                 gameState.bricks[c][r].status = 0
-                setScore((prev) => prev + gameState.bricks[c][r].points)
+                addScore(gameState.bricks[c][r].points)
                 destroyed++
               }
             }
@@ -669,6 +722,8 @@ export default function Brickbreaker() {
     }
 
     const draw = () => {
+      if (terminalHandledRef.current) return
+      currentPaddleWidth = gameState.activePowerups.has("long") ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
       ctx.fillStyle = "#000000"
@@ -683,6 +738,13 @@ export default function Brickbreaker() {
       updatePaddle()
       updateCapsules()
       updateLasers()
+      if (
+        gameState.bricks.length > 0 &&
+        !gameState.bricks.some((column) => column.some((brick) => brick.status === 1 && !brick.unbreakable))
+      ) {
+        handleLevelComplete()
+        return
+      }
 
       if (level >= 10) {
         gameState.paddleHits++
@@ -698,7 +760,7 @@ export default function Brickbreaker() {
 
       // Ball physics for each ball
       gameState.balls.forEach((ball, index) => {
-        if (!ball.active) return
+        if (!ball.active || ball === gameState.caughtBall) return
 
         // Wall collisions
         if (ball.x + ball.dx > CANVAS_WIDTH - BALL_RADIUS || ball.x + ball.dx < BALL_RADIUS) {
@@ -717,10 +779,12 @@ export default function Brickbreaker() {
 
             if (gameState.activePowerups.has("catch") && !gameState.caughtBall) {
               gameState.caughtBall = ball
+              ball.heldSpeed = Math.hypot(ball.dx, ball.dy)
               ball.dy = 0
               ball.dx = 0
             }
 
+            comboRef.current = 0
             setCombo(0) // Reset combo on paddle hit
             gameState.paddleHits++
           } else {
@@ -729,31 +793,30 @@ export default function Brickbreaker() {
             const remainingBalls = gameState.balls.filter((b) => b.active).length
 
             if (remainingBalls === 0) {
-              setLives((prev) => {
-                const newLives = prev - 1
-                if (newLives <= 0) {
-                  handleGameOver()
-                  return 0
-                }
-                // Reset ball
-                gameState.balls = [
-                  {
-                    x: CANVAS_WIDTH / 2,
-                    y: CANVAS_HEIGHT - 60,
-                    dx: baseSpeed * (Math.random() > 0.5 ? 1 : -1),
-                    dy: -baseSpeed,
-                    active: true,
-                  },
-                ]
-                gameState.paddleX = (CANVAS_WIDTH - currentPaddleWidth) / 2
-                setCombo(0)
-                return newLives
-              })
+              livesRef.current = Math.max(0, livesRef.current - 1)
+              setLives(livesRef.current)
+              if (livesRef.current <= 0) {
+                handleGameOver()
+                return
+              }
+              // Reset ball
+              gameState.balls = [
+                {
+                  x: CANVAS_WIDTH / 2,
+                  y: CANVAS_HEIGHT - 60,
+                  dx: baseSpeed * (Math.random() > 0.5 ? 1 : -1),
+                  dy: -baseSpeed,
+                  active: true,
+                },
+              ]
+              gameState.paddleX = (CANVAS_WIDTH - currentPaddleWidth) / 2
+              comboRef.current = 0
+              setCombo(0)
             }
           }
         }
 
-        if (ball.active && !gameState.caughtBall) {
+        if (ball.active && ball !== gameState.caughtBall) {
           ball.x += ball.dx
           ball.y += ball.dy
         }
@@ -800,155 +863,217 @@ export default function Brickbreaker() {
     CANVAS_WIDTH,
     CANVAS_HEIGHT,
     PADDLE_WIDTH,
+    BRICK_HEIGHT,
     handleLevelComplete,
     handleGameOver,
+    active,
+    releaseBall,
+    addScore,
   ])
 
-  const isHighScore = progress ? score > (progress.highScores[level] || 0) : false
-
   return (
-    <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-black p-4">
-      <div className="relative w-full max-w-md">
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          className="mx-auto block touch-none rounded-lg border-4 border-gray-700 shadow-2xl"
-          style={{
-            width: "100%",
-            maxWidth: `${CANVAS_WIDTH}px`,
-            height: "auto",
-            aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}`,
-            imageRendering: "pixelated",
-          }}
-        />
-      </div>
-
-      {/* Game Controls (visible during play) */}
-      {(gameView === "playing" || gameView === "paused") && (
-        <GameControls
-          isPaused={gameView === "paused"}
-          onPause={() => setGameView("paused")}
-          onResume={() => setGameView("playing")}
-          onRestart={() => startGame(level)}
-          onQuit={() => setGameView("menu")}
-          score={score}
-          level={level}
-          lives={lives}
-          timeElapsed={timeElapsed}
-          showLevelSelect={() => setGameView("levelselect")}
-        />
-      )}
-
-      {/* Overlay screens */}
-      {gameView === "menu" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/85 rounded-lg">
-          <div className="text-center space-y-4 p-4">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">Brickbreaker</h2>
-            <p className="text-gray-400 text-sm">Break all bricks to advance!</p>
-            <div className="space-y-2">
-              <button
-                className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-400 font-bold min-h-[48px]"
-                onClick={() => startGame(1)}
-              >
-                ▶ Start Game
-              </button>
-              <button
-                className="w-full px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-400 font-bold min-h-[48px]"
-                onClick={() => setGameView("levelselect")}
-              >
-                📋 Select Level
-              </button>
-              <button
-                className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-400 font-bold min-h-[48px]"
-                onClick={() => setGameView("leaderboard")}
-              >
-                🏆 Leaderboard
-              </button>
-            </div>
-            <p className="text-gray-500 text-xs">Use mouse/touch or arrow keys to move paddle</p>
-          </div>
+    <HandheldConsole
+      title="Brick Breaker"
+      horizontalOnly
+      paused={gameView === "paused"}
+      onStart={() => {
+        if (gameView === "playing") setGameView("paused")
+        else if (gameView === "paused") setGameView("playing")
+        else startGame(1)
+      }}
+      onDirection={(direction, held) => {
+        if (direction === "LEFT" || direction === "RIGHT")
+          gameStateRef.current.keys[direction === "LEFT" ? "ArrowLeft" : "ArrowRight"] = held
+      }}
+      onAction={() => {
+        if (gameView !== "playing") {
+          if (gameView === "paused") setGameView("playing")
+          else startGame(1)
+          return
+        }
+        const state = gameStateRef.current
+        releaseBall()
+        if (state.activePowerups.has("laser"))
+          state.laserShots.push({
+            x: state.paddleX + (state.activePowerups.has("long") ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH) / 2,
+            y: CANVAS_HEIGHT - 20,
+          })
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          background: "#101711",
+          padding: 4,
+        }}
+      >
+        <div className="relative w-full max-w-md">
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            className="mx-auto block touch-none rounded-lg border-4 border-gray-700 shadow-2xl"
+            style={{
+              width: "100%",
+              maxWidth: `${CANVAS_WIDTH}px`,
+              height: "auto",
+              aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}`,
+              imageRendering: "pixelated",
+            }}
+          />
         </div>
-      )}
 
-      {gameView === "paused" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-lg">
-          <div className="text-center space-y-4 p-4">
-            <h2 className="text-2xl font-bold text-white">PAUSED</h2>
-            <p className="text-gray-400">Press ESC or Resume to continue</p>
-          </div>
-        </div>
-      )}
-
-      {gameView === "levelcomplete" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/85 rounded-lg">
-          <div className="text-center space-y-4 p-4">
-            <h2 className="text-2xl font-bold text-green-400">Level {level} Complete!</h2>
-            <div className="text-white space-y-1">
-              <p>
-                Score: <span className="text-yellow-400 font-bold">{score.toLocaleString()}</span>
-              </p>
-              <p>
-                Max Combo: <span className="text-purple-400 font-bold">{maxCombo}x</span>
-              </p>
-            </div>
-            <div className="space-y-2">
-              {level < BRICKBREAKER_LEVELS.length ? (
-                <button
-                  className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-400 font-bold"
-                  onClick={nextLevel}
-                >
-                  Next Level →
-                </button>
-              ) : (
-                <div className="text-yellow-400 font-bold text-lg">🎉 You beat all levels! 🎉</div>
-              )}
-              <button
-                className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 font-bold"
-                onClick={() => setGameView("menu")}
-              >
-                Back to Menu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {gameView === "gameover" && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-lg">
-          <GameOverScreen
-            score={score}
-            level={level}
-            isHighScore={isHighScore}
-            gameName="brickbreaker"
+        {/* Game Controls (visible during play) */}
+        {(gameView === "playing" || gameView === "paused") && (
+          <GameControls
+            isPaused={gameView === "paused"}
+            onPause={() => setGameView("paused")}
+            onResume={() => setGameView("playing")}
             onRestart={() => startGame(level)}
             onQuit={() => setGameView("menu")}
-            onViewLeaderboard={() => setGameView("leaderboard")}
-            stats={{ timeElapsed, maxCombo }}
+            score={score}
+            level={level}
+            lives={lives}
+            timeElapsed={timeElapsed}
+            showLevelSelect={() => setGameView("levelselect")}
           />
-        </div>
-      )}
+        )}
 
-      {gameView === "leaderboard" && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-lg overflow-auto">
-          <Leaderboard
-            gameName="brickbreaker"
-            currentScore={score > 0 ? score : undefined}
-            onClose={() => setGameView("menu")}
-          />
-        </div>
-      )}
+        {/* Overlay screens */}
+        {gameView === "menu" && (
+          <div
+            className="bg-black/85 rounded-lg"
+            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+          >
+            <div className="text-center space-y-4 p-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">Brickbreaker</h2>
+              <p className="text-gray-400 text-sm">Break all bricks to advance!</p>
+              <div className="space-y-2">
+                <button
+                  className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-400 font-bold min-h-[48px]"
+                  onClick={() => startGame(1)}
+                >
+                  ▶ Start Game
+                </button>
+                <button
+                  className="w-full px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-400 font-bold min-h-[48px]"
+                  onClick={() => setGameView("levelselect")}
+                >
+                  📋 Select Level
+                </button>
+                <button
+                  className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-400 font-bold min-h-[48px]"
+                  onClick={() => setGameView("leaderboard")}
+                >
+                  🏆 Leaderboard
+                </button>
+              </div>
+              <p className="text-gray-500 text-xs">Use mouse/touch or arrow keys to move paddle</p>
+            </div>
+          </div>
+        )}
 
-      {gameView === "levelselect" && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-lg overflow-auto">
-          <LevelSelector
-            gameName="brickbreaker"
-            levels={BRICKBREAKER_LEVELS}
-            onSelectLevel={(lvl) => startGame(lvl)}
-            onClose={() => setGameView("menu")}
-          />
-        </div>
-      )}
-    </div>
+        {gameView === "paused" && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-lg">
+            <div className="text-center space-y-4 p-4">
+              <h2 className="text-2xl font-bold text-white">PAUSED</h2>
+              <p className="text-gray-400">Press ESC or Resume to continue</p>
+              <button
+                type="button"
+                onClick={() => setGameView("playing")}
+                className="rounded bg-green-600 px-5 py-3 font-bold text-white hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              >
+                Resume
+              </button>
+            </div>
+          </div>
+        )}
+
+        {gameView === "levelcomplete" && (
+          <div
+            className="bg-black/85 rounded-lg"
+            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+          >
+            <div className="text-center space-y-4 p-4">
+              <h2 className="text-2xl font-bold text-green-400">Level {level} Complete!</h2>
+              <div className="text-white space-y-1">
+                <p>
+                  Score: <span className="text-yellow-400 font-bold">{score.toLocaleString()}</span>
+                </p>
+                <p>
+                  Max Combo: <span className="text-purple-400 font-bold">{maxCombo}x</span>
+                </p>
+              </div>
+              <div className="space-y-2">
+                {level < BRICKBREAKER_LEVELS.length ? (
+                  <button
+                    className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-400 font-bold"
+                    onClick={nextLevel}
+                  >
+                    Next Level →
+                  </button>
+                ) : (
+                  <div className="text-yellow-400 font-bold text-lg">🎉 You beat all levels! 🎉</div>
+                )}
+                <button
+                  className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 font-bold"
+                  onClick={() => setGameView("menu")}
+                >
+                  Back to Menu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {gameView === "gameover" && (
+          <div
+            className="rounded-lg"
+            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+          >
+            <GameOverScreen
+              score={score}
+              level={level}
+              isHighScore={isNewHighScore}
+              gameName="brickbreaker"
+              onRestart={() => startGame(level)}
+              onQuit={() => setGameView("menu")}
+              onViewLeaderboard={() => setGameView("leaderboard")}
+              stats={{ timeElapsed, maxCombo }}
+            />
+          </div>
+        )}
+
+        {gameView === "leaderboard" && (
+          <div
+            className="rounded-lg"
+            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+          >
+            <Leaderboard
+              gameName="brickbreaker"
+              currentScore={score > 0 ? score : undefined}
+              onClose={() => setGameView("menu")}
+            />
+          </div>
+        )}
+
+        {gameView === "levelselect" && (
+          <div
+            className="rounded-lg"
+            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+          >
+            <LevelSelector
+              gameName="brickbreaker"
+              levels={BRICKBREAKER_LEVELS}
+              onSelectLevel={(lvl) => startGame(lvl)}
+              onClose={() => setGameView("menu")}
+            />
+          </div>
+        )}
+      </div>
+    </HandheldConsole>
   )
 }

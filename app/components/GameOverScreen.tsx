@@ -8,6 +8,7 @@ interface GameOverScreenProps {
   level: number
   isHighScore: boolean
   gameName: string
+  completed?: boolean
   onRestart: () => void
   onQuit: () => void
   onViewLeaderboard: () => void
@@ -23,6 +24,7 @@ export default function GameOverScreen({
   level,
   isHighScore,
   gameName,
+  completed = false,
   onRestart,
   onQuit,
   onViewLeaderboard,
@@ -31,6 +33,7 @@ export default function GameOverScreen({
   const [playerNameInput, setPlayerNameInput] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     const storedName = getPlayerName()
@@ -40,13 +43,14 @@ export default function GameOverScreen({
   }, [])
 
   const handleSaveScore = async () => {
-    if (!playerNameInput.trim()) return
+    if (!playerNameInput.trim() || isSaving) return
 
     setIsSaving(true)
+    setSaveError(null)
     setPlayerName(playerNameInput.trim())
 
     try {
-      await fetch("/api/scores", {
+      const response = await fetch("/api/scores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -56,9 +60,10 @@ export default function GameOverScreen({
           level,
         }),
       })
+      if (!response.ok) throw new Error("The leaderboard could not save this score. Try again later.")
       setSaved(true)
-    } catch (error) {
-      console.error("Failed to save score:", error)
+    } catch {
+      setSaveError("The leaderboard could not save this score. Try again later; you can keep playing.")
     } finally {
       setIsSaving(false)
     }
@@ -72,7 +77,9 @@ export default function GameOverScreen({
 
   return (
     <div className="bg-black/90 rounded-lg p-4 sm:p-6 max-w-sm w-full mx-auto text-center text-white">
-      <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-red-500">GAME OVER</h2>
+      <h2 className={`text-2xl sm:text-3xl font-bold mb-2 ${completed ? "text-green-400" : "text-red-500"}`}>
+        {completed ? "BOARD COMPLETE" : "GAME OVER"}
+      </h2>
 
       {isHighScore && <div className="text-yellow-400 text-lg font-bold mb-2 animate-pulse">🎉 NEW HIGH SCORE! 🎉</div>}
 
@@ -112,6 +119,7 @@ export default function GameOverScreen({
       {!saved && (
         <div className="mb-4">
           <input
+            aria-label="Player name for leaderboard"
             type="text"
             value={playerNameInput}
             onChange={(e) => setPlayerNameInput(e.target.value)}
@@ -131,6 +139,11 @@ export default function GameOverScreen({
       )}
 
       {saved && <div className="mb-4 p-2 bg-green-600 rounded text-sm">Score saved to leaderboard!</div>}
+      {saveError && (
+        <p role="alert" className="mb-4 text-sm text-amber-200">
+          {saveError}
+        </p>
+      )}
 
       {/* Action Buttons */}
       <div className="space-y-2">

@@ -4,16 +4,18 @@ import { useCallback, useEffect, useRef } from "react"
 import { Shuffle, X, CheckCircle, Pause, Play } from "lucide-react"
 import { useAudio } from "../context/AudioContext"
 import { SOUNDCLOUD_TRACKS, getRandomTrackIndex } from "@/data/audio-library"
+import { useWindowActivity } from "../../components/ui/WindowShell"
 
 interface DiggingInTheCratesProps {
   isOpen: boolean
   onClose?: () => void
+  catchNumber?: number | null
 }
 
-export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
-  const { currentTrack, isPlaying, playTrack, setPlaylist, togglePlay } = useAudio()
+export default function DiggingInTheCrates({ isOpen, onClose, catchNumber = null }: DiggingInTheCratesProps) {
+  const { currentTrack, isPlaying, isLoading, error, playTrack, setPlaylist, togglePlay } = useAudio()
+  const { active, layer, onActivate } = useWindowActivity()
   const dialogRef = useRef<HTMLDivElement>(null)
-  const prevFocusRef = useRef<HTMLElement | null>(null)
   // Tracks whether we've already seeded a pick for this open session.
   const seededRef = useRef(false)
 
@@ -32,21 +34,18 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
 
   // Focus management
   useEffect(() => {
-    if (isOpen) {
-      prevFocusRef.current = document.activeElement as HTMLElement
+    if (isOpen && active) {
       dialogRef.current?.focus()
-    } else {
-      prevFocusRef.current?.focus?.()
     }
-  }, [isOpen])
+  }, [active, isOpen])
 
   // Close on ESC
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || !active) return
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose?.()
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [isOpen, onClose])
+  }, [active, isOpen, onClose])
 
   const handleShuffle = useCallback(() => {
     const currentIndex = currentTrack ? SOUNDCLOUD_TRACKS.findIndex((t) => t.id === currentTrack.id) : -1
@@ -70,7 +69,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 100,
+          zIndex: layer,
           backgroundColor: "rgba(0, 0, 0, 0.5)",
         }}
         onClick={handleClose}
@@ -81,7 +80,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 101,
+          zIndex: layer + 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -92,9 +91,11 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
         <div
           ref={dialogRef}
           role="dialog"
-          aria-modal="true"
+          aria-modal={active ? "true" : undefined}
+          aria-hidden={active ? undefined : "true"}
           aria-labelledby="secret-title"
           tabIndex={-1}
+          onPointerDownCapture={onActivate}
           style={{
             width: "100%",
             maxWidth: "28rem",
@@ -123,7 +124,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span style={{ fontSize: "1.125rem" }}>🔔</span>
               <h2 id="secret-title" style={{ fontWeight: "bold", color: "#000000", margin: 0, fontSize: "1rem" }}>
-                SECRET FOUND!
+                {catchNumber === null ? "Raf’s crate" : `Crate digger · Catch #${catchNumber}`}
               </h2>
             </div>
             <button
@@ -163,10 +164,12 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                     fontSize: "0.9375rem",
                   }}
                 >
-                  Congratulations!
+                  {catchNumber === null ? "A surprise from Raf’s crate" : "You caught the block!"}
                 </p>
                 <p style={{ fontSize: "0.875rem", color: "#374151", margin: 0 }}>
-                  You&apos;ve found a record from RAF&apos;s crate!
+                  {catchNumber === null
+                    ? "Shuffle to dig for another track."
+                    : `${catchNumber} ${catchNumber === 1 ? "catch" : "catches"} saved on this browser. Each catch picks a track; songs can repeat.`}
                 </p>
               </div>
             </div>
@@ -244,7 +247,13 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
                         color: "#666",
                       }}
                     >
-                      Playing on SoundCloud
+                      {error
+                        ? "Track unavailable. Try Shuffle or Play to retry."
+                        : isLoading
+                          ? "Loading your track…"
+                          : isPlaying
+                            ? "Playing on SoundCloud"
+                            : "Paused"}
                     </span>
                   </div>
                 </>

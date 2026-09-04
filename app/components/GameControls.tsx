@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { getSoundEnabled, setSoundEnabled } from "@/lib/game-utils"
+import { formatTime } from "@/lib/game-utils"
 
 interface GameControlsProps {
   isPaused: boolean
@@ -28,24 +27,6 @@ export default function GameControls({
   timeElapsed,
   showLevelSelect,
 }: GameControlsProps) {
-  const [soundEnabled, setSoundEnabledState] = useState(true)
-
-  useEffect(() => {
-    setSoundEnabledState(getSoundEnabled())
-  }, [])
-
-  const toggleSound = () => {
-    const newValue = !soundEnabled
-    setSoundEnabledState(newValue)
-    setSoundEnabled(newValue)
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
   return (
     <div className="w-full bg-gray-800 rounded-lg p-2 sm:p-3">
       {/* Stats Row */}
@@ -69,7 +50,7 @@ export default function GameControls({
       </div>
 
       {/* Control Buttons */}
-      <div className="flex justify-center gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
         {isPaused ? (
           <button
             onClick={onResume}
@@ -101,15 +82,6 @@ export default function GameControls({
             📋 Levels
           </button>
         )}
-
-        <button
-          onClick={toggleSound}
-          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded font-bold transition-colors text-xs sm:text-sm min-h-[36px] ${
-            soundEnabled ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-700 text-gray-400 hover:bg-gray-600"
-          }`}
-        >
-          {soundEnabled ? "🔊" : "🔇"}
-        </button>
 
         <button
           onClick={onQuit}

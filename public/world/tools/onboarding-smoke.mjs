@@ -136,12 +136,9 @@ for (const expected of ['DUSK', 'HAZE', 'NIGHT', 'AUTO']) {
     `pause grade state did not become ${expected}`
   )
 }
-// REWIND is a real mechanic (may be enabled once a run is recorded).
-// MAP / QUIT remain deferred chrome.
+// The pause menu exposes supported actions only; REWIND arms after recording.
 for (const action of ['map', 'quit']) {
-  const deferred = desktop.locator(`[data-pause="${action}"]`)
-  assert.equal(await deferred.isDisabled(), true, `deferred pause action ${action} still presents as enabled`)
-  assert.match(await deferred.textContent(), /COMING SOON/)
+  assert.equal(await desktop.locator(`[data-pause="${action}"]`).count(), 0, `unsupported pause action ${action} is still shown`)
 }
 const rewindBtn = desktop.locator('[data-pause="rewind"]')
 assert.match(await rewindBtn.textContent(), /REWIND/)

@@ -55,6 +55,7 @@ export default function DesktopContextMenu({ onOpenWindow }: DesktopContextMenuP
     { label: "Games", action: () => onOpenWindow("games") },
     { label: "iPod", action: () => onOpenWindow("ipod") },
     { label: "Projects", action: () => onOpenWindow("projects") },
+    { label: "Raffi World", action: () => onOpenWindow("world") },
     { label: "Notes", action: () => onOpenWindow("notes"), divider: true },
     { label: "Properties", action: () => onOpenWindow("about"), disabled: false },
   ]

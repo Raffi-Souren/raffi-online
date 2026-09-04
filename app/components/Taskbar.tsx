@@ -7,10 +7,37 @@ interface TaskbarProps {
   onStartClick: () => void
   onWindowClick: (windowName: string) => void
   openWindows: Record<string, boolean>
+  /** Stateful apps that remain restorable after their visible window is hidden. */
+  persistentWindows?: Record<string, boolean>
+  /** Current top window, used to distinguish active and background task buttons. */
+  activeWindow?: string | null
 }
 
-export default function Taskbar({ onStartClick, onWindowClick, openWindows }: TaskbarProps) {
+const WINDOW_TITLES: Record<string, string> = {
+  about: "ABOUT",
+  games: "GAMES",
+  crates: "CRATES",
+  blogroll: "BLOGROLL",
+  notes: "NOTES",
+  ipod: "iPod",
+  projects: "PROJECTS",
+  world: "RAFFI WORLD",
+  startup: "PITCH STARTUP",
+  counter: "BY THE NUMBERS",
+}
+
+export default function Taskbar({
+  onStartClick,
+  onWindowClick,
+  openWindows,
+  persistentWindows = {},
+  activeWindow = null,
+}: TaskbarProps) {
   const [currentTime, setCurrentTime] = useState("12:00 AM")
+
+  const taskbarWindowNames = Array.from(
+    new Set([...Object.keys(openWindows), ...Object.keys(persistentWindows)]),
+  ).filter((name) => openWindows[name] || persistentWindows[name])
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>
@@ -192,46 +219,54 @@ export default function Taskbar({ onStartClick, onWindowClick, openWindows }: Ta
           </button>
         </div>
 
-        {Object.entries(openWindows).some(([, isOpen]) => isOpen) && (
+        {taskbarWindowNames.length > 0 && (
           <div
-            className="hidden md:flex"
+            className="flex"
             style={{
               gap: "4px",
               overflowX: "auto",
               marginRight: "8px",
+              flex: "1 1 auto",
+              minWidth: 0,
             }}
           >
-            {Object.entries(openWindows)
-              .filter(([, isOpen]) => isOpen)
-              .map(([name]) => (
+            {taskbarWindowNames.map((name) => {
+              const minimized = !openWindows[name] && Boolean(persistentWindows[name])
+              const active = !minimized && activeWindow === name
+              const title = WINDOW_TITLES[name] || name.toUpperCase()
+              return (
                 <button
                   key={name}
                   type="button"
                   onClick={() => onWindowClick(name)}
                   className="hover:bg-[#2860D6] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] transition-colors"
-                  title={name.toUpperCase()}
-                  aria-label={`Switch to ${name} window`}
+                  title={minimized ? `Restore ${title}` : active ? `${title} (active)` : `Switch to ${title}`}
+                  aria-label={minimized ? `Restore ${title} window` : `Switch to ${title} window`}
+                  aria-pressed={active}
                   style={{
-                    padding: "4px 16px",
-                    backgroundColor: "#1F50B8",
+                    padding: "4px 8px",
+                    backgroundColor: minimized ? "#173D8F" : active ? "#153885" : "#1F50B8",
                     color: "white",
                     fontSize: "12px",
                     borderRadius: "4px",
                     cursor: "pointer",
-                    minWidth: "100px",
+                    minWidth: "clamp(72px, 22vw, 100px)",
+                    maxWidth: "160px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     border: "none",
-                    borderBottom: "2px solid #153885",
+                    borderBottom: active ? "2px solid #8AB4FF" : "2px solid #153885",
                     display: "flex",
                     alignItems: "center",
                     textAlign: "left",
+                    opacity: minimized ? 0.78 : 1,
                   }}
                 >
-                  {name.toUpperCase()}
+                  {title}{minimized ? " — MINIMIZED" : ""}
                 </button>
-              ))}
+              )
+            })}
           </div>
         )}
       </div>

@@ -36,18 +36,53 @@ async function readyPage() {
   return page
 }
 
-async function acceptBriefing(page) {
-  await page.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
+async function pressKey(page, key, holdMs = 70) {
+  await page.keyboard.down(key)
+  await page.waitForTimeout(holdMs)
+  await page.keyboard.up(key)
+  await page.waitForTimeout(40)
+}
+
+async function finishDialogue(page) {
+  await page.evaluate(async () => {
+    const { advanceDialogue, isDialogueActive } = await import('/world/game/dialogue.js')
+    for (let i = 0; i < 8 && isDialogueActive(); i++) {
+      advanceDialogue()
+      advanceDialogue()
+    }
+  })
   await page.waitForTimeout(80)
 }
 
-async function startAndAccept(page, id) {
-  const ok = await page.evaluate((missionId) => {
-    if (!window.RAFFI_WORLD.startMissionById(missionId)) return false
-    window.RAFFI_WORLD.dismissDialogue()
-    return window.RAFFI_WORLD.confirmMissionBriefing()
-  }, id)
-  assert.equal(ok, true, 'could not start ' + id)
+async function startOfferedAndAccept(page, id) {
+  const spec = missions.missions.find((mission) => mission.id === id)
+  const before = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
+  assert.equal(before.offered, id, 'normal campaign offered ' + before.offered + ' instead of ' + id)
+  assert.ok(before.available.includes(id), id + ' was offered but unavailable: ' + JSON.stringify(before))
+
+  await page.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), spec.marker)
+  await page.waitForTimeout(100)
+  await pressKey(page, 'e')
+  await page.waitForFunction(
+    (missionId) => {
+      const snap = window.RAFFI_WORLD.missionSnapshot()
+      return snap.active === missionId && snap.status === 'briefing'
+    },
+    id,
+    { timeout: 5_000 },
+  )
+  // Environmental captions can already be active when the briefing is queued.
+  // Drain the queue through the real dialogue callbacks so mission activation
+  // remains deterministic while still starting via the visible marker action.
+  await finishDialogue(page)
+  await page.waitForFunction(
+    (missionId) => {
+      const snap = window.RAFFI_WORLD.missionSnapshot()
+      return snap.active === missionId && snap.status === 'active'
+    },
+    id,
+    { timeout: 5_000 },
+  )
   const snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.status, 'active', id + ' stayed in briefing: ' + JSON.stringify(snap))
   return snap
@@ -91,9 +126,21 @@ try {
   }))
   assert.deepEqual(boot.interiors.rooms.sort(), ['club-floor', 'mainframe', 'pitch'])
   assert.equal(boot.mission.offered, 'deal-clock')
+  assert.deepEqual(boot.mission.available, ['deal-clock'])
+
+  // DEAL CLOCK — enter through the normal marker/action/briefing path.
+  await startOfferedAndAccept(page, 'deal-clock')
+  const dealClock = missions.missions.find((item) => item.id === 'deal-clock')
+  for (const point of dealClock.objectives.find((item) => item.kind === 'goto-vehicle').points) {
+    await driveTo(page, point)
+  }
+  await finishDialogue(page)
+  let snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
+  assert.ok(snap.completed.includes('deal-clock'), 'deal-clock: ' + JSON.stringify(snap))
+  assert.equal(snap.offered, 'crate-dig', 'deal-clock did not advance the normal campaign')
 
   // CRATE DIG
-  await startAndAccept(page, 'crate-dig')
+  await startOfferedAndAccept(page, 'crate-dig')
   const crate = missions.missions.find((item) => item.id === 'crate-dig')
   const records = crate.objectives.find((item) => item.kind === 'collect').points
   for (let i = 0; i < records.length; i++) {
@@ -109,19 +156,20 @@ try {
       'crate-dig missed record ' + i + ' at ' + JSON.stringify(records[i]) + ' snap=' + JSON.stringify(after),
     )
   }
-  let snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
+  snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.collected.length, 6, 'crate-dig collect: ' + JSON.stringify(snap))
   await page.evaluate(async ({ x, z }) => {
     window.RAFFI_WORLD.teleport(x, z)
     const { updateMissions } = await import('/world/game/missions.js')
     updateMissions(0.2)
   }, crate.objectives.find((item) => item.kind === 'goto').points[0])
-  await acceptBriefing(page)
+  await finishDialogue(page)
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.ok(snap.completed.includes('crate-dig'), 'crate-dig: ' + JSON.stringify(snap))
+  assert.equal(snap.offered, 'set-time', 'crate-dig did not advance the normal campaign')
 
   // SET TIME
-  await startAndAccept(page, 'set-time')
+  await startOfferedAndAccept(page, 'set-time')
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.interior, 'club-floor')
   await page.evaluate(async () => {
@@ -137,23 +185,40 @@ try {
     }
     state.paused = false
   })
-  await acceptBriefing(page)
+  await finishDialogue(page)
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.ok(snap.completed.includes('set-time'), 'set-time: ' + JSON.stringify(snap))
   assert.equal(snap.interior, null)
+  assert.equal(snap.offered, 'cold-boot', 'set-time did not advance the normal campaign')
 
   // COLD BOOT
-  await startAndAccept(page, 'cold-boot')
+  await startOfferedAndAccept(page, 'cold-boot')
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.interior, 'mainframe')
   await page.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), { x: 0, z: -48 })
   await page.waitForTimeout(280)
-  await acceptBriefing(page)
+  await finishDialogue(page)
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.ok(snap.completed.includes('cold-boot'), 'cold-boot: ' + JSON.stringify(snap))
 
+  // The nearest normal branch is YARD RUN. Its unlock token must not bypass
+  // ESCORT's authored SHOOTOUT prerequisite.
+  assert.equal(snap.offered, 'yard-run', 'COLD BOOT did not choose the nearest open branch')
+  assert.deepEqual(snap.available.sort(), ['shootout', 'yard-run'])
+  await startOfferedAndAccept(page, 'yard-run')
+  const yard = missions.missions.find((item) => item.id === 'yard-run')
+  for (const point of yard.objectives.find((item) => item.kind === 'goto-vehicle').points) {
+    await driveTo(page, point)
+  }
+  await finishDialogue(page)
+  snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
+  assert.ok(snap.completed.includes('yard-run'), 'yard-run: ' + JSON.stringify(snap))
+  assert.ok(snap.unlocked.includes('escort'), 'yard-run should still issue its authored unlock token')
+  assert.deepEqual(snap.available, ['shootout'], 'yard-run bypassed the SHOOTOUT prerequisite')
+  assert.equal(snap.offered, 'shootout')
+
   // SHOOTOUT
-  await startAndAccept(page, 'shootout')
+  await startOfferedAndAccept(page, 'shootout')
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.interior, 'pitch')
   await page.evaluate(async () => {
@@ -172,39 +237,46 @@ try {
     }
     state.paused = false
   })
-  await acceptBriefing(page)
+  await finishDialogue(page)
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.ok(snap.completed.includes('shootout'), 'shootout: ' + JSON.stringify(snap))
-
-  // YARD RUN
-  await startAndAccept(page, 'yard-run')
-  const yard = missions.missions.find((item) => item.id === 'yard-run')
-  for (const point of yard.objectives.find((item) => item.kind === 'goto-vehicle').points) {
-    await driveTo(page, point)
-  }
-  await acceptBriefing(page)
-  snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
-  assert.ok(snap.completed.includes('yard-run'), 'yard-run: ' + JSON.stringify(snap))
+  assert.deepEqual(snap.available, ['escort'])
+  assert.equal(snap.offered, 'escort')
 
   // ESCORT
-  await startAndAccept(page, 'escort')
+  await startOfferedAndAccept(page, 'escort')
   const escort = missions.missions.find((item) => item.id === 'escort').objectives[0]
   await driveTo(page, escort.from)
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.escortBoarded, true, 'escort did not board: ' + JSON.stringify(snap))
   await driveTo(page, escort.to)
-  await acceptBriefing(page)
+  await finishDialogue(page)
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.ok(snap.completed.includes('escort'), 'escort: ' + JSON.stringify(snap))
+  assert.deepEqual(snap.available, ['blackout'], 'finale unlocked before every pre-finale mission')
+  assert.equal(snap.offered, 'blackout')
 
-  // BLACKOUT
-  await startAndAccept(page, 'blackout')
+  // BLACKOUT — enter at zero compliance to reproduce the stale actor snapshot.
+  // Activation must raise the chase to five and leave EVADE incomplete.
+  await page.evaluate(() => window.RAFFI_WORLD.setComplianceTier(0))
+  await startOfferedAndAccept(page, 'blackout')
+  await page.waitForTimeout(160)
+  let blackoutStart = await page.evaluate(() => ({
+    mission: window.RAFFI_WORLD.missionSnapshot(),
+    tier: window.RAFFI_WORLD.getState().compliance.tier,
+  }))
+  assert.equal(blackoutStart.tier, 5, 'BLACKOUT did not apply its authored escalation')
+  assert.equal(blackoutStart.mission.completedKinds.includes('evade'), false)
+
   const route = missions.missions.find((item) => item.id === 'blackout')
     .objectives.find((item) => item.kind === 'goto-vehicle').points
   for (const point of route) await driveTo(page, point)
+  snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
+  assert.equal(snap.active, 'blackout', 'BLACKOUT completed from stale pre-escalation compliance')
+  assert.equal(snap.completedKinds.includes('evade'), false)
+
   await page.evaluate(() => window.RAFFI_WORLD.setComplianceTier(0))
   await page.waitForTimeout(280)
-  await acceptBriefing(page)
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.ok(snap.completed.includes('blackout'), 'blackout: ' + JSON.stringify(snap))
   assert.equal(
@@ -212,12 +284,12 @@ try {
     true,
     'blackout end card missing',
   )
+  await finishDialogue(page)
+  snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
+  assert.equal(snap.offered, null)
+  assert.deepEqual(snap.available, [])
 
-  const realErrors = errors.filter((item) =>
-    !item.includes('favicon') &&
-    !item.includes("reading 'accel'") &&
-    !item.includes("setting 'order'")
-  )
+  const realErrors = errors.filter((item) => !item.includes('favicon'))
   assert.equal(realErrors.length, 0, 'browser errors: ' + realErrors.join(' | '))
   console.info('mission campaign smoke passed')
 } finally {

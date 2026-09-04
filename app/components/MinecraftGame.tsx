@@ -22,21 +22,22 @@ export default function MinecraftGame() {
   }, [])
 
   useEffect(() => {
-    if (!mountRef.current || !isPlaying) return
+    const mount = mountRef.current
+    if (!mount || !isPlaying) return
 
     // Scene setup
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x87CEEB) // Sky blue
 
     // Camera setup
-    const aspect = mountRef.current.clientWidth / mountRef.current.clientHeight
+    const aspect = mount.clientWidth / mount.clientHeight
     const camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000)
     camera.position.set(WORLD_SIZE / 2, WORLD_SIZE / 2, WORLD_SIZE / 2)
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true })
-    renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight)
-    mountRef.current.appendChild(renderer.domElement)
+    renderer.setSize(mount.clientWidth, mount.clientHeight)
+    mount.appendChild(renderer.domElement)
 
     // Controls setup
     const controls = new OrbitControls(camera, renderer.domElement)
@@ -99,35 +100,44 @@ export default function MinecraftGame() {
     }
 
     // Event listeners
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (touch) placeBlock(touch)
+    }
     renderer.domElement.addEventListener('click', placeBlock)
-    renderer.domElement.addEventListener('touchstart', (e) => placeBlock(e.touches[0]))
+    renderer.domElement.addEventListener('touchstart', handleTouchStart)
 
     // Animation loop
+    let animationId: number
     const animate = () => {
-      requestAnimationFrame(animate)
       controls.update()
       renderer.render(scene, camera)
+      animationId = requestAnimationFrame(animate)
     }
-    animate()
+    animationId = requestAnimationFrame(animate)
 
     // Handle window resize
     const handleResize = () => {
-      if (!mountRef.current) return
-      const newAspect = mountRef.current.clientWidth / mountRef.current.clientHeight
+      const newAspect = mount.clientWidth / mount.clientHeight
       camera.aspect = newAspect
       camera.updateProjectionMatrix()
-      renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight)
+      renderer.setSize(mount.clientWidth, mount.clientHeight)
     }
     window.addEventListener('resize', handleResize)
 
     // Cleanup
     return () => {
-      if (mountRef.current) {
-        mountRef.current.removeChild(renderer.domElement)
-      }
+      cancelAnimationFrame(animationId)
       window.removeEventListener('resize', handleResize)
       renderer.domElement.removeEventListener('click', placeBlock)
-      renderer.domElement.removeEventListener('touchstart', (e) => placeBlock(e.touches[0]))
+      renderer.domElement.removeEventListener('touchstart', handleTouchStart)
+      controls.dispose()
+      if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement)
+      renderer.dispose()
+      groundGeometry.dispose()
+      groundMaterial.dispose()
+      blockGeometry.dispose()
+      blockMaterial.dispose()
     }
   }, [isPlaying])
 

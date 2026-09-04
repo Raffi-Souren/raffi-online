@@ -245,6 +245,7 @@ function updateOrthoRig(mode, c, sx, sy) {
   const dirY = Math.sin(pitch)
   const dirZ = horiz * Math.cos(cam.currentYaw)
   const dist = mode.id === 'birds' ? cam.distance * 1.15 : cam.distance
+  cam.ortho.userData.fogOffset = dist
 
   cam.ortho.position.set(
     cam.target.x + dirX * dist + sx,

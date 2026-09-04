@@ -93,12 +93,12 @@ export function emitProp(set, atlas, propsData, name, x, y, z, ry = 0, rng = nul
   if (!def.collide) return null
   if (def.collide.type === 'circle') return { type: 'circle', x, z, r: def.collide.r, tag: name }
   if (def.collide.type === 'box') {
-    const rotated = Math.abs(Math.sin(ry)) > 0.7
     return {
       type: 'box',
       x, z,
-      hx: (rotated ? def.collide.d : def.collide.w) / 2,
-      hz: (rotated ? def.collide.w : def.collide.d) / 2,
+      hx: def.collide.w / 2,
+      hz: def.collide.d / 2,
+      ry,
       tag: name,
     }
   }

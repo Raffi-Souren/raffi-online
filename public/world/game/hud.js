@@ -63,16 +63,16 @@ export function showDistrict(district) {
     els.district.textContent = district.name
     els.district.style.color = districtAccent(district.id)
   }
-  toast(district.name + ' — ' + (district.subtitle || ''))
+  toast(district.subtitle ? `${district.name} — ${district.subtitle}` : district.name)
 }
 
 function districtAccent(id) {
   const accents = {
     heights: '#ffc23a',
     downtown: '#8fb4ff',
-    strip: '#ff3d8a',
+    strip: '#e5a0b2',
     yards: '#c9be8e',
-    bowl: '#3dff9e',
+    bowl: '#94c6a6',
   }
   return accents[id] || '#ffc23a'
 }

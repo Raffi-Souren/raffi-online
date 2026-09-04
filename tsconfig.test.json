@@ -1,7 +1,5 @@
 {
-  // Standalone build for the audio-engine unit tests.
-  // Uses the TypeScript compiler that's already a devDependency plus Node's
-  // built-in test runner, so `npm test` needs no extra packages.
+  // Pure game/audio simulations run with TypeScript and Node's test runner.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
@@ -9,11 +7,23 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "es2022",
-    "lib": ["es2022"],
+    "lib": ["es2022", "dom"],
     "outDir": ".test-build",
     "rootDir": ".",
     "types": ["node"],
     "plugins": []
   },
-  "include": ["lib/audio-engine.ts", "lib/audio-engine.test.ts", "data/audio-library.ts", "data/crates-tracks.ts"]
+  "include": [
+    "lib/*engine.ts",
+    "lib/*engine.test.ts",
+    "lib/kart-race.ts",
+    "lib/kart-race.test.ts",
+    "lib/brawl-game.ts",
+    "lib/brawl-game.test.ts",
+    "lib/signal-lost.ts",
+    "lib/signal-lost.test.ts",
+    "lib/game-utils.test.ts",
+    "data/audio-library.ts",
+    "data/crates-tracks.ts"
+  ]
 }

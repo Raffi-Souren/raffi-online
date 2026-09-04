@@ -123,7 +123,7 @@ function buildCollisionOverlay(collisionWorld) {
       const h = c.height || 3
       m.compose(
         new THREE.Vector3(c.x, h / 2, c.z),
-        new THREE.Quaternion(),
+        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -(c.ry || 0)),
         new THREE.Vector3(c.hx * 2, h, c.hz * 2)
       )
       mesh.setMatrixAt(i, m)

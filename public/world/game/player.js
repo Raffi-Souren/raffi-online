@@ -9,7 +9,8 @@
 import * as THREE from 'three'
 import { state, data, damp, clamp, bus } from '../engine/state.js'
 import { movementBasis, getCameraMode } from '../engine/camera.js'
-import { resolveCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
+import { resolveCircle, moveCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
+import { actorCollisionBodies } from '../engine/actor-collisions.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { makeVehicle, animateVehicle } from '../gen/vehicles.js'
 
@@ -213,13 +214,13 @@ export function exitVehicle(collisionWorld = null) {
   ]
   let exit = { ...candidates[0], y: v.y || 0 }
 
-  // Prefer the authored side, but use the opposite door when a wall or world
-  // edge would swallow the player. Vehicles are dynamic and intentionally not
-  // part of the static collision hash, so testing both sides is sufficient.
+  // Prefer the authored side, but use the opposite door when a wall or
+  // another street actor crowds the exit.
   if (collisionWorld) {
+    const bodies = actorCollisionBodies(player.group.parent?.children, v.x, v.z, player.group, 12, v.y)
     let bestCorrection = Infinity
     for (const candidate of candidates) {
-      const resolved = resolveCircle(collisionWorld, candidate.x, candidate.z, PLAYER_RADIUS, 4)
+      const resolved = resolveCircle(collisionWorld, candidate.x, candidate.z, PLAYER_RADIUS, 4, bodies)
       const bounded = clampToBounds(resolved.x, resolved.z, data.world.bounds, 6)
       const correction = (bounded.x - candidate.x) ** 2 + (bounded.z - candidate.z) ** 2
       if (correction < bestCorrection) {
@@ -309,24 +310,40 @@ function updateWalking(dt, input, world, beatPhase) {
   p.vx = damp(p.vx, desiredX, blend, dt)
   p.vz = damp(p.vz, desiredZ, blend, dt)
 
-  let nx = p.x + p.vx * dt
-  let nz = p.z + p.vz * dt
-
-  const res = resolveCircle(world, nx, nz, PLAYER_RADIUS, 3)
+  const heading = Math.atan2(p.vx, p.vz)
+  const startX = p.x, startZ = p.z
+  const bodies = actorCollisionBodies(player.group.parent?.children, p.x, p.z, player.group, 12, p.y)
+  const res = moveCircle(world, p.x, p.z, p.vx * dt, p.vz * dt, PLAYER_RADIUS, bodies)
+  if (res.hit) {
+    const into = p.vx * res.normalX + p.vz * res.normalZ
+    if (into < 0) { p.vx -= res.normalX * into; p.vz -= res.normalZ * into }
+  }
   const bounded = clampToBounds(res.x, res.z, data.world.bounds, 6)
   p.x = bounded.x
   p.z = bounded.z
   p.y = res.y
 
-  p.speed = Math.hypot(p.vx, p.vz)
+  p.speed = dt > 0 ? Math.hypot(p.x - startX, p.z - startZ) / dt : 0
   // Face movement; if almost stopped keep last facing.
-  if (p.speed > 0.35) p.yaw = Math.atan2(p.vx, p.vz)
+  if (p.speed > 0.35 && mag > 0.01) p.yaw = heading
 
   syncPlayerVisual()
 
   const st = p.speed < 0.25 ? 'idle' : p.speed > WALK_SPEED + 0.5 ? 'run' : 'walk'
   player.animState = st
   animatePed(player.ped, data.npcs, st, dt, p.speed, beatPhase)
+}
+
+/** NPCs and mission actors move after the player; settle their final contacts before rendering. */
+export function settlePlayerContacts(world) {
+  if (state.mode !== 'foot' || !player.group) return
+  const p = state.player
+  const bodies = actorCollisionBodies(player.group.parent?.children, p.x, p.z, player.group, 12, p.y)
+  const resolved = resolveCircle(world, p.x, p.z, PLAYER_RADIUS, 4, bodies)
+  const bounded = clampToBounds(resolved.x, resolved.z, data.world.bounds, 6)
+  p.x = bounded.x
+  p.z = bounded.z
+  syncPlayerVisual()
 }
 
 function updateDriving(dt, input, world, beatPhase = 0) {

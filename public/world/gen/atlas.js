@@ -165,11 +165,16 @@ function paintWindows(ctx, cx, cy, style, rng) {
         continue
       }
 
-      // Glass is a dark, slightly varying pane. Lit windows are added later as
-      // separate emissive quads so they can respond to the grade.
+      // A few inhabited windows carry warm blinds; the separate emissive pass
+      // adds the brighter windows without adding geometry to every facade.
       const shade = 18 + Math.floor(rng.next() * 26)
-      ctx.fillStyle = `rgb(${shade},${shade + 4},${shade + 10})`
+      const warm = style === 'grid' && (f * 7 + b * 3) % 5 === 0
+      ctx.fillStyle = warm ? '#bd9260' : `rgb(${shade},${shade + 4},${shade + 10})`
       ctx.fillRect(x + ox, y + oy, w, h)
+
+      ctx.fillStyle = warm ? '#775940' : 'rgba(170,184,199,0.16)'
+      ctx.fillRect(x + ox, y + oy + h * 0.4, w, 1)
+      ctx.fillRect(x + ox + w * 0.48, y + oy, 1, h)
 
       // Reveal / sill.
       ctx.fillStyle = 'rgba(255,255,255,0.10)'
@@ -207,6 +212,42 @@ function paintText(ctx, cx, cy, text, opts = {}) {
     ctx.fillText(l, cx + CELL / 2, y, CELL - 8)
     y += size + 3
   }
+  ctx.restore()
+}
+
+function paintRecordWindow(ctx, cx, cy) {
+  ctx.save()
+  ctx.translate(cx, cy)
+  ctx.fillStyle = '#192e3b'
+  ctx.fillRect(0, 0, CELL, CELL)
+  const sleeves = ['#d5986e', '#849db4', '#c8b988', '#a95f63', '#9baa88', '#ece0bc']
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 4; col++) {
+      const x = 6 + col * 30
+      const y = 16 + row * 34
+      ctx.fillStyle = sleeves[(col + row * 2) % sleeves.length]
+      ctx.fillRect(x, y, 25, 27)
+      ctx.fillStyle = '#22303b'
+      ctx.beginPath()
+      ctx.arc(x + 12.5, y + 12, 9, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = sleeves[(col + row + 3) % sleeves.length]
+      ctx.beginPath()
+      ctx.arc(x + 12.5, y + 12, 3, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.fillStyle = '#ab815a'
+    ctx.fillRect(0, 44 + row * 34, CELL, 3)
+  }
+  ctx.fillStyle = '#eac681'
+  ctx.fillRect(0, 0, CELL, 4)
+  ctx.fillStyle = 'rgba(197,218,219,0.12)'
+  ctx.beginPath()
+  ctx.moveTo(0, 7)
+  ctx.lineTo(30, 7)
+  ctx.lineTo(100, 128)
+  ctx.lineTo(70, 128)
+  ctx.fill()
   ctx.restore()
 }
 
@@ -389,19 +430,28 @@ export function buildAtlas(blocks, dialogue, seed = 'atlas') {
   for (const [key, text] of Object.entries(signage)) {
     if (key === 'billboards' || key.startsWith('$')) continue
     const { cx, cy } = nextCell(key)
-    paintText(ctx, cx, cy, text, { bg: '#141824', fg: '#ffe347' })
+    const palette = {
+      'sign-records': { bg: '#29495c', fg: '#f3d8a2' },
+      'sign-club': { bg: '#392842', fg: '#eda5b6' },
+      'sign-deli': { bg: '#456052', fg: '#f0d6a6' },
+      'sign-garage': { bg: '#31435c', fg: '#edcf87' },
+      'sign-subway': { bg: '#202c39', fg: '#e7d9b2' },
+    }
+    paintText(ctx, cx, cy, text, palette[key] || { bg: '#263142', fg: '#e8cf93' })
   }
   ;(signage.billboards || []).forEach((text, i) => {
     const { cx, cy } = nextCell('billboard-' + i)
     paintText(ctx, cx, cy, text, { bg: '#1a1420', fg: '#ff6bb0' })
   })
 
-  // Generic shopfront signs so lowrise retail has something on it.
-  const SHOP_WORDS = ['DELI', 'LAUNDRY', '24HR', 'COFFEE', 'PIZZA', 'HARDWARE', 'NAILS', 'LIQUOR', 'PHARMACY', 'BODEGA']
+  const SHOP_WORDS = ['SUNRISE DELI', 'SPIN CYCLE', 'NIGHT OWL', 'CORNER COFFEE', 'LAST SLICE', 'HARDWARE', 'NAILS', 'BOTTLE SHOP', 'PHARMACY', 'RECORDS']
   SHOP_WORDS.forEach((w, i) => {
     const { cx, cy } = nextCell('shop-' + i)
-    paintText(ctx, cx, cy, w, { bg: rng.pick(['#1c2430', '#2a1c20', '#20242c']), fg: rng.pick(['#ffe347', '#39e6ff', '#ff3d8a', '#f0ece0']) })
+    paintText(ctx, cx, cy, w, { bg: rng.pick(['#314c56', '#643e3b', '#3e5145']), fg: rng.pick(['#edcf91', '#bccfd4', '#dba4a1', '#ece0c2']) })
   })
+
+  const recordWindow = nextCell('record-window')
+  paintRecordWindow(ctx, recordWindow.cx, recordWindow.cy)
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace

@@ -58,9 +58,13 @@ function buildFogCards(set, atlas, world) {
 }
 
 /** The named hero structures the block grammar is told to build around. */
-function buildLandmarks(set, atlas, propsData, world, districtId) {
+export function buildLandmarks(set, atlas, propsData, world, districtId) {
   const colliders = []
   const white = atlas.uv('white')
+  const groundProp = (type, x, z, ry, rng) => {
+    const collider = emitProp(set, atlas, propsData, type, x, 0, z, ry, rng)
+    if (collider) colliders.push(collider)
+  }
 
   for (const lm of world.landmarks || []) {
     if (lm.district !== districtId) continue
@@ -89,12 +93,12 @@ function buildLandmarks(set, atlas, propsData, world, districtId) {
             x: cx, y: 23.6, z: cz, w: w * 0.9, h: 3.2, d: len, ry: mid,
             color: '#6e6a62', rect: white, faces: ['east', 'west', 'south', 'north', 'up'],
           })
-          colliders.push({ type: 'box', x: cx, z: cz, hx: w / 2 + 1, hz: len / 2, tag: 'stadium' })
+          colliders.push({ type: 'box', x: cx, z: cz, hx: w / 2, hz: len / 2, ry: mid, tag: 'stadium' })
         }
         for (let i = 0; i < 6; i++) {
           const a = (i / 6) * Math.PI * 2 + 0.4
-          emitProp(set, atlas, propsData, 'floodlight-pylon',
-            lm.at.x + Math.cos(a) * (rOuter + 8), 0, lm.at.z + Math.sin(a) * (rOuter + 8), a + Math.PI, rng)
+          groundProp('floodlight-pylon',
+            lm.at.x + Math.cos(a) * (rOuter + 8), lm.at.z + Math.sin(a) * (rOuter + 8), a + Math.PI, rng)
         }
         break
       }
@@ -166,10 +170,35 @@ function buildLandmarks(set, atlas, propsData, world, districtId) {
           ry: Math.PI,
           color: '#ffffff', rect: atlas.uv(isClub ? 'sign-club' : 'sign-records'), emissive: true,
         })
+        const frontZ = lm.at.z - d / 2
+        const trim = isClub ? '#6f596b' : '#b5a081'
+        set.opaque.box({
+          x: lm.at.x, y: 12.1, z: lm.at.z, w: w + 0.8, h: 0.55, d: d + 0.8,
+          color: trim, rect: white, faces: ['east', 'west', 'south', 'north', 'up'],
+        })
+        for (const side of [-1, 1]) {
+          const x = lm.at.x + side * w * 0.26
+          set.opaque.billboard({
+            x, y: 3.8, z: frontZ - 0.12, w: w * 0.34, h: 5.5, ry: Math.PI,
+            color: isClub ? '#344453' : '#ffffff', rect: atlas.uv(isClub ? 'glasspane' : 'record-window'),
+          })
+          set.opaque.box({
+            x, y: 6.7, z: frontZ - 0.9, w: w * 0.36, h: 0.28, d: 1.8,
+            color: isClub ? '#685268' : '#35565d', rect: white,
+          })
+        }
+        set.opaque.billboard({
+          x: lm.at.x, y: 3.2, z: frontZ - 0.14, w: 4.4, h: 6, ry: Math.PI,
+          color: '#202e3a', rect: white,
+        })
+        set.emissive.billboard({
+          x: lm.at.x, y: 6.7, z: frontZ - 0.15, w: 4.4, h: 0.3, ry: Math.PI,
+          color: isClub ? '#eda5b6' : '#e6be7b', rect: white, emissive: true,
+        })
         colliders.push({ type: 'box', x: lm.at.x, z: lm.at.z, hx: w / 2, hz: d / 2, tag: lm.type })
         if (isClub) {
-          emitProp(set, atlas, propsData, 'neon-pole', lm.at.x - w / 2 - 3, 0, lm.at.z - d / 2 + 6, 0, rng)
-          emitProp(set, atlas, propsData, 'neon-pole', lm.at.x + w / 2 + 3, 0, lm.at.z - d / 2 + 6, 0, rng)
+          groundProp('neon-pole', lm.at.x - w / 2 - 3, lm.at.z - d / 2 + 6, 0, rng)
+          groundProp('neon-pole', lm.at.x + w / 2 + 3, lm.at.z - d / 2 + 6, 0, rng)
         }
         break
       }
@@ -182,6 +211,12 @@ function buildLandmarks(set, atlas, propsData, world, districtId) {
           faces: ['east', 'west', 'south', 'north'],
         })
         set.opaque.plane({ x: lm.at.x, y: 18, z: lm.at.z, w: 26, d: 22, color: '#6e5236', rect: white })
+        for (const [y, width, depth, height] of [[17.8, 27.2, 23.2, 0.5], [18.3, 28, 24, 0.35]]) {
+          set.opaque.box({ x: lm.at.x, y, z: lm.at.z, w: width, h: height, d: depth, color: '#9f896e', rect: white })
+        }
+        set.opaque.billboard({ x: lm.at.x, y: 3.4, z: lm.at.z + 11.08, w: 3.5, h: 4.4, color: '#304842', rect: white })
+        set.emissive.billboard({ x: lm.at.x, y: 6, z: lm.at.z + 11.1, w: 3.5, h: 0.9, color: '#d6ae73', rect: atlas.uv('litwindow'), emissive: true })
+        emitProp(set, atlas, propsData, 'water-tank', lm.at.x + 6, 18.5, lm.at.z - 4, 0, rng)
         for (let i = 0; i < 5; i++) {
           const h = 1.3 * (1 - i / 5)
           set.opaque.box({
@@ -254,7 +289,7 @@ function buildLandmarks(set, atlas, propsData, world, districtId) {
       case 'gantry-cranes': {
         for (let i = 0; i < (lm.count || 3); i++) {
           const z = lm.keepout.minZ + ((lm.keepout.maxZ - lm.keepout.minZ) * (i + 0.5)) / (lm.count || 3)
-          emitProp(set, atlas, propsData, 'crane-small', lm.at.x, 0, z, -Math.PI / 2, rng)
+          groundProp('crane-small', lm.at.x, z, -Math.PI / 2, rng)
         }
         break
       }
@@ -324,7 +359,8 @@ export function buildDistrict(district, ctx) {
   for (const shop of data.world.repaintShops || []) {
     if (shop.district !== district.id) continue
     set.opaque.plane({ x: shop.at.x, y: 0.06, z: shop.at.z, w: 14, d: 14, color: '#4a4e52', rect: atlas.uv('road') })
-    emitProp(set, atlas, data.props, 'repaint-sign', shop.at.x, 0, shop.at.z + 8, shop.yaw, rngShop)
+    const sign = emitProp(set, atlas, data.props, 'repaint-sign', shop.at.x, 0, shop.at.z + 8, shop.yaw, rngShop)
+    if (sign) colliders.push(sign)
   }
 
   // A little scatter so open ground is not empty (capped for perf).

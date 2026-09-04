@@ -23,6 +23,7 @@ import {
   formatMissionClock,
   formatObjective,
   rhythmBeatInterval,
+  missionPrerequisitesMet,
 } from './mission-core.js'
 
 const SUPPORTED_KINDS = new Set([
@@ -117,7 +118,10 @@ function isSupported(mission) {
 
 function availableMissions() {
   return data.missions.missions.filter((mission) =>
-    unlocked.has(mission.id) && !completed.has(mission.id) && isSupported(mission)
+    unlocked.has(mission.id) &&
+    !completed.has(mission.id) &&
+    missionPrerequisitesMet(mission, completed, data.missions.missions) &&
+    isSupported(mission)
   )
 }
 
@@ -769,6 +773,7 @@ export function missionSnapshot() {
     elapsed: run?.elapsed || 0,
     completedPoints: run ? [...run.completedPointIndexes] : [],
     collected: run ? [...run.collectedIndexes] : [],
+    completedKinds: run ? [...run.completedKinds] : [],
     rhythmHits: run?.rhythmHits || 0,
     rhythmMisses: run?.rhythmMisses || 0,
     escortBoarded: !!run?.escortBoarded,

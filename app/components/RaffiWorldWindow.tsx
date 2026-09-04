@@ -5,7 +5,9 @@ import { useEffect, useState } from "react"
 import WindowShell from "../../components/ui/WindowShell"
 
 interface RaffiWorldWindowProps {
+  /** False means minimized: the iframe stays mounted and can be restored. */
   isOpen: boolean
+  /** Retained for API compatibility; the World shell presents this as minimize. */
   onClose: () => void
 }
 
@@ -46,10 +48,12 @@ export default function RaffiWorldWindow({ isOpen, onClose }: RaffiWorldWindowPr
       fill
       compact={compact}
       maxWidth="min(1400px, 100%)"
+      dismissAction="minimize"
     >
       <iframe
         src={src}
         title="RAFFI WORLD"
+        tabIndex={0}
         allow="autoplay; fullscreen; gamepad; accelerometer; gyroscope"
         style={{
           border: "none",

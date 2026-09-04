@@ -38,22 +38,25 @@ function internalSizeFor(aspect) {
   return { w: clamp(w, 160, 1024), h: clamp(h, 120, 1024) }
 }
 
-function makeSkyTexture(grade) {
-  const c = document.createElement('canvas')
-  c.width = 4
-  c.height = 128
-  const ctx = c.getContext('2d')
+function updateSkyTexture(grade) {
+  if (!skyTexture) {
+    const canvas = document.createElement('canvas')
+    canvas.width = 4
+    canvas.height = 128
+    skyTexture = new THREE.CanvasTexture(canvas)
+    skyTexture.colorSpace = THREE.SRGBColorSpace
+    skyTexture.minFilter = THREE.LinearFilter
+    skyTexture.magFilter = THREE.LinearFilter
+  }
+  const ctx = skyTexture.image.getContext('2d')
   const g = ctx.createLinearGradient(0, 0, 0, 128)
   g.addColorStop(0, grade.skyTop)
   g.addColorStop(0.62, grade.skyBottom)
   g.addColorStop(1, grade.fogColor)
   ctx.fillStyle = g
   ctx.fillRect(0, 0, 4, 128)
-  const tex = new THREE.CanvasTexture(c)
-  tex.colorSpace = THREE.SRGBColorSpace
-  tex.minFilter = THREE.LinearFilter
-  tex.magFilter = THREE.LinearFilter
-  return tex
+  skyTexture.needsUpdate = true
+  return skyTexture
 }
 
 export function initRenderer(canvas) {
@@ -172,6 +175,20 @@ export function initMaterials(atlasTexture) {
 let skyTexture = null
 const fogA = new THREE.Color()
 const fogB = new THREE.Color()
+const gradeColorA = new THREE.Color()
+const gradeColorB = new THREE.Color()
+
+function blendGrade(from, to, amount) {
+  if (amount >= 1 || from === to) return to
+  const blended = { ...to, post: {} }
+  for (const key of ['skyTop', 'skyBottom', 'fogColor', 'shadowTint', 'key', 'waterColor']) {
+    blended[key] = gradeColorA.set(from[key]).lerp(gradeColorB.set(to[key]), amount).getStyle()
+  }
+  for (const key of Object.keys(to.post || {})) {
+    blended.post[key] = lerp(from.post?.[key] ?? to.post[key], to.post[key], amount)
+  }
+  return blended
+}
 
 /**
  * Applies a grade, optionally blended from the previous one. `blend` of 1 means
@@ -198,12 +215,10 @@ export function applyGrade(id, blend = 1, fromId = null) {
     fog.far = 4000
   }
 
-  if (skyTexture) skyTexture.dispose()
-  skyTexture = makeSkyTexture(t > 0.5 ? g : from)
-  gfx.scene.background = skyTexture
-
-  gfx.post.setGrade(g)
-  gfx.materials.water?.color.set(g.waterColor)
+  const blended = blendGrade(from, g, t)
+  gfx.scene.background = updateSkyTexture(blended)
+  gfx.post.setGrade(blended)
+  gfx.materials.water?.color.set(blended.waterColor)
 }
 
 // ------------------------------------------------------------ resize ---
@@ -230,7 +245,15 @@ export function renderFrame(camera) {
   r.info.reset()
   r.setRenderTarget(gfx.rt)
   r.clear()
+  // Orthographic distance is a rig offset, not distance through the city.
+  // Without this correction even the player's block sits inside the far fog.
+  const fog = gfx.scene.fog
+  const fogOffset = camera.isOrthographicCamera ? camera.userData.fogOffset || 0 : 0
+  fog.near += fogOffset
+  fog.far += fogOffset
   r.render(gfx.scene, camera)
+  fog.near -= fogOffset
+  fog.far -= fogOffset
   gfx.post.render(r, gfx.rt)
 
   state.stats.drawCalls = r.info.render.calls

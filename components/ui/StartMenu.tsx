@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { X } from "lucide-react"
 
 interface StartMenuProps {
@@ -9,6 +10,26 @@ interface StartMenuProps {
 }
 
 export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuProps) {
+  const firstItemRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const frame = window.requestAnimationFrame(() => firstItemRef.current?.focus({ preventScroll: true }))
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+    }
+    document.addEventListener("keydown", handleEscape, true)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      document.removeEventListener("keydown", handleEscape, true)
+      previousFocus?.focus({ preventScroll: true })
+    }
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   const handlePitchStartup = () => {
@@ -38,8 +59,10 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
         maxWidth: "16rem",
         maxHeight:
           "calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
-        zIndex: 91,
+        zIndex: 9001,
       }}
+      role="menu"
+      aria-label="Start menu"
     >
       <div
         style={{
@@ -122,6 +145,8 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
             <button
               type="button"
               key={index}
+              ref={index === 0 ? firstItemRef : undefined}
+              role="menuitem"
               onClick={item.action}
               style={{
                 width: "100%",
