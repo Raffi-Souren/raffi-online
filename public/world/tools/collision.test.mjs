@@ -222,8 +222,8 @@ test('real player movement stops against a scene pedestrian and resolves its lat
   assert.ok(Math.hypot(state.player.x - pedestrian.position.x, state.player.z) >= 0.85 - 1e-6)
   close(player.group.position.x, state.player.x)
 
-  // Chase controls are body-relative: a zeroed impact velocity must not turn
-  // the player and make held-forward input accidentally steer around a body.
+  // The startup fallback has no camera matrix yet. A zeroed impact velocity
+  // must still preserve the heading when held-forward input reaches a body.
   Object.assign(state.player, { x: 0, z: 0, y: 0, vx: 0, vz: 0, yaw: Math.PI / 2 })
   pedestrian.position.x = 2
   cam.modeIndex = 1

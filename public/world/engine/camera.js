@@ -314,11 +314,10 @@ function updatePerspRig(mode, sx, sy, focus = null) {
 /**
  * Movement axes for WASD / stick.
  *
- * CHASE 3D — body-relative ("moves with you"):
- *   W = face forward, A/D = strafe left/right of facing. Turning around does
- *   not invert left/right the way a lagging camera basis does.
+ * CHASE 3D while driving — body-relative:
+ *   W = drive forward, A/D = steer relative to the vehicle.
  *
- * FREE / CLASSIC / BIRDS — camera matrix axes:
+ * Walking in every view, plus FREE / CLASSIC / BIRDS driving — camera axes:
  *   W = into the frame, D = toward the right edge of the screen.
  *   Uses the camera's world +X / -Z so signs stay stable in every yaw.
  */

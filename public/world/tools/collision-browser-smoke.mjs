@@ -37,9 +37,13 @@ async function holdForward(page, milliseconds = 1600) {
 async function positionPlayer(page, pose) {
   await page.evaluate(async ({ x, z, yaw }) => {
     const { teleportPlayer } = await import('/world/game/player.js')
+    const { updateCamera } = await import('/world/engine/camera.js')
     window.RAFFI_WORLD.dismissDialogue()
-    window.RAFFI_WORLD.setCameraMode('chase')
     teleportPlayer(x, z, yaw)
+    window.RAFFI_WORLD.setCameraMode('chase')
+    // Foot controls follow the screen axes; align the test camera with the
+    // approach pose before sending real held-key input.
+    updateCamera(0, { x, y: 0, z }, { x: 0, z: 0 }, innerWidth / innerHeight)
   }, pose)
 }
 

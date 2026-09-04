@@ -294,7 +294,7 @@ function syncMarker(x, y, z, scale) {
 
 function updateWalking(dt, input, world, beatPhase) {
   const p = state.player
-  // Chase: body-relative (turns with you). Free/iso: camera screen axes.
+  // Walking uses camera screen axes in every view.
   const basis = movementBasis()
 
   const wantX = basis.rx * input.move.x + basis.fx * input.move.y
