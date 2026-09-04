@@ -229,20 +229,31 @@ export function stepVehicle(v, h, ctl, dt, world) {
   // Steer at crawl — min authority so A/D works when almost stopped.
   const speedFrac = Math.min(1, Math.abs(v.speed) / top)
   const authority = 1 - h.steerFalloff * speedFrac
-  const reverseSign = v.speed < -0.15 ? -1 : 1
-  const steerRate = h.steerRate * authority * reverseSign
+  // Steer DIRECTION used to hard-flip at v.speed < -0.15, which snapped the
+  // car's rotation the opposite way the instant it crossed into reverse — the
+  // "weird" feeling when turning the car around. Blend the sign smoothly across
+  // the zero-speed band instead, with a small forward-signed floor so you can
+  // still pivot away from a dead stop (never a reverse-signed floor, which is
+  // exactly the snap we're removing).
+  const dir = clamp(v.speed / 0.5, -1, 1)
+  const dirSign = Math.abs(dir) < 0.15 ? 0.15 : dir
   const steerSpeed = h.steerSpeed || 3.2
   const minAuthority = h.minSteerAuthority ?? 0.55
   const speedFactor = Math.abs(steer) > 0.05
     ? Math.max(minAuthority, Math.min(1, Math.abs(v.speed) / steerSpeed))
     : Math.min(1, Math.abs(v.speed) / steerSpeed)
-  const targetAngular = steer * steerRate * speedFactor
+  const targetAngular = steer * h.steerRate * authority * speedFactor * dirSign
   const yawLerp = Math.abs(v.speed) < 6 ? 14 : 9
   v.angularVel += (targetAngular - v.angularVel) * Math.min(1, dt * yawLerp)
   v.yaw += v.angularVel * dt
 
   const grip = handbrake ? h.handbrakeGrip : h.grip
-  v.lateral += -v.angularVel * v.speed * dt
+  // The tail is thrown out by -angularVel*speed. In reverse that term made the
+  // rear swing violently (a big lateral slide when backing up and turning),
+  // which read as unpredictable. Damp lateral build-up while reversing so a
+  // back-up-and-turn stays controllable.
+  const latGain = v.speed < 0 ? 0.4 : 1
+  v.lateral += -v.angularVel * v.speed * dt * latGain
   v.lateral -= v.lateral * Math.min(1, grip * dt)
   v.slip = Math.min(1, Math.abs(v.lateral) / 6)
 

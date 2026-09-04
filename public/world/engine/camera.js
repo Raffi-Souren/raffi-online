@@ -180,14 +180,29 @@ export function updateCamera(dt, focus, velocity, aspect) {
   // Chase: stay behind the actor, snappy enough that W always matches "forward
   // on screen". Free: leave yaw to Q/X orbit only.
   if (mode.id === 'chase') {
-    const behind = (state.player.yaw || 0) + Math.PI
-    let dy = behind - cam.desiredYaw
-    while (dy > Math.PI) dy -= Math.PI * 2
-    while (dy < -Math.PI) dy += Math.PI * 2
-    // Fast catch-up so turning doesn't fight movementBasis lag.
-    cam.desiredYaw += dy * Math.min(1, dt * (mounted ? 11 : 8.5))
-    // Higher pitch when mounted = look down more, car sits mid/lower-third.
-    cam.desiredPitch = mounted ? 0.52 : 0.38
+    if (mounted) {
+      // Driving: snap hard behind the vehicle so W always reads as "forward".
+      const behind = (state.player.yaw || 0) + Math.PI
+      let dy = behind - cam.desiredYaw
+      while (dy > Math.PI) dy -= Math.PI * 2
+      while (dy < -Math.PI) dy += Math.PI * 2
+      cam.desiredYaw += dy * Math.min(1, dt * 11)
+      cam.desiredPitch = 0.52
+    } else {
+      // On foot: only glide behind the walker when they are (near) stopped.
+      // While moving we freeze the rig yaw so the screen-relative stick keeps a
+      // constant meaning — holding a direction walks in a straight line instead
+      // of curving, and the camera eases behind again the moment you pause.
+      const moving = (state.player.speed || 0) > 0.6
+      if (!moving) {
+        const behind = (state.player.yaw || 0) + Math.PI
+        let dy = behind - cam.desiredYaw
+        while (dy > Math.PI) dy -= Math.PI * 2
+        while (dy < -Math.PI) dy += Math.PI * 2
+        cam.desiredYaw += dy * Math.min(1, dt * 4)
+      }
+      cam.desiredPitch = 0.38
+    }
   } else if (mode.id === 'free') {
     // Keep free cam from going flat on the road when riding.
     const minP = mounted ? 0.28 : 0.16
@@ -310,8 +325,15 @@ function updatePerspRig(mode, sx, sy, focus = null) {
 export function movementBasis() {
   const mode = getCameraMode()
 
-  // Behind-the-back chase: stick follows the actor, not a delayed orbit rig.
-  if (mode.id === 'chase') {
+  // Behind-the-back chase is body-relative ONLY when driving: the camera sits
+  // hard behind the vehicle, so nose-relative already matches the screen.
+  //
+  // On FOOT it must NOT be body-relative. The walker's yaw follows its own
+  // velocity, so a body-relative frame chases the heading every frame — hold a
+  // diagonal and you spin in a full circle. On foot we always use the camera's
+  // screen axes (below), and the chase rig freezes its yaw while you move so a
+  // held direction travels in a straight line.
+  if (mode.id === 'chase' && state.mode === 'vehicle') {
     return bodyRelativeBasis(state.player.yaw || 0)
   }
 
