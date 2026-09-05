@@ -120,7 +120,8 @@ export default function SignalLostGame() {
     const ctx = el.getContext("2d")
     if (!ctx) return
     const art = createSignalArt()
-    const coarse = window.matchMedia("(pointer: coarse)")
+    // Phones without a mouse, plus narrow viewports where WASD is not an option.
+    const coarse = window.matchMedia("(pointer: coarse), (hover: none), (max-width: 700px)")
     const syncTouch = () => setTouch(coarse.matches)
     syncTouch()
     coarse.addEventListener("change", syncTouch)
@@ -290,7 +291,7 @@ export default function SignalLostGame() {
       type="button"
       aria-label={label}
       className="game-touch"
-      style={{ ...button, width: 48, height: 46, padding: 0, touchAction: "none", userSelect: "none", ...style }}
+      style={{ ...button, width: 52, height: 52, padding: 0, fontSize: 20, touchAction: "none", userSelect: "none", ...style }}
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault()
@@ -325,6 +326,7 @@ export default function SignalLostGame() {
       ref={root}
       data-game="signal-lost"
       data-phase={hud.phase}
+      className="game-touch"
       style={{
         position: "relative",
         width: "100%",
@@ -350,6 +352,7 @@ export default function SignalLostGame() {
           outline: "none",
         }}
         onPointerDown={lookStart}
+        onContextMenu={(event) => event.preventDefault()}
         onPointerMove={(event) => {
           if (look.current?.id === event.pointerId && document.pointerLockElement !== canvas.current && active) {
             state.current.angle += (event.clientX - look.current.x) * 0.006
@@ -417,14 +420,15 @@ export default function SignalLostGame() {
           <div
             style={{
               position: "absolute",
-              bottom: touch && !compact ? 121 : 17,
+              bottom: touch && !compact ? "calc(178px + env(safe-area-inset-bottom, 0px))" : 17,
               left: touch && compact ? 184 : 16,
+              right: touch && !compact ? 16 : undefined,
               display: "flex",
-              gap: 16,
+              gap: 10,
               pointerEvents: "none",
             }}
           >
-            <div style={{ ...panel, padding: "7px 10px", minWidth: 100 }}>
+            <div style={{ ...panel, padding: "7px 10px", minWidth: 100, flex: touch ? 1 : undefined }}>
               <span style={{ fontSize: 10 }}>Integrity</span>
               <strong style={{ float: "right", fontSize: 14 }}>{hud.health}</strong>
               <div style={{ height: 3, background: "#3d4b4f", marginTop: 7 }}>
@@ -437,7 +441,7 @@ export default function SignalLostGame() {
                 />
               </div>
             </div>
-            <div style={{ ...panel, padding: "7px 10px", minWidth: 100 }}>
+            <div style={{ ...panel, padding: "7px 10px", minWidth: 100, flex: touch ? 1 : undefined }}>
               <span style={{ fontSize: 10 }}>{hud.overheated ? "Cooling…" : "Coil heat"}</span>
               <strong style={{ float: "right", fontSize: 14 }}>{hud.heat}</strong>
               <div style={{ height: 3, background: "#3d4b4f", marginTop: 7 }}>
@@ -448,13 +452,16 @@ export default function SignalLostGame() {
           {touch ? (
             <>
               <div
+                role="group"
+                aria-label="Touch movement controls"
                 style={{
                   position: "absolute",
-                  bottom: 12,
+                  bottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
                   left: 14,
                   display: "grid",
-                  gridTemplateColumns: "repeat(3, 48px)",
-                  gap: 4,
+                  gridTemplateColumns: "repeat(3, 52px)",
+                  gap: 6,
+                  touchAction: "none",
                 }}
               >
                 <span />
@@ -464,7 +471,14 @@ export default function SignalLostGame() {
                 {touchButton("Move backward", { forward: -1 }, "↓")}
                 {touchButton("Strafe right", { strafe: 1 }, "→")}
               </div>
-              <div style={{ position: "absolute", bottom: 17, right: 16 }}>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "calc(17px + env(safe-area-inset-bottom, 0px))",
+                  right: 16,
+                  touchAction: "none",
+                }}
+              >
                 {touchButton("Fire pulse blaster", { fire: true }, <Crosshair size={27} />, {
                   width: 72,
                   height: 72,

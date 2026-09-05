@@ -287,13 +287,18 @@ export default function Brickbreaker() {
     input.current.target = ((event.clientX - box.left) / box.width) * FIELD.width
   }
   const heldButton = (code: string) => ({
+    onContextMenu: (event: React.MouseEvent<HTMLButtonElement>) => event.preventDefault(),
     onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
       if (!playable) return
       event.preventDefault()
-      event.currentTarget.setPointerCapture(event.pointerId)
       input.current.touches.add(code)
       input.current.target = undefined
       if (code === "Space") input.current.shot = true
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId)
+      } catch {
+        /* A finger that already lifted still releases through pointerup. */
+      }
     },
     onPointerUp: () => input.current.touches.delete(code),
     onPointerCancel: () => input.current.touches.delete(code),
@@ -312,7 +317,7 @@ export default function Brickbreaker() {
   const ended = hud.phase === "over" || hud.phase === "won"
   const overlay = screen !== "game" || hud.phase === "ready" || hud.paused || ended || hud.phase === "cleared"
   return (
-    <section className="bb-cabinet" aria-label="Brickbreaker arcade">
+    <section className="bb-cabinet game-touch" aria-label="Brickbreaker arcade">
       <header className="bb-heading">
         <div>
           <h2>BRICKBREAKER</h2>
@@ -368,10 +373,15 @@ export default function Brickbreaker() {
               if (!playable) return
               event.preventDefault()
               event.currentTarget.focus()
-              event.currentTarget.setPointerCapture(event.pointerId)
               const box = event.currentTarget.getBoundingClientRect()
               input.current.target = ((event.clientX - box.left) / box.width) * FIELD.width
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId)
+              } catch {
+                /* Tap-to-position already applied above. */
+              }
             }}
+            onContextMenu={(event) => event.preventDefault()}
             onPointerMove={steer}
             onPointerCancel={() => {
               input.current.target = undefined
@@ -534,11 +544,16 @@ export default function Brickbreaker() {
                 input.current.target = game.current.paddle + (event.key === "ArrowLeft" ? -20 : 20)
               }
             }}
+            onContextMenu={(event) => event.preventDefault()}
             onPointerDown={(event) => {
               if (!playable) return
               event.preventDefault()
-              event.currentTarget.setPointerCapture(event.pointerId)
               drag.current = { id: event.pointerId, x: event.clientX, paddle: game.current.paddle }
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId)
+              } catch {
+                /* Window release also clears drag state. */
+              }
             }}
             onPointerMove={(event) => {
               if (!playable || drag.current?.id !== event.pointerId) return

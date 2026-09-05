@@ -49,9 +49,35 @@ const ANALOG_DIGITAL_VIDEOS: Video[] = [
   },
 ]
 
-// Holy-grail Boiler Room & Cercle sets. These stream continuously so you can
-// roll from one set straight into the next while you work.
+// Holy-grail Boiler Room & Cercle sets, plus living-room sessions from
+// aprtment life (London). These stream continuously so you can roll from one
+// set straight into the next while you work.
 const DJ_SETS: Video[] = [
+  {
+    id: "djset-al-juls",
+    title: "Juls — aprtment life",
+    youtubeId: "_slP28mnnU4",
+  },
+  {
+    id: "djset-al-ella-knight",
+    title: "Ella Knight — aprtment life",
+    youtubeId: "Vi6z4rBabh0",
+  },
+  {
+    id: "djset-al-wilfy-d",
+    title: "Wilfy D — aprtment life",
+    youtubeId: "53mtKqfUHJM",
+  },
+  {
+    id: "djset-al-parismatiq",
+    title: "Parismatiq vol.11 — aprtment life",
+    youtubeId: "cR0c34w4QBA",
+  },
+  {
+    id: "djset-al-raidaa",
+    title: "Raidaa w/ Ari Lennox — aprtment life",
+    youtubeId: "lwxFTmj0IaQ",
+  },
   {
     id: "djset-fred-again",
     title: "Fred again.. — Boiler Room London",
@@ -180,6 +206,7 @@ export default function IPodPlayer() {
     resumeTrack,
     nextTrack,
     previousTrack,
+    playlist,
     setPlaylist,
     currentTime,
     duration,
@@ -203,6 +230,10 @@ export default function IPodPlayer() {
   const [expandedVideo, setExpandedVideo] = useState(false)
   const [currentPodcast, setCurrentPodcast] = useState<Podcast | null>(null)
   const [playbackControl, setPlaybackControl] = useState<"volume" | "seek">("volume")
+  // Like the real iPod, the volume bar only replaces the progress bar while
+  // the wheel is being turned, then the screen settles back to the track.
+  const [wheelOverlay, setWheelOverlay] = useState<"volume" | "seek" | null>(null)
+  const wheelOverlayTimerRef = useRef<number | null>(null)
   const [playerLayout, setPlayerLayout] = useState({ scale: 1, needsVerticalScroll: false })
   const playerViewportRef = useRef<HTMLDivElement>(null)
   const wheelRef = useRef<HTMLDivElement>(null)
@@ -218,6 +249,19 @@ export default function IPodPlayer() {
   const menuListRef = useRef<HTMLDivElement>(null)
   const screenScrollRef = useRef<HTMLDivElement>(null)
   const currentVideo = currentVideoPlaylist[currentVideoIndex]
+
+  const flashWheelOverlay = useCallback((kind: "volume" | "seek") => {
+    setWheelOverlay(kind)
+    if (wheelOverlayTimerRef.current) window.clearTimeout(wheelOverlayTimerRef.current)
+    wheelOverlayTimerRef.current = window.setTimeout(() => setWheelOverlay(null), 1800)
+  }, [])
+
+  useEffect(
+    () => () => {
+      if (wheelOverlayTimerRef.current) window.clearTimeout(wheelOverlayTimerRef.current)
+    },
+    [],
+  )
 
   const navigate = useCallback(
     (screen: MenuScreen, index = selectedIndex) => {
@@ -351,8 +395,11 @@ export default function IPodPlayer() {
   }
 
   const handleSelect = () => {
-    if (currentScreen === "nowPlaying") setPlaybackControl((mode) => (mode === "volume" ? "seek" : "volume"))
-    else if (currentScreen === "videoPlayer") handleVideoPlayPause()
+    if (currentScreen === "nowPlaying") {
+      const next = playbackControl === "volume" ? "seek" : "volume"
+      setPlaybackControl(next)
+      flashWheelOverlay(next)
+    } else if (currentScreen === "videoPlayer") handleVideoPlayPause()
     else if (currentScreen === "podcastDetail") watchPodcast()
     else activateItem(selectedIndex)
   }
@@ -401,12 +448,18 @@ export default function IPodPlayer() {
       if (!steps) return
       if (hasSelectableRows) setSelectedIndex((index) => Math.max(0, Math.min(menuItems.length - 1, index + steps)))
       else if (hasScrollableCopy) screenScrollRef.current?.scrollBy({ top: steps * 28, behavior: "auto" })
-      else if (currentScreen === "nowPlaying" && playbackControl === "seek") seekTo(currentTime + steps * 5)
-      else setVolume(Math.max(0, Math.min(100, volume + steps * 5)))
+      else if (currentScreen === "nowPlaying" && playbackControl === "seek") {
+        seekTo(currentTime + steps * 5)
+        flashWheelOverlay("seek")
+      } else {
+        setVolume(Math.max(0, Math.min(100, volume + steps * 5)))
+        if (currentScreen === "nowPlaying") flashWheelOverlay("volume")
+      }
     },
     [
       currentScreen,
       currentTime,
+      flashWheelOverlay,
       hasScrollableCopy,
       hasSelectableRows,
       menuItems.length,
@@ -603,6 +656,18 @@ export default function IPodPlayer() {
     about: "About Raffi",
   }
   const title = titles[currentScreen]
+  const queueLength = playlist.length || 1
+  const trackNumber = currentTrack
+    ? Math.max(0, playlist.findIndex((track) => track.id === currentTrack.id)) + 1
+    : 0
+  const playlistName =
+    playlist === BADCOMPANY_MIXES
+      ? "BadCompany Mixes"
+      : playlist === FEATURED_RAFS_CRATE
+        ? "RAF's Crate"
+        : "Raffi Radio"
+  const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0
+  const showVolumeBar = wheelOverlay === "volume"
   const videoActive = currentScreen === "videoPlayer"
   const playing = videoActive ? videoStatus === "playing" : isPlaying && !isLoading && !error
   const videoMessage = {
@@ -867,82 +932,161 @@ export default function IPodPlayer() {
                   <div
                     style={{
                       height: "100%",
-                      padding: "9px 10px 5px",
+                      padding: "6px 10px 7px",
                       display: "flex",
                       flexDirection: "column",
-                      gap: 5,
                     }}
                   >
                     {currentTrack ? (
                       <>
-                        <div style={{ display: "flex", gap: 9, alignItems: "center", minHeight: 45 }}>
+                        <p
+                          role="status"
+                          title={error || undefined}
+                          style={{
+                            ...ellipsis,
+                            fontSize: 9,
+                            color: error ? "#8a3b2c" : "#4c5a47",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {error
+                            ? "Unavailable — try next track"
+                            : isLoading
+                              ? "Connecting to SoundCloud…"
+                              : `${trackNumber} of ${queueLength}`}
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "center",
+                            flex: 1,
+                            minHeight: 0,
+                            marginTop: 3,
+                          }}
+                        >
                           <div
                             aria-hidden="true"
                             style={{
-                              width: 44,
-                              height: 44,
-                              background: "#364535",
-                              borderRadius: 3,
-                              color: "#d7e1c7",
+                              width: 58,
+                              height: 58,
+                              flexShrink: 0,
                               display: "grid",
                               placeItems: "center",
-                              flexShrink: 0,
+                              color: "#cfdcc0",
+                              background: "linear-gradient(145deg, #4a5a48, #2b3729)",
+                              border: "1px solid #1f2a1f",
+                              boxShadow: "inset 0 1px 0 #ffffff33, 0 1px 1px #ffffff88",
                             }}
                           >
-                            <Disc3 size={34} strokeWidth={1.2} />
+                            <Disc3 size={40} strokeWidth={1.1} />
                           </div>
-                          <div style={{ minWidth: 0 }}>
-                            <p title={currentTrack.title} style={{ ...ellipsis, fontWeight: 700, fontSize: 11 }}>
+                          <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                            <p title={currentTrack.title} style={{ ...ellipsis, fontWeight: 700, fontSize: 12 }}>
                               {currentTrack.title}
                             </p>
-                            <p style={{ ...ellipsis, fontSize: 10, marginTop: 2 }}>{currentTrack.artist}</p>
+                            <p title={currentTrack.artist} style={{ ...ellipsis, fontSize: 11 }}>
+                              {currentTrack.artist}
+                            </p>
+                            <p style={{ ...ellipsis, fontSize: 10, color: "#4c5a47" }}>{playlistName}</p>
                           </div>
                         </div>
-                        <input
-                          aria-label="Track position"
-                          className={focusClass}
-                          type="range"
-                          min={0}
-                          max={Math.max(duration, 1)}
-                          value={Math.min(currentTime, duration || 0)}
-                          step={1}
-                          disabled={!duration || !!error}
-                          onChange={(event) => seekTo(Number(event.target.value))}
-                          style={{ width: "100%", height: 12, accentColor: "#455a36", cursor: "pointer" }}
-                        />
+                        <div
+                          style={{
+                            position: "relative",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            height: 14,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {showVolumeBar && <Volume2 size={12} aria-hidden="true" style={{ flexShrink: 0 }} />}
+                          <div
+                            aria-hidden="true"
+                            style={{
+                              position: "relative",
+                              flex: 1,
+                              height: 10,
+                              border: "1px solid #5b6b51",
+                              borderRadius: 2,
+                              background: "linear-gradient(#f5f8ec, #e2e9d3)",
+                              boxShadow: "inset 0 1px 1px #5b6b5133",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${showVolumeBar ? volume : progressPercent}%`,
+                                height: "100%",
+                                background: "linear-gradient(#6f96c0, #35608e)",
+                                transition: showVolumeBar ? "width 80ms linear" : "width 250ms linear",
+                              }}
+                            />
+                            {!showVolumeBar && playbackControl === "seek" && duration > 0 && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 1,
+                                  left: `calc(${progressPercent}% - 3px)`,
+                                  width: 6,
+                                  height: 6,
+                                  background: "#f5f8ec",
+                                  border: "1px solid #24415f",
+                                  transform: "rotate(45deg)",
+                                }}
+                              />
+                            )}
+                          </div>
+                          <input
+                            key={showVolumeBar ? "volume" : "position"}
+                            aria-label={showVolumeBar ? "Volume" : "Track position"}
+                            className={focusClass}
+                            type="range"
+                            min={0}
+                            max={showVolumeBar ? 100 : Math.max(duration, 1)}
+                            step={showVolumeBar ? 5 : 1}
+                            value={showVolumeBar ? volume : Math.min(currentTime, duration || 0)}
+                            disabled={!showVolumeBar && (!duration || !!error)}
+                            onChange={(event) => {
+                              const next = Number(event.target.value)
+                              if (showVolumeBar) {
+                                setVolume(next)
+                                flashWheelOverlay("volume")
+                              } else seekTo(next)
+                            }}
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              width: "100%",
+                              height: "100%",
+                              margin: 0,
+                              opacity: 0,
+                              cursor: "pointer",
+                            }}
+                          />
+                        </div>
                         <div
                           style={{
                             display: "flex",
                             justifyContent: "space-between",
                             fontSize: 9,
+                            marginTop: 3,
                             fontVariantNumeric: "tabular-nums",
                           }}
                         >
-                          <span>{formatTime(currentTime)}</span>
-                          <span>−{formatTime(Math.max(0, duration - currentTime))}</span>
+                          {showVolumeBar ? (
+                            <>
+                              <span>Volume</span>
+                              <span>{Math.round(volume)}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>{formatTime(currentTime)}</span>
+                              <span>−{formatTime(Math.max(0, duration - currentTime))}</span>
+                            </>
+                          )}
                         </div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 9 }}>
-                          <Volume2 size={12} />
-                          <input
-                            aria-label="Volume"
-                            className={focusClass}
-                            type="range"
-                            min={0}
-                            max={100}
-                            step={5}
-                            value={volume}
-                            onChange={(event) => setVolume(Number(event.target.value))}
-                            style={{ minWidth: 0, width: "100%", height: 12, accentColor: "#455a36" }}
-                          />
-                          <span>{Math.round(volume)}%</span>
-                        </div>
-                        <p role="status" title={error || undefined} style={{ ...ellipsis, fontSize: 9 }}>
-                          {error
-                            ? "Unavailable — try next track"
-                            : isLoading
-                              ? "Connecting to SoundCloud…"
-                              : `${isPlaying ? "Playing" : "Paused"} · Wheel: ${playbackControl === "seek" ? "seek" : "volume"}`}
-                        </p>
                       </>
                     ) : (
                       <div style={{ margin: "auto", textAlign: "center", fontSize: 11 }}>
@@ -978,7 +1122,7 @@ export default function IPodPlayer() {
                       Turn the wheel to browse. Press the center to select. MENU takes you back.
                     </p>
                     <p style={{ marginTop: 8 }}>
-                      While music plays, turn for volume. Press the center to switch to seeking.
+                      While music plays, turn the wheel for volume. Press the center to switch to scrubbing.
                     </p>
                     <a
                       className={focusClass}

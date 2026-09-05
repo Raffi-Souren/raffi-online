@@ -171,7 +171,16 @@ export default function Home() {
       case "ipod":
         return <IPodWindow isOpen={openWindows.ipod} onClose={() => closeWindow("ipod")} />
       case "world":
-        return <RaffiWorldWindow isOpen={openWindows.world} onClose={() => closeWindow("world")} />
+        return (
+          <RaffiWorldWindow
+            isOpen={openWindows.world}
+            onClose={() => closeWindow("world")}
+            onOpenShelf={() => {
+              closeWindow("world")
+              openWindow("games")
+            }}
+          />
+        )
       case "projects":
         return (
           <WindowShell title="PROJECTS" onClose={() => closeWindow("projects")}>

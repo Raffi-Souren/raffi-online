@@ -278,6 +278,7 @@ export default function BlockPartyBrawl() {
   return (
     <section
       aria-label="Block Party Brawl game"
+      className="game-touch"
       style={{
         display: "flex",
         flexDirection: "column",
