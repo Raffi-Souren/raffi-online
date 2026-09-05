@@ -11,7 +11,7 @@ globalThis.screen = { width: 1280, height: 720 }
 const { state, data } = await import('../engine/state.js')
 const { CollisionWorld, stepVehicle } = await import('../engine/physics.js')
 const { cam, initCamera, setCameraMode, updateCamera, movementBasis } = await import('../engine/camera.js')
-const { initPlayer, player, updatePlayer, spawnVehicle, enterVehicle, movementPrompt, teleportPlayer } =
+const { initPlayer, player, updatePlayer, spawnVehicle, enterVehicle, exitVehicle, movementPrompt, teleportPlayer } =
   await import('../game/player.js')
 
 for (const name of ['world', 'blocks', 'npcs', 'vehicles']) {
@@ -114,6 +114,32 @@ test('chase D steering turns the car nose toward screen-right', (t) => {
   ).project(cam.camera)
   assert.ok(nose.x > center.x + 0.01, 'D steered left in the chase camera projection')
   assert.ok(vehicle.speed > 1)
+})
+
+test('remounting after exiting a moving turn stays parked with neutral controls', (t) => {
+  const { scene, world } = setup(t)
+  const vehicle = spawnVehicle(scene, materials, atlas, 'grand-tourer', 0, 0, 0, 'remount-test')
+  assert.equal(enterVehicle(vehicle), true)
+  for (let i = 0; i < 60; i++) frame(world, input(1, 1, { throttle: 1 }))
+  assert.ok(vehicle.speed > 1, 'setup must exit a moving car')
+  assert.ok(Math.abs(vehicle.lateral) > 0.1, 'setup must include lateral motion')
+  assert.ok(Math.abs(vehicle.angularVel) > 0.1, 'setup must include a turn')
+
+  assert.equal(exitVehicle(world), true)
+  assert.equal(state.mode, 'foot')
+  const parked = { x: vehicle.x, z: vehicle.z, yaw: vehicle.yaw }
+  assert.equal(enterVehicle(vehicle), true)
+  for (let i = 0; i < 30; i++) {
+    frame(world, input(0, 0))
+    assert.ok(
+      Math.hypot(vehicle.x - parked.x, vehicle.z - parked.z) < 1e-10,
+      'remount inherited lateral drift from the previous drive',
+    )
+    assert.ok(
+      Math.abs(vehicle.yaw - parked.yaw) < 1e-10,
+      'remount inherited rotation from the previous turn',
+    )
+  }
 })
 
 test('side-only camera-relative input accelerates an aligned car', (t) => {
