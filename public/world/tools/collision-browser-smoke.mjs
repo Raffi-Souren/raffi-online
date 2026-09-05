@@ -204,7 +204,10 @@ try {
   report.interiors = []
   for (const spec of world.interiors) {
     await positionPlayer(page, { ...spec.exit, yaw: 0 })
-    await page.waitForTimeout(120)
+    await page.waitForFunction(() => {
+      const prompt = document.querySelector('#interaction-prompt')
+      return prompt?.classList.contains('show') && prompt.textContent.includes('ENTER')
+    })
     assert.match(
       await page.locator('#interaction-prompt').textContent(),
       /ENTER/,
@@ -222,7 +225,10 @@ try {
       (await import('/world/game/interiors.js')).interiorDoorContext(),
     )
     await positionPlayer(page, { x: exit.x, z: exit.z, yaw: 0 })
-    await page.waitForTimeout(100)
+    await page.waitForFunction(() => {
+      const prompt = document.querySelector('#interaction-prompt')
+      return prompt?.classList.contains('show') && prompt.textContent.includes('EXIT')
+    })
     assert.match(await page.locator('#interaction-prompt').textContent(), /EXIT/)
     await page.keyboard.press('e')
     await page.waitForFunction(() => window.RAFFI_WORLD.interiorSnapshot().active === null)
