@@ -13,6 +13,7 @@ import {
 } from "@/lib/signal-lost"
 import { createSignalArt, renderSignal } from "@/lib/signal-lost-render"
 import ScoreEntry from "./ScoreEntry"
+import { useWindowActivity } from "../../components/ui/WindowShell"
 
 const EMPTY_INPUT: SignalInput = { forward: 0, strafe: 0, turn: 0, sprint: false, fire: false }
 const panel: CSSProperties = { background: "rgba(18,31,41,.9)", border: "1px solid #63736f", color: "#ecdfbd" }
@@ -45,6 +46,8 @@ function readHud(s: SignalState) {
 }
 
 export default function SignalLostGame() {
+  const { active: windowActive } = useWindowActivity()
+  const activeRef = useRef(windowActive)
   const root = useRef<HTMLDivElement>(null),
     canvas = useRef<HTMLCanvasElement>(null)
   const state = useRef(createSignalState()),
@@ -97,6 +100,14 @@ export default function SignalLostGame() {
     if (document.pointerLockElement === canvas.current) document.exitPointerLock()
   }, [releaseInput, sync])
 
+  useEffect(() => {
+    activeRef.current = windowActive
+    if (!windowActive) {
+      releaseInput()
+      pause()
+    }
+  }, [windowActive, releaseInput, pause])
+
   const play = (restart = false) => {
     if (restart || state.current.phase === "ready" || state.current.phase === "won" || state.current.phase === "lost") {
       state.current = createSignalState()
@@ -136,6 +147,7 @@ export default function SignalLostGame() {
     observer.observe(el)
     resize()
     const keyDown = (event: KeyboardEvent) => {
+      if (!activeRef.current) return
       if (
         event.target instanceof HTMLElement &&
         (event.target.isContentEditable || event.target.closest("input, textarea, select"))
@@ -214,7 +226,7 @@ export default function SignalLostGame() {
         beforeKills = s.kills
       const input = touchInput.current,
         pressed = (key: string) => (keys.current.has(key) ? 1 : 0)
-      stepSignal(
+      if (activeRef.current) stepSignal(
         s,
         {
           forward: input.forward + pressed("KeyW") + pressed("ArrowUp") - pressed("KeyS") - pressed("ArrowDown"),

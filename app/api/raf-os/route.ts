@@ -114,8 +114,8 @@ export async function POST(request: Request) {
     if (!providers.length) throw new RafHttpError("RAF OS analysis is temporarily unavailable.", 503)
     const plan = routingPlan(body, providers)
     const prepared: Awaited<ReturnType<typeof prepareSubmission>>[] = []
-    if (body.previous) prepared.push(await prepareSubmission(body.previous, "v1"))
-    prepared.push(await prepareSubmission(body.current, body.previous ? "v2" : "v1"))
+    if (body.previous) prepared.push(await prepareSubmission(body.previous, "v1", controller.signal))
+    prepared.push(await prepareSubmission(body.current, body.previous ? "v2" : "v1", controller.signal))
     if (controller.signal.aborted) throw new RafHttpError("The review timed out. Please try a shorter submission.", 504)
     const sources = prepared.flatMap((item) => item.sources)
     reservation = await reserveUsage(databaseUrl, usageIdentity(request, session.id, secret), cap, controller.signal)

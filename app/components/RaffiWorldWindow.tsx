@@ -16,9 +16,8 @@ const CrateQuestGame = dynamic(() => import("./CrateQuestGame"), {
 })
 
 interface RaffiWorldWindowProps {
-  /** False means minimized: the iframe stays mounted and can be restored. */
+  /** The iframe stays mounted when hidden so reopening preserves the run. */
   isOpen: boolean
-  /** Retained for API compatibility; the World shell presents this as minimize. */
   onClose: () => void
   /** Minimize the world and bring the Games shelf forward. */
   onOpenShelf?: () => void
@@ -96,12 +95,11 @@ export default function RaffiWorldWindow({ isOpen, onClose, onOpenShelf }: Raffi
       fill
       compact={compact}
       maxWidth="min(1400px, 100%)"
-      dismissAction="minimize"
       closeOnEscape={!questOpen}
     >
       {onOpenShelf && (
         <GameShelfNav onBack={onOpenShelf} compact={compact}>
-          <span style={{ fontSize: 11, color: "#5d6f7a", paddingRight: 4 }}>World keeps running</span>
+          <span style={{ fontSize: 11, color: "#5d6f7a", paddingRight: 4 }}>Your place is saved</span>
         </GameShelfNav>
       )}
       <iframe

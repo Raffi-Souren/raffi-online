@@ -50,6 +50,15 @@ const GAMES: Game[] = [
     color: "#bdcedd",
   },
   {
+    id: "overtime",
+    name: "Overtime",
+    device: "Car soccer",
+    category: "Originals",
+    description: "Drive, boost, and jump to score. One rival, 90 seconds, and golden goal to break a tie.",
+    icon: "⚽",
+    color: "#bddad2",
+  },
+  {
     id: "borough-gp",
     name: "Borough Grand Prix",
     device: "Raffi Racing",
@@ -154,7 +163,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
 
   if (leaderboardGame) {
     return (
-      <WindowShell key="game-scores" title="High scores" onClose={() => setLeaderboardGame(null)} maxWidth="560px">
+      <WindowShell key="game-scores" title="High scores" onClose={onClose} maxWidth="560px">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 14 }}>
           <button
             type="button"
@@ -207,7 +216,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
       <WindowShell
         key={`game-${activeGame}`}
         title={`${game.name} — ${game.device}`}
-        onClose={() => setActiveGame(null)}
+        onClose={onClose}
         closeOnEscape={false}
         fill={viewport}
         fullBleed={viewport}

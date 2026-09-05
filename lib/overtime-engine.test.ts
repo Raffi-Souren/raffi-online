@@ -12,7 +12,6 @@ import {
   pauseMatch,
   PITCH,
   resumeMatch,
-  rivalInput,
   stepMatch,
   type DriveInput,
   type SoccerMatch,
@@ -27,6 +26,36 @@ function advance(match: SoccerMatch, seconds: number, input: DriveInput = NO_DRI
   for (let i = 0; i < Math.ceil(seconds * 120); i++) stepMatch(match, input, 1 / 120)
 }
 const throttle = { ...NO_DRIVE, throttle: 1 }
+
+// A player-controlled shot policy, independent of the opponent's decisions.
+// Line up behind the predicted ball, circle around it when on the wrong side,
+// then commit boost to the shooting run instead of mirroring every rival turn.
+function attackingInput(match: SoccerMatch, headingError = 0): DriveInput {
+  const car = match.player,
+    ball = match.ball
+  const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n))
+  const heading = car.angle + headingError
+  const bx = clamp(ball.x + ball.vx * 0.2, -23, 23)
+  const bz = clamp(ball.z + ball.vz * 0.2, -14, 14)
+  const gx = PITCH.halfLength - bx,
+    gz = -bz,
+    goalDistance = Math.hypot(gx, gz) || 1
+  const needsRunup = car.x > bx - 1.4 || Math.abs(car.z - bz) > 2.4 || Math.cos(heading) < 0.4
+  const runup = needsRunup ? 4.5 : 0.6
+  let tx = bx - (gx / goalDistance) * runup,
+    tz = bz - (gz / goalDistance) * runup
+  if (car.x > bx - 1.5 && Math.abs(car.z - bz) < 4.5) tz += car.z >= bz ? 5 : -5
+  tx = clamp(tx, -24, 24)
+  tz = clamp(tz, -15, 15)
+  const targetAngle = Math.atan2(tz - car.z, tx - car.x) - heading
+  const difference = Math.atan2(Math.sin(targetAngle), Math.cos(targetAngle))
+  return {
+    steer: clamp(difference * 2.1, -1, 1),
+    throttle: Math.abs(difference) > 1.1 ? 0 : 1,
+    boost: Math.abs(difference) < 0.5 && Math.hypot(tx - car.x, tz - car.z) > 6 && car.boost > 28,
+    jump: false,
+  }
+}
 
 test("kickoff freezes drivers and clock, then starts; pause preserves the current phase", () => {
   const match = createMatch()
@@ -184,28 +213,33 @@ test("a fresh run clears scores, overtime, fuel use and all transient motion", (
   assert.equal(fresh.ball.vx, 0)
 })
 
-test("rival beats an idle driver while a steering player can win under identical physics", () => {
-  const idle = playing(),
-    skilled = playing()
-  function attackingInput(match: SoccerMatch) {
-    const car = match.player,
-      ball = match.ball
-    // Mirror the same public steering policy to play toward the opposite goal.
-    return rivalInput({
-      ...match,
-      rival: { ...car, x: -car.x, z: -car.z, vx: -car.vx, vz: -car.vz, angle: car.angle + Math.PI },
-      ball: { ...ball, x: -ball.x, z: -ball.z, vx: -ball.vx, vz: -ball.vz },
-    })
-  }
-  for (let i = 0; i < 240 * 120; i++) {
-    stepMatch(idle, NO_DRIVE, 1 / 120)
-    stepMatch(skilled, attackingInput(skilled), 1 / 120)
-    if (idle.phase === "finished" && skilled.phase === "finished") break
+test("rival beats an idle driver without relying on repeated own goals", () => {
+  const idle = playing()
+  for (let i = 0; i < 240 * 120 && idle.phase !== "finished"; i++) {
+    stepMatch(idle, NO_DRIVE, PHYSICS_STEP)
   }
   assert.equal(idle.phase, "finished")
   assert.ok(idle.orange > idle.blue, "idle player should not win through repeated AI own goals")
-  assert.equal(skilled.phase, "finished")
-  assert.ok(skilled.blue > skilled.orange, "driving and positioning must make a win achievable")
+})
+
+test("a steering player wins a full match through real shots under unchanged physics", () => {
+  // Mirroring rivalInput pitted the same policy against itself: a 2.8e-17
+  // heading difference at step 154 flipped the winner between ARM64 and x64.
+  // Require a decisive control strategy, including small errors in its heading
+  // observations; never alter the actual kickoff, rival, ball, score or clock.
+  for (const headingError of [0, -1e-7, 1e-7]) {
+    const skilled = playing()
+    for (let i = 0; i < 240 * 120 && skilled.phase !== "finished"; i++) {
+      stepMatch(skilled, attackingInput(skilled, headingError), PHYSICS_STEP)
+    }
+    assert.equal(skilled.phase, "finished")
+    assert.ok(skilled.hits > 0, "the player must make actual ball contacts")
+    assert.ok(skilled.blue > 0, "the player must score real goals")
+    assert.ok(
+      skilled.blue > skilled.orange,
+      `driving and positioning must win with heading error ${headingError}: ${skilled.blue}–${skilled.orange}`,
+    )
+  }
 })
 
 test("large or invalid deltas cannot tunnel a fast ball through solid boards or poison state", () => {
