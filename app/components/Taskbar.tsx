@@ -1,16 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Disc, Gamepad2, User } from "lucide-react"
+import { ArrowUpRight, Disc, Gamepad2, Minus, User } from "lucide-react"
 
 interface TaskbarProps {
   onStartClick: () => void
   onWindowClick: (windowName: string) => void
+  onTaskClick: (windowName: string) => void
   openWindows: Record<string, boolean>
   /** Stateful apps that remain restorable after their visible window is hidden. */
   persistentWindows?: Record<string, boolean>
   /** Open apps whose content is hidden without closing their session. */
   minimizedWindows?: Record<string, boolean>
+  minimizedNotice?: string
   /** Current top window, used to distinguish active and background task buttons. */
   activeWindow?: string | null
 }
@@ -31,9 +33,11 @@ const WINDOW_TITLES: Record<string, string> = {
 export default function Taskbar({
   onStartClick,
   onWindowClick,
+  onTaskClick,
   openWindows,
   persistentWindows = {},
   minimizedWindows = {},
+  minimizedNotice,
   activeWindow = null,
 }: TaskbarProps) {
   const [currentTime, setCurrentTime] = useState("12:00 AM")
@@ -64,8 +68,55 @@ export default function Taskbar({
     return () => clearTimeout(timeoutId)
   }, [])
 
+  useEffect(() => {
+    if (!activeWindow) return
+    document.querySelector(`[data-window-task="${activeWindow}"]`)?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    })
+  }, [activeWindow])
+
   return (
+    <>
+    {minimizedNotice && (
+      <div
+        role="status"
+        style={{
+          position: "fixed",
+          bottom: "calc(50px + env(safe-area-inset-bottom, 0px))",
+          left: "max(12px, env(safe-area-inset-left, 0px))",
+          right: "max(12px, env(safe-area-inset-right, 0px))",
+          margin: "0 auto",
+          width: "fit-content",
+          maxWidth: "calc(100% - 24px)",
+          padding: "7px 10px 7px 14px",
+          background: "#fff6ce",
+          color: "#513c13",
+          border: "1px solid #c59621",
+          borderRadius: 7,
+          boxShadow: "0 4px 18px #152c5040",
+          zIndex: 10000,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          fontFamily: "Tahoma, Verdana, sans-serif",
+          fontSize: 12,
+        }}
+      >
+        <span>{WINDOW_TITLES[minimizedNotice] || minimizedNotice} minimized to the taskbar.</span>
+        <button
+          type="button"
+          onClick={() => onWindowClick(minimizedNotice)}
+          className="hover:bg-[#f9e9ad] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#795800]"
+          style={{ minHeight: 36, padding: "5px 8px", borderRadius: 4, fontWeight: 700, flexShrink: 0 }}
+        >
+          Restore
+        </button>
+      </div>
+    )}
     <div
+      role="region"
+      aria-label="Desktop taskbar"
       className="shadow-md select-none"
       style={{
         position: "fixed",
@@ -224,6 +275,8 @@ export default function Taskbar({
 
         {taskbarWindowNames.length > 0 && (
           <div
+            role="group"
+            aria-label="Open windows"
             className="flex"
             style={{
               gap: "4px",
@@ -241,14 +294,17 @@ export default function Taskbar({
               return (
                 <button
                   key={name}
+                  data-window-task={name}
+                  data-window-state={minimized ? "minimized" : active ? "active" : "background"}
                   type="button"
-                  onClick={() => onWindowClick(name)}
+                  onClick={() => onTaskClick(name)}
                   className="hover:bg-[#2860D6] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] transition-colors"
-                  title={minimized ? `Restore ${title}` : active ? `${title} (active)` : `Switch to ${title}`}
-                  aria-label={minimized ? `Restore ${title} window` : `Switch to ${title} window`}
+                  title={minimized ? `${title} is minimized. Click to restore.` : active ? `Minimize ${title}` : `Switch to ${title}`}
+                  aria-label={minimized ? `Restore ${title} window` : active ? `Minimize ${title} window` : `Switch to ${title} window`}
                   aria-pressed={active}
                   style={{
                     padding: "4px 8px",
+                    minHeight: 32,
                     backgroundColor: minimized ? "#173D8F" : active ? "#153885" : "#1F50B8",
                     color: "white",
                     fontSize: "12px",
@@ -260,15 +316,17 @@ export default function Taskbar({
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     border: "none",
-                    borderBottom: active ? "2px solid #8AB4FF" : "2px solid #153885",
+                    borderBottom: minimized ? "2px solid #ffbd2e" : active ? "2px solid #8AB4FF" : "2px solid #153885",
                     display: "flex",
                     alignItems: "center",
                     textAlign: "left",
-                    opacity: minimized ? 0.78 : 1,
+                    gap: 6,
+                    flexShrink: 0,
                   }}
                 >
-                  {title}
-                  {minimized ? " — MINIMIZED" : ""}
+                  {minimized && <Minus size={13} color="#ffbd2e" strokeWidth={3} aria-hidden="true" style={{ flexShrink: 0 }} />}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{title}</span>
+                  {minimized && <ArrowUpRight size={12} aria-hidden="true" style={{ flexShrink: 0, marginLeft: "auto" }} />}
                 </button>
               )
             })}
@@ -302,5 +360,6 @@ export default function Taskbar({
         <span style={{ minWidth: "56px", textAlign: "center" }}>{currentTime}</span>
       </div>
     </div>
+    </>
   )
 }

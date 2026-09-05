@@ -62,13 +62,15 @@ export default function Home() {
     projects: false,
     world: false,
   })
-  // Once launched, keep RAFFI WORLD mounted so minimizing it preserves the
-  // WebGL context, audio graph, and the player's current run.
+  // Keep World and terminal sessions in stable slots, including after closing.
+  // A close removes their taskbar entry; a minimize keeps it available to restore.
   const [worldLaunched, setWorldLaunched] = useState(false)
   // Closing the terminal ends its request, while its mounted session survives.
   // Minimizing only hides the shell, so a running request can still finish.
   const [terminalLaunched, setTerminalLaunched] = useState(false)
-  const [terminalMinimized, setTerminalMinimized] = useState(false)
+  const [minimizedWindows, setMinimizedWindows] = useState<Record<string, boolean>>({})
+  const [windowNotice, setWindowNotice] = useState<{ name: string; sequence: number } | null>(null)
+  const [closedWindow, setClosedWindow] = useState<string | null>(null)
   // Oldest to newest. WindowShell consumes the derived layer through context;
   // taskbar, quick-launch, Start-menu, and desktop launches all use this path.
   const [windowOrder, setWindowOrder] = useState<string[]>([])
@@ -87,7 +89,7 @@ export default function Home() {
     const syncTerminalLocation = () => {
       const terminalOpen = new URLSearchParams(window.location.search).get("app") === "startup"
       setOpenWindows((previous) => ({ ...previous, startup: terminalOpen }))
-      setTerminalMinimized(false)
+      setMinimizedWindows((previous) => ({ ...previous, startup: false }))
       setWindowOrder((previous) => {
         const others = previous.filter((name) => name !== "startup")
         return terminalOpen ? [...others, "startup"] : others
@@ -109,10 +111,11 @@ export default function Home() {
   }
 
   const openWindow = (windowName: string) => {
+    setMinimizedWindows((previous) => ({ ...previous, [windowName]: false }))
+    setWindowNotice(null)
     if (windowName === "world") setWorldLaunched(true)
     if (windowName === "startup") {
       setTerminalLaunched(true)
-      setTerminalMinimized(false)
       const url = new URL(window.location.href)
       if (url.searchParams.get("app") !== "startup") {
         url.searchParams.set("app", "startup")
@@ -125,30 +128,63 @@ export default function Home() {
   }
 
   const closeWindow = (windowName: string) => {
+    setClosedWindow(windowName)
     setOpenWindows((prev) => ({ ...prev, [windowName]: false }))
+    setMinimizedWindows((previous) => ({ ...previous, [windowName]: false }))
+    setWindowNotice(null)
     if (windowName === "startup") {
-      setTerminalMinimized(false)
       const url = new URL(window.location.href)
       if (url.searchParams.get("app") === "startup") {
         url.searchParams.delete("app")
         window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
       }
     }
-    // World is minimized rather than destroyed. Keeping its stable slot in the
-    // order preserves the iframe; restoring it simply promotes its layer.
-    if (windowName !== "world") {
-      setWindowOrder((prev) => prev.filter((name) => name !== windowName))
-    }
+    setWindowOrder((prev) => prev.filter((name) => name !== windowName))
+  }
+
+  const minimizeWindow = (windowName: string) => {
+    setMinimizedWindows((previous) => ({ ...previous, [windowName]: true }))
+    setWindowNotice((previous) => ({ name: windowName, sequence: (previous?.sequence ?? 0) + 1 }))
+    setShowStartMenu(false)
   }
 
   let activeWindow: string | null = null
   for (let index = windowOrder.length - 1; index >= 0; index--) {
     const name = windowOrder[index]
-    if (openWindows[name] && !(name === "startup" && terminalMinimized)) {
+    if (openWindows[name] && !minimizedWindows[name]) {
       activeWindow = name
       break
     }
   }
+
+  useEffect(() => {
+    if (!windowNotice) return
+    const frame = requestAnimationFrame(() => {
+      const task = document.querySelector<HTMLButtonElement>(`[data-window-task="${windowNotice.name}"]`)
+      task?.scrollIntoView({ block: "nearest", inline: "nearest" })
+      if (!activeWindow) task?.focus({ preventScroll: true })
+    })
+    const timer = window.setTimeout(() => setWindowNotice(null), 4000)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+    }
+  }, [windowNotice, activeWindow])
+
+  useEffect(() => {
+    if (!closedWindow) return
+    if (activeWindow) {
+      setClosedWindow(null)
+      return
+    }
+    const frame = requestAnimationFrame(() => {
+      const launcher = document.querySelector<HTMLButtonElement>(`[data-desktop-app="${closedWindow}"] button`)
+      const start = document.querySelector<HTMLButtonElement>('[aria-label="Desktop taskbar"] [aria-label="Start menu"]')
+      ;(launcher ?? start)?.focus({ preventScroll: true })
+      setClosedWindow(null)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [closedWindow, activeWindow])
 
   const renderWindow = (windowName: (typeof WINDOW_SLOTS)[number]) => {
     switch (windowName) {
@@ -176,7 +212,7 @@ export default function Home() {
             isOpen={openWindows.world}
             onClose={() => closeWindow("world")}
             onOpenShelf={() => {
-              closeWindow("world")
+              minimizeWindow("world")
               openWindow("games")
             }}
           />
@@ -191,9 +227,9 @@ export default function Home() {
         return (
           <RafOsTerminal
             isOpen={openWindows.startup}
-            isMinimized={terminalMinimized}
+            isMinimized={Boolean(minimizedWindows.startup)}
             onClose={() => closeWindow("startup")}
-            onMinimize={() => setTerminalMinimized(true)}
+            onMinimize={() => minimizeWindow("startup")}
           />
         )
       case "counter":
@@ -259,7 +295,7 @@ export default function Home() {
 
       <div data-desktop-icons="true" className="desktop-shortcuts">
         {DESKTOP_SHORTCUTS.map((shortcut) => (
-          <div key={shortcut.action} className={`desktop-shortcut desktop-shortcut-${shortcut.action}`}>
+          <div key={shortcut.action} data-desktop-app={shortcut.action} className={`desktop-shortcut desktop-shortcut-${shortcut.action}`}>
             <DesktopIcon label={shortcut.label} icon={shortcut.icon} onClick={() => handleIconClick(shortcut.action)} />
           </div>
         ))}
@@ -274,9 +310,10 @@ export default function Home() {
       <Taskbar
         onStartClick={handleStartMenuToggle}
         onWindowClick={openWindow}
+        onTaskClick={(name) => (activeWindow === name ? minimizeWindow(name) : openWindow(name))}
         openWindows={openWindows}
-        persistentWindows={{ world: worldLaunched }}
-        minimizedWindows={{ startup: terminalMinimized }}
+        minimizedWindows={minimizedWindows}
+        minimizedNotice={windowNotice?.name}
         activeWindow={activeWindow}
       />
 
@@ -300,8 +337,11 @@ export default function Home() {
           <WindowActivityProvider
             key={windowName}
             active={!showStartMenu && activeWindow === windowName}
+            minimized={Boolean(minimizedWindows[windowName]) || !openWindows[windowName]}
+            windowId={windowName}
             layer={100 + orderIndex * 2}
             onActivate={() => bringToFront(windowName)}
+            onMinimize={() => minimizeWindow(windowName)}
           >
             {renderWindow(windowName)}
           </WindowActivityProvider>
