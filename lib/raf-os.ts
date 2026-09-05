@@ -1,7 +1,7 @@
 import { z } from "zod/v3"
 
 export const RAF_RUBRIC = "evidence-v1"
-export const RAF_PROMPT = "founder-critic-v2"
+export const RAF_PROMPT = "founder-critic-v3"
 export const GPT_BACKUP = "https://chatgpt.com/g/g-68a497212bfc81918b450e9ca7ee67ba-raf-os-terminal"
 export const SCORE_DIMENSIONS = [
   "Problem",
@@ -27,7 +27,13 @@ const status = z.enum(["unknown", "founder_claim", "reported_evidence", "supplie
 const passage = z
   .object({
     statement: sentence,
-    quote: z.string().trim().max(600),
+    quote: z
+      .string()
+      .trim()
+      .max(600)
+      .describe(
+        "Copy a short exact substring from ONE cited paragraph or PDF page. Do not paraphrase, join sentences from different paragraphs, insert ellipses, or change punctuation. For missing evidence use an empty string.",
+      ),
     refs,
     status,
     evidenceType: z.enum([
@@ -44,7 +50,15 @@ const passage = z
 const score = z
   .object({
     dimension: z.enum(SCORE_DIMENSIONS),
-    score: z.number().int().min(0).max(5).nullable(),
+    score: z
+      .number()
+      .int()
+      .min(0)
+      .max(5)
+      .nullable()
+      .describe(
+        "null = unknown or missing information. 0 = observed contrary result, never missing proof. 1 = assertion, 2 = preliminary observations, 3 = repeated observations, 4 = supplied records, 5 = unusually complete support.",
+      ),
     reason: sentence,
     refs,
   })

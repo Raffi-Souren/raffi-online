@@ -5,6 +5,63 @@ import { RAF_LIMITS, RafHttpError, reviewValidationFailure, type buildModelReque
 export const DEFAULT_GEMINI_MODEL = "gemini-3.7-flash"
 const pdfPrefix = "data:application/pdf;base64,"
 const modelName = /^gemini-[a-z0-9][a-z0-9.-]{0,90}$/i
+const schemaKeywords = new Set([
+  "$id",
+  "$defs",
+  "$ref",
+  "$anchor",
+  "type",
+  "format",
+  "title",
+  "description",
+  "enum",
+  "items",
+  "prefixItems",
+  "minItems",
+  "maxItems",
+  "minimum",
+  "maximum",
+  "anyOf",
+  "oneOf",
+  "properties",
+  "additionalProperties",
+  "required",
+])
+
+/** Google's generation schema is a subset; the complete contract still validates every returned review locally. */
+export function projectGeminiSchema(schema: unknown): unknown {
+  if (schema === null || typeof schema !== "object" || Array.isArray(schema)) return structuredClone(schema)
+  const projected: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(schema)) {
+    if (!schemaKeywords.has(key)) continue
+    if (
+      (key === "properties" || key === "$defs") &&
+      value !== null &&
+      typeof value === "object" &&
+      !Array.isArray(value)
+    ) {
+      projected[key] = Object.fromEntries(
+        Object.entries(value).map(([name, child]) => [name, projectGeminiSchema(child)]),
+      )
+    } else if (key === "items" || key === "additionalProperties") {
+      projected[key] = projectGeminiSchema(value)
+    } else if ((key === "anyOf" || key === "oneOf" || key === "prefixItems") && Array.isArray(value)) {
+      projected[key] = value.map(projectGeminiSchema)
+    } else {
+      projected[key] = structuredClone(value)
+    }
+  }
+  if (
+    projected.properties !== null &&
+    typeof projected.properties === "object" &&
+    !Array.isArray(projected.properties)
+  ) {
+    projected.propertyOrdering = Object.keys(projected.properties)
+  } else if (projected.type === "object") {
+    projected.propertyOrdering = []
+  }
+  return projected
+}
 
 /** The model selects the URL; body is the exact JSON payload committed by the run audit. */
 export function buildGeminiRequest(request: ReturnType<typeof buildModelRequest>, model = DEFAULT_GEMINI_MODEL) {
@@ -27,7 +84,7 @@ export function buildGeminiRequest(request: ReturnType<typeof buildModelRequest>
         maxOutputTokens: Math.min(request.max_output_tokens, 6500),
         thinkingConfig: { thinkingLevel: "LOW" as const, includeThoughts: false },
         responseMimeType: "application/json",
-        responseJsonSchema: request.text.format.schema,
+        responseJsonSchema: projectGeminiSchema(request.text.format.schema),
       },
     },
   }

@@ -3,7 +3,13 @@ import test from "node:test"
 import { PDFDocument } from "pdf-lib"
 import { sampleRunBefore, sampleRunEvidence, sampleSubmissionBefore } from "./raf-os-fixtures"
 import { buildModelRequest, prepareSubmission, RafHttpError } from "./raf-os-server"
-import { buildGeminiRequest, DEFAULT_GEMINI_MODEL, parseGeminiResponse, requestGemini } from "./raf-os-gemini"
+import {
+  buildGeminiRequest,
+  DEFAULT_GEMINI_MODEL,
+  parseGeminiResponse,
+  projectGeminiSchema,
+  requestGemini,
+} from "./raf-os-gemini"
 
 const fakeKey = "fictional-gemini-key-not-a-credential"
 const modelVersion = "gemini-3.7-flash-fixture-version"
@@ -36,7 +42,7 @@ test("Gemini converts the same source-bearing input and schema into native text 
   assert.deepEqual(converted.body.contents[0].parts.at(-1), { inlineData: { mimeType: "application/pdf", data } })
   assert.match(JSON.stringify(converted.body.contents), /v2:deck:p1/)
   assert.equal(converted.body.generationConfig.responseMimeType, "application/json")
-  assert.deepEqual(converted.body.generationConfig.responseJsonSchema, openAI.text.format.schema)
+  assert.deepEqual(converted.body.generationConfig.responseJsonSchema, projectGeminiSchema(openAI.text.format.schema))
   assert.deepEqual(converted.body.generationConfig.thinkingConfig, { thinkingLevel: "LOW", includeThoughts: false })
   assert.equal(converted.body.generationConfig.maxOutputTokens, 6500)
   assert.equal("store" in converted.body, false)
@@ -45,6 +51,91 @@ test("Gemini converts the same source-bearing input and schema into native text 
   assert.equal("temperature" in converted.body.generationConfig, false)
   assert.equal(JSON.stringify(converted).includes(fakeKey), false)
   assert.throws(() => buildGeminiRequest(openAI, "../other-host?key=private"), errorStatus(503))
+})
+
+test("Gemini schema projection keeps structure and nullability while removing unsupported keywords at every depth", () => {
+  const original = {
+    $schema: "https://json-schema.org/draft/2019-09/schema#",
+    type: "object",
+    additionalProperties: false,
+    required: ["labels", "score"],
+    properties: {
+      labels: {
+        type: "array",
+        minItems: 1,
+        maxItems: 3,
+        uniqueItems: true,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["maxLength"],
+          properties: {
+            maxLength: {
+              type: "string",
+              title: "Verbatim passage",
+              description: "Use an exact source substring without adding ellipses.",
+              minLength: 1,
+              maxLength: 40,
+              pattern: "^a",
+              enum: ["alpha", "beta"],
+              madeUp: true,
+            },
+          },
+        },
+      },
+      score: { anyOf: [{ type: "integer", minimum: 0, maximum: 5, multipleOf: 1 }, { type: "null" }] },
+    },
+    propertyOrdering: ["score", "labels"],
+    madeUp: "remove me",
+  }
+  const snapshot = structuredClone(original)
+  const expected = {
+    type: "object",
+    additionalProperties: false,
+    required: ["labels", "score"],
+    properties: {
+      labels: {
+        type: "array",
+        minItems: 1,
+        maxItems: 3,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["maxLength"],
+          properties: {
+            maxLength: {
+              type: "string",
+              title: "Verbatim passage",
+              description: "Use an exact source substring without adding ellipses.",
+              enum: ["alpha", "beta"],
+            },
+          },
+          propertyOrdering: ["maxLength"],
+        },
+      },
+      score: { anyOf: [{ type: "integer", minimum: 0, maximum: 5 }, { type: "null" }] },
+    },
+    propertyOrdering: ["labels", "score"],
+  }
+  assert.deepEqual(projectGeminiSchema(original), expected)
+  assert.deepEqual(original, snapshot)
+  assert.deepEqual(projectGeminiSchema({ type: "object", additionalProperties: true }), {
+    type: "object",
+    additionalProperties: true,
+    propertyOrdering: [],
+  })
+})
+
+test("building a Gemini request leaves the complete OpenAI schema untouched and length constraints still reject locally", async () => {
+  const openAI = await modelRequest()
+  const before = structuredClone(openAI.text.format.schema)
+  const projected = buildGeminiRequest(openAI).body.generationConfig.responseJsonSchema
+  assert.deepEqual(openAI.text.format.schema, before)
+  assert.match(JSON.stringify(before), /"maxLength":1200/)
+  assert.doesNotMatch(JSON.stringify(projected), /"(?:minLength|maxLength|\$schema)":/)
+  const overlong = structuredClone(sampleRunBefore.result)
+  overlong.review.snapshot = "x".repeat(1201)
+  assert.throws(() => parseGeminiResponse(responseEnvelope(overlong), sampleRunBefore.sources, false), errorStatus(502))
 })
 
 test("Gemini keeps the actual model version and runs the same text and comparison contracts", () => {
