@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 221 39% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 221 39% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 221 39% 11%;
+    --primary: 221 72% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 28% 95%;
+    --secondary-foreground: 218 32% 24%;
+    --muted: 214 28% 95%;
+    --muted-foreground: 215 15% 35%;
+    --accent: 215 65% 94%;
+    --accent-foreground: 221 65% 32%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 216 26% 79%;
+    --input: 216 26% 69%;
+    --ring: 221 72% 50%;
+    --radius: 0.5rem;
+  }
+}
+
 /* Custom CSS for Windows XP aesthetic and Mario question block */
 
 /* A single shortcut tree serves both layouts. Keeping one DOM copy prevents

@@ -100,10 +100,10 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             maxWidth: "28rem",
             maxHeight: "90vh",
             overflow: "auto",
-            borderRadius: "0.5rem",
-            border: "4px solid #FBBF24",
+            borderRadius: "10px",
+            border: "1px solid #c59621",
             backgroundColor: "white",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            boxShadow: "0 24px 72px rgba(12, 32, 64, 0.38)",
             pointerEvents: "auto",
             color: "#111827",
           }}
@@ -115,9 +115,12 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               alignItems: "center",
               justifyContent: "space-between",
               background: "linear-gradient(to right, #FBBF24, #F59E0B)",
-              padding: "0.75rem 1rem",
-              borderTopLeftRadius: "0.375rem",
-              borderTopRightRadius: "0.375rem",
+              padding: "4px 12px",
+              minHeight: "52px",
+              borderBottom: "1px solid #c59621",
+              boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
+              borderTopLeftRadius: "9px",
+              borderTopRightRadius: "9px",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -129,6 +132,7 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             <button
               aria-label="Close"
               onClick={handleClose}
+              className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#795800]"
               style={{
                 borderRadius: "0.25rem",
                 padding: "0.5rem",

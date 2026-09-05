@@ -312,25 +312,25 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
   }
 
   const tabButtonStyle = (isActive: boolean) => ({
-    flex: 1,
-    padding: "0.5rem 1rem",
+    flex: "1 1 124px",
+    minHeight: 38,
+    padding: "0.5rem 0.75rem",
     fontSize: "0.875rem",
     fontWeight: "500",
-    borderBottom: isActive ? "2px solid #3b82f6" : "2px solid transparent",
-    color: isActive ? "#3b82f6" : "#6b7280",
+    borderBottom: isActive ? "2px solid #245edb" : "2px solid transparent",
+    color: isActive ? "#245edb" : "#6b7280",
     backgroundColor: isActive ? "#eff6ff" : "transparent",
     transition: "all 0.2s",
     cursor: "pointer",
     borderTop: "none",
     borderLeft: "none",
     borderRight: "none",
-    outline: "none",
   })
 
   const cardStyle = {
     backgroundColor: "white",
-    border: "1px solid #e5e7eb",
-    borderRadius: "0.5rem",
+    border: "1px solid #b9c7d9",
+    borderRadius: 6,
     padding: "1rem",
   }
 
@@ -357,23 +357,43 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
         </div>
 
         {/* Tab Buttons */}
-        <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb" }}>
-          <button onClick={() => setActiveTab("articles")} style={tabButtonStyle(activeTab === "articles")}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid #b9c7d9" }}>
+          <button
+            aria-pressed={activeTab === "articles"}
+            className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+            onClick={() => setActiveTab("articles")}
+            style={tabButtonStyle(activeTab === "articles")}
+          >
             📝 Articles
           </button>
-          <button onClick={() => setActiveTab("research")} style={tabButtonStyle(activeTab === "research")}>
+          <button
+            aria-pressed={activeTab === "research"}
+            className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+            onClick={() => setActiveTab("research")}
+            style={tabButtonStyle(activeTab === "research")}
+          >
             🎓 Papers
           </button>
-          <button onClick={() => setActiveTab("events")} style={tabButtonStyle(activeTab === "events")}>
+          <button
+            aria-pressed={activeTab === "events"}
+            className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+            onClick={() => setActiveTab("events")}
+            style={tabButtonStyle(activeTab === "events")}
+          >
             📅 Events
           </button>
-          <button onClick={() => setActiveTab("podcasts")} style={tabButtonStyle(activeTab === "podcasts")}>
+          <button
+            aria-pressed={activeTab === "podcasts"}
+            className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+            onClick={() => setActiveTab("podcasts")}
+            style={tabButtonStyle(activeTab === "podcasts")}
+          >
             🎙️ Podcasts
           </button>
         </div>
 
         {/* Tab Content */}
-        <div style={{ backgroundColor: "#f9fafb", borderRadius: "0.5rem", padding: "1.5rem" }}>
+        <div style={{ backgroundColor: "#f9fafb", borderRadius: 6, padding: "1.5rem" }}>
           {activeTab === "articles" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {/* Substack Section */}

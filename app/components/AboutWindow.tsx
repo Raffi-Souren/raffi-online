@@ -34,7 +34,8 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
 
         {/* Bio Section */}
         <div
-          className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
+          className="bg-white p-6 shadow-sm"
+          style={{ border: "1px solid #b9c7d9", borderRadius: 6 }}
         >
           <h2
             className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block"
@@ -50,7 +51,8 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
 
         {/* Contact Section */}
         <div
-          className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
+          className="bg-white p-6 shadow-sm"
+          style={{ border: "1px solid #b9c7d9", borderRadius: 6 }}
         >
           <h2
             className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block"
@@ -60,7 +62,10 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
           <div className="space-y-2">
             <p className="text-gray-700">
               <span className="font-semibold">Email:</span>{" "}
-              <a href="mailto:raffi@notgoodcompany.com" className="text-blue-600 hover:underline">
+              <a
+                href="mailto:raffi@notgoodcompany.com"
+                className="text-blue-600 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+              >
                 raffi@notgoodcompany.com
               </a>
             </p>
@@ -71,7 +76,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
         </div>
 
         {/* AI Summit Keynote Embed */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <div className="bg-white p-6 shadow-sm" style={{ border: "1px solid #b9c7d9", borderRadius: 6 }}>
           <h3
             className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block"
           >
@@ -96,7 +101,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
         </div>
 
         {/* BADCO F/W Capsule Embed */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <div className="bg-white p-6 shadow-sm" style={{ border: "1px solid #b9c7d9", borderRadius: 6 }}>
           <h3
             className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block"
           >

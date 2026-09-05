@@ -132,8 +132,7 @@ export default function WindowShell({
   const shellLayer = layer ?? activity.layer
   const activate = onActivate ?? activity.onActivate
   const edgeInset = compact ? "0px" : "8px"
-  const titlePadding = compact ? "0.25rem 0.5rem" : "0.75rem 1rem"
-  const closeSize = compact ? "34px" : "44px"
+  const controlSize = compact ? 34 : 44
   const windowRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll while window is open
@@ -226,6 +225,7 @@ export default function WindowShell({
         ]
       : []),
   ]
+  const titleSideInset = Math.max(44, windowActions.length * 30 + 4)
 
   return (
     <>
@@ -275,9 +275,9 @@ export default function WindowShell({
           style={{
             backgroundColor: "#ffffff",
             color: "#111827",
-            borderRadius: terminalChrome ? "10px" : "0.5rem",
-            border: terminalChrome ? "1px solid #34433a" : undefined,
-            boxShadow: terminalChrome ? "0 24px 80px rgba(0, 0, 0, 0.55)" : "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            borderRadius: "10px",
+            border: terminalChrome ? "1px solid #34433a" : "1px solid #6495da",
+            boxShadow: terminalChrome ? "0 24px 80px rgba(0, 0, 0, 0.55)" : "0 24px 72px rgba(12, 32, 64, 0.38)",
             display: "flex",
             flexDirection: "column",
             width: "100%",
@@ -294,16 +294,17 @@ export default function WindowShell({
           {/* App chrome stays reachable while the content scrolls. */}
           <div
             style={{
-              background: terminalChrome ? "#151b18" : "linear-gradient(to right, #2563eb, #1d4ed8)",
+              background: terminalChrome ? "#151b18" : "linear-gradient(180deg, #3b82f6 0%, #2464dd 45%, #1c55c5 100%)",
               color: terminalChrome ? "#a2b5a7" : "white",
-              padding: terminalChrome ? "0 10px" : titlePadding,
-              minHeight: terminalChrome ? "42px" : undefined,
-              borderBottom: terminalChrome ? "1px solid #34433a" : undefined,
+              padding: terminalChrome ? "0 10px" : "0 12px",
+              minHeight: terminalChrome || compact ? "42px" : "52px",
+              borderBottom: terminalChrome ? "1px solid #34433a" : "1px solid #17449f",
+              boxShadow: terminalChrome ? undefined : "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
               display: "flex",
               alignItems: "center",
               justifyContent: terminalChrome ? "center" : "space-between",
-              borderTopLeftRadius: "0.5rem",
-              borderTopRightRadius: "0.5rem",
+              borderTopLeftRadius: "9px",
+              borderTopRightRadius: "9px",
               flexShrink: 0,
               position: "sticky",
               top: 0,
@@ -314,12 +315,12 @@ export default function WindowShell({
               style={{
                 fontWeight: "bold",
                 fontSize: terminalChrome ? "12px" : "1rem",
-                fontFamily: terminalChrome ? '"SFMono-Regular", Consolas, monospace' : undefined,
-                textAlign: terminalChrome ? "center" : undefined,
+                fontFamily: terminalChrome ? '"SFMono-Regular", Consolas, monospace' : "Tahoma, Verdana, sans-serif",
+                textAlign: terminalChrome ? "center" : "left",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                padding: terminalChrome ? "0 94px" : "0 0.5rem 0 0",
+                padding: terminalChrome ? `0 ${titleSideInset}px` : "0 8px 0 0",
                 width: terminalChrome ? "100%" : undefined,
                 margin: 0,
               }}
@@ -329,35 +330,45 @@ export default function WindowShell({
             <div
               style={{
                 display: "flex",
-                gap: terminalChrome ? "0px" : "4px",
+                gap: terminalChrome ? 0 : 4,
                 flexShrink: 0,
                 position: terminalChrome ? "absolute" : undefined,
                 left: terminalChrome ? "6px" : undefined,
               }}
             >
-              {windowActions.map((action) =>
-                terminalChrome ? (
-                  <button
-                    key={action.key}
-                    type="button"
-                    onClick={action.action}
-                    aria-label={action.label}
-                    title={action.label}
-                    className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#a1e7a8]"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 30,
-                      height: 34,
-                      padding: 0,
-                      border: 0,
-                      borderRadius: 5,
-                      background: "transparent",
-                      cursor: "pointer",
-                      WebkitTapHighlightColor: "transparent",
-                    }}
-                  >
+              {windowActions.map((action) => (
+                <button
+                  key={action.key}
+                  type="button"
+                  onClick={action.action}
+                  aria-label={action.label}
+                  title={action.label}
+                  className={`group focus-visible:outline focus-visible:outline-2 ${
+                    terminalChrome
+                      ? "focus-visible:outline-[#a1e7a8]"
+                      : "focus-visible:outline-white hover:brightness-110 active:brightness-95"
+                  }`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: terminalChrome ? 30 : controlSize,
+                    height: terminalChrome ? 34 : controlSize,
+                    padding: 0,
+                    border: terminalChrome ? 0 : "1px solid rgba(255, 255, 255, 0.5)",
+                    borderRadius: terminalChrome ? 5 : 7,
+                    color: "white",
+                    background: terminalChrome
+                      ? "transparent"
+                      : action.minimize
+                        ? "rgba(255, 255, 255, 0.16)"
+                        : "linear-gradient(180deg, #e87570 0%, #ca4844 100%)",
+                    boxShadow: terminalChrome ? undefined : "inset 0 1px 0 rgba(255, 255, 255, 0.22)",
+                    cursor: "pointer",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  {terminalChrome ? (
                     <span
                       style={{
                         width: 14,
@@ -367,7 +378,7 @@ export default function WindowShell({
                         alignItems: "center",
                         justifyContent: "center",
                         color: "#142017",
-                        background: action.key === "dismiss" ? "#ff6058" : action.minimize ? "#ffbd2e" : "#28c840",
+                        background: action.key === "maximize" ? "#28c840" : action.minimize ? "#ffbd2e" : "#ff6058",
                         border: "1px solid rgba(0, 0, 0, 0.15)",
                       }}
                     >
@@ -388,46 +399,13 @@ export default function WindowShell({
                         )}
                       </span>
                     </span>
-                  </button>
-                ) : (
-                  <button
-                    key={action.key}
-                    type="button"
-                    onClick={action.action}
-                    style={{
-                      padding: 0,
-                      borderRadius: "0.25rem",
-                      transition: "background-color 0.2s",
-                      flexShrink: 0,
-                      background: "rgba(255, 255, 255, 0.15)",
-                      border: "1px solid rgba(255, 255, 255, 0.3)",
-                      cursor: "pointer",
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      position: "relative",
-                      zIndex: shellLayer + 2,
-                      minWidth: closeSize,
-                      minHeight: closeSize,
-                      width: closeSize,
-                      height: closeSize,
-                      boxSizing: "border-box",
-                      WebkitTapHighlightColor: "transparent",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.3)"
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)"
-                    }}
-                    aria-label={action.label}
-                    title={action.label}
-                  >
-                    {action.minimize ? <Minus size={24} strokeWidth={2.5} /> : <X size={24} strokeWidth={2.5} />}
-                  </button>
-                ),
-              )}
+                  ) : action.minimize ? (
+                    <Minus size={22} strokeWidth={2.5} />
+                  ) : (
+                    <X size={22} strokeWidth={2.5} />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 
