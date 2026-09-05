@@ -36,6 +36,7 @@ export class RafHttpError extends Error {
     message: string,
     readonly status: number,
     readonly retryAfter?: number,
+    readonly diagnostic?: { providerStatus: number; providerCode: string; providerParameter: string },
   ) {
     super(message)
     this.name = "RafHttpError"
@@ -330,9 +331,30 @@ export async function requestModel(
     redirect: "error",
   })
   if (!response.ok) {
-    await response.body?.cancel()
+    let providerCode = "unknown"
+    let providerParameter = "unknown"
+    try {
+      const failure = await readJsonStream(response.body, 16_000, signal)
+      const parsed = z
+        .object({
+          error: z.object({ code: z.string().nullable().optional(), param: z.string().nullable().optional() }),
+        })
+        .safeParse(failure)
+      if (parsed.success) {
+        const safe = (value: string | null | undefined) =>
+          value && /^[A-Za-z0-9_.\[\]-]{1,100}$/.test(value) ? value : "unknown"
+        providerCode = safe(parsed.data.error.code)
+        providerParameter = safe(parsed.data.error.param)
+      }
+    } catch {
+      /* Keep upstream response bodies, credentials and pitch content out of diagnostics. */
+    }
     if (response.status === 429) throw new RafHttpError("The model service is busy. Please try again shortly.", 429, 60)
-    throw new RafHttpError("The model service is temporarily unavailable. Please try again later.", 503)
+    throw new RafHttpError("The model service is temporarily unavailable. Please try again later.", 503, undefined, {
+      providerStatus: response.status,
+      providerCode,
+      providerParameter,
+    })
   }
   let value: unknown
   try {
