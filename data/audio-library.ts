@@ -220,9 +220,3 @@ export const BADCOMPANY_MIXES: Track[] = [
     url: "https://api.soundcloud.com/tracks/459410418",
   },
 ]
-
-export const FEATURED_BADCOMPANY_MIX = {
-  track: BADCOMPANY_MIXES.find((track) => track.id === "bc-3")!,
-  artwork: "https://i1.sndcdn.com/artworks-dbe3SpVgJXOyQmRQ-k8ppoQ-t500x500.jpg",
-  note: "Andromeda by sweeterman, from the BADCOMPANY SoundCloud archive.",
-} as const
