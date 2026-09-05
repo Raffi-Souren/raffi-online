@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import { PDFDocument } from "pdf-lib"
 import { sampleRunBefore, sampleRunEvidence, sampleSubmissionBefore } from "./raf-os-fixtures"
-import { buildModelRequest, prepareSubmission, RafHttpError } from "./raf-os-server"
+import { buildModelRequest, prepareSubmission, RafHttpError, requestModel } from "./raf-os-server"
 import {
   buildGeminiRequest,
   checkGeminiModel,
@@ -98,6 +98,15 @@ test(
             JSON.stringify({
               error: { status: "<private>" + fakeKey, message: fakeKey, details: [{ reason: "PRIVATE\n" + fakeKey }] },
             }),
+            { status: 400 },
+          ),
+        status: 400,
+        diagnostic: "unknown",
+      },
+      {
+        response: () =>
+          new Response(
+            JSON.stringify({ error: { status: "PRIVATEKEY", details: [{ reason: "PRIVATECUSTOMERSECRET" }] } }),
             { status: 400 },
           ),
         status: 400,
@@ -219,7 +228,7 @@ test("Gemini converts the same source-bearing input and schema into native text 
   assert.deepEqual(converted.body.generationConfig.responseJsonSchema, projectGeminiSchema(openAI.text.format.schema))
   assert.deepEqual(converted.body.generationConfig.thinkingConfig, { thinkingLevel: "LOW", includeThoughts: false })
   assert.equal(converted.body.generationConfig.maxOutputTokens, 6500)
-  assert.equal("store" in converted.body, false)
+  assert.equal(converted.body.store, false)
   assert.equal("tools" in converted.body, false)
   assert.equal("candidateCount" in converted.body.generationConfig, false)
   assert.equal("temperature" in converted.body.generationConfig, false)
@@ -451,6 +460,83 @@ test(
 )
 
 test(
+  "both provider transports disable storage, keep PDFs inline, and discard private error bodies",
+  { concurrency: false },
+  async () => {
+    const originalFetch = globalThis.fetch
+    const pdf = await PDFDocument.create()
+    pdf.addPage([120, 120])
+    const data = Buffer.from(await pdf.save()).toString("base64")
+    const privatePitch = "FICTIONAL_PRIVATE_PITCH_2387"
+    const submission = {
+      text: privatePitch,
+      deck: { name: "fictional.pdf", data: "data:application/pdf;base64," + data },
+    }
+    const prepared = await prepareSubmission(submission, "v2")
+    const openAI = buildModelRequest(
+      { current: submission, previous: null, action: "analyze", challenge: "" },
+      [prepared],
+    )
+    const gemini = buildGeminiRequest(openAI)
+    const visited: { url: string; options: RequestInit | undefined }[] = []
+    globalThis.fetch = async (url, options) => {
+      visited.push({ url: String(url), options })
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: "invalid_value",
+            status: "INVALID_ARGUMENT",
+            message: privatePitch + " " + submission.deck.data + " " + fakeKey,
+            metadata: { pitch: privatePitch, pdf: data, key: fakeKey },
+          },
+        }),
+        { status: 400 },
+      )
+    }
+    try {
+      for (const send of [
+        () => requestModel(openAI, fakeKey, prepared.sources, false, new AbortController().signal),
+        () => requestGemini(gemini, fakeKey, prepared.sources, false, new AbortController().signal),
+      ]) {
+        await assert.rejects(send, (error: unknown) => {
+          assert.ok(error instanceof RafHttpError)
+          assert.equal(error.status, 503)
+          const exposed = error.message + JSON.stringify(error)
+          for (const privateValue of [privatePitch, data, fakeKey]) assert.equal(exposed.includes(privateValue), false)
+          return true
+        })
+      }
+      assert.deepEqual(visited.map(({ url }) => url), [
+        "https://api.openai.com/v1/responses",
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent",
+      ])
+      for (const { url, options } of visited) {
+        const payload = JSON.parse(String(options?.body))
+        assert.equal(payload.store, false, url)
+        assert.equal(options?.method, "POST")
+        assert.equal(options?.cache, "no-store")
+        assert.equal(options?.redirect, "error")
+        if (url === "https://api.openai.com/v1/responses") {
+          assert.deepEqual(payload.input[0].content.at(-1), {
+            type: "input_file",
+            filename: "v2.pdf",
+            file_data: submission.deck.data,
+            detail: "high",
+          })
+          assert.ok(payload.input[0].content.every((part: object) => !("file_id" in part) && !("file_url" in part)))
+        } else {
+          assert.deepEqual(payload.contents[0].parts.at(-1), { inlineData: { mimeType: "application/pdf", data } })
+          assert.ok(payload.contents[0].parts.every((part: object) => !("fileData" in part)))
+          assert.equal("cachedContent" in payload, false)
+        }
+      }
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  },
+)
+
+test(
   "Gemini provider failures disclose only bounded diagnostic tokens and never error messages",
   { concurrency: false },
   async () => {
@@ -526,6 +612,23 @@ test(
         code: "UNAUTHENTICATED",
         parameter: "unknown",
       },
+      {
+        status: 400,
+        body: { error: { status: "INVALID_ARGUMENT", details: [{ fieldViolations: [{ field: "contents[0].parts[6].inlineData.data" }] }] } },
+        code: "INVALID_ARGUMENT",
+        parameter: "contents[0].parts[6].inlineData.data",
+      },
+      ...[
+        { status: fakeKey, details: [{ reason: "PRIVATECUSTOMERSECRET" }] },
+        { status: "PRIVATEKEY", details: [{ fieldViolations: [{ field: fakeKey }] }] },
+        { status: "INVALID_ARGUMENT", details: [{ fieldViolations: [{ field: "generationConfig." + fakeKey }] }] },
+        { status: "INVALID_ARGUMENT", details: [{ fieldViolations: [{ field: "contents[9007199254740996].parts[0].text" }] }] },
+      ].map((error) => ({
+        status: 400,
+        body: { error },
+        code: error.status === "INVALID_ARGUMENT" ? "INVALID_ARGUMENT" : "unknown",
+        parameter: "unknown",
+      })),
       {
         status: 400,
         body: {
@@ -656,9 +759,9 @@ test(
         error: {
           status: "INVALID_ARGUMENT",
           message: "schema invalid thinking " + fakeKey,
-          details: [{ fieldViolations: [{ field: "known.field" }] }],
+          details: [{ fieldViolations: [{ field: "generationConfig.thinkingConfig.thinkingLevel" }] }],
         },
-        exact: "known.field",
+        exact: "generationConfig.thinkingConfig.thinkingLevel",
       },
       {
         error: {

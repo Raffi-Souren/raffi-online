@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
+import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import test from "node:test"
+import { promisify } from "node:util"
 import { PDFDocument } from "pdf-lib"
 import type { Critique, RunRequest, Submission } from "./raf-os"
 import { validateCritique } from "./raf-os"
@@ -169,6 +171,48 @@ test("PDF preparation accepts 24 real pages and exposes page citations as text-u
   assert.equal(prior.content.length, 1)
   await assert.rejects(prepareSubmission(await pdfSubmission(25), "v2"), httpError(400))
   await assert.rejects(prepareSubmission(await pdfSubmission(0), "v2"), httpError(400))
+})
+
+test("concurrent PDF parsing keeps submitted numeric tokens out of logs without suppressing other requests", async () => {
+  // This valid PDF triggers pdf-lib's warning with the original numeric token,
+  // including when its objects are compressed. Capture a separate process so a
+  // regression cannot print submission content in the test runner's own logs.
+  const script = `
+    const { PDFDocument, PDFName, PDFNumber } = require("pdf-lib");
+    const { prepareSubmission } = require(process.argv[1]);
+    (async () => {
+      const pdf = await PDFDocument.create();
+      pdf.addPage([120, 120]);
+      pdf.catalog.set(PDFName.of("FixtureIdentifier"), PDFNumber.of(9007199254740996));
+      const data = "data:application/pdf;base64," + Buffer.from(await pdf.save()).toString("base64");
+      const submission = { text: "", deck: { name: "fictional.pdf", data } };
+      const first = prepareSubmission(submission, "v1");
+      const second = prepareSubmission(submission, "v2");
+      console.warn("PUBLIC_CONCURRENT_LOG");
+      const prepared = await Promise.all([first, second]);
+      process.stdout.write(JSON.stringify(prepared.map(({ sources }) => sources.length)));
+    })().catch(() => { process.exitCode = 1; });
+  `
+  const { stdout, stderr } = await promisify(execFile)(process.execPath, ["-e", script, require.resolve("./raf-os-server")], {
+    timeout: 15_000,
+    maxBuffer: 64_000,
+  })
+  assert.equal(stdout, "[1,1]")
+  assert.equal(stderr.includes("9007199254740996"), false, "PDF numeric content reached the server log")
+  assert.equal(stderr, "PUBLIC_CONCURRENT_LOG\n")
+})
+
+test("PDF preparation respects cancellation before and during isolated validation", async () => {
+  const submission = await pdfSubmission(24)
+  const cancelled = new AbortController()
+  cancelled.abort()
+  await assert.rejects(prepareSubmission(submission, "v2", cancelled.signal), httpError(400))
+  const controller = new AbortController()
+  const pending = prepareSubmission(submission, "v2", controller.signal)
+  controller.abort()
+  await assert.rejects(pending, httpError(400))
+  // A later request still validates normally after the cancelled worker exits.
+  assert.equal((await prepareSubmission(submission, "v2")).sources.filter((source) => source.text === null).length, 24)
 })
 
 test("PDF preparation rejects invalid bytes, noncanonical base64, wrong media type, and oversized input", async () => {
@@ -501,6 +545,20 @@ test(
         response: failureBody("a".repeat(101), "b".repeat(101)),
         diagnostic: { providerStatus: 400, providerCode: "unknown", providerParameter: "unknown" },
       },
+      ...[
+        [fakeKey, "model", "unknown", "model"],
+        ["PRIVATECUSTOMERSECRET", "text.format.schema", "unknown", "text.format.schema"],
+        ["invalid_value", fakeKey, "invalid_value", "unknown"],
+        ["invalid_value", "input[0].content[0]." + fakeKey, "invalid_value", "unknown"],
+        ["invalid_value", "text.format.schema.properties." + fakeKey, "invalid_value", "unknown"],
+        ["invalid_value", "input[9007199254740996].content[0].text", "invalid_value", "unknown"],
+        ["invalid_value", "input[0].content[6].file_data", "invalid_value", "input[0].content[6].file_data"],
+      ].map(([code, parameter, providerCode, providerParameter]) => ({
+        name: "private or unknown diagnostic identifiers are not reflected",
+        status: 400,
+        response: failureBody(code, parameter),
+        diagnostic: { providerStatus: 400, providerCode, providerParameter },
+      })),
       {
         name: "wrong provider error shape",
         status: 502,

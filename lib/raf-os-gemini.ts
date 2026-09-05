@@ -82,6 +82,8 @@ export function buildGeminiRequest(request: ReturnType<typeof buildModelRequest>
   return {
     model,
     body: {
+      // Override project logging so submissions and reviews are not saved to AI Studio logs.
+      store: false,
       systemInstruction: { parts: [{ text: request.instructions }] },
       contents: request.input.map((message) => ({
         role: "user" as const,
@@ -228,8 +230,50 @@ const failureSchema = z.object({
       .optional(),
   }),
 })
-const safeDiagnostic = (value: string | undefined) =>
-  value && /^[A-Za-z0-9_.\[\]-]{1,100}$/.test(value) ? value : "unknown"
+const geminiFailureCodes = new Set([
+  "CANCELLED",
+  "UNKNOWN",
+  "INVALID_ARGUMENT",
+  "DEADLINE_EXCEEDED",
+  "NOT_FOUND",
+  "ALREADY_EXISTS",
+  "PERMISSION_DENIED",
+  "RESOURCE_EXHAUSTED",
+  "FAILED_PRECONDITION",
+  "ABORTED",
+  "OUT_OF_RANGE",
+  "UNIMPLEMENTED",
+  "INTERNAL",
+  "UNAVAILABLE",
+  "DATA_LOSS",
+  "UNAUTHENTICATED",
+  "API_KEY_INVALID",
+  "API_KEY_EXPIRED",
+  "API_KEY_SERVICE_BLOCKED",
+  "SERVICE_DISABLED",
+  "BILLING_DISABLED",
+])
+const knownFailureCode = (value: string | undefined): value is string => Boolean(value && geminiFailureCodes.has(value))
+const geminiParameters = new Set([
+  "model",
+  "store",
+  "contents",
+  "systemInstruction",
+  "generationConfig",
+  "generationConfig.maxOutputTokens",
+  "generationConfig.thinkingConfig",
+  "generationConfig.thinkingConfig.thinkingLevel",
+  "generationConfig.thinkingConfig.includeThoughts",
+  "generationConfig.responseMimeType",
+  "generationConfig.responseJsonSchema",
+])
+function geminiParameter(value: string | undefined) {
+  return value && (
+    geminiParameters.has(value) ||
+    /^systemInstruction\.parts(?:\[0\](?:\.text)?)?$/.test(value) ||
+    /^contents\[0\](?:\.role|\.parts(?:\[[0-6]\](?:\.text|\.inlineData(?:\.(?:mimeType|data))?)?)?)?$/.test(value)
+  ) ? value : "unknown"
+}
 
 /** Match fixed provider phrases; no portion of its potentially sensitive message is returned. */
 function messageDiagnostic(message: string | undefined) {
@@ -374,11 +418,9 @@ export async function checkGeminiModel(model: string, apiKey: string, signal: Ab
       if (failure.success) {
         const reasons = failure.data.error.details?.map((detail) => detail.reason) ?? []
         diagnostic =
-          reasons.find(
-            (reason): reason is string => typeof reason === "string" && /^[A-Z][A-Z_]{0,99}$/.test(reason),
-          ) ??
+          reasons.find(knownFailureCode) ??
           messageDiagnostic(failure.data.error.message) ??
-          (/^[A-Z][A-Z_]{0,99}$/.test(failure.data.error.status ?? "") ? failure.data.error.status! : "unknown")
+          (knownFailureCode(failure.data.error.status) ? failure.data.error.status : "unknown")
       }
       return { ...result, diagnostic }
     }
@@ -441,10 +483,11 @@ export async function requestGemini(
         if (parsed.success) {
           const reason = parsed.data.error.details
             ?.map((detail) => detail.reason)
-            .find((value): value is string => typeof value === "string" && /^[A-Z][A-Z_]{0,99}$/.test(value))
+            .find(knownFailureCode)
           providerCode =
-            reason ?? messageDiagnostic(parsed.data.error.message) ?? safeDiagnostic(parsed.data.error.status)
-          providerParameter = safeDiagnostic(
+            reason ?? messageDiagnostic(parsed.data.error.message) ??
+            (knownFailureCode(parsed.data.error.status) ? parsed.data.error.status : "unknown")
+          providerParameter = geminiParameter(
             parsed.data.error.details?.flatMap((detail) => detail.fieldViolations ?? [])[0]?.field,
           )
           if (providerCode === "INVALID_ARGUMENT" && providerParameter === "unknown") {

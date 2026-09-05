@@ -1,7 +1,6 @@
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto"
 import { isIP } from "node:net"
 import { neon } from "@neondatabase/serverless"
-import { PDFDocument, ParseSpeeds } from "pdf-lib"
 import { z } from "zod/v3"
 import { zodToJsonSchema } from "zod-to-json-schema"
 import {
@@ -15,6 +14,7 @@ import {
 } from "./raf-os"
 import { RAF_REFERENCES } from "./raf-os-references"
 import { canonicalJson, RAF_CANONICAL } from "./raf-os-canonical"
+import { pdfPageCount } from "./raf-os-pdf"
 
 export const RAF_LIMITS = {
   bodyBytes: 3 * 1024 * 1024,
@@ -145,7 +145,11 @@ type ModelContent =
   | { type: "input_file"; filename: string; file_data: string; detail: "high" }
 export type PreparedSubmission = { sources: Source[]; content: ModelContent[] }
 
-export async function prepareSubmission(submission: Submission, version: "v1" | "v2"): Promise<PreparedSubmission> {
+export async function prepareSubmission(
+  submission: Submission,
+  version: "v1" | "v2",
+  signal?: AbortSignal,
+): Promise<PreparedSubmission> {
   const sources = textSources(submission.text, version)
   const content: ModelContent[] = [{ type: "input_text", text: JSON.stringify({ version, paragraphs: sources }) }]
   if (!submission.deck) return { sources, content }
@@ -167,14 +171,7 @@ export async function prepareSubmission(submission: Submission, version: "v1" | 
   }
   let pageCount: number
   try {
-    const pdf = await PDFDocument.load(bytes, {
-      ignoreEncryption: false,
-      throwOnInvalidObject: true,
-      parseSpeed: ParseSpeeds.Slow,
-      updateMetadata: false,
-    })
-    if (pdf.isEncrypted) throw new Error("Encrypted")
-    pageCount = pdf.getPageCount()
+    pageCount = await pdfPageCount(bytes, signal)
   } catch {
     throw new RafHttpError("The PDF could not be read. Use an unencrypted PDF export.", 400)
   }
@@ -345,6 +342,45 @@ export function auditRun(body: RunRequest, result: Critique, sources: Source[], 
   }
 }
 
+const openAIFailureCodes = new Set([
+  "invalid_api_key",
+  "invalid_value",
+  "invalid_parameter",
+  "invalid_json_schema",
+  "invalid_request_error",
+  "missing_required_parameter",
+  "unsupported_parameter",
+  "model_not_found",
+  "context_length_exceeded",
+  "permission_denied",
+  "insufficient_quota",
+  "rate_limit_exceeded",
+  "server_error",
+])
+const openAIParameters = new Set([
+  "model",
+  "store",
+  "max_output_tokens",
+  "instructions",
+  "input",
+  "reasoning",
+  "reasoning.effort",
+  "text",
+  "text.format",
+  "text.format.type",
+  "text.format.name",
+  "text.format.strict",
+  "text.format.schema",
+])
+function openAIParameter(value: string | null | undefined) {
+  // Our payload has one message with at most seven task/text/PDF parts. Never reflect
+  // arbitrary identifiers or indices just because they contain safe characters.
+  return value && (
+    openAIParameters.has(value) ||
+    /^input\[0\](?:\.role|\.content(?:\[[0-6]\](?:\.(?:type|text|filename|file_data|detail))?)?)?$/.test(value)
+  ) ? value : "unknown"
+}
+
 export async function requestModel(
   body: ReturnType<typeof buildModelRequest>,
   apiKey: string,
@@ -378,10 +414,9 @@ export async function requestModel(
         })
         .safeParse(failure)
       if (parsed.success) {
-        const safe = (value: string | null | undefined) =>
-          value && /^[A-Za-z0-9_.\[\]-]{1,100}$/.test(value) ? value : "unknown"
-        providerCode = safe(parsed.data.error.code)
-        providerParameter = safe(parsed.data.error.param)
+        const code = parsed.data.error.code
+        providerCode = code && openAIFailureCodes.has(code) ? code : "unknown"
+        providerParameter = openAIParameter(parsed.data.error.param)
       }
     } catch {
       /* Keep upstream response bodies, credentials and pitch content out of diagnostics. */

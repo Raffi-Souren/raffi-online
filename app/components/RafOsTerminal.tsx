@@ -55,7 +55,7 @@ const statusLabels = {
   supplied_document: "Supplied document",
 }
 type Props = { isOpen: boolean; isMinimized: boolean; onClose: () => void; onMinimize: () => void }
-type View = "draft" | "review" | "changes" | "protocol"
+type View = "draft" | "review" | "changes" | "protocol" | "privacy"
 type FollowUp = {
   kind: "challenge" | "revision"
   sourceVersion: number
@@ -138,10 +138,12 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
   const [revealSection, setRevealSection] = useState<"pilot" | "valueprop" | null>(null)
   const [freshFocus, setFreshFocus] = useState<"pilot" | "valueprop" | null>(null)
   const request = useRef<AbortController | null>(null)
-  const helpReturn = useRef<View>("draft")
+  const infoHistory = useRef<View[]>([])
   const fileEpoch = useRef(0)
+  const sessionEpoch = useRef(0)
   const outputArea = useRef<HTMLDivElement>(null)
   const pitchField = useRef<HTMLTextAreaElement>(null)
+  const commandField = useRef<HTMLInputElement>(null)
   const challengeField = useRef<HTMLTextAreaElement>(null)
   const resultHeading = useRef<HTMLHeadingElement>(null)
   const fullReview = useRef<HTMLDetailsElement>(null)
@@ -215,6 +217,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
     () => () => {
       request.current?.abort()
       fileEpoch.current++
+      sessionEpoch.current++
     },
     [],
   )
@@ -256,6 +259,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
   const clear = () => {
     cancel()
     fileEpoch.current++
+    sessionEpoch.current++
     setFileBusy(false)
     setRuns([])
     setSelectedId("")
@@ -277,6 +281,9 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
     setNotice("Session cleared.")
     setView("draft")
     setClearPending(false)
+    setFocusTarget("pitch")
+    infoHistory.current = []
+    if (commandField.current) commandField.current.value = ""
   }
 
   function revise(runToRevise = active) {
@@ -313,12 +320,18 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
     }
   }
 
+  function backFromInfo() {
+    setView(infoHistory.current.pop() ?? "draft")
+  }
+
+  function showInfo(next: "protocol" | "privacy") {
+    infoHistory.current = view === "protocol" || view === "privacy" ? [...infoHistory.current, view] : [view]
+    setView(next)
+  }
+
   function showHelp() {
-    if (view === "protocol") setView(helpReturn.current)
-    else {
-      helpReturn.current = view
-      setView("protocol")
-    }
+    if (view === "protocol") backFromInfo()
+    else showInfo("protocol")
   }
 
   function challengeFinding(finding = active?.result.review.findings[0]) {
@@ -447,9 +460,11 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
 
   async function exportAudit() {
     if (!active) return
+    const epoch = sessionEpoch.current
     try {
       const bytes = new TextEncoder().encode(JSON.stringify(active.submission))
       const digest = await crypto.subtle.digest("SHA-256", bytes)
+      if (epoch !== sessionEpoch.current) return
       const hash = Array.from(new Uint8Array(digest))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("")
@@ -487,7 +502,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
         "application/json",
       )
     } catch {
-      setError("Could not export the record. Try the Markdown export.")
+      if (epoch === sessionEpoch.current) setError("Could not export the record. Try the Markdown export.")
     }
   }
 
@@ -554,6 +569,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           </label>
           <textarea
             id="raf-follow-up"
+            autoComplete="off"
             ref={challengeField}
             rows={3}
             maxLength={1000}
@@ -651,8 +667,8 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
         <header className="raf-header" style={{ padding: "var(--raf-header-padding, 18px 24px 12px)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <h1 style={{ color: green, fontSize: 17, fontWeight: 600, margin: 0 }}>VENTURE REVIEW</h1>
-            <button onClick={showHelp} style={{ ...control, border: 0, background: "transparent", color: muted, fontSize: 12 }}>
-              {view === "protocol" ? "Back" : "Help"}
+            <button onClick={view === "privacy" ? backFromInfo : showHelp} style={{ ...control, border: 0, background: "transparent", color: muted, fontSize: 12 }}>
+              {view === "protocol" || view === "privacy" ? "Back" : "Help"}
             </button>
           </div>
           {view === "draft" && <p style={{ color: muted, fontSize: 15, margin: "4px 0 0" }}>Paste your pitch. Find the next thing to test.</p>}
@@ -717,6 +733,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               <textarea
                 id="raf-pitch"
                 ref={pitchField}
+                autoComplete="off"
                 value={draft}
                 maxLength={16000}
                 rows={5}
@@ -752,11 +769,11 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   style={{ marginTop: 4 }}
                 />
                 <span>
-                  I allow {provider === "auto" ? "OpenAI or Google Gemini" : providerNames[provider]} to analyze the pitch, PDFs, earlier versions and review questions I submit.
+                  Use {provider === "auto" ? "OpenAI or Google Gemini" : provider === "gemini" ? "Google Gemini" : "OpenAI"} to review my submission.
                 </span>
               </label>
               <p style={{ color: muted, fontSize: 12, margin: "0 0 16px 22px" }}>
-                No confidential, sensitive or personal information. <button onClick={showHelp} style={{ border: 0, padding: 0, color: green, background: "transparent", font: "inherit", textDecoration: "underline", cursor: "pointer" }}>Data use</button>
+                Encrypted in transit. This site doesn’t store your pitch. <button onClick={() => showInfo("privacy")} style={{ border: 0, padding: 0, color: green, background: "transparent", font: "inherit", textDecoration: "underline", cursor: "pointer" }}>Privacy</button>
               </p>
               {busy ? (
                 <button onClick={cancel} style={{ ...control, borderColor: amber, color: amber }}>Cancel request</button>
@@ -779,6 +796,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                 </label>
                 <textarea
                   id="raf-challenge"
+                  autoComplete="off"
                   value={challenge}
                   maxLength={2000}
                   rows={2}
@@ -852,6 +870,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                       </label>
                       <textarea
                         id="raf-before"
+                        autoComplete="off"
                         value={previousDraft}
                         maxLength={16000}
                         disabled={busy}
@@ -1102,16 +1121,38 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               )}
             </>
           )}
+          {view === "privacy" && (
+            <section style={{ fontSize: 14, lineHeight: 1.8 }}>
+              <h2 style={{ color: green, fontSize: 20, marginTop: 0 }}>Privacy</h2>
+              <p>This review doesn’t send Raffi a copy or add your pitch to an inbox. You decide what to export or share separately.</p>
+              <details open style={{ borderTop: `1px solid ${line}`, paddingTop: 12, marginTop: 16 }}>
+                <summary style={{ color: green, cursor: "pointer" }}>Your session</summary>
+                <p style={{ color: muted }}>Drafts, PDFs, questions, comparison baselines and the latest six reviews stay in this tab’s memory. Clear session or reload removes this app session and cancels pending reviews. Minimizing or pressing the red close button preserves the session. Exported files remain on your device.</p>
+              </details>
+              <details style={{ borderTop: `1px solid ${line}`, paddingTop: 12, marginTop: 16 }}>
+                <summary style={{ color: green, cursor: "pointer" }}>Processing and site data</summary>
+                <p style={{ color: muted }}>Your submission includes the pitch, PDFs, earlier versions and review questions you send. The server and selected AI provider process readable content. HTTPS encrypts it in transit; this is not end-to-end encryption that hides it from the server or provider.</p>
+                <p style={{ color: muted }}>Auto may use another configured provider as a backup during an outage. A manual choice stays on that provider.</p>
+                <p style={{ color: muted }}>The app does not write pitch content or review responses to application logs, databases or files. Rate limits retain pseudonymous identifiers and timestamps, without pitch content.</p>
+              </details>
+              <details style={{ borderTop: `1px solid ${line}`, paddingTop: 12, marginTop: 16 }}>
+                <summary style={{ color: green, cursor: "pointer" }}>AI provider terms</summary>
+                <p style={{ color: muted }}>OpenAI API content is not used to train its models unless data sharing is enabled. Gemini’s protection against general model training depends on paid billing for this API project; free-tier terms may allow training and human review. Optional provider data sharing can change these terms.</p>
+                <p style={{ color: muted }}>The app asks providers not to save response records. Providers may retain content for abuse monitoring: normally up to 30 days for OpenAI and 55 days for Google. Their terms describe exceptions and approved controls. This app does not promise zero provider retention.</p>
+                <p style={{ color: muted, fontSize: 12 }}>
+                  <a href="https://developers.openai.com/api/docs/guides/your-data" target="_blank" rel="noopener noreferrer" style={{ color: green }}>OpenAI data controls</a>{" · "}
+                  <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer" style={{ color: green }}>Gemini terms</a>{" · "}
+                  <a href="https://ai.google.dev/gemini-api/docs/usage-policies" target="_blank" rel="noopener noreferrer" style={{ color: green }}>Google abuse monitoring</a>
+                </p>
+              </details>
+            </section>
+          )}
           {view === "protocol" && (
             <>
               <h2 style={{ color: green, fontSize: 20 }}>How the review works</h2>
-              <p style={{ lineHeight: 1.8, fontSize: 14 }}>
-                Your submitted pitch, PDFs, earlier versions and review questions are sent to the provider named beside the permission checkbox. Auto may use OpenAI or Google Gemini; a manual choice stays on that provider.
-              </p>
-              <p style={{ color: muted, fontSize: 13, lineHeight: 1.8 }}>
-                Do not submit confidential, sensitive or personal information. Data-use and retention terms: <a href="https://developers.openai.com/api/docs/guides/your-data" target="_blank" rel="noopener noreferrer" style={{ color: green }}>OpenAI</a> and <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer" style={{ color: green }}>Google Gemini</a>.
-              </p>
+              <p style={{ color: muted, fontSize: 13 }}><button onClick={() => showInfo("privacy")} style={{ ...control, border: 0, padding: 0, background: "transparent", color: green, fontSize: 13, textDecoration: "underline" }}>Privacy</button> explains provider processing, session memory and clearing your work.</p>
               <a href={GPT_BACKUP} target="_blank" rel="noopener noreferrer" style={{ color: green, fontSize: 13, display: "inline-flex", gap: 5, alignItems: "center", marginBottom: 12 }}>Open the GPT version <ArrowUpRight size={13} /></a>
+              <p style={{ color: muted, fontSize: 12, marginTop: 0 }}>Opens ChatGPT with its own data settings; this session isn’t transferred.</p>
               <p style={{ lineHeight: 1.8 }}>
                 The model interprets the business. Code checks the review contract before displaying an answer. No
                 overall “startup score” hides missing evidence.
@@ -1269,6 +1310,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
             </label>
             <input
               id="raf-command"
+              ref={commandField}
               name="command"
               aria-label="Terminal command"
               placeholder="/help"
@@ -1289,8 +1331,8 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               Cancel
             </button>
           )}
-          {view === "protocol" && <button style={{ ...control, fontSize: 12, color: muted }} onClick={() => setClearPending(true)}>
-            Clear
+          {(view === "protocol" || view === "privacy") && <button style={{ ...control, fontSize: 12, color: muted }} onClick={() => setClearPending(true)}>
+            Clear session…
           </button>}
           {clearPending && (
             <div
@@ -1305,7 +1347,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                 color: amber,
               }}
             >
-              Clear drafts, PDFs, and all saved versions from this tab?
+              Cancel pending reviews and clear drafts, PDFs, questions and all review versions from this tab? Exported files stay on your device.
               <button style={control} onClick={clear}>
                 Clear session
               </button>

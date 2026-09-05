@@ -30,11 +30,15 @@ try {
     const context = await browser.newContext({ viewport: { width, height }, isMobile: mobile, hasTouch: mobile, acceptDownloads: true })
     const page = await context.newPage()
     const errors = []
+    const downloads = []
     const posts = []
+    const apiRequests = []
     let responseMode = "normal"
     let heldRoute = null
     page.on("pageerror", (error) => errors.push(error.message))
+    page.on("download", (file) => downloads.push(file.suggestedFilename()))
     await page.route("**/api/raf-os", async (route) => {
+      apiRequests.push(route.request().method())
       if (route.request().method() === "GET") return route.fulfill({ json: { available: true, providers: ["openai", "gemini"], defaultProvider: "openai" } })
       const body = route.request().postDataJSON()
       posts.push(body)
@@ -52,6 +56,48 @@ try {
     }
     const version = (number) => number === 1 ? terminal.getByText("Version 1", { exact: true }).waitFor() : page.waitForFunction((n) => document.querySelector('[aria-label="Review version"]')?.selectedOptions[0]?.textContent.trim().startsWith(`Version ${n}`), number)
     const screenshot = async (stage) => page.screenshot({ path: `${out}/${name}-${stage}.png` })
+    const settle = () => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    const clearSession = async () => {
+      await terminal.getByRole("button", { name: "Privacy", exact: true }).click()
+      await terminal.getByRole("button", { name: "Clear session…", exact: true }).click()
+      await terminal.getByRole("button", { name: "Clear session", exact: true }).click()
+      await terminal.getByLabel("Your pitch", { exact: true }).waitFor()
+    }
+    const assertEmptySession = async () => {
+      assert.equal(await terminal.getByLabel("Your pitch", { exact: true }).inputValue(), "", "cleared or reloaded pitch returned")
+      assert.equal(await terminal.getByRole("button", { name: "Remove deck", exact: true }).count(), 0, "cleared or reloaded PDF returned")
+      assert.equal(await terminal.getByLabel("Review version").count(), 0, "review history survived session reset")
+      assert.equal(await terminal.getByRole("button", { name: "Export review as Markdown" }).count(), 0, "review export survived session reset")
+      assert.equal(await terminal.getByRole("button", { name: "Back to review", exact: true }).count(), 0)
+      assert.equal(await terminal.locator("#raf-consent").isChecked(), false)
+      assert.equal(await terminal.getByRole("button", { name: "Analyze pitch", exact: true }).isDisabled(), true)
+      assert.equal(await terminal.getByLabel("Terminal command").inputValue(), "", "unsent command survived session reset")
+      await terminal.getByText("Options", { exact: true }).click()
+      assert.equal(await terminal.getByLabel("Anything the next review should pay attention to?").inputValue(), "", "review question survived session reset")
+      assert.equal(await terminal.getByLabel("Provider", { exact: true }).inputValue(), "auto")
+      await terminal.getByText("Compare two drafts", { exact: true }).click()
+      assert.equal(await terminal.getByLabel("Saved baseline", { exact: false }).count(), 0, "saved baseline survived session reset")
+      assert.equal(await terminal.getByLabel("Paste or upload a separate earlier version").isChecked(), false)
+      await terminal.getByLabel("Paste or upload a separate earlier version").check()
+      assert.equal(await terminal.getByLabel("Earlier pitch", { exact: true }).inputValue(), "", "earlier pitch survived session reset")
+      assert.equal(await terminal.getByRole("button", { name: "Remove earlier deck", exact: true }).count(), 0, "earlier PDF survived session reset")
+      await terminal.getByLabel("Paste or upload a separate earlier version").uncheck()
+      await terminal.getByText("Compare two drafts", { exact: true }).click()
+      await terminal.getByText("Options", { exact: true }).click()
+    }
+    const addPrivateDrafts = async () => {
+      await terminal.getByRole("button", { name: "Revise pitch", exact: true }).click()
+      await terminal.getByLabel("Your pitch", { exact: true }).fill(sampleSubmissionEvidence.text)
+      await terminal.getByLabel("Upload pitch deck").setInputFiles({ name: "fictional-current.pdf", mimeType: "application/pdf", buffer: pdfBytes })
+      await terminal.getByRole("button", { name: "Remove deck", exact: true }).waitFor()
+      await terminal.getByText("Options", { exact: true }).click()
+      await terminal.getByLabel("Anything the next review should pay attention to?").fill("Fictional private question: check the supplied support.")
+      await terminal.getByText("Change comparison baseline", { exact: true }).click()
+      await terminal.getByLabel("Paste or upload a separate earlier version").check()
+      await terminal.getByLabel("Earlier pitch", { exact: true }).fill(sampleSubmissionBefore.text)
+      await terminal.getByLabel("Upload earlier deck").setInputFiles({ name: "fictional-earlier.pdf", mimeType: "application/pdf", buffer: pdfBytes })
+      await terminal.getByRole("button", { name: "Remove earlier deck", exact: true }).waitFor()
+    }
     const checkBounds = async () => {
       const bounds = await terminal.evaluate((element) => {
         const dialog = element.closest('[role="dialog"]')
@@ -91,10 +137,31 @@ try {
       await command("/analyze")
       assert.match(await terminal.getByRole("alert").innerText(), /Allow the selected provider/)
       assert.equal(posts.length, 0)
-      await terminal.getByRole("button", { name: "Data use", exact: true }).click()
-      await terminal.getByRole("link", { name: "OpenAI", exact: true }).waitFor()
+      const beforePrivacy = apiRequests.length
+      await terminal.getByRole("button", { name: "Privacy", exact: true }).click()
+      await terminal.getByRole("heading", { name: "Privacy", exact: true }).waitFor()
+      assert.equal(await terminal.getByRole("heading", { name: "How the review works", exact: true }).count(), 0, "Privacy opened the full help/rubric")
+      await terminal.locator(".raf-output").evaluate((element) => element.scrollTo({ top: 0 }))
+      await screenshot("privacy")
+      await terminal.getByText("Processing and site data", { exact: true }).click()
+      assert.match(await terminal.innerText(), /pitch, PDFs, earlier versions and review questions/)
+      await terminal.getByText("AI provider terms", { exact: true }).click()
+      assert.equal(await terminal.getByRole("link", { name: "OpenAI data controls", exact: true }).getAttribute("href"), "https://developers.openai.com/api/docs/guides/your-data")
+      assert.equal(await terminal.getByRole("link", { name: "Gemini terms", exact: true }).getAttribute("href"), "https://ai.google.dev/gemini-api/terms")
+      await checkBounds()
+      await screenshot("privacy-details")
+      assert.equal(apiRequests.length, beforePrivacy, "reading Privacy sent a request")
       await terminal.getByRole("button", { name: "Back", exact: true }).click()
       assert.equal(await terminal.getByLabel("Your pitch", { exact: true }).inputValue(), sampleSubmissionBefore.text)
+      await terminal.getByRole("button", { name: "Help", exact: true }).click()
+      await terminal.getByRole("button", { name: "Privacy", exact: true }).click()
+      await terminal.getByRole("button", { name: "Back", exact: true }).click()
+      await terminal.getByRole("heading", { name: "How the review works", exact: true }).waitFor()
+      await terminal.getByRole("button", { name: "Back", exact: true }).click()
+      assert.equal(await terminal.getByLabel("Your pitch", { exact: true }).inputValue(), sampleSubmissionBefore.text)
+      assert.equal(apiRequests.length, beforePrivacy, "Help/Privacy navigation sent a request")
+      assert.equal(await terminal.getByLabel("Your pitch", { exact: true }).getAttribute("autocomplete"), "off")
+      assert.equal(await terminal.getByRole("checkbox", { name: "Use OpenAI or Google Gemini to review my submission.", exact: true }).isChecked(), false)
       await terminal.locator("#raf-consent").check()
       responseMode = "hold"
       const initialRequest = page.waitForRequest((request) => request.url().endsWith("/api/raf-os") && request.method() === "POST")
@@ -192,6 +259,7 @@ try {
       assert.match(await terminal.getByRole("status").innerText(), /fresh review/)
       await terminal.getByText("Options", { exact: true }).click()
       await terminal.getByLabel("Provider", { exact: true }).selectOption("gemini")
+      assert.equal(await terminal.getByRole("checkbox", { name: "Use Google Gemini to review my submission.", exact: true }).isChecked(), false)
       assert.equal(await terminal.locator("#raf-consent").isChecked(), false, "provider change kept consent to a different recipient")
       assert.equal(await terminal.getByRole("button", { name: "Analyze pitch", exact: true }).isDisabled(), true)
       await terminal.locator("#raf-consent").check()
@@ -224,12 +292,139 @@ try {
       await version(5)
       await page.waitForFunction(() => document.activeElement?.textContent === "Pilot plan")
       assert.equal(posts.at(-1).current.text, changedDraft, "retry lost the preserved input")
+
+      // An export already hashing the submission must also respect Clear.
+      await page.evaluate(() => {
+        window.__rafOriginalDigest = crypto.subtle.digest.bind(crypto.subtle)
+        crypto.subtle.digest = (...args) => new Promise((resolve, reject) => {
+          window.__rafReleaseDigest = () => window.__rafOriginalDigest(...args).then(resolve, reject)
+        })
+      })
+      await terminal.locator("summary").filter({ hasText: "Review record" }).click()
+      const beforeLateExport = downloads.length
+      await terminal.getByRole("button", { name: "Export evidence record (JSON)" }).click()
+      await page.waitForFunction(() => typeof window.__rafReleaseDigest === "function")
+
+      // Clear cancels a network request and removes both drafts, PDFs, history,
+      // comparison baselines and questions. Opening Privacy itself sends nothing.
+      await addPrivateDrafts()
+      const beforePopulatedPrivacy = apiRequests.length
+      await terminal.getByRole("button", { name: "Help", exact: true }).click()
+      await terminal.getByRole("button", { name: "Privacy", exact: true }).click()
+      await terminal.getByRole("button", { name: "Back", exact: true }).click()
+      await terminal.getByRole("button", { name: "Back", exact: true }).click()
+      await terminal.getByText("Options", { exact: true }).click()
+      await terminal.getByText("Change comparison baseline", { exact: true }).click()
+      assert.equal(await terminal.getByLabel("Earlier pitch", { exact: true }).inputValue(), sampleSubmissionBefore.text)
+      assert.equal(await terminal.getByRole("button", { name: "Remove earlier deck", exact: true }).count(), 1)
+      assert.equal(await terminal.getByRole("button", { name: "Remove deck", exact: true }).count(), 1)
+      assert.match(await terminal.getByLabel("Anything the next review should pay attention to?").inputValue(), /Fictional private question/)
+      assert.equal(apiRequests.length, beforePopulatedPrivacy)
+      if (!(await terminal.getByLabel("Terminal command").isVisible())) await terminal.getByRole("button", { name: "Commands", exact: true }).click()
+      await terminal.getByLabel("Terminal command").fill("fictional unsent command")
+      responseMode = "hold"
+      const clearingRequest = page.waitForRequest((request) => request.url().endsWith("/api/raf-os") && request.method() === "POST")
+      await terminal.getByRole("button", { name: "Compare revision", exact: true }).click()
+      await clearingRequest
+      const beforeClear = apiRequests.length
+      await terminal.getByRole("button", { name: "Privacy", exact: true }).click()
+      await terminal.getByRole("button", { name: "Clear session…", exact: true }).click()
+      await terminal.getByRole("button", { name: "Keep session", exact: true }).click()
+      assert.equal(await terminal.getByRole("button", { name: "Cancel", exact: true }).isVisible(), true, "declining Clear cancelled the request")
+      await terminal.getByRole("button", { name: "Back", exact: true }).click()
+      assert.equal(await terminal.getByLabel("Earlier pitch", { exact: true }).inputValue(), sampleSubmissionBefore.text)
+      const clearedRequest = page.waitForEvent("requestfailed", { predicate: (request) => request.url().endsWith("/api/raf-os") })
+      await clearSession()
+      await clearedRequest
+      await heldRoute.fulfill({ json: sampleRunEvidence }).catch(() => {})
+      heldRoute = null
+      await page.evaluate(async () => {
+        crypto.subtle.digest = window.__rafOriginalDigest
+        await window.__rafReleaseDigest()
+        delete window.__rafOriginalDigest
+        delete window.__rafReleaseDigest
+      })
+      await settle()
+      assert.equal(apiRequests.length, beforeClear, "Privacy or Clear submitted material")
+      await assertEmptySession()
+      await terminal.locator(".raf-output").evaluate((element) => element.scrollTo({ top: 0 }))
+      await screenshot("cleared")
+      assert.equal(downloads.length, beforeLateExport, "a pending export downloaded pitch data after Clear")
+      assert.match(await fs.readFile(`${out}/${name}-review.md`, "utf8"), /Review conversation/, "Clear removed an exported file")
+
+      // Let fetch finish, but hold JSON parsing until after Clear. This simulates
+      // a late continuation even when cancellation cannot stop an arriving body.
+      responseMode = "normal"
+      await page.evaluate(() => {
+        window.__rafOriginalFetch = window.fetch
+        window.fetch = async (...args) => {
+          const response = await window.__rafOriginalFetch(...args)
+          if (String(args[0]).endsWith("/api/raf-os") && args[1]?.method === "POST") {
+            const read = response.json.bind(response)
+            response.json = async () => {
+              const body = await read()
+              await new Promise((resolve) => { window.__rafReleaseReview = resolve })
+              return body
+            }
+          }
+          return response
+        }
+      })
+      await terminal.getByLabel("Your pitch", { exact: true }).fill(sampleSubmissionBefore.text)
+      await terminal.locator("#raf-consent").check()
+      await terminal.getByRole("button", { name: "Analyze pitch", exact: true }).click()
+      await page.waitForFunction(() => typeof window.__rafReleaseReview === "function")
+      await clearSession()
+      await page.evaluate(() => {
+        window.fetch = window.__rafOriginalFetch
+        window.__rafReleaseReview()
+        delete window.__rafOriginalFetch
+        delete window.__rafReleaseReview
+      })
+      await settle()
+      await assertEmptySession()
+
+      // A local FileReader finishing after Clear must not restore its PDF.
+      await page.evaluate(() => {
+        window.__rafOriginalFileRead = FileReader.prototype.readAsDataURL
+        window.__rafPendingFileReads = []
+        FileReader.prototype.readAsDataURL = function (file) {
+          window.__rafPendingFileReads.push(() => new Promise((resolve) => {
+            this.addEventListener("loadend", resolve, { once: true })
+            window.__rafOriginalFileRead.call(this, file)
+          }))
+        }
+      })
+      const beforeFile = apiRequests.length
+      await terminal.getByLabel("Upload pitch deck").setInputFiles({ name: "fictional-late.pdf", mimeType: "application/pdf", buffer: pdfBytes })
+      await terminal.getByRole("status").filter({ hasText: "Reading your PDF" }).waitFor()
+      await clearSession()
+      await page.evaluate(async () => {
+        FileReader.prototype.readAsDataURL = window.__rafOriginalFileRead
+        await Promise.all(window.__rafPendingFileReads.map((finish) => finish()))
+        delete window.__rafOriginalFileRead
+        delete window.__rafPendingFileReads
+      })
+      await settle()
+      await assertEmptySession()
+      assert.equal(apiRequests.length, beforeFile, "reading or clearing a local PDF sent a request")
+
+      // Reload with real app state present: saved review, current/earlier drafts,
+      // PDFs and questions. No app-controlled submission state should persist.
+      await terminal.getByLabel("Your pitch", { exact: true }).fill(sampleSubmissionBefore.text)
+      await terminal.locator("#raf-consent").check()
+      await terminal.getByRole("button", { name: "Analyze pitch", exact: true }).click()
+      await version(1)
+      await addPrivateDrafts()
+      assert.equal(await page.evaluate((sampleText) => [localStorage, sessionStorage].some((storage) => Object.values(storage).some((value) => value.includes(sampleText))), sampleSubmissionEvidence.text), false, "pitch was written to browser storage")
+      const beforeReload = posts.length
+      await page.reload({ waitUntil: "domcontentloaded" })
+      await terminal.getByLabel("Your pitch", { exact: true }).waitFor()
+      await assertEmptySession()
+      assert.equal(posts.length, beforeReload, "reload resubmitted a pitch")
       if (!mobile) {
         // Advanced users can compare two supplied drafts without buying an initial review.
         const beforeManual = posts.length
-        await page.reload({ waitUntil: "domcontentloaded" })
-        await terminal.getByLabel("Your pitch", { exact: true }).waitFor()
-        assert.equal(await terminal.getByLabel("Your pitch", { exact: true }).inputValue(), "", "refresh retained pitch data")
         await terminal.getByLabel("Your pitch", { exact: true }).fill(sampleSubmissionEvidence.text)
         await terminal.getByText("Options", { exact: true }).click()
         await terminal.getByText("Compare two drafts", { exact: true }).click()
@@ -244,7 +439,7 @@ try {
         assert.deepEqual(posts.at(-1).previous, sampleSubmissionBefore)
       }
       assert.deepEqual(errors, [], `${name} runtime errors`)
-      console.info(`RAF OS ${name}: consent, PDF, review, evidence, zero-request details, challenge, revision, comparison, exports, routing, cancellation and recovery passed`)
+      console.info(`RAF OS ${name}: consent, Privacy, PDF, review, evidence, zero-request details, challenge, revision, comparison, exports, routing, cancellation, recovery, Clear/late-response/upload races and reload passed`)
     } catch (error) {
       await screenshot("failure").catch(() => {})
       throw error
