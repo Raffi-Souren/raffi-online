@@ -18,100 +18,13 @@ import {
   Volume2,
 } from "lucide-react"
 import { useAudio, type Track } from "../context/AudioContext"
-import { FEATURED_RAFS_CRATE } from "@/data/audio-library"
+import { BADCOMPANY_MIXES, FEATURED_RAFS_CRATE } from "@/data/audio-library"
 
 interface Video {
   id: string
   title: string
   youtubeId: string
 }
-
-const BADCOMPANY_MIXES: Track[] = [
-  {
-    id: "bc-1",
-    title: "BadCompany Radio",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/playlists/1789261161",
-  },
-  {
-    id: "bc-2",
-    title: "WARM",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/1324245148",
-  },
-  {
-    id: "bc-3",
-    title: "LATE NIGHT",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/1179462235",
-  },
-  {
-    id: "bc-4",
-    title: "HOUSE PARTY",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/playlists/704616300",
-  },
-  {
-    id: "bc-5",
-    title: "DISCO FUNK",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/1124902333",
-  },
-  {
-    id: "bc-6",
-    title: "POOLSIDE",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/585063546",
-  },
-  {
-    id: "bc-7",
-    title: "SUNSET",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/921126772",
-  },
-  {
-    id: "bc-8",
-    title: "GROOVE",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/playlists/992564092",
-  },
-  {
-    id: "bc-9",
-    title: "WEEKEND",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/757237381",
-  },
-  {
-    id: "bc-10",
-    title: "DEEP HOUSE",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/688176064",
-  },
-  {
-    id: "bc-11",
-    title: "SUMMER VIBES",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/524785323",
-  },
-  {
-    id: "bc-12",
-    title: "AFTER HOURS",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/677024604",
-  },
-  {
-    id: "bc-13",
-    title: "MORNING COFFEE",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/513780693",
-  },
-  {
-    id: "bc-14",
-    title: "ROOFTOP",
-    artist: "NotGoodCompany",
-    url: "https://api.soundcloud.com/tracks/459410418",
-  },
-]
 
 const ANALOG_DIGITAL_VIDEOS: Video[] = [
   {
@@ -405,10 +318,7 @@ export default function IPodPlayer() {
   const hasSelectableRows = menuItems.length > 0
   const hasScrollableCopy = currentScreen === "podcastDetail" || currentScreen === "about"
   const wheelCanRotate =
-    hasSelectableRows ||
-    hasScrollableCopy ||
-    currentScreen === "nowPlaying" ||
-    currentScreen === "videoPlayer"
+    hasSelectableRows || hasScrollableCopy || currentScreen === "nowPlaying" || currentScreen === "videoPlayer"
 
   const handleVideoPlayPause = useCallback(() => {
     const player = videoPlayerRef.current?.getInternalPlayer()
@@ -437,10 +347,7 @@ export default function IPodPlayer() {
 
   const watchPodcast = () => {
     if (!currentPodcast) return
-    playVideo(
-      [{ id: currentPodcast.id, title: currentPodcast.title, youtubeId: currentPodcast.youtubeId }],
-      0,
-    )
+    playVideo([{ id: currentPodcast.id, title: currentPodcast.title, youtubeId: currentPodcast.youtubeId }], 0)
   }
 
   const handleSelect = () => {
@@ -492,8 +399,7 @@ export default function IPodPlayer() {
   const navigateByWheel = useCallback(
     (steps: number) => {
       if (!steps) return
-      if (hasSelectableRows)
-        setSelectedIndex((index) => Math.max(0, Math.min(menuItems.length - 1, index + steps)))
+      if (hasSelectableRows) setSelectedIndex((index) => Math.max(0, Math.min(menuItems.length - 1, index + steps)))
       else if (hasScrollableCopy) screenScrollRef.current?.scrollBy({ top: steps * 28, behavior: "auto" })
       else if (currentScreen === "nowPlaying" && playbackControl === "seek") seekTo(currentTime + steps * 5)
       else setVolume(Math.max(0, Math.min(100, volume + steps * 5)))
@@ -550,8 +456,7 @@ export default function IPodPlayer() {
       const now = performance.now()
       if (now - lastScrollAtRef.current > 180) scrollRotationRef.current = 0
       lastScrollAtRef.current = now
-      scrollRotationRef.current +=
-        event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1)
+      scrollRotationRef.current += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1)
       const steps = Math.max(-3, Math.min(3, Math.trunc(scrollRotationRef.current / 36)))
       if (!steps) return
       navigateByWheel(steps)
@@ -836,9 +741,7 @@ export default function IPodPlayer() {
               </div>
               <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
                 {videoActive && currentVideo ? (
-                  <div
-                    style={{ display: "flex", height: "100%", flexDirection: "column", gap: 3, padding: 5 }}
-                  >
+                  <div style={{ display: "flex", height: "100%", flexDirection: "column", gap: 3, padding: 5 }}>
                     <div
                       data-ipod-video
                       style={{ minHeight: 0, flex: 1, width: "100%", overflow: "hidden", background: "#000" }}
@@ -866,9 +769,7 @@ export default function IPodPlayer() {
                         onBuffer={() => setVideoStatus("buffering")}
                         onBufferEnd={() =>
                           setVideoStatus(
-                            videoPlayerRef.current?.getInternalPlayer()?.getPlayerState?.() === 1
-                              ? "playing"
-                              : "ready",
+                            videoPlayerRef.current?.getInternalPlayer()?.getPlayerState?.() === 1 ? "playing" : "ready",
                           )
                         }
                         onEnded={handleVideoEnded}
@@ -924,10 +825,7 @@ export default function IPodPlayer() {
                     </div>
                   </div>
                 ) : currentScreen === "podcastDetail" && currentPodcast ? (
-                  <div
-                    ref={screenScrollRef}
-                    style={{ height: "100%", overflowY: "auto", padding: 9, fontSize: 11 }}
-                  >
+                  <div ref={screenScrollRef} style={{ height: "100%", overflowY: "auto", padding: 9, fontSize: 11 }}>
                     <p style={{ fontWeight: 700, lineHeight: 1.25 }}>{currentPodcast.title}</p>
                     <p style={{ marginTop: 5, lineHeight: 1.4 }}>{currentPodcast.description}</p>
                     <button
@@ -994,10 +892,7 @@ export default function IPodPlayer() {
                             <Disc3 size={34} strokeWidth={1.2} />
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <p
-                              title={currentTrack.title}
-                              style={{ ...ellipsis, fontWeight: 700, fontSize: 11 }}
-                            >
+                            <p title={currentTrack.title} style={{ ...ellipsis, fontWeight: 700, fontSize: 11 }}>
                               {currentTrack.title}
                             </p>
                             <p style={{ ...ellipsis, fontSize: 10, marginTop: 2 }}>{currentTrack.artist}</p>
@@ -1066,9 +961,7 @@ export default function IPodPlayer() {
                     <p style={{ marginTop: 5 }}>
                       Field CTO at IBM. Co-founder of Bad Company and indify. Brooklyn, New York.
                     </p>
-                    <p style={{ marginTop: 8 }}>
-                      Building AI products, digging for vinyl, and DJing with friends.
-                    </p>
+                    <p style={{ marginTop: 8 }}>Building AI products, digging for vinyl, and DJing with friends.</p>
                     <a
                       className={focusClass}
                       href="mailto:raffi@notgoodcompany.com"
@@ -1118,8 +1011,7 @@ export default function IPodPlayer() {
                           border: 0,
                           textAlign: "left",
                           padding: "5px 8px",
-                          background:
-                            selectedIndex === index ? "linear-gradient(#4a88b7, #316490)" : "transparent",
+                          background: selectedIndex === index ? "linear-gradient(#4a88b7, #316490)" : "transparent",
                           color: selectedIndex === index ? "white" : "#253026",
                           fontFamily: lcdFont,
                           fontSize: 12,

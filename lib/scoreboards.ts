@@ -56,7 +56,7 @@ export const SCOREBOARDS = {
     order: "desc",
     label: "High scores",
     maxScore: 100_000,
-    maxLevel: 3,
+    maxLevel: 5,
     levelLabel: "Block",
   },
   "borough-gp": {
@@ -73,7 +73,9 @@ export const SCOREBOARDS = {
     order: "asc",
     label: "Fastest victories",
     maxScore: 86_400_000,
-    maxLevel: 1,
+    maxLevel: 3,
+    levelLabel: "Mission",
+    filterByLevel: true,
   },
   minesweeper: {
     name: "Minesweeper",
@@ -89,7 +91,7 @@ export const SCOREBOARDS = {
     order: "desc",
     label: "High scores",
     maxScore: 100_000,
-    maxLevel: 3,
+    maxLevel: 5,
     levelLabel: "Sector",
   },
 } as const satisfies Record<string, Scoreboard>

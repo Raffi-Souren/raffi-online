@@ -1,4 +1,4 @@
-import { SIGNAL_EXIT, SIGNAL_MAP, signalRay, type SignalState } from "./signal-lost"
+import { SIGNAL_EXIT, SIGNAL_WAVES, SIGNAL_MAP, signalRay, type SignalState } from "./signal-lost"
 
 function surface(w: number, h: number) {
   const canvas = document.createElement("canvas")
@@ -85,6 +85,17 @@ export function createSignalArt() {
     ctx.fillRect(52, 89, 9, 10)
     return canvas
   }
+  const tape = surface(64, 48)
+  tape.ctx.fillStyle = "#e1bd72"
+  tape.ctx.fillRect(4, 4, 56, 38)
+  tape.ctx.fillStyle = "#273640"
+  tape.ctx.fillRect(9, 11, 46, 22)
+  tape.ctx.fillStyle = "#e1bd72"
+  for (const x of [20, 44]) {
+    tape.ctx.beginPath()
+    tape.ctx.arc(x, 22, 7, 0, Math.PI * 2)
+    tape.ctx.fill()
+  }
   const pack = surface(64, 64)
   pack.ctx.fillStyle = "#526b65"
   pack.ctx.fillRect(12, 16, 40, 38)
@@ -114,6 +125,7 @@ export function createSignalArt() {
   exit.ctx.font = "38px Tahoma"
   exit.ctx.fillText("↑", 48, 78)
   return {
+    tape: tape.canvas,
     walls: [brick.canvas, steel.canvas],
     drone: [drone(false, false), drone(true, false), drone(false, true)],
     pack: pack.canvas,
@@ -186,10 +198,18 @@ export function renderSignal(ctx: CanvasRenderingContext2D, s: SignalState, art:
   const sprites: { x: number; y: number; height: number; art: HTMLCanvasElement; lift?: number }[] = [
     ...s.enemies
       .filter((e) => e.hp > 0)
-      .map((e) => ({ x: e.x, y: e.y, height: 1.35, art: art.drone[e.hit > 0 ? 2 : e.charge > 0 ? 1 : 0] })),
+      .map((e) => ({
+        x: e.x,
+        y: e.y,
+        height: e.elite ? 1.8 : 1.35,
+        art: art.drone[e.hit > 0 ? 2 : e.charge > 0 ? 1 : 0],
+      })),
+    ...s.secrets.filter((p) => !p.found).map((p) => ({ x: p.x, y: p.y, height: 0.5, art: art.tape })),
     ...s.pickups.filter((p) => p.active).map((p) => ({ x: p.x, y: p.y, height: 0.55, art: art.pack })),
     ...s.bolts.map((b) => ({ x: b.x, y: b.y, height: 0.32, art: art.bolt, lift: 0.75 })),
-    ...(s.wave === 3 && s.enemies.every((e) => e.hp <= 0) ? [{ ...SIGNAL_EXIT, height: 2, art: art.exit }] : []),
+    ...(s.wave === SIGNAL_WAVES && s.enemies.every((e) => e.hp <= 0)
+      ? [{ ...SIGNAL_EXIT, height: 2, art: art.exit }]
+      : []),
   ].sort((a, b) => Math.hypot(b.x - s.x, b.y - s.y) - Math.hypot(a.x - s.x, a.y - s.y))
   for (const sprite of sprites) {
     const dx = sprite.x - s.x,

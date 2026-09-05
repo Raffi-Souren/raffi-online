@@ -118,7 +118,7 @@ function waypoint(x: number, y: number, targetX: number, targetY: number) {
   return { x: (cell % width) + 0.5, y: Math.floor(cell / width) + 0.5 }
 }
 
-test("a player can clear all three sectors and physically reach extraction with real inputs", () => {
+test("a player can clear all five sectors and physically reach extraction with real inputs", () => {
   const s = createSignalState()
   startSignal(s)
   const sectors = new Set<number>()
@@ -132,16 +132,16 @@ test("a player can clear all three sectors and physically reach extraction with 
     )
     if (visible) {
       s.angle = Math.atan2(visible.y - s.y, visible.x - s.x)
-      stepSignal(s, { ...idle, fire: true }, 1 / 60)
-    } else if (enemies.length || s.wave === 3) {
+      stepSignal(s, { ...idle, fire: true, strafe: Math.sin(frame / 50) > 0 ? 1 : -1 }, 1 / 60)
+    } else if (enemies.length || s.wave === 5) {
       const target = enemies[0] || SIGNAL_EXIT,
         point = waypoint(s.x, s.y, target.x, target.y)
       s.angle = Math.atan2(point.y - s.y, point.x - s.x)
       stepSignal(s, { ...idle, forward: 1 }, 1 / 60)
     } else stepSignal(s, idle, 1 / 60)
   }
-  assert.deepEqual(Array.from(sectors), [1, 2, 3])
-  assert.equal(s.kills, 12)
+  assert.deepEqual(Array.from(sectors), [1, 2, 3, 4, 5])
+  assert.equal(s.kills, 25)
   assert.equal(s.phase, "won", `run ended ${s.phase} at ${s.x},${s.y}, health ${s.health}, sector ${s.wave}`)
   assert.ok(Math.hypot(s.x - SIGNAL_EXIT.x, s.y - SIGNAL_EXIT.y) < 0.8)
 })
@@ -169,4 +169,21 @@ test("a lethal hit ends the frame before a nearby pickup can revive the player",
   assert.equal(s.phase, "lost")
   assert.equal(s.health, 0)
   assert.equal(s.pickups[0].active, true)
+})
+
+test("hidden tapes restore integrity once and reset on a new run", () => {
+  const s = createSignalState()
+  startSignal(s)
+  const tape = s.secrets[0]
+  Object.assign(s, { x: tape.x, y: tape.y, health: 30, heat: 90, overheated: true })
+  stepSignal(s, idle, 1 / 60)
+  assert.equal(tape.found, true)
+  assert.equal(s.health, 70)
+  assert.equal(s.overheated, false)
+  stepSignal(s, idle, 1 / 60)
+  assert.equal(s.health, 70)
+  assert.equal(
+    createSignalState().secrets.some((item) => item.found),
+    false,
+  )
 })

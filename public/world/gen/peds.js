@@ -16,6 +16,12 @@ function addBox(builder, options) {
   return { start, end: builder.vertCount }
 }
 
+function addRound(builder, options) {
+  const start = builder.vertCount
+  builder.cylinder({ ...options, r: options.w / 2, rTop: options.w * 0.46, seg: 6 })
+  return { start, end: builder.vertCount }
+}
+
 function addPlane(builder, options) {
   const start = builder.vertCount
   builder.plane(options)
@@ -128,13 +134,13 @@ export function makePed(npcData, archetypeId, seed, material, atlas, lighting, o
     color: shirt, rect: white,
   })
   const headCentreY = h - headR
-  const head = addBox(builder, {
+  const head = addRound(builder, {
     x: 0, y: headCentreY, z: 0,
     w: headR * 2, h: headR * 2.2, d: headR * 2,
     color: skin, rect: white,
   })
   const capColor = colors.cap || (arch.accessory?.hardhat && rng.chance(arch.accessory.hardhat) ? '#e6c02e' : hair)
-  const cap = addBox(builder, {
+  const cap = addRound(builder, {
     x: 0, y: h - headR * 0.2, z: 0,
     w: headR * 2.1, h: headR * 0.7, d: headR * 2.1,
     color: capColor, rect: white,

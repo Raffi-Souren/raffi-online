@@ -20,6 +20,7 @@ export const SIGNAL_MAP = [
 
 export type SignalPhase = "ready" | "playing" | "paused" | "won" | "lost"
 export interface SignalEnemy {
+  elite?: boolean
   id: number
   x: number
   y: number
@@ -60,6 +61,7 @@ export interface SignalState {
   enemies: SignalEnemy[]
   bolts: SignalBolt[]
   pickups: SignalPickup[]
+  secrets: { x: number; y: number; found: boolean; name: string }[]
   message: string
   messageTime: number
 }
@@ -71,7 +73,8 @@ export interface SignalInput {
   fire: boolean
 }
 export const SIGNAL_EXIT = { x: 14.5, y: 1.5 }
-export const SIGNAL_WAVES = 3
+export const SIGNAL_LEVELS = ["Service tunnels", "Relay hall", "Power station", "Dead frequency", "Master transmitter"]
+export const SIGNAL_WAVES = SIGNAL_LEVELS.length
 
 export function signalWall(x: number, y: number) {
   return Number(SIGNAL_MAP[Math.floor(y)]?.[Math.floor(x)] ?? "1")
@@ -132,6 +135,11 @@ export function createSignalState(): SignalState {
       { x: 7.5, y: 10.5, active: true },
       { x: 15.5, y: 4.5, active: true },
     ],
+    secrets: [
+      { x: 1.5, y: 13.5, found: false, name: "Pirate radio tape" },
+      { x: 15.5, y: 9.5, found: false, name: "Lost broadcast" },
+      { x: 1.5, y: 1.5, found: false, name: "Station master reel" },
+    ],
     message: "Restore the signal. Get back upstairs.",
     messageTime: 4,
   }
@@ -143,6 +151,7 @@ function message(s: SignalState, text: string, duration = 2.5) {
 }
 
 export function startSignalWave(s: SignalState) {
+  if (s.wave >= SIGNAL_WAVES) return
   s.wave++
   const spawns = [
     [3.5, 8.5],
@@ -150,18 +159,21 @@ export function startSignalWave(s: SignalState) {
     [7.5, 3.5],
     [15.5, 4.5],
     [3.5, 2.5],
+    [11.5, 13.5],
+    [1.5, 5.5],
   ]
   s.enemies = spawns.slice(0, s.wave + 2).map(([x, y], id) => ({
     id: s.wave * 10 + id,
     x,
     y,
-    hp: s.wave === 3 ? 3 : 2,
+    hp: s.wave >= 4 && id % 3 === 0 ? 5 : s.wave >= 3 ? 3 : 2,
+    elite: s.wave >= 4 && id % 3 === 0,
     charge: 0,
     cooldown: 1.5 + id * 0.3,
     hit: 0,
   }))
   s.waveDelay = 0
-  message(s, `Sector ${s.wave} / ${SIGNAL_WAVES} · ${s.enemies.length} rogue signals`, 3)
+  message(s, `${s.wave}/${SIGNAL_WAVES} · ${SIGNAL_LEVELS[s.wave - 1]} · ${s.enemies.length} signals`, 3)
 }
 
 export function startSignal(s: SignalState) {
@@ -253,7 +265,7 @@ function navigation(s: SignalState) {
 }
 
 export function stepSignal(s: SignalState, input: SignalInput, seconds: number) {
-  if (s.phase !== "playing") return
+  if (s.phase !== "playing" || !Number.isFinite(seconds) || seconds <= 0) return
   const dt = Math.min(seconds, 0.05)
   s.time += dt
   for (const key of ["cooldown", "shot", "hurt", "hit", "messageTime"] as const) s[key] = Math.max(0, s[key] - dt)
@@ -283,8 +295,17 @@ export function stepSignal(s: SignalState, input: SignalInput, seconds: number) 
     const visible = signalRay(enemy.x, enemy.y, direction).distance > distance - 0.15
     if (visible && distance < 7 && enemy.cooldown <= 0) {
       enemy.charge += dt
-      if (enemy.charge >= 0.9) {
-        s.bolts.push({ x: enemy.x, y: enemy.y, vx: Math.cos(direction) * 4, vy: Math.sin(direction) * 4, life: 4 })
+      if (enemy.charge >= (enemy.elite ? 1.1 : 0.9)) {
+        for (const spread of enemy.elite ? [-0.16, 0, 0.16] : [0]) {
+          const speed = 4 + Math.max(0, s.wave - 3) * 0.35
+          s.bolts.push({
+            x: enemy.x,
+            y: enemy.y,
+            vx: Math.cos(direction + spread) * speed,
+            vy: Math.sin(direction + spread) * speed,
+            life: 4,
+          })
+        }
         enemy.charge = 0
         enemy.cooldown = 2.4 - s.wave * 0.2
       }
@@ -312,7 +333,8 @@ export function stepSignal(s: SignalState, input: SignalInput, seconds: number) 
           }
         }
         const a = Math.atan2(ty - enemy.y, tx - enemy.x)
-        move(enemy, Math.cos(a) * dt * 0.9, Math.sin(a) * dt * 0.9)
+        const speed = 0.9 + Math.max(0, s.wave - 2) * 0.12
+        move(enemy, Math.cos(a) * dt * speed, Math.sin(a) * dt * speed)
       }
     }
   }
@@ -340,6 +362,15 @@ export function stepSignal(s: SignalState, input: SignalInput, seconds: number) 
       s.heat = 0
       s.overheated = false
       message(s, "Service pack · +30 integrity · coil cooled")
+    }
+  }
+  for (const secret of s.secrets) {
+    if (!secret.found && Math.hypot(secret.x - s.x, secret.y - s.y) < 0.65) {
+      secret.found = true
+      s.health = Math.min(100, s.health + 40)
+      s.heat = 0
+      s.overheated = false
+      message(s, `${secret.name} recovered · +40 integrity`, 4)
     }
   }
   if (s.enemies.every((e) => e.hp <= 0)) {

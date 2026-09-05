@@ -133,3 +133,96 @@ export function getRandomTrackIndex(length: number, current = -1): number {
 
   return next
 }
+
+export const BADCOMPANY_MIXES: Track[] = [
+  {
+    id: "bc-1",
+    title: "BadCompany Radio",
+    artist: "NotGoodCompany",
+    url: "https://api.soundcloud.com/playlists/1789261161",
+  },
+  {
+    id: "bc-2",
+    title: "Writing On The Wall Set 8.13.22",
+    artist: "MF KOBE",
+    url: "https://api.soundcloud.com/tracks/1324245148",
+  },
+  {
+    id: "bc-3",
+    title: "Andromeda by sweeterman",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/1179462235",
+  },
+  {
+    id: "bc-4",
+    title: "Feed The Streets vol. I",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/playlists/704616300",
+  },
+  {
+    id: "bc-5",
+    title: "ISLA BÉRT [DRIP OR DROWN V4 SET]",
+    artist: "BAKED GOOD",
+    url: "https://api.soundcloud.com/tracks/1124902333",
+  },
+  {
+    id: "bc-6",
+    title: "🖤🖤🖤TRISTAN THOMPSON 🖤🖤🖤BY BRiE",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/585063546",
+  },
+  {
+    id: "bc-7",
+    title: "JAM with brie",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/921126772",
+  },
+  {
+    id: "bc-8",
+    title: "VDAY💔",
+    artist: "raf",
+    url: "https://api.soundcloud.com/playlists/992564092",
+  },
+  {
+    id: "bc-9",
+    title: '"SKYFALL" - NYE 2020 Set',
+    artist: "BAKED GOOD",
+    url: "https://api.soundcloud.com/tracks/757237381",
+  },
+  {
+    id: "bc-10",
+    title: "🕵️🕵️🕵️WHATS THE MOVE ??? 🕵️🕵️🕵️ with BRiE",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/688176064",
+  },
+  {
+    id: "bc-11",
+    title: "BAKED GOOD Set @ HAUNTED HOTEL (10.26.18)",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/524785323",
+  },
+  {
+    id: "bc-12",
+    title: "ESCONDIDO X BADCO with sweeterman",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/677024604",
+  },
+  {
+    id: "bc-13",
+    title: "BAD BUSINESS (BAKED GOOD Set 07.28.18)",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/513780693",
+  },
+  {
+    id: "bc-14",
+    title: "Palm Trees in NYC (BSAP x sweeterman)",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/459410418",
+  },
+]
+
+export const FEATURED_BADCOMPANY_MIX = {
+  track: BADCOMPANY_MIXES.find((track) => track.id === "bc-3")!,
+  artwork: "https://i1.sndcdn.com/artworks-dbe3SpVgJXOyQmRQ-k8ppoQ-t500x500.jpg",
+  note: "Andromeda by sweeterman, from the BADCOMPANY SoundCloud archive.",
+} as const

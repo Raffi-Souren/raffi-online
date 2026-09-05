@@ -7,6 +7,7 @@ import {
   buildDockyard,
   createDockyard,
   dockyardBuildIssue,
+  DOCKYARD_MISSIONS,
   DOCKYARD_COSTS,
   DOCKYARD_HEIGHT,
   DOCKYARD_WIDTH,
@@ -41,9 +42,9 @@ function drawDockyard(
   pointer: DockyardPoint | null,
 ) {
   const water = ctx.createLinearGradient(0, 0, 840, 500)
-  water.addColorStop(0, "#41666a")
+  water.addColorStop(0, "#316873")
   water.addColorStop(0.5, "#204850")
-  water.addColorStop(1, "#102f3c")
+  water.addColorStop(1, "#071f35")
   ctx.fillStyle = water
   ctx.fillRect(0, 0, DOCKYARD_WIDTH, DOCKYARD_HEIGHT)
   ctx.lineWidth = 1
@@ -62,8 +63,8 @@ function drawDockyard(
   ctx.fillStyle = "#656e60"
   ctx.fillRect(38, 48, 760, 403)
   const concrete = ctx.createLinearGradient(38, 48, 740, 443)
-  concrete.addColorStop(0, "#e1d7b7")
-  concrete.addColorStop(1, "#aaa88e")
+  concrete.addColorStop(0, "#b7b39c")
+  concrete.addColorStop(1, "#737f77")
   ctx.fillStyle = concrete
   ctx.fillRect(38, 48, 760, 395)
   ctx.fillStyle = "#f0e3be"
@@ -89,19 +90,22 @@ function drawDockyard(
     ctx.fillStyle = "#f5df8b"
     ctx.fillRect(x + 2, 430, 8, 2)
   }
-  ctx.strokeStyle = "#877f6933"
-  ctx.lineWidth = 1
-  for (let x = 40; x <= 798; x += 38) {
+  // Staggered granite blocks, worn edges and wet patches form a readable ground plane.
+  for (let row = 0; row < 25; row++)
+    for (let col = 0; col < 40; col++) {
+      const x = 39 + col * 19 + (row % 2) * 9,
+        y = 50 + row * 15
+      if (x + 17 > 797 || y + 13 > 437) continue
+      ctx.fillStyle = ["#a3a695", "#b5b39b", "#959f94", "#8e9891"][(row * 7 + col * 3) % 4]
+      ctx.fillRect(x, y, 17, 13)
+      ctx.fillStyle = "#d2ccb33a"
+      ctx.fillRect(x, y, 17, 1)
+    }
+  for (let i = 0; i < 18; i++) {
+    ctx.fillStyle = "#244d5c28"
     ctx.beginPath()
-    ctx.moveTo(x, 48)
-    ctx.lineTo(x, 443)
-    ctx.stroke()
-  }
-  for (let y = 48; y <= 443; y += 38) {
-    ctx.beginPath()
-    ctx.moveTo(38, y)
-    ctx.lineTo(798, y)
-    ctx.stroke()
+    ctx.ellipse(65 + ((i * 139) % 700), 75 + ((i * 71) % 340), 18 + (i % 17), 5, -0.3, 0, Math.PI * 2)
+    ctx.fill()
   }
   ctx.lineWidth = 44
   ctx.strokeStyle = "#989c8a"
@@ -154,6 +158,41 @@ function drawDockyard(
   ctx.fillText("NORTH PIER", 48, 30)
   ctx.fillText("EAST RIVER", 666, 481)
 
+  for (const [x, y, color] of [
+    [185, 482, "#b15840"],
+    [452, 482, "#d2b66f"],
+    [718, 482, "#538d99"],
+  ] as const) {
+    const bob = Math.sin(state.time * 1.3 + x) * 1.3
+    ctx.save()
+    ctx.translate(x, y + bob)
+    ctx.fillStyle = "#041d2d88"
+    ctx.beginPath()
+    ctx.ellipse(8, 3, 47, 12, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.moveTo(-38, -9)
+    ctx.lineTo(29, -9)
+    ctx.lineTo(43, 0)
+    ctx.lineTo(29, 9)
+    ctx.lineTo(-38, 9)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = "#192e37"
+    ctx.fillRect(-29, -6, 47, 12)
+    ctx.fillStyle = "#e7ddbe"
+    ctx.fillRect(-10, -10, 19, 13)
+    ctx.fillStyle = "#5b929d"
+    ctx.fillRect(-8, -8, 15, 5)
+    ctx.strokeStyle = "#a6b6a7"
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(0, -9)
+    ctx.lineTo(0, -35)
+    ctx.stroke()
+    ctx.restore()
+  }
   if (placement) {
     const hq = state.buildings.find((building) => building.kind === "hq" && building.team === "crew")
     if (hq) {
@@ -214,18 +253,62 @@ function drawDockyard(
     ctx.lineTo(left + width + 9, building.y + 22)
     ctx.lineTo(left + width, building.y + 22)
     ctx.fill()
-    ctx.fillStyle = color
-    ctx.fillRect(left, building.y - 28, width, 28)
-    ctx.fillStyle = friendly ? "#65a1a0" : "#d98c69"
-    ctx.fillRect(left, building.y - 28, width, 3)
-    ctx.strokeStyle = "#e4dfb749"
+    const roofY = building.y - 38,
+      ridgeY = building.y - (building.kind === "sentry" ? 47 : 60)
+    ctx.fillStyle = friendly ? "#9b6e52" : "#806154"
+    ctx.fillRect(left, roofY, width, 60)
+    ctx.strokeStyle = "#d4a07950"
     ctx.lineWidth = 1
-    for (let x = left + 6; x < left + width; x += 8) {
+    for (let row = 0; row < 7; row++) {
+      const y = roofY + row * 8
       ctx.beginPath()
-      ctx.moveTo(x, building.y - 24)
-      ctx.lineTo(x, building.y - 2)
+      ctx.moveTo(left, y)
+      ctx.lineTo(left + width, y)
+      ctx.stroke()
+      for (let x = left + (row % 2) * 7; x < left + width; x += 14) {
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(x, y + 8)
+        ctx.stroke()
+      }
+    }
+    ctx.fillStyle = friendly ? "#73a2a0" : "#ba826b"
+    ctx.beginPath()
+    ctx.moveTo(left - 5, roofY)
+    ctx.lineTo(building.x, ridgeY)
+    ctx.lineTo(left + width + 5, roofY)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.moveTo(left - 5, roofY)
+    ctx.lineTo(building.x, ridgeY)
+    ctx.lineTo(building.x, ridgeY + 26)
+    ctx.lineTo(left - 5, roofY + 25)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = friendly ? "#29494f" : "#6c463f"
+    ctx.beginPath()
+    ctx.moveTo(building.x, ridgeY)
+    ctx.lineTo(left + width + 5, roofY)
+    ctx.lineTo(left + width + 5, roofY + 25)
+    ctx.lineTo(building.x, ridgeY + 26)
+    ctx.closePath()
+    ctx.fill()
+    ctx.strokeStyle = "#acd0b970"
+    ctx.lineWidth = 1
+    for (let i = 0; i < 6; i++) {
+      const u = i / 6
+      ctx.beginPath()
+      ctx.moveTo(left - 5 + (width / 2 + 5) * u, roofY + (ridgeY - roofY) * u)
+      ctx.lineTo(left - 5 + (width / 2 + 5) * u, roofY + (ridgeY - roofY) * u + 25)
       ctx.stroke()
     }
+    const glow = ctx.createRadialGradient(building.x, building.y + 12, 2, building.x, building.y + 12, width)
+    glow.addColorStop(0, "#f2c57530")
+    glow.addColorStop(1, "#f2c57500")
+    ctx.fillStyle = glow
+    ctx.fillRect(left - 25, building.y - 10, width + 50, 70)
     // Raised roof vent, lit clerestory and loading door keep each structure legible at map scale.
     ctx.fillStyle = "#344f4e"
     ctx.fillRect(left + 7, building.y - 24, 13, 9)
@@ -294,6 +377,11 @@ function drawDockyard(
     ctx.beginPath()
     ctx.ellipse(unit.x + 3, unit.y + 6, 8, 4, 0, 0, Math.PI * 2)
     ctx.fill()
+    const stride =
+      unit.target || unit.resourceId !== null || unit.team === "rival" ? Math.sin(state.time * 12 + unit.id) * 3 : 0
+    ctx.fillStyle = "#243639"
+    ctx.fillRect(unit.x - 5, unit.y + 5, 4, 7 + stride)
+    ctx.fillRect(unit.x + 1, unit.y + 5, 4, 7 - stride)
     ctx.fillStyle = unit.team === "rival" ? palette.rival : unit.kind === "guard" ? palette.crew : "#59574b"
     ctx.fillRect(unit.x - 5, unit.y - 3, 10, 11)
     ctx.fillStyle = unit.kind === "worker" ? palette.gold : unit.team === "crew" ? "#204d5b" : "#774034"
@@ -375,6 +463,7 @@ export default function DockyardGame() {
   const placementRef = useRef<"workshop" | "sentry" | null>(null)
   const pointerRef = useRef<DockyardPoint | null>(null)
   const [hud, setHud] = useState({
+    level: 1,
     scrap: 110,
     workers: 3,
     guards: 1,
@@ -415,6 +504,7 @@ export default function DockyardGame() {
       tasks.set(task, (tasks.get(task) || 0) + 1)
     }
     setHud({
+      level: state.level,
       rivalHp: Math.max(
         0,
         Math.ceil(state.buildings.find((building) => building.team === "rival" && building.kind === "hq")?.hp || 0),
@@ -564,8 +654,8 @@ export default function DockyardGame() {
     else if (state.phase === "paused") state.phase = "playing"
     refreshHud()
   }
-  const restart = () => {
-    stateRef.current = createDockyard()
+  const startMission = (level: number) => {
+    stateRef.current = createDockyard(level)
     stateRef.current.phase = "playing"
     setRunId((id) => id + 1)
     selectedRef.current = []
@@ -574,6 +664,8 @@ export default function DockyardGame() {
     refreshHud()
     rootRef.current?.focus()
   }
+
+  const restart = () => startMission(stateRef.current.level)
 
   const mapPoint = (event: PointerEvent<HTMLCanvasElement>): DockyardPoint => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -774,7 +866,7 @@ export default function DockyardGame() {
         <div style={{ display: "flex", gap: 14, flex: "0 1 220px" }}>
           {[
             { label: "Your HQ", hp: hud.hp, max: 650, color: "#8bbe91" },
-            { label: "Rival HQ", hp: hud.rivalHp, max: 550, color: "#ed947a" },
+            { label: "Rival HQ", hp: hud.rivalHp, max: DOCKYARD_MISSIONS[hud.level - 1].hp, color: "#ed947a" },
           ].map((base) => (
             <div key={base.label} style={{ flex: 1, minWidth: 88 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10, marginBottom: 4 }}>
@@ -865,8 +957,25 @@ export default function DockyardGame() {
                   key={`dockyard-${runId}`}
                   gameName="dockyard"
                   score={Math.round(hud.time * 1000)}
-                  level={1}
+                  level={hud.level}
                 />
+              )}
+              {(hud.phase === "briefing" || hud.phase === "won") && (
+                <div style={{ display: "grid", gap: 6, marginTop: 14 }} aria-label="Dockyard missions">
+                  {DOCKYARD_MISSIONS.map((mission, index) => (
+                    <button
+                      key={mission.name}
+                      className={focusClass}
+                      onClick={() => startMission(index + 1)}
+                      style={{ ...actionStyle, textAlign: "left", padding: 10 }}
+                    >
+                      <strong>
+                        {index + 1}. {mission.name}
+                      </strong>
+                      <span style={{ display: "block", fontSize: 11, marginTop: 3 }}>{mission.brief}</span>
+                    </button>
+                  ))}
+                </div>
               )}
               {hud.phase === "briefing" && (
                 <>
@@ -954,7 +1063,7 @@ export default function DockyardGame() {
             </div>
           </div>
           <span style={{ color: hud.nextWave <= 10 ? "#933c2c" : "#526153", fontWeight: 700 }}>
-            Rival wave {hud.wave + 1} · {hud.nextWave}s
+            {hud.level}/3 · {DOCKYARD_MISSIONS[hud.level - 1].name} · Wave {hud.wave + 1} · {hud.nextWave}s
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 5 }}>

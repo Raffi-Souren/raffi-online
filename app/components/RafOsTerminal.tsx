@@ -17,31 +17,31 @@ import {
   type Submission,
 } from "../../lib/raf-os"
 
-const ink = "#d7e4d9",
-  green = "#a1e7a8",
-  muted = "#9aaba1",
-  amber = "#ffd18a",
-  line = "#32483a"
+const ink = "var(--raf-ink)",
+  green = "var(--raf-green)",
+  muted = "var(--raf-muted)",
+  amber = "var(--raf-amber)",
+  line = "var(--raf-line)"
 const control: CSSProperties = {
   border: `1px solid ${line}`,
-  borderRadius: 2,
+  borderRadius: 0,
   padding: "8px 11px",
   color: ink,
-  background: "#17271d",
+  background: "var(--raf-surface)",
   font: "inherit",
-  fontSize: 12,
+  fontSize: 14,
   minHeight: 38,
   cursor: "pointer",
 }
 const field: CSSProperties = {
   width: "100%",
-  background: "#0b1710",
+  background: "var(--raf-bg)",
   color: ink,
   border: `1px solid ${line}`,
-  borderRadius: 2,
+  borderRadius: 0,
   padding: "10px 12px",
   font: "inherit",
-  fontSize: 13,
+  fontSize: 16,
   lineHeight: 1.6,
   caretColor: green,
   resize: "vertical",
@@ -70,13 +70,13 @@ function download(text: string, name: string, type: string) {
 }
 
 function References({ ids, sources }: { ids: string[]; sources: Source[] }) {
-  if (!ids.length) return <span style={{ color: muted, fontSize: 11 }}>No source supplied</span>
+  if (!ids.length) return <span style={{ color: muted, fontSize: 12 }}>No source supplied</span>
   return (
     <span style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
       {ids.map((id) => {
         const source = sources.find((entry) => entry.id === id)
         return (
-          <details key={id} style={{ fontSize: 11, color: muted, maxWidth: "100%" }}>
+          <details key={id} style={{ fontSize: 12, color: muted, maxWidth: "100%" }}>
             <summary style={{ cursor: "pointer", color: green }}>{source?.label ?? id}</summary>
             <p
               style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", padding: 8, borderLeft: `1px solid ${line}` }}
@@ -372,7 +372,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           type="file"
           accept="application/pdf,.pdf"
           disabled={busy || fileBusy}
-          style={{ maxWidth: 170, fontSize: 11 }}
+          style={{ maxWidth: 170, fontSize: 12 }}
           onChange={(event) => {
             void chooseFile(event.target.files?.[0], previous)
             event.target.value = ""
@@ -380,7 +380,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
         />
       </label>
       {(previous ? previousDeck : deck) && (
-        <span style={{ fontSize: 11, overflowWrap: "anywhere" }}>
+        <span style={{ fontSize: 12, overflowWrap: "anywhere" }}>
           {(previous ? previousDeck : deck)?.name}
           <button
             aria-label={previous ? "Remove earlier deck" : "Remove deck"}
@@ -413,10 +413,10 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          background: "#101d15",
+          background: "var(--raf-bg)",
           color: ink,
-          fontFamily: '"SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-          fontSize: 13,
+          fontFamily: '"IBM Plex Mono", Menlo, Monaco, Consolas, monospace',
+          fontSize: 16,
           lineHeight: 1.6,
           colorScheme: "dark",
         }}
@@ -436,7 +436,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
             <div style={{ display: "flex", gap: 8, alignItems: "center", color: green, fontSize: 14, fontWeight: 600 }}>
               <Terminal size={16} aria-hidden="true" /> IDEA → PILOT → PROOF
             </div>
-            <p className="raf-tagline" style={{ color: muted, fontSize: 11, margin: "4px 0 0" }}>
+            <p className="raf-tagline" style={{ color: muted, fontSize: 12, margin: "4px 0 0" }}>
               Did the pitch get stronger—or just sound better?
             </p>
           </div>
@@ -444,7 +444,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
             href={GPT_BACKUP}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: muted, fontSize: 11, display: "flex", alignItems: "center", gap: 5 }}
+            style={{ color: muted, fontSize: 12, display: "flex", alignItems: "center", gap: 5 }}
           >
             GPT version <ArrowUpRight size={13} />
           </a>
@@ -461,10 +461,10 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               onClick={() => setView(tab)}
               style={{
                 ...control,
-                background: "transparent",
+                background: view === tab ? green : "transparent",
                 border: 0,
                 borderBottom: `2px solid ${view === tab ? green : "transparent"}`,
-                color: view === tab ? green : muted,
+                color: view === tab ? "#030805" : muted,
                 opacity: (tab === "review" || tab === "changes") && !active ? 0.5 : 1,
               }}
             >
@@ -491,9 +491,9 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               display: "flex",
               gap: 10,
               color: busy ? green : muted,
-              fontSize: 11,
-              marginBottom: 16,
-              paddingBottom: 12,
+              fontSize: 12,
+              marginBottom: 10,
+              paddingBottom: 8,
               borderBottom: `1px dashed ${line}`,
             }}
           >
@@ -530,12 +530,12 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   flexWrap: "wrap",
                 }}
               >
-                <h2 style={{ fontSize: 13, fontWeight: 600, margin: "4px 0 12px" }}>
+                <h2 style={{ fontSize: 16, fontWeight: 600, margin: "4px 0 12px" }}>
                   — {runs.length ? "Revise your pitch" : "Start with the business"}
                 </h2>
                 <button
                   disabled={busy}
-                  style={{ ...control, color: muted, fontSize: 11 }}
+                  style={{ ...control, color: muted, fontSize: 12 }}
                   onClick={() => {
                     if (!draft && !deck) setDraft(sample)
                     else setNotice("Clear the draft first to load the fictional venue example.")
@@ -544,128 +544,35 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   Load fictional example
                 </button>
               </div>
-              <label htmlFor="raf-pitch" style={{ display: "block", marginBottom: 8, color: muted, fontSize: 12 }}>
+              <label htmlFor="raf-pitch" style={{ display: "block", marginBottom: 8, color: muted, fontSize: 14 }}>
                 Who has the problem, what happens today, and what have you actually tested?
               </label>
               <textarea
                 id="raf-pitch"
                 value={draft}
                 maxLength={16000}
-                rows={8}
+                rows={4}
                 disabled={busy}
                 onChange={(e) => setDraft(e.target.value)}
                 style={field}
                 placeholder="Describe your idea, buyer, current workaround, evidence, and next milestone…"
               />
-              <div style={{ fontSize: 10, color: muted, textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: muted, textAlign: "right" }}>
                 {draft.length.toLocaleString()} / 16,000
               </div>
               {upload()}
-              <p style={{ fontSize: 11, color: muted }}>
+              <p style={{ fontSize: 12, color: muted, margin: "4px 0" }}>
                 {deck
                   ? "PDF: up to 1 MB / 24 pages. Image pages are reviewed by the model."
                   : ">> No deck detected. A text review works; add a PDF for slide-level context."}
-              </p>
-              <details
-                open={manualCompare || undefined}
-                style={{ borderTop: `1px solid ${line}`, paddingTop: 14, marginTop: 16 }}
-              >
-                <summary style={{ cursor: "pointer", color: green }}>Compare with an earlier version</summary>
-                <div style={{ paddingTop: 12 }}>
-                  {runs.length > 0 && (
-                    <label style={{ display: "block", fontSize: 12 }}>
-                      Saved baseline{" "}
-                      <select
-                        disabled={busy || manualCompare}
-                        value={baselineId}
-                        onChange={(e) => setBaselineId(e.target.value)}
-                        style={{ ...control, margin: "8px 0", width: "100%" }}
-                      >
-                        <option value="">Choose a version</option>
-                        {runs.map((r, i) => (
-                          <option value={r.id} key={r.id}>
-                            Version {r.version ?? i + 1} ·{" "}
-                            {new Date(r.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12 }}>
-                    <input
-                      type="checkbox"
-                      disabled={busy}
-                      checked={manualCompare}
-                      onChange={(e) => setManualCompare(e.target.checked)}
-                    />{" "}
-                    Paste or upload a separate earlier version
-                  </label>
-                  {manualCompare && (
-                    <div style={{ marginTop: 12 }}>
-                      <label htmlFor="raf-before" style={{ display: "block", marginBottom: 6 }}>
-                        Earlier pitch
-                      </label>
-                      <textarea
-                        id="raf-before"
-                        value={previousDraft}
-                        maxLength={16000}
-                        disabled={busy}
-                        rows={5}
-                        style={field}
-                        onChange={(e) => setPreviousDraft(e.target.value)}
-                      />
-                      {upload(true)}
-                    </div>
-                  )}
-                </div>
-              </details>
-              <label
-                htmlFor="raf-challenge"
-                style={{ display: "block", color: muted, fontSize: 12, marginTop: 18, marginBottom: 7 }}
-              >
-                Challenge a finding or focus the review (optional)
-              </label>
-              <textarea
-                id="raf-challenge"
-                value={challenge}
-                maxLength={2000}
-                rows={2}
-                disabled={busy}
-                onChange={(e) => setChallenge(e.target.value)}
-                style={field}
-                placeholder="e.g. The pilot was paid; review the invoice on page 8."
-              />
-              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginTop: 18 }}>
-                <label htmlFor="raf-provider" style={{ color: muted, fontSize: 12 }}>
-                  Provider
-                </label>
-                <select
-                  id="raf-provider"
-                  value={provider}
-                  disabled={busy || fileBusy}
-                  onChange={(event) => setProvider(event.target.value as ProviderChoice)}
-                  aria-describedby="raf-provider-help"
-                  style={{ ...control, minWidth: 150, maxWidth: "100%" }}
-                >
-                  <option value="auto">Auto{defaultProvider ? ` · ${providerNames[defaultProvider]}` : ""}</option>
-                  {configuredProviders.map((name) => (
-                    <option key={name} value={name}>
-                      {providerNames[name]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <p id="raf-provider-help" style={{ color: muted, fontSize: 11, lineHeight: 1.6, margin: "8px 0 0" }}>
-                Auto uses OpenAI when configured, otherwise Gemini, with one backup attempt during a temporary provider
-                outage. A manual choice stays on that provider.
               </p>
               <label
                 style={{
                   display: "flex",
                   gap: 9,
                   alignItems: "flex-start",
-                  margin: "18px 0",
-                  fontSize: 11,
+                  margin: "12px 0",
+                  fontSize: 12,
                   color: muted,
                   lineHeight: 1.6,
                 }}
@@ -678,15 +585,16 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   style={{ marginTop: 4 }}
                 />
                 <span>
-                  I agree to send this pitch, any earlier version, and attached PDFs to OpenAI or Google Gemini for
-                  analysis. Provider data-use and retention rules apply:{" "}
+                  Send this pitch, earlier versions and PDFs to{" "}
+                  {provider === "auto" ? "OpenAI or Google Gemini (Auto)" : providerNames[provider]} for analysis.
+                  Data-use and retention terms:{" "}
                   <a
                     href="https://developers.openai.com/api/docs/guides/your-data"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: green }}
                   >
-                    OpenAI data controls
+                    OpenAI
                   </a>{" "}
                   and{" "}
                   <a
@@ -695,7 +603,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                     rel="noopener noreferrer"
                     style={{ color: green }}
                   >
-                    Google Gemini terms
+                    Gemini
                   </a>
                   . Do not submit confidential, sensitive, or personal information.
                 </span>
@@ -730,10 +638,106 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   </>
                 )}
               </div>
+              <details
+                open={manualCompare || undefined}
+                style={{ borderTop: `1px solid ${line}`, paddingTop: 14, marginTop: 16 }}
+              >
+                <summary style={{ cursor: "pointer", color: green }}>Compare with an earlier version</summary>
+                <div style={{ paddingTop: 12 }}>
+                  {runs.length > 0 && (
+                    <label style={{ display: "block", fontSize: 14 }}>
+                      Saved baseline{" "}
+                      <select
+                        disabled={busy || manualCompare}
+                        value={baselineId}
+                        onChange={(e) => setBaselineId(e.target.value)}
+                        style={{ ...control, margin: "8px 0", width: "100%" }}
+                      >
+                        <option value="">Choose a version</option>
+                        {runs.map((r, i) => (
+                          <option value={r.id} key={r.id}>
+                            Version {r.version ?? i + 1} ·{" "}
+                            {new Date(r.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
+                    <input
+                      type="checkbox"
+                      disabled={busy}
+                      checked={manualCompare}
+                      onChange={(e) => setManualCompare(e.target.checked)}
+                    />{" "}
+                    Paste or upload a separate earlier version
+                  </label>
+                  {manualCompare && (
+                    <div style={{ marginTop: 12 }}>
+                      <label htmlFor="raf-before" style={{ display: "block", marginBottom: 6 }}>
+                        Earlier pitch
+                      </label>
+                      <textarea
+                        id="raf-before"
+                        value={previousDraft}
+                        maxLength={16000}
+                        disabled={busy}
+                        rows={5}
+                        style={field}
+                        onChange={(e) => setPreviousDraft(e.target.value)}
+                      />
+                      {upload(true)}
+                    </div>
+                  )}
+                </div>
+              </details>
+              <details style={{ borderTop: `1px solid ${line}`, marginTop: 16, paddingTop: 12 }}>
+                <summary style={{ cursor: "pointer", color: green }}>Review focus & provider settings</summary>
+                <label
+                  htmlFor="raf-challenge"
+                  style={{ display: "block", color: muted, fontSize: 14, marginTop: 18, marginBottom: 7 }}
+                >
+                  Challenge a finding or focus the review (optional)
+                </label>
+                <textarea
+                  id="raf-challenge"
+                  value={challenge}
+                  maxLength={2000}
+                  rows={2}
+                  disabled={busy}
+                  onChange={(e) => setChallenge(e.target.value)}
+                  style={field}
+                  placeholder="e.g. The pilot was paid; review the invoice on page 8."
+                />
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginTop: 18 }}>
+                  <label htmlFor="raf-provider" style={{ color: muted, fontSize: 14 }}>
+                    Provider
+                  </label>
+                  <select
+                    id="raf-provider"
+                    value={provider}
+                    disabled={busy || fileBusy}
+                    onChange={(event) => setProvider(event.target.value as ProviderChoice)}
+                    aria-describedby="raf-provider-help"
+                    style={{ ...control, minWidth: 150, maxWidth: "100%" }}
+                  >
+                    <option value="auto">Auto{defaultProvider ? ` · ${providerNames[defaultProvider]}` : ""}</option>
+                    {configuredProviders.map((name) => (
+                      <option key={name} value={name}>
+                        {providerNames[name]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p id="raf-provider-help" style={{ color: muted, fontSize: 12, lineHeight: 1.6, margin: "8px 0 0" }}>
+                  Auto uses OpenAI when configured, otherwise Gemini, with one backup attempt during a temporary
+                  provider outage. A manual choice stays on that provider.
+                </p>
+              </details>
             </>
           )}
           {active && (view === "review" || view === "changes" || view === "protocol") && (
-            <details style={{ border: `1px solid ${line}`, padding: 10, marginBottom: 16, fontSize: 11, color: muted }}>
+            <details style={{ border: `1px solid ${line}`, padding: 10, marginBottom: 16, fontSize: 12, color: muted }}>
               <summary style={{ cursor: "pointer", color: green }}>Review record · {active.rubric}</summary>
               <p>
                 {active.model} · {active.prompt} · {new Date(active.createdAt).toLocaleString()}
@@ -771,13 +775,13 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           {view === "review" && active && (
             <>
               <h2 style={{ fontSize: 14, color: green }}>— Analysis</h2>
-              <p style={{ fontSize: 13, lineHeight: 1.75, maxWidth: "86ch" }}>{active.result.review.snapshot}</p>
-              <p style={{ color: amber, fontSize: 11 }}>
+              <p style={{ fontSize: 16, lineHeight: 1.75, maxWidth: "86ch" }}>{active.result.review.snapshot}</p>
+              <p style={{ color: amber, fontSize: 12 }}>
                 Scores assess this submission. Unknown means missing information, not zero. Supplied material is not
                 independently verified.
               </p>
-              <div style={{ overflowX: "auto", margin: "18px 0" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <div style={{ overflowX: "auto", margin: "12px 0" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
                   <thead style={{ color: muted, background: "#0c1811" }}>
                     <tr>
                       <th style={{ textAlign: "left", padding: 8 }}>Dimension</th>
@@ -812,14 +816,14 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                 <details key={i} open={i < 3} style={{ borderTop: `1px solid ${line}`, padding: "12px 0" }}>
                   <summary style={{ color: green, cursor: "pointer" }}>
                     {finding.topic}{" "}
-                    <span style={{ color: muted, fontSize: 10 }}> / {statusLabels[finding.status]}</span>
+                    <span style={{ color: muted, fontSize: 11 }}> / {statusLabels[finding.status]}</span>
                   </summary>
                   <p style={{ lineHeight: 1.75 }}>{finding.observation}</p>
                   <References ids={finding.refs} sources={active.sources} />
                   <p style={{ lineHeight: 1.7 }}>Next: {finding.nextStep}</p>
                 </details>
               ))}
-              <h3 style={{ color: green, fontSize: 13, marginTop: 24 }}>This week</h3>
+              <h3 style={{ color: green, fontSize: 16, marginTop: 24 }}>This week</h3>
               {active.result.review.recommendations.map((r, i) => (
                 <div key={i} style={{ padding: "10px 0", borderTop: `1px solid ${line}`, lineHeight: 1.7 }}>
                   <strong>
@@ -829,11 +833,11 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   <span style={{ color: amber }}>Track: {r.metric}</span>
                 </div>
               ))}
-              <h3 style={{ color: green, fontSize: 13, marginTop: 24 }}>First pilot</h3>
+              <h3 style={{ color: green, fontSize: 16, marginTop: 24 }}>First pilot</h3>
               <dl style={{ margin: 0 }}>
                 {Object.entries(active.result.review.pilot).map(([key, value]) => (
                   <div key={key} style={{ borderTop: `1px solid ${line}`, padding: "10px 0" }}>
-                    <dt style={{ color: muted, fontSize: 11 }}>
+                    <dt style={{ color: muted, fontSize: 12 }}>
                       {
                         (
                           {
@@ -851,11 +855,11 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   </div>
                 ))}
               </dl>
-              <h3 style={{ color: green, fontSize: 13, marginTop: 24 }}>Value proposition</h3>
+              <h3 style={{ color: green, fontSize: 16, marginTop: 24 }}>Value proposition</h3>
               <p style={{ lineHeight: 1.8 }}>{active.result.review.valueProp}</p>
               {!!active.result.review.questions.length && (
                 <>
-                  <h3 style={{ color: green, fontSize: 13 }}>To sharpen the next version</h3>
+                  <h3 style={{ color: green, fontSize: 16 }}>To sharpen the next version</h3>
                   <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
                     {active.result.review.questions.map((q) => (
                       <li key={q}>{q}</li>
@@ -880,15 +884,15 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               ) : (
                 <>
                   <p style={{ lineHeight: 1.8 }}>{active.result.comparisonSummary}</p>
-                  <p style={{ fontSize: 11, color: amber }}>
+                  <p style={{ fontSize: 12, color: amber }}>
                     Change counts are calculated from the validated ledger. Classification is a model judgment; a new
                     claim is not automatically new evidence.
                   </p>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "18px 0" }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
                     {Object.entries(CHANGE_LABELS).map(([kind, label]) => {
                       const count = active.result.changes.filter((c) => c.kind === kind).length
                       return count ? (
-                        <span key={kind} style={{ border: `1px solid ${line}`, padding: "8px 10px", fontSize: 11 }}>
+                        <span key={kind} style={{ border: `1px solid ${line}`, padding: "8px 10px", fontSize: 12 }}>
                           {label} <strong style={{ color: green }}>{count}</strong>
                         </span>
                       ) : null
@@ -896,14 +900,14 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   </div>
                   {active.result.changes.map((change, i) => (
                     <article key={i} style={{ borderTop: `1px solid ${line}`, padding: "18px 0" }}>
-                      <div style={{ color: amber, fontSize: 10, marginBottom: 7 }}>
+                      <div style={{ color: amber, fontSize: 11, marginBottom: 7 }}>
                         {CHANGE_LABELS[change.kind].toUpperCase()}
                       </div>
                       <h3 style={{ fontSize: 14, margin: "0 0 12px" }}>{change.topic}</h3>
                       <div className="raf-comparison">
                         {(["before", "after"] as const).map((side) => (
                           <div key={side} style={{ padding: 12, background: "#0c1710", border: `1px solid ${line}` }}>
-                            <div style={{ color: muted, fontSize: 10 }}>
+                            <div style={{ color: muted, fontSize: 11 }}>
                               {side.toUpperCase()} · {statusLabels[change[side].status]}
                             </div>
                             <p style={{ lineHeight: 1.75 }}>{change[side].statement}</p>
@@ -913,7 +917,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                                   margin: "10px 0",
                                   borderLeft: `2px solid ${line}`,
                                   paddingLeft: 10,
-                                  fontSize: 12,
+                                  fontSize: 14,
                                   lineHeight: 1.7,
                                 }}
                               >
@@ -941,7 +945,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               </p>
               <div className="raf-comparison">
                 <section>
-                  <h3 style={{ fontSize: 13, color: green }}>Enforced in code</h3>
+                  <h3 style={{ fontSize: 16, color: green }}>Enforced in code</h3>
                   <ul style={{ paddingLeft: 18, lineHeight: 1.9 }}>
                     <li>Input size, PDF format and page limits.</li>
                     <li>Eight distinct score dimensions; unknown stays unknown.</li>
@@ -954,20 +958,20 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   </ul>
                 </section>
                 <section>
-                  <h3 style={{ fontSize: 13, color: amber }}>Still model judgments</h3>
+                  <h3 style={{ fontSize: 16, color: amber }}>Still model judgments</h3>
                   <ul style={{ paddingLeft: 18, lineHeight: 1.9 }}>
                     <li>Whether a claim is plausible or evidence is persuasive.</li>
                     <li>The evidence type and change classification.</li>
                     <li>Scores, recommendations, and proposed experiments.</li>
                     <li>Reading PDF pages, including quoted content.</li>
                   </ul>
-                  <p style={{ color: muted, fontSize: 12, lineHeight: 1.8 }}>
+                  <p style={{ color: muted, fontSize: 14, lineHeight: 1.8 }}>
                     Passing the contract is not proof of factual accuracy. Challenge a finding with a specific passage
                     or result. A repeatable answer can still be wrong.
                   </p>
                 </section>
               </div>
-              <h3 style={{ color: green, fontSize: 13 }}>Founder reference shelf</h3>
+              <h3 style={{ color: green, fontSize: 16 }}>Founder reference shelf</h3>
               <p style={{ lineHeight: 1.8 }}>
                 Curated lessons from Raffi’s indify, Nameless, and Mallorca materials: test buyer behavior, distinguish
                 plans from results, and define the next observable commitment. Private decks are not published or
@@ -1010,16 +1014,16 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   Raffi’s research: repeatability and correctness
                 </a>
               </p>
-              <p style={{ color: muted, fontSize: 11, lineHeight: 1.8 }}>
+              <p style={{ color: muted, fontSize: 12, lineHeight: 1.8 }}>
                 Historical examples are guidance, not evidence about your business or a guarantee of fundraising. RAF OS
                 is independent of YC. Reviews use supplied materials and curated references; they do not perform live
                 market research.
               </p>
-              <h3 style={{ color: green, fontSize: 13 }}>Commands</h3>
+              <h3 style={{ color: green, fontSize: 16 }}>Commands</h3>
               <p style={{ lineHeight: 2 }}>
                 /analyze · /deck · /compare · /iterate · /pilot · /valueprop · /export · /clear · /help
               </p>
-              <p style={{ color: muted, fontSize: 11 }}>
+              <p style={{ color: muted, fontSize: 12 }}>
                 Commands select app actions. They never execute a shell. Use the Draft fields for your pitch and
                 revision context.
               </p>
@@ -1042,7 +1046,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               <select
                 aria-label="Review version"
                 value={active?.id ?? ""}
-                style={{ ...control, maxWidth: 150, fontSize: 11 }}
+                style={{ ...control, maxWidth: 150, fontSize: 12 }}
                 onChange={(e) => setSelectedId(e.target.value)}
               >
                 {runs.map((r, i) => (
@@ -1059,7 +1063,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               >
                 <Download size={14} />
               </button>
-              <button style={{ ...control, fontSize: 11 }} onClick={() => void exportAudit()}>
+              <button style={{ ...control, fontSize: 12 }} onClick={() => void exportAudit()}>
                 Export record
               </button>
             </>
@@ -1080,12 +1084,12 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               minHeight: 40,
               padding: "0 10px",
               border: `1px solid var(--raf-command-border, ${line})`,
-              borderRadius: 2,
+              borderRadius: 0,
               background: "#09130d",
             }}
           >
-            <label htmlFor="raf-command" style={{ color: green, paddingRight: 10, fontSize: 12, whiteSpace: "nowrap" }}>
-              <span style={{ color: muted }}>raf-os</span> &gt;
+            <label htmlFor="raf-command" style={{ color: green, paddingRight: 10, fontSize: 14, whiteSpace: "nowrap" }}>
+              COMMAND ===&gt;
             </label>
             <input
               id="raf-command"
@@ -1102,7 +1106,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               Cancel
             </button>
           )}
-          <button style={{ ...control, fontSize: 11, color: muted }} onClick={() => setClearPending(true)}>
+          <button style={{ ...control, fontSize: 12, color: muted }} onClick={() => setClearPending(true)}>
             Clear
           </button>
           {clearPending && (
@@ -1114,7 +1118,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                 alignItems: "center",
                 flexWrap: "wrap",
                 gap: 8,
-                fontSize: 11,
+                fontSize: 12,
                 color: amber,
               }}
             >
@@ -1129,6 +1133,15 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           )}
         </footer>
         <style jsx>{`
+          .raf-terminal {
+            --raf-bg: #030805;
+            --raf-surface: #101a13;
+            --raf-ink: #78fa96;
+            --raf-green: #a4ffb9;
+            --raf-muted: #a1b5a5;
+            --raf-amber: #ffd18a;
+            --raf-line: #32613e;
+          }
           .raf-comparison {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1142,14 +1155,14 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
             cursor: default;
           }
           .raf-command-line:focus-within {
-            --raf-command-border: #a1e7a8;
+            --raf-command-border: #a4ffb9;
           }
           .raf-terminal textarea::placeholder,
           .raf-terminal input::placeholder {
-            color: #809386;
+            color: #a1b5a5;
           }
           .raf-terminal :global(:focus-visible) {
-            outline: 2px solid #a1e7a8;
+            outline: 2px solid #a4ffb9;
             outline-offset: 3px;
           }
           @media (max-width: 600px) {

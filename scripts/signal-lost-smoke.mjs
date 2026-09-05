@@ -64,7 +64,7 @@ try {
     assert.equal(await game.getAttribute("data-phase"), "playing")
     await page.getByRole("button", { name: "Pause Signal Lost" }).click()
     await page.getByRole("button", { name: "Restart", exact: true }).click()
-    assert.match(await game.innerText(), /Sector 1 \/ 3/)
+    assert.match(await game.innerText(), /1\/5 · Service tunnels/)
 
     if (!touch) {
       await page.locator('[data-game="signal-lost"][data-phase="lost"]').waitFor({ timeout: 45000 })

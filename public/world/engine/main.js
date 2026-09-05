@@ -40,6 +40,7 @@ import {
   missionWantsAction, missionActionLabel, noteMissionPulse, noteMissionKick, noteAimLane,
   completeCrateQuest,
 } from '../game/missions.js'
+import { initSideActivities, updateSideActivities, sideActivityOpen } from '../game/side-activities.js'
 import { CRATE_QUEST_MESSAGE, crateQuestContext, isCrateQuestReturn } from '../game/crate-quest-core.js'
 import {
   initInteriors, enterInterior, exitInterior, interiorDoorContext, interiorSnapshot,
@@ -58,6 +59,15 @@ import {
   startRewindCompare, stopCompare, updateReplay, hasValidRun,
   getReplayPhase, getLastMetrics, replaySnapshot,
 } from '../game/replay.js'
+
+let hostActive = true
+window.addEventListener('message', (event) => {
+  if (event.source !== window.parent || event.origin !== location.origin) return
+  const value = event.data
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 2 || value.type !== 'raffi-world:activity' || typeof value.active !== 'boolean') return
+  hostActive = value.active
+  if (!hostActive) resetInput()
+})
 
 const els = {}
 const world = {
@@ -450,6 +460,7 @@ async function boot() {
   initPlayer(gfx.scene, materials, atlas)
   spawnParkedCars(gfx.scene, materials, atlas)
   spawnMobilityHub(gfx.scene, materials, atlas)
+  initSideActivities(gfx.scene, world.vehicles)
 
   setBoot(0.94, 'wiring input…')
   initInput({
@@ -586,6 +597,7 @@ async function boot() {
 function startGame() {
   els.boot?.classList.add('hidden')
   els.hud?.setAttribute('aria-hidden', 'false')
+  setCameraMode('chase')
   bus.emit('start')
   beginRecordingRun()
   const d = districtAt(state.player.x, state.player.z)
@@ -612,11 +624,18 @@ function loop(now) {
 
   const dt = Math.min((now - last) / 1000, 0.05)
   last = now
+  if (!hostActive || document.hidden) return
   state.dt = dt
   state.time += dt
   state.frame++
 
   const aspect = els.canvas.clientWidth / Math.max(els.canvas.clientHeight, 1)
+
+  if (sideActivityOpen()) {
+    updateSideActivities(document.hidden ? 0 : dt)
+    endInputFrame()
+    return
+  }
 
   updateInput(state.mode, player.vehicle?.kind || null)
 
@@ -711,7 +730,7 @@ function loop(now) {
       updatePlayer(dt, input, world.collision, state.radio.beatPhase)
     }
 
-    if (!world.transitBusy && !isDialogueBlocking()) updateMissions(dt)
+    if (!world.transitBusy && !isDialogueBlocking()) { updateMissions(dt); updateSideActivities(dt) }
     if (!world.transitBusy) updateCompliance(dt)
     if (!world.transitBusy && !state.interior) updatePursuit(dt)
 

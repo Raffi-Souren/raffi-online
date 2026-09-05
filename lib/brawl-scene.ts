@@ -1,4 +1,4 @@
-import { ARENA_END, type BrawlState, type Brawler } from "./brawl-game"
+import { ARENA_END, BRAWL_WAVES, type BrawlState, type Brawler } from "./brawl-game"
 
 export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width: number, height: number) {
   const worldWidth = Math.max(480, (width / height) * 500)
@@ -56,7 +56,7 @@ export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width
     "THE SOUND SYSTEM",
   ]
   const shopColors = ["#547b86", "#b87d6c", "#78728f", "#8d6375"]
-  for (let i = -1; i < 12; i++) {
+  for (let i = -1; i < 18; i++) {
     const x = i * 270
     if (x > camera + worldWidth + 270 || x < camera - 300) continue
     const color = shopColors[((i % 4) + 4) % 4]
@@ -95,7 +95,7 @@ export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width
   rect(camera, 447, worldWidth, 7, "#bdafae")
   ctx.strokeStyle = "#627287"
   ctx.lineWidth = 2
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 43; i++) {
     ctx.beginPath()
     ctx.moveTo(i * 110, 329)
     ctx.lineTo(i * 110 - 40, 447)
@@ -107,7 +107,7 @@ export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width
     ctx.lineTo(camera + worldWidth, y)
     ctx.stroke()
   }
-  for (let i = 0; i < 16; i++) rect(i * 190, 480, 87, 4, "#a8a4ad")
+  for (let i = 0; i < 25; i++) rect(i * 190, 480, 87, 4, "#a8a4ad")
 
   // Light strings make the recovered street read as a block party.
   ctx.strokeStyle = "#4d4b65"
@@ -116,20 +116,28 @@ export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width
   ctx.moveTo(camera - 40, 69)
   ctx.quadraticCurveTo(camera + worldWidth / 2, 141, camera + worldWidth + 40, 69)
   ctx.stroke()
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 27; i++) {
     const x = i * 180
     const local = (x - camera) / worldWidth
     const y = 69 + Math.sin(local * Math.PI) * 36
     if (local < 0 || local > 1) continue
     circle(x, y, 4.5, ["#f6d39a", "#9bd9d3", "#f4b3b5"][i % 3])
   }
-  rect(2540, 270, 90, 60, "#393a58")
-  circle(2564, 292, 14, "#191f3a")
-  circle(2607, 292, 14, "#191f3a")
-  circle(2564, 292, 5, "#b1bdc5")
-  circle(2607, 292, 5, "#b1bdc5")
-  text("RADIO", 2550, 319, 13, "#f7d19b")
+  rect(4300, 270, 90, 60, "#393a58")
+  circle(4324, 292, 14, "#191f3a")
+  circle(4367, 292, 14, "#191f3a")
+  circle(4324, 292, 5, "#b1bdc5")
+  circle(4367, 292, 5, "#b1bdc5")
+  text("RADIO", 4310, 319, 13, "#f7d19b")
 
+  for (const secret of game.secrets) {
+    if (secret.found) continue
+    rect(secret.x - 19, secret.y - 28, 38, 28, "#795747")
+    rect(secret.x - 20, secret.y - 31, 40, 5, "#caac7f")
+    circle(secret.x, secret.y - 14, 10, "#252a3d")
+    circle(secret.x, secret.y - 14, 3, "#f2c974")
+    if (Math.abs(game.player.x - secret.x) < 100) text("J", secret.x - 4, secret.y - 39, 14, "#fff1bc")
+  }
   for (const drop of game.healthDrops) {
     const bob = Math.sin(game.elapsed * 4) * 3
     circle(drop.x, drop.y - 14 + bob, 14, "#f3d09a")
@@ -183,7 +191,7 @@ export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width
     }
     ctx.restore()
     if (enemy) {
-      const maxHealth = enemy.boss ? 210 : 52 + game.wave * 7
+      const maxHealth = enemy.maxHealth
       rect(x - 22, y - (boss ? 159 : 116), 44, 4, "#454360")
       rect(x - 22, y - (boss ? 159 : 116), 44 * Math.max(0, enemy.health / maxHealth), 4, "#e3b894")
       if (enemy.windup > 0) {
@@ -208,7 +216,7 @@ export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width
   ctx.globalAlpha = 1
   if (game.enemies.length === 0 && game.status === "playing") {
     text(
-      game.wave === 2 ? "Bring the music back!  →" : "Next block  →",
+      game.wave === BRAWL_WAVES.length - 1 ? "Bring the music back!  →" : "Next block  →",
       Math.min(game.player.x + 70, ARENA_END - 130),
       275,
       21,
