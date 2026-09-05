@@ -137,8 +137,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       <button
         ref={blockRef}
         type="button"
-        aria-label={settled ? "Open your surprise" : "Discover a surprise"}
-        title={settled ? "Open Raf’s crate" : "There’s a surprise inside"}
+        aria-label={settled ? "Open Raf’s crate" : "Question block"}
         onClick={revealSurprise}
         onFocus={() => {
           motionRef.current.focused = true
@@ -219,19 +218,6 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           {paused ? "Resume movement" : "Pause movement"}
         </button>
       )}
-      <span
-        style={{
-          position: "absolute",
-          bottom: 7,
-          left: reducedMotion ? 4 : 142,
-          color: "white",
-          fontFamily: "Tahoma, sans-serif",
-          fontSize: 11,
-          textShadow: "0 1px 3px #000",
-        }}
-      >
-        {!settled && "There’s a surprise inside"}
-      </span>
       <div
         role="status"
         aria-live="polite"
