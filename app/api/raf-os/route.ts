@@ -4,7 +4,6 @@ import {
   auditRun,
   buildModelRequest,
   dailyBudget,
-  DEFAULT_RAF_MODEL,
   isSameOrigin,
   parseRunRequest,
   prepareSubmission,
@@ -18,6 +17,9 @@ import {
   usageIdentity,
 } from "@/lib/raf-os-server"
 
+import { buildGeminiRequest, requestGemini } from "@/lib/raf-os-gemini"
+import { configuredProviders, routingPlan, runRoutedReview } from "@/lib/raf-os-routing"
+
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -25,9 +27,15 @@ export const maxDuration = 60
 const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }
 
 function availability() {
+  return process.env.RAF_OS_ENABLED !== "false" && Boolean(process.env.DATABASE_URL?.trim()) && Boolean(sessionSecret())
+}
+
+function sessionSecret() {
   return (
-    process.env.RAF_OS_ENABLED !== "false" &&
-    Boolean(process.env.OPENAI_API_KEY?.trim() && process.env.DATABASE_URL?.trim())
+    process.env.RAF_OS_SESSION_SECRET?.trim() ||
+    process.env.OPENAI_API_KEY?.trim() ||
+    process.env.GEMINI_API_KEY?.trim() ||
+    ""
   )
 }
 
@@ -44,21 +52,26 @@ function attachSession(response: NextResponse, session: ReturnType<typeof readSe
 
 export async function GET(request: Request) {
   let available = availability()
+  let providers: ReturnType<typeof configuredProviders> = []
   try {
     dailyBudget()
+    providers = configuredProviders()
+    available = available && providers.length > 0
   } catch {
     available = false
   }
   const response = NextResponse.json(
     {
       available,
+      providers: providers.map((item) => item.provider),
+      defaultProvider: providers[0]?.provider ?? null,
       message: available
         ? "Ready to review your pitch."
         : "RAF OS analysis is temporarily unavailable. You can still open the GPT.",
     },
     { headers },
   )
-  if (available) attachSession(response, readSession(request.headers.get("cookie"), process.env.OPENAI_API_KEY!.trim()))
+  if (available) attachSession(response, readSession(request.headers.get("cookie"), sessionSecret()))
   return response
 }
 
@@ -70,36 +83,57 @@ export async function POST(request: Request) {
       { error: "RAF OS analysis is temporarily unavailable. Please try again later." },
       { status: 503, headers },
     )
-  const apiKey = process.env.OPENAI_API_KEY!.trim()
+  const secret = sessionSecret()
   const databaseUrl = process.env.DATABASE_URL!.trim()
-  const session = readSession(request.headers.get("cookie"), apiKey)
+  const session = readSession(request.headers.get("cookie"), secret)
   const controller = new AbortController()
   const abort = () => controller.abort()
   request.signal.addEventListener("abort", abort, { once: true })
   if (request.signal.aborted) abort()
+  const deadline = Date.now() + RAF_LIMITS.timeoutMs
   const timer = setTimeout(abort, RAF_LIMITS.timeoutMs)
   let reservation: string | null = null
   try {
     const cap = dailyBudget()
-    const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_RAF_MODEL
-    if (!/^[A-Za-z0-9._:-]{1,100}$/.test(model)) throw new RafHttpError("RAF OS is temporarily unavailable.", 503)
     const body = parseRunRequest(await readBoundedJson(request, controller.signal))
-    const prepared = []
+    const providers = configuredProviders()
+    if (!providers.length) throw new RafHttpError("RAF OS analysis is temporarily unavailable.", 503)
+    const plan = routingPlan(body, providers)
+    const prepared: Awaited<ReturnType<typeof prepareSubmission>>[] = []
     if (body.previous) prepared.push(await prepareSubmission(body.previous, "v1"))
     prepared.push(await prepareSubmission(body.current, body.previous ? "v2" : "v1"))
     if (controller.signal.aborted) throw new RafHttpError("The review timed out. Please try a shorter submission.", 504)
     const sources = prepared.flatMap((item) => item.sources)
-    reservation = await reserveUsage(databaseUrl, usageIdentity(request, session.id, apiKey), cap, controller.signal)
+    reservation = await reserveUsage(databaseUrl, usageIdentity(request, session.id, secret), cap, controller.signal)
     if (controller.signal.aborted) throw new RafHttpError("The review timed out. Please try again.", 504)
-    const modelRequest = buildModelRequest(body, prepared, model)
-    const reviewed = await requestModel(modelRequest, apiKey, sources, Boolean(body.previous), controller.signal)
+    const reviewed = await runRoutedReview(
+      plan,
+      async (config) => {
+        const sharedRequest = buildModelRequest(body, prepared, config.model)
+        if (config.provider === "gemini") {
+          const modelRequest = buildGeminiRequest(sharedRequest, config.model)
+          return {
+            ...(await requestGemini(modelRequest, config.apiKey, sources, Boolean(body.previous), controller.signal)),
+            modelRequest,
+          }
+        }
+        return {
+          ...(await requestModel(sharedRequest, config.apiKey, sources, Boolean(body.previous), controller.signal)),
+          modelRequest: sharedRequest,
+        }
+      },
+      controller.signal,
+      deadline,
+    )
     const result: RunResult = {
-      ...reviewed,
+      result: reviewed.result,
+      model: reviewed.model,
+      routing: reviewed.routing,
       sources,
       rubric: RAF_RUBRIC,
       prompt: RAF_PROMPT,
       createdAt: new Date().toISOString(),
-      audit: auditRun(body, reviewed.result, sources, modelRequest),
+      audit: auditRun(body, reviewed.result, sources, reviewed.modelRequest),
     }
     return attachSession(NextResponse.json(result, { headers }), session)
   } catch (error) {

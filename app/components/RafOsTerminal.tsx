@@ -55,6 +55,9 @@ const statusLabels = {
 }
 type Props = { isOpen: boolean; isMinimized: boolean; onClose: () => void; onMinimize: () => void }
 type View = "draft" | "review" | "changes" | "protocol"
+type ProviderChoice = NonNullable<RunRequest["provider"]>
+type ModelProvider = Exclude<ProviderChoice, "auto">
+const providerNames: Record<ModelProvider, string> = { gemini: "Gemini", openai: "OpenAI" }
 
 function download(text: string, name: string, type: string) {
   const url = URL.createObjectURL(new Blob([text], { type }))
@@ -105,6 +108,9 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
   const [notice, setNotice] = useState("")
   const [clearPending, setClearPending] = useState(false)
   const [available, setAvailable] = useState<boolean | null>(null)
+  const [provider, setProvider] = useState<ProviderChoice>("auto")
+  const [configuredProviders, setConfiguredProviders] = useState<ModelProvider[]>([])
+  const [defaultProvider, setDefaultProvider] = useState<ModelProvider | null>(null)
   const request = useRef<AbortController | null>(null)
   const fileEpoch = useRef(0)
   const outputArea = useRef<HTMLDivElement>(null)
@@ -122,7 +128,15 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
     const controller = new AbortController()
     fetch("/api/raf-os", { signal: controller.signal, cache: "no-store" })
       .then((res) => res.json())
-      .then((data) => setAvailable(data.available === true))
+      .then((data) => {
+        if (controller.signal.aborted) return
+        setAvailable(data.available === true)
+        const configured = (["gemini", "openai"] as const).filter(
+          (name) => Array.isArray(data.providers) && data.providers.includes(name),
+        )
+        setConfiguredProviders(configured)
+        setDefaultProvider(configured.find((name) => name === data.defaultProvider) ?? null)
+      })
       .catch(() => {
         if (!controller.signal.aborted) setAvailable(false)
       })
@@ -191,6 +205,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
     setChallenge("")
     setManualCompare(false)
     setConsent(false)
+    setProvider("auto")
     setError("")
     setNotice("Session cleared.")
     setView("draft")
@@ -233,6 +248,8 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           previous: previous ?? null,
           challenge: challenge.trim(),
           action,
+          allowGoogle: true,
+          provider,
         } satisfies RunRequest),
       })
       const data = await response.json()
@@ -590,6 +607,30 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                 style={field}
                 placeholder="e.g. The pilot was paid; review the invoice on page 8."
               />
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginTop: 18 }}>
+                <label htmlFor="raf-provider" style={{ color: muted, fontSize: 12 }}>
+                  Provider
+                </label>
+                <select
+                  id="raf-provider"
+                  value={provider}
+                  disabled={busy || fileBusy}
+                  onChange={(event) => setProvider(event.target.value as ProviderChoice)}
+                  aria-describedby="raf-provider-help"
+                  style={{ ...control, minWidth: 150, maxWidth: "100%" }}
+                >
+                  <option value="auto">Auto{defaultProvider ? ` · ${providerNames[defaultProvider]}` : ""}</option>
+                  {configuredProviders.map((name) => (
+                    <option key={name} value={name}>
+                      {providerNames[name]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p id="raf-provider-help" style={{ color: muted, fontSize: 11, lineHeight: 1.6, margin: "8px 0 0" }}>
+                Auto uses Gemini when configured, otherwise OpenAI, with one backup attempt during a temporary provider
+                outage. A manual choice stays on that provider.
+              </p>
               <label
                 style={{
                   display: "flex",
@@ -609,16 +650,26 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   style={{ marginTop: 4 }}
                 />
                 <span>
-                  Send these materials to OpenAI for analysis. This site does not save pitch content on its server.{" "}
+                  I agree to send this pitch, any earlier version, and attached PDFs to OpenAI or Google Gemini for
+                  analysis. Provider data-use and retention rules apply:{" "}
                   <a
-                    href="https://platform.openai.com/docs/guides/your-data"
+                    href="https://developers.openai.com/api/docs/guides/your-data"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: green }}
                   >
-                    OpenAI’s data policies
+                    OpenAI data controls
                   </a>{" "}
-                  apply. Only share material you’re allowed to submit.
+                  and{" "}
+                  <a
+                    href="https://ai.google.dev/gemini-api/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: green }}
+                  >
+                    Google Gemini terms
+                  </a>
+                  . Do not submit confidential, sensitive, or personal information.
                 </span>
               </label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -659,6 +710,15 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
               <p>
                 {active.model} · {active.prompt} · {new Date(active.createdAt).toLocaleString()}
               </p>
+              {active.routing && (
+                <>
+                  <p>
+                    Provider: {active.routing.provider === "gemini" ? "Google Gemini" : "OpenAI"} · Routing policy:{" "}
+                    {active.routing.policy}
+                  </p>
+                  <p style={{ lineHeight: 1.8 }}>Routing reason: {active.routing.reason}</p>
+                </>
+              )}
               {active.audit ? (
                 <>
                   <p>

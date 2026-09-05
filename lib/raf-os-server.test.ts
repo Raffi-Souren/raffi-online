@@ -525,7 +525,7 @@ test(
         name: "provider rate limit",
         status: 429,
         response: failureBody("rate_limit_exceeded", "model"),
-        diagnostic: undefined,
+        diagnostic: { providerStatus: 429, providerCode: "rate_limit_exceeded", providerParameter: "model" },
       },
     ]
 

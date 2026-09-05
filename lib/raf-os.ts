@@ -107,11 +107,14 @@ export type RunRequest = {
   previous: Submission | null
   challenge: string
   action: "analyze" | "compare" | "pilot" | "valueprop"
+  allowGoogle?: boolean
+  provider?: "auto" | "openai" | "gemini"
 }
 export type RunResult = {
   result: Critique
   sources: Source[]
   model: string
+  routing?: { provider: "openai" | "gemini"; reason: string; policy: string }
   rubric: string
   prompt: string
   createdAt: string
@@ -216,6 +219,9 @@ export function exportRun(run: SavedRun) {
     review.snapshot,
     "",
     `Model: ${run.model} · Rubric: ${run.rubric} · Prompt: ${run.prompt}`,
+    ...(run.routing
+      ? [`Provider: ${run.routing.provider} · Routing: ${run.routing.reason} · Policy: ${run.routing.policy}`]
+      : []),
     `Created: ${run.createdAt}`,
     "",
     "Evidence is assessed from supplied material, not independently verified.",
