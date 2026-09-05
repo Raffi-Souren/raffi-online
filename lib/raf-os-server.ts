@@ -72,6 +72,8 @@ const requestSchema = z
       .max(RAF_LIMITS.challengeCharacters)
       .transform((value) => value.trim()),
     action: z.enum(["analyze", "compare", "pilot", "valueprop"]),
+    allowGoogle: z.boolean().optional(),
+    provider: z.enum(["auto", "openai", "gemini"]).optional(),
   })
   .strict()
   .refine(
@@ -282,12 +284,7 @@ export function parseModelResponse(value: unknown, sources: Source[], comparing:
 }
 
 /** Counts completed structural checks; this does not verify semantic judgments or PDF quotations. */
-export function auditRun(
-  body: RunRequest,
-  result: Critique,
-  sources: Source[],
-  modelRequest?: ReturnType<typeof buildModelRequest>,
-) {
+export function auditRun(body: RunRequest, result: Critique, sources: Source[], modelRequest?: unknown) {
   const byId = new Map(sources.map((source) => [source.id, source]))
   const passages = result.changes.flatMap((change) => [change.before, change.after])
   const entries = [...result.review.findings, ...result.review.scorecard, ...passages]
@@ -329,6 +326,13 @@ export async function requestModel(
     signal,
     cache: "no-store",
     redirect: "error",
+  }).catch((error: unknown) => {
+    if (signal.aborted) throw error
+    throw new RafHttpError("The model service could not be reached. Please try again later.", 503, undefined, {
+      providerStatus: 0,
+      providerCode: "NETWORK_ERROR",
+      providerParameter: "unknown",
+    })
   })
   if (!response.ok) {
     let providerCode = "unknown"
@@ -349,7 +353,12 @@ export async function requestModel(
     } catch {
       /* Keep upstream response bodies, credentials and pitch content out of diagnostics. */
     }
-    if (response.status === 429) throw new RafHttpError("The model service is busy. Please try again shortly.", 429, 60)
+    if (response.status === 429)
+      throw new RafHttpError("The model service is busy. Please try again shortly.", 429, 60, {
+        providerStatus: 429,
+        providerCode,
+        providerParameter,
+      })
     throw new RafHttpError("The model service is temporarily unavailable. Please try again later.", 503, undefined, {
       providerStatus: response.status,
       providerCode,

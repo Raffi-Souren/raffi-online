@@ -31,6 +31,8 @@
     "lib/raf-os-canonical.test.ts",
     "lib/raf-os-server.ts",
     "lib/raf-os-server.test.ts",
+    "lib/raf-os-gemini.test.ts",
+    "lib/raf-os-routing.test.ts",
     "data/audio-library.ts",
     "data/crates-tracks.ts"
   ]
