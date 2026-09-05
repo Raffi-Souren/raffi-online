@@ -20,6 +20,7 @@ const UnderConstructionWindow = dynamic(() => import("./components/UnderConstruc
 const IPodWindow = dynamic(() => import("./components/IPodWindow"))
 const ProjectsWindow = dynamic(() => import("./components/ProjectsWindow"))
 const RaffiWorldWindow = dynamic(() => import("./components/RaffiWorldWindow"))
+const RafOsTerminal = dynamic(() => import("./components/RafOsTerminal"))
 
 const DESKTOP_SHORTCUTS = [
   { action: "about", icon: "👤", label: "ABOUT" },
@@ -29,7 +30,7 @@ const DESKTOP_SHORTCUTS = [
   { action: "ipod", icon: "🎧", label: "iPod" },
   { action: "projects", icon: "🛠️", label: "PROJECTS" },
   { action: "world", icon: "🌆", label: "RAFFI WORLD" },
-  { action: "startup", icon: "💡", label: "PITCH STARTUP" },
+  { action: "startup", icon: "💡", label: "RAF OS TERMINAL" },
 ] as const
 
 // Keep every window in a stable DOM slot. Visual ordering is supplied through
@@ -65,16 +66,40 @@ export default function Home() {
   // Once launched, keep RAFFI WORLD mounted so minimizing it preserves the
   // WebGL context, audio graph, and the player's current run.
   const [worldLaunched, setWorldLaunched] = useState(false)
+  // Closing the terminal ends its request, while its mounted session survives.
+  // Minimizing only hides the shell, so a running request can still finish.
+  const [terminalLaunched, setTerminalLaunched] = useState(false)
+  const [terminalMinimized, setTerminalMinimized] = useState(false)
   // Oldest to newest. WindowShell consumes the derived layer through context;
   // taskbar, quick-launch, Start-menu, and desktop launches all use this path.
   const [windowOrder, setWindowOrder] = useState<string[]>([])
 
   useEffect(() => {
     const app = new URLSearchParams(window.location.search).get("app")
-    if (!app || !WINDOW_SLOTS.some((name) => name === app)) return
-    setOpenWindows((previous) => ({ ...previous, [app]: true }))
-    setWindowOrder([app])
-    if (app === "world") setWorldLaunched(true)
+    if (app && WINDOW_SLOTS.some((name) => name === app)) {
+      setOpenWindows((previous) => ({ ...previous, [app]: true }))
+      setWindowOrder([app])
+      if (app === "world") setWorldLaunched(true)
+      if (app === "startup") setTerminalLaunched(true)
+    }
+
+    // Only the terminal participates in browser navigation. Other apps keep
+    // their existing state when Back closes or Forward restores this session.
+    const syncTerminalLocation = () => {
+      const terminalOpen = new URLSearchParams(window.location.search).get("app") === "startup"
+      setOpenWindows((previous) => ({ ...previous, startup: terminalOpen }))
+      setTerminalMinimized(false)
+      setWindowOrder((previous) => {
+        const others = previous.filter((name) => name !== "startup")
+        return terminalOpen ? [...others, "startup"] : others
+      })
+      if (terminalOpen) {
+        setTerminalLaunched(true)
+        setShowStartMenu(false)
+      }
+    }
+    window.addEventListener("popstate", syncTerminalLocation)
+    return () => window.removeEventListener("popstate", syncTerminalLocation)
   }, [])
 
   const bringToFront = (windowName: string) => {
@@ -86,6 +111,15 @@ export default function Home() {
 
   const openWindow = (windowName: string) => {
     if (windowName === "world") setWorldLaunched(true)
+    if (windowName === "startup") {
+      setTerminalLaunched(true)
+      setTerminalMinimized(false)
+      const url = new URL(window.location.href)
+      if (url.searchParams.get("app") !== "startup") {
+        url.searchParams.set("app", "startup")
+        window.history.pushState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+      }
+    }
     setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
     bringToFront(windowName)
     setShowStartMenu(false)
@@ -93,6 +127,14 @@ export default function Home() {
 
   const closeWindow = (windowName: string) => {
     setOpenWindows((prev) => ({ ...prev, [windowName]: false }))
+    if (windowName === "startup") {
+      setTerminalMinimized(false)
+      const url = new URL(window.location.href)
+      if (url.searchParams.get("app") === "startup") {
+        url.searchParams.delete("app")
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+      }
+    }
     // World is minimized rather than destroyed. Keeping its stable slot in the
     // order preserves the iframe; restoring it simply promotes its layer.
     if (windowName !== "world") {
@@ -103,7 +145,7 @@ export default function Home() {
   let activeWindow: string | null = null
   for (let index = windowOrder.length - 1; index >= 0; index--) {
     const name = windowOrder[index]
-    if (openWindows[name]) {
+    if (openWindows[name] && !(name === "startup" && terminalMinimized)) {
       activeWindow = name
       break
     }
@@ -133,10 +175,11 @@ export default function Home() {
         )
       case "startup":
         return (
-          <UnderConstructionWindow
+          <RafOsTerminal
             isOpen={openWindows.startup}
+            isMinimized={terminalMinimized}
             onClose={() => closeWindow("startup")}
-            title="Pitch Me a Startup"
+            onMinimize={() => setTerminalMinimized(true)}
           />
         )
       case "counter":
@@ -160,8 +203,6 @@ export default function Home() {
       } catch {
         alert("Email: raffi@notgoodcompany.com")
       }
-    } else if (action === "startup") {
-      window.open("https://chatgpt.com/g/g-68a497212bfc81918b450e9ca7ee67ba-raf-os-terminal", "_blank")
     } else {
       openWindow(action)
     }
@@ -221,6 +262,7 @@ export default function Home() {
         onWindowClick={openWindow}
         openWindows={openWindows}
         persistentWindows={{ world: worldLaunched }}
+        minimizedWindows={{ startup: terminalMinimized }}
         activeWindow={activeWindow}
       />
 
@@ -237,7 +279,8 @@ export default function Home() {
       {/* Stable window slots; their context layer implements foreground order. */}
       {WINDOW_SLOTS.map((windowName) => {
         const keepWorldMounted = windowName === "world" && worldLaunched
-        if (!openWindows[windowName] && !keepWorldMounted) return null
+        const keepTerminalMounted = windowName === "startup" && terminalLaunched
+        if (!openWindows[windowName] && !keepWorldMounted && !keepTerminalMounted) return null
         const orderIndex = Math.max(windowOrder.indexOf(windowName), 0)
         return (
           <WindowActivityProvider

@@ -1,15 +1,7 @@
 "use client"
 
-import {
-  type ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react"
-import { Minus, X } from "lucide-react"
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { Maximize2, Minimize2, Minus, X } from "lucide-react"
 
 interface WindowActivityContextValue {
   active: boolean
@@ -40,12 +32,7 @@ interface WindowActivityProviderProps {
  * stable DOM slot is especially important for iframe apps: moving an iframe to
  * bring it forward can reload its browsing context and destroy its state.
  */
-export function WindowActivityProvider({
-  active,
-  layer,
-  onActivate,
-  children,
-}: WindowActivityProviderProps) {
+export function WindowActivityProvider({ active, layer, onActivate, children }: WindowActivityProviderProps) {
   const value = useMemo(() => ({ active, layer, onActivate }), [active, layer, onActivate])
   return <WindowActivityContext.Provider value={value}>{children}</WindowActivityContext.Provider>
 }
@@ -53,6 +40,10 @@ export function WindowActivityProvider({
 interface WindowShellProps {
   title: string
   onClose: () => void
+  /** Offer a separate minimize action alongside the existing close button. */
+  onMinimize?: () => void
+  /** Terminal apps can opt into dark chrome without changing the XP desktop. */
+  appearance?: "xp" | "terminal"
   children: ReactNode
   className?: string
   id?: string
@@ -86,7 +77,17 @@ interface WindowShellProps {
 }
 
 const FOCUSABLE_SELECTOR =
-  'button, [href], input, select, textarea, iframe, [tabindex]:not([tabindex="-1"])'
+  'button, [href], input, select, textarea, iframe, details > summary:first-of-type, [contenteditable="true"], [tabindex]:not([tabindex="-1"])'
+
+function getFocusableElements(dialog: HTMLElement) {
+  return Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => {
+    const editable = element.isContentEditable && !element.hasAttribute("tabindex")
+    if ((element.tabIndex < 0 && !editable) || element.matches(":disabled, input[type='hidden']")) return false
+    if (element.closest("[hidden], [inert]") || element.getClientRects().length === 0) return false
+    const visibility = window.getComputedStyle(element).visibility
+    return visibility !== "hidden" && visibility !== "collapse"
+  })
+}
 
 let bodyScrollLockCount = 0
 let bodyOverflowBeforeLocks = ""
@@ -108,6 +109,8 @@ function acquireBodyScrollLock() {
 export default function WindowShell({
   title,
   onClose,
+  onMinimize,
+  appearance = "xp",
   children,
   className = "",
   id,
@@ -123,6 +126,8 @@ export default function WindowShell({
   closeOnEscape = true,
 }: WindowShellProps) {
   const activity = useContext(WindowActivityContext)
+  const [maximized, setMaximized] = useState(false)
+  const terminalChrome = appearance === "terminal"
   const isActive = active ?? activity.active
   const shellLayer = layer ?? activity.layer
   const activate = onActivate ?? activity.onActivate
@@ -154,7 +159,7 @@ export default function WindowShell({
     const frame = window.requestAnimationFrame(() => {
       const dialog = windowRef.current
       if (!dialog || dialog.contains(document.activeElement)) return
-      const first = dialog.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+      const first = getFocusableElements(dialog)[0]
       const focusTarget = first ?? dialog
       focusTarget.focus({ preventScroll: true })
     })
@@ -162,32 +167,65 @@ export default function WindowShell({
   }, [hidden, isActive])
 
   // Focus trap
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key !== "Tab" || !windowRef.current) return
-    const focusable = Array.from(
-      windowRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    )
-    if (focusable.length === 0) return
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault()
-      last.focus()
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault()
-      first.focus()
-    } else {
-      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement)
-      const nextIndex = currentIndex + (e.shiftKey ? -1 : 1)
-      const next = focusable[nextIndex]
-      // Browsers are inconsistent about advancing from parent chrome into an
-      // iframe. Move focus explicitly so keyboard players can enter game apps.
-      if (next?.tagName === "IFRAME") {
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key !== "Tab" || e.defaultPrevented || hidden || !isActive || !windowRef.current) return
+      const focusable = getFocusableElements(windowRef.current)
+      if (focusable.length === 0) {
         e.preventDefault()
-        next.focus()
+        windowRef.current.focus()
+        return
       }
-    }
-  }, [])
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement)
+      if (currentIndex === -1 && document.activeElement === windowRef.current) {
+        e.preventDefault()
+        ;(e.shiftKey ? last : first).focus()
+      } else if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      } else {
+        const nextIndex = currentIndex + (e.shiftKey ? -1 : 1)
+        const next = focusable[nextIndex]
+        // Browsers are inconsistent about advancing from parent chrome into an
+        // iframe. Move focus explicitly so keyboard players can enter game apps.
+        if (next?.tagName === "IFRAME") {
+          e.preventDefault()
+          next.focus()
+        }
+      }
+    },
+    [hidden, isActive],
+  )
+
+  const windowActions = [
+    ...(!terminalChrome && onMinimize
+      ? [{ key: "minimize", label: `Minimize ${title}`, action: onMinimize, minimize: true }]
+      : []),
+    {
+      key: "dismiss",
+      label: dismissAction === "minimize" ? `Minimize ${title}` : "Close window",
+      action: onClose,
+      minimize: dismissAction === "minimize",
+    },
+    ...(terminalChrome && onMinimize
+      ? [{ key: "minimize", label: `Minimize ${title}`, action: onMinimize, minimize: true }]
+      : []),
+    ...(terminalChrome
+      ? [
+          {
+            key: "maximize",
+            label: maximized ? "Restore window" : "Maximize window",
+            action: () => setMaximized((previous) => !previous),
+            minimize: false,
+          },
+        ]
+      : []),
+  ]
 
   return (
     <>
@@ -237,30 +275,33 @@ export default function WindowShell({
           style={{
             backgroundColor: "#ffffff",
             color: "#111827",
-            borderRadius: "0.5rem",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            borderRadius: terminalChrome ? "10px" : "0.5rem",
+            border: terminalChrome ? "1px solid #34433a" : undefined,
+            boxShadow: terminalChrome ? "0 24px 80px rgba(0, 0, 0, 0.55)" : "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             display: "flex",
             flexDirection: "column",
             width: "100%",
-            maxWidth,
+            maxWidth: terminalChrome && maximized ? "100%" : maxWidth,
             // A definite height is what lets `height: 100%` resolve further
             // down. Without it the dialog sizes to content and every nested
             // percentage height silently collapses to auto.
-            height: fill ? "100%" : undefined,
+            height: fill || (terminalChrome && maximized) ? "100%" : undefined,
             maxHeight: "100%",
             pointerEvents: "auto",
             overflow: "hidden",
           }}
         >
-          {/* Blue Title Bar - sticky positioning to always show */}
+          {/* App chrome stays reachable while the content scrolls. */}
           <div
             style={{
-              background: "linear-gradient(to right, #2563eb, #1d4ed8)",
-              color: "white",
-              padding: titlePadding,
+              background: terminalChrome ? "#151b18" : "linear-gradient(to right, #2563eb, #1d4ed8)",
+              color: terminalChrome ? "#a2b5a7" : "white",
+              padding: terminalChrome ? "0 10px" : titlePadding,
+              minHeight: terminalChrome ? "42px" : undefined,
+              borderBottom: terminalChrome ? "1px solid #34433a" : undefined,
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: terminalChrome ? "center" : "space-between",
               borderTopLeftRadius: "0.5rem",
               borderTopRightRadius: "0.5rem",
               flexShrink: 0,
@@ -272,55 +313,122 @@ export default function WindowShell({
             <h2
               style={{
                 fontWeight: "bold",
-                fontSize: "1rem",
+                fontSize: terminalChrome ? "12px" : "1rem",
+                fontFamily: terminalChrome ? '"SFMono-Regular", Consolas, monospace' : undefined,
+                textAlign: terminalChrome ? "center" : undefined,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                paddingRight: "0.5rem",
+                padding: terminalChrome ? "0 94px" : "0 0.5rem 0 0",
+                width: terminalChrome ? "100%" : undefined,
                 margin: 0,
               }}
             >
               {title}
             </h2>
-            <button
-              type="button"
-              onClick={onClose}
+            <div
               style={{
-                padding: 0,
-                borderRadius: "0.25rem",
-                transition: "background-color 0.2s",
-                flexShrink: 0,
-                background: "rgba(255, 255, 255, 0.15)",
-                border: "1px solid rgba(255, 255, 255, 0.3)",
-                cursor: "pointer",
-                color: "white",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-                zIndex: shellLayer + 2,
-                minWidth: closeSize,
-                minHeight: closeSize,
-                width: closeSize,
-                height: closeSize,
-                boxSizing: "border-box",
-                WebkitTapHighlightColor: "transparent",
+                gap: terminalChrome ? "0px" : "4px",
+                flexShrink: 0,
+                position: terminalChrome ? "absolute" : undefined,
+                left: terminalChrome ? "6px" : undefined,
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.3)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)"
-              }}
-              aria-label={dismissAction === "minimize" ? `Minimize ${title}` : "Close window"}
-              title={dismissAction === "minimize" ? `Minimize ${title}` : "Close window"}
             >
-              {dismissAction === "minimize" ? (
-                <Minus size={24} strokeWidth={2.5} />
-              ) : (
-                <X size={24} strokeWidth={2.5} />
+              {windowActions.map((action) =>
+                terminalChrome ? (
+                  <button
+                    key={action.key}
+                    type="button"
+                    onClick={action.action}
+                    aria-label={action.label}
+                    title={action.label}
+                    className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#a1e7a8]"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 30,
+                      height: 34,
+                      padding: 0,
+                      border: 0,
+                      borderRadius: 5,
+                      background: "transparent",
+                      cursor: "pointer",
+                      WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#142017",
+                        background: action.key === "dismiss" ? "#ff6058" : action.minimize ? "#ffbd2e" : "#28c840",
+                        border: "1px solid rgba(0, 0, 0, 0.15)",
+                      }}
+                    >
+                      <span
+                        className="opacity-0 group-hover:opacity-80 group-focus-visible:opacity-80"
+                        aria-hidden="true"
+                      >
+                        {action.key === "maximize" ? (
+                          maximized ? (
+                            <Minimize2 size={10} strokeWidth={2.5} />
+                          ) : (
+                            <Maximize2 size={10} strokeWidth={2.5} />
+                          )
+                        ) : action.minimize ? (
+                          <Minus size={10} strokeWidth={2.5} />
+                        ) : (
+                          <X size={10} strokeWidth={2.5} />
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    key={action.key}
+                    type="button"
+                    onClick={action.action}
+                    style={{
+                      padding: 0,
+                      borderRadius: "0.25rem",
+                      transition: "background-color 0.2s",
+                      flexShrink: 0,
+                      background: "rgba(255, 255, 255, 0.15)",
+                      border: "1px solid rgba(255, 255, 255, 0.3)",
+                      cursor: "pointer",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                      zIndex: shellLayer + 2,
+                      minWidth: closeSize,
+                      minHeight: closeSize,
+                      width: closeSize,
+                      height: closeSize,
+                      boxSizing: "border-box",
+                      WebkitTapHighlightColor: "transparent",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.3)"
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)"
+                    }}
+                    aria-label={action.label}
+                    title={action.label}
+                  >
+                    {action.minimize ? <Minus size={24} strokeWidth={2.5} /> : <X size={24} strokeWidth={2.5} />}
+                  </button>
+                ),
               )}
-            </button>
+            </div>
           </div>
 
           {/* Content area */}

@@ -32,11 +32,6 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
 
   if (!isOpen) return null
 
-  const handlePitchStartup = () => {
-    window.open("https://chatgpt.com/g/g-68a497212bfc81918b450e9ca7ee67ba-raf-os-terminal", "_blank")
-    onClose()
-  }
-
   const menuItems = [
     { icon: "👤", label: "About", action: () => onOpenWindow("about") },
     { icon: "🌐", label: "Blogroll", action: () => onOpenWindow("blogroll") },
@@ -45,7 +40,7 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
     { icon: "🛠️", label: "Projects", action: () => onOpenWindow("projects") },
     { icon: "🌆", label: "Raffi World", action: () => onOpenWindow("world") },
     { icon: "📝", label: "Notes", action: () => onOpenWindow("notes") },
-    { icon: "💡", label: "Pitch Startup", action: handlePitchStartup },
+    { icon: "💡", label: "RAF OS TERMINAL", action: () => onOpenWindow("startup") },
   ]
 
   return (
@@ -54,11 +49,9 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
         position: "fixed",
         bottom: "calc(44px + env(safe-area-inset-bottom, 0px))",
         left: "max(0.5rem, env(safe-area-inset-left, 0px))",
-        width:
-          "calc(100vw - 1rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))",
+        width: "calc(100vw - 1rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))",
         maxWidth: "16rem",
-        maxHeight:
-          "calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
+        maxHeight: "calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
         zIndex: 9001,
       }}
       role="menu"
@@ -72,8 +65,7 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
           borderTopRightRadius: "0.5rem",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
           width: "100%",
-          maxHeight:
-            "calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
+          maxHeight: "calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -169,7 +161,9 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
-              <span style={{ fontSize: "1.125rem" }} aria-hidden="true">{item.icon}</span>
+              <span style={{ fontSize: "1.125rem" }} aria-hidden="true">
+                {item.icon}
+              </span>
               <span>{item.label}</span>
             </button>
           ))}

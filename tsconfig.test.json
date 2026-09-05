@@ -1,5 +1,5 @@
 {
-  // Pure game/audio simulations run with TypeScript and Node's test runner.
+  // Pure simulations and data contracts run with TypeScript and Node's test runner.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
@@ -24,6 +24,13 @@
     "lib/signal-lost.test.ts",
     "lib/game-utils.test.ts",
     "lib/scoreboards.test.ts",
+    "lib/raf-os.ts",
+    "lib/raf-os-fixtures.ts",
+    "lib/raf-os.test.ts",
+    "lib/raf-os-canonical.ts",
+    "lib/raf-os-canonical.test.ts",
+    "lib/raf-os-server.ts",
+    "lib/raf-os-server.test.ts",
     "data/audio-library.ts",
     "data/crates-tracks.ts"
   ]
