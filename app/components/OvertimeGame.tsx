@@ -267,6 +267,7 @@ export default function OvertimeGame() {
       data-ball-x={hud.ballX.toFixed(2)}
       data-ball-z={hud.ballZ.toFixed(2)}
       data-hits={hud.hits}
+      className="game-touch"
       style={{
         position: "relative",
         display: "flex",

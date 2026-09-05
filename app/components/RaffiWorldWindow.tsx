@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 
 import WindowShell, { useWindowActivity } from "../../components/ui/WindowShell"
+import GameShelfNav from "./GameShelfNav"
 
 const CrateQuestGame = dynamic(() => import("./CrateQuestGame"), {
   ssr: false,
@@ -19,6 +20,8 @@ interface RaffiWorldWindowProps {
   isOpen: boolean
   /** Retained for API compatibility; the World shell presents this as minimize. */
   onClose: () => void
+  /** Minimize the world and bring the Games shelf forward. */
+  onOpenShelf?: () => void
 }
 
 const WORLD_SRC = "/world/index.html"
@@ -36,7 +39,7 @@ function resolveWorldSrc() {
   return query ? `${WORLD_SRC}?${query}` : WORLD_SRC
 }
 
-export default function RaffiWorldWindow({ isOpen, onClose }: RaffiWorldWindowProps) {
+export default function RaffiWorldWindow({ isOpen, onClose, onOpenShelf }: RaffiWorldWindowProps) {
   // Resolve once: changing iframe src would restart the game.
   const [src] = useState(resolveWorldSrc)
   const [compact, setCompact] = useState(false)
@@ -96,6 +99,11 @@ export default function RaffiWorldWindow({ isOpen, onClose }: RaffiWorldWindowPr
       dismissAction="minimize"
       closeOnEscape={!questOpen}
     >
+      {onOpenShelf && (
+        <GameShelfNav onBack={onOpenShelf} compact={compact}>
+          <span style={{ fontSize: 11, color: "#5d6f7a", paddingRight: 4 }}>World keeps running</span>
+        </GameShelfNav>
+      )}
       <iframe
         ref={iframeRef}
         src={src}

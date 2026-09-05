@@ -173,7 +173,8 @@ export function startSignalWave(s: SignalState) {
     hit: 0,
   }))
   s.waveDelay = 0
-  message(s, `${s.wave}/${SIGNAL_WAVES} · ${SIGNAL_LEVELS[s.wave - 1]} · ${s.enemies.length} signals`, 3)
+  // The HUD subtitle already names the sector and count; the toast only needs the cue.
+  message(s, s.wave === 1 ? "Signals inbound. Clear the sector." : `Sector ${s.wave}. ${s.enemies.length} signals inbound.`, 3)
 }
 
 export function startSignal(s: SignalState) {

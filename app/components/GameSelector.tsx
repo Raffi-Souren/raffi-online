@@ -4,6 +4,7 @@ import { useState } from "react"
 import dynamic from "next/dynamic"
 import { ArrowLeft, Gamepad2, Search, Trophy } from "lucide-react"
 import WindowShell from "../../components/ui/WindowShell"
+import GameShelfNav from "./GameShelfNav"
 import Leaderboard from "./Leaderboard"
 
 const GAME_COMPONENTS = {
@@ -221,36 +222,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                 : "1024px"
         }
       >
-        <nav
-          aria-label="Game navigation"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "5px 10px",
-            background: "#e9ece2",
-            borderBottom: "1px solid #aeb9b7",
-            flexShrink: 0,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setActiveGame(null)}
-            style={{
-              display: "inline-flex",
-              gap: 6,
-              alignItems: "center",
-              minHeight: 32,
-              padding: "4px 8px",
-              fontSize: 12,
-              color: "#294b67",
-              fontWeight: 700,
-              borderRadius: 3,
-            }}
-            className="hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
-          >
-            <ArrowLeft size={15} /> Game shelf
-          </button>
-        </nav>
+        <GameShelfNav onBack={() => setActiveGame(null)} compact={viewport} />
         {viewport ? (
           <div
             style={{

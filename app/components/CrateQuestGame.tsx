@@ -307,7 +307,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
   }
   return (
     <div
-      className="crate-quest"
+      className="crate-quest game-touch"
       style={{
         height: "100%",
         minHeight: 0,
