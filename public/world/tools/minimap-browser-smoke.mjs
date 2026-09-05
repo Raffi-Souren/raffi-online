@@ -70,7 +70,13 @@ try {
       const { setWaypoint } = await import("/world/game/hud.js")
       setWaypoint(null)
     })
-    await page.waitForTimeout(150)
+    // Clearing navigation updates the accessible map on its next three-frame
+    // redraw. Slow software-rendered CI may not complete that redraw in 150ms.
+    await page.waitForFunction(
+      () => /Free roam\. Nearby:/.test(document.querySelector("#minimap")?.getAttribute("aria-label") || ""),
+      null,
+      { timeout: 15_000 },
+    )
     assert.match(await page.locator("#minimap").getAttribute("aria-label"), /Free roam\. Nearby:/)
     await context.close()
   }
