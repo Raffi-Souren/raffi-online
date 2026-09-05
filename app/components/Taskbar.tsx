@@ -9,6 +9,8 @@ interface TaskbarProps {
   openWindows: Record<string, boolean>
   /** Stateful apps that remain restorable after their visible window is hidden. */
   persistentWindows?: Record<string, boolean>
+  /** Open apps whose content is hidden without closing their session. */
+  minimizedWindows?: Record<string, boolean>
   /** Current top window, used to distinguish active and background task buttons. */
   activeWindow?: string | null
 }
@@ -22,7 +24,7 @@ const WINDOW_TITLES: Record<string, string> = {
   ipod: "iPod",
   projects: "PROJECTS",
   world: "RAFFI WORLD",
-  startup: "PITCH STARTUP",
+  startup: "RAF OS TERMINAL",
   counter: "BY THE NUMBERS",
 }
 
@@ -31,6 +33,7 @@ export default function Taskbar({
   onWindowClick,
   openWindows,
   persistentWindows = {},
+  minimizedWindows = {},
   activeWindow = null,
 }: TaskbarProps) {
   const [currentTime, setCurrentTime] = useState("12:00 AM")
@@ -231,7 +234,8 @@ export default function Taskbar({
             }}
           >
             {taskbarWindowNames.map((name) => {
-              const minimized = !openWindows[name] && Boolean(persistentWindows[name])
+              const minimized =
+                Boolean(minimizedWindows[name]) || (!openWindows[name] && Boolean(persistentWindows[name]))
               const active = !minimized && activeWindow === name
               const title = WINDOW_TITLES[name] || name.toUpperCase()
               return (
@@ -263,7 +267,8 @@ export default function Taskbar({
                     opacity: minimized ? 0.78 : 1,
                   }}
                 >
-                  {title}{minimized ? " — MINIMIZED" : ""}
+                  {title}
+                  {minimized ? " — MINIMIZED" : ""}
                 </button>
               )
             })}
@@ -291,7 +296,9 @@ export default function Taskbar({
         }}
         suppressHydrationWarning
       >
-        <span className="mr-1 hidden min-[380px]:inline" aria-hidden="true">🔈</span>
+        <span className="mr-1 hidden min-[380px]:inline" aria-hidden="true">
+          🔈
+        </span>
         <span style={{ minWidth: "56px", textAlign: "center" }}>{currentTime}</span>
       </div>
     </div>
