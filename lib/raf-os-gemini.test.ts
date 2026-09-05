@@ -96,8 +96,7 @@ test("Gemini schema projection keeps structure and nullability while removing un
     properties: {
       labels: {
         type: "array",
-        minItems: 1,
-        maxItems: 3,
+        description: "Return at least 1 items. Return at most 3 items.",
         items: {
           type: "object",
           additionalProperties: false,
@@ -126,16 +125,23 @@ test("Gemini schema projection keeps structure and nullability while removing un
   })
 })
 
-test("building a Gemini request leaves the complete OpenAI schema untouched and length constraints still reject locally", async () => {
+test("building a Gemini request leaves the complete OpenAI schema untouched and string and list bounds still reject locally", async () => {
   const openAI = await modelRequest()
   const before = structuredClone(openAI.text.format.schema)
   const projected = buildGeminiRequest(openAI).body.generationConfig.responseJsonSchema
   assert.deepEqual(openAI.text.format.schema, before)
   assert.match(JSON.stringify(before), /"maxLength":1200/)
-  assert.doesNotMatch(JSON.stringify(projected), /"(?:minLength|maxLength|\$schema)":/)
+  assert.doesNotMatch(JSON.stringify(projected), /"(?:minLength|maxLength|minItems|maxItems|\$schema)":/)
   const overlong = structuredClone(sampleRunBefore.result)
   overlong.review.snapshot = "x".repeat(1201)
   assert.throws(() => parseGeminiResponse(responseEnvelope(overlong), sampleRunBefore.sources, false), errorStatus(502))
+  const tooFew = structuredClone(sampleRunBefore.result)
+  tooFew.review.recommendations = []
+  assert.throws(() => parseGeminiResponse(responseEnvelope(tooFew), sampleRunBefore.sources, false), errorStatus(502))
+  const tooMany = structuredClone(sampleRunBefore.result)
+  tooMany.review.questions = ["one", "two", "three", "four"]
+  assert.throws(() => parseGeminiResponse(responseEnvelope(tooMany), sampleRunBefore.sources, false), errorStatus(502))
+  assert.match(JSON.stringify(projected), /Return exactly 8 items/)
 })
 
 test("Gemini keeps the actual model version and runs the same text and comparison contracts", () => {

@@ -211,7 +211,8 @@ export function buildModelRequest(request: RunRequest, prepared: PreparedSubmiss
   return {
     model,
     store: false,
-    max_output_tokens: 6500,
+    // Comparisons need room for reasoning plus two sets of source-backed passages.
+    max_output_tokens: request.previous ? 10_000 : 6500,
     reasoning: { effort: request.previous ? "medium" : "low" },
     instructions: criticInstructions + "\n\nCurated reference guidance:\n" + RAF_REFERENCES,
     input: [
