@@ -250,8 +250,7 @@ export default function SignalLostGame() {
       queuedShot.current = true
       if (document.pointerLockElement !== event.currentTarget) {
         try {
-          const result = event.currentTarget.requestPointerLock()
-          if (result) void result.catch(() => {})
+          void Promise.resolve(event.currentTarget.requestPointerLock()).catch(() => {})
         } catch {
           /* Arrow keys and drag look remain available. */
         }

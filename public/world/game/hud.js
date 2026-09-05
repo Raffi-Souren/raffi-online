@@ -7,6 +7,7 @@
  */
 
 import { state, bus, data, device } from '../engine/state.js'
+import { mapPlaces, drawMapDetails } from './minimap-details.js'
 
 let els = {}
 let toastTimer = 0
@@ -18,10 +19,12 @@ let mapContext = null
 let waypoint = null
 let routePoints = []
 let routeOrigin = { x: Infinity, z: Infinity }
+let places = []
 
 export function initHud(elements, graph = null) {
   els = elements
   roadGraph = graph
+  places = mapPlaces(data.world)
   mapContext = els.minimapCanvas?.getContext('2d') || null
   buildPips()
   els.root?.classList.remove('hidden')
@@ -104,7 +107,11 @@ export function setInteractionPrompt(action) {
   const visible = action && action.kind !== 'none'
   els.interactionPrompt?.classList.toggle('show', !!visible)
   if (!visible) return
-  if (els.interactionKey) els.interactionKey.textContent = device.touch ? 'TAP' : action.key || 'SPACE'
+  if (els.interactionKey) {
+    els.interactionKey.textContent = device.touch
+      ? action.kind === 'movement-hint' ? 'MOVE' : 'TAP'
+      : action.key || 'SPACE'
+  }
   if (els.interactionLabel) els.interactionLabel.textContent = action.prompt || action.label || 'INTERACT'
 }
 
@@ -205,6 +212,10 @@ function drawMinimap() {
     drawRoadPass(ctx, roadGraph.segments, px, pz, cx, cy, pixelsPerMetre, worldRadius, false)
   }
 
+  const nearby = state.interior ? [] : drawMapDetails(ctx, places, {
+    x: px, z: pz, cx, cy, scale: pixelsPerMetre, radius, waypoint, cameraYaw: state.camera.yaw,
+  })
+
   if (waypoint) {
     if (!routePoints.length || Math.hypot(px - routeOrigin.x, pz - routeOrigin.z) > 18) {
       rebuildRoute(px, pz)
@@ -221,6 +232,7 @@ function drawMinimap() {
   ctx.lineWidth = 2
   ctx.stroke()
 
+  const nearbyLabel = nearby.length ? ` Nearby: ${nearby.map((place) => place.label).join(', ')}.` : ''
   if (waypoint) {
     const distance = routeDistance(px, pz)
     const rounded = distance >= 1000
@@ -230,9 +242,11 @@ function drawMinimap() {
     if (els.minimap) {
       els.minimap.setAttribute(
         'aria-label',
-        `Local map. ${waypoint.label} waypoint, ${Math.round(distance)} metres away.`
+        `Local map. ${waypoint.label} waypoint, ${Math.round(distance)} metres away.` + nearbyLabel
       )
     }
+  } else {
+    els.minimap?.setAttribute('aria-label', 'Local map. Free roam.' + nearbyLabel)
   }
 }
 

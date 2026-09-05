@@ -11,7 +11,8 @@ globalThis.screen = { width: 1280, height: 720 }
 const { state, data } = await import('../engine/state.js')
 const { CollisionWorld, stepVehicle } = await import('../engine/physics.js')
 const { cam, initCamera, setCameraMode, updateCamera, movementBasis } = await import('../engine/camera.js')
-const { initPlayer, player, updatePlayer, spawnVehicle, enterVehicle } = await import('../game/player.js')
+const { initPlayer, player, updatePlayer, spawnVehicle, enterVehicle, movementPrompt, teleportPlayer } =
+  await import('../game/player.js')
 
 for (const name of ['world', 'blocks', 'npcs', 'vehicles']) {
   data[name] = JSON.parse(fs.readFileSync(new URL(`../data/${name}.json`, import.meta.url), 'utf8'))
@@ -49,6 +50,20 @@ function frame(world, controls) {
   updatePlayer(dt, controls, world, 0)
   updateCamera(dt, state.player, { x: state.player.vx, z: state.player.vz }, 16 / 9)
 }
+
+test('returning to Classic preserves its configured diagonal view after Chase and Birds', (t) => {
+  setup(t)
+  const base = data.world.camera.yawDeg * Math.PI / 180
+  const snap = data.world.camera.yawSnapDeg * Math.PI / 180
+  for (const mode of ['chase', 'free', 'birds']) {
+    setCameraMode(mode)
+    cam.currentYaw = 1.73
+    setCameraMode('classic')
+    const steps = (cam.desiredYaw - base) / snap
+    assert.ok(Math.abs(steps - Math.round(steps)) < 1e-10, `${mode} discarded the isometric yaw offset`)
+    assert.ok(Math.abs(cam.desiredYaw - 1.73) <= snap / 2, 'returning view did not select the nearest diagonal')
+  }
+})
 
 test('held diagonal walking in chase view travels straight and stops promptly on release', (t) => {
   const { world } = setup(t)
@@ -148,4 +163,26 @@ test('backing up and turning creates less lateral slide than the same forward tu
   stepVehicle(forward, handling, controls, dt, new CollisionWorld())
   stepVehicle(reverse, handling, controls, dt, new CollisionWorld())
   assert.ok(Math.abs(reverse.lateral) < Math.abs(forward.lateral) * 0.6)
+})
+
+test('blocked-path feedback waits for sustained contact, preserves actions and clears on release or teleport', (t) => {
+  const { world } = setup(t)
+  world.add({ type: 'box', x: 0, z: 2, hx: 5, hz: 0.1 })
+  const none = { kind: 'none' }
+  assert.equal(movementPrompt(none), none)
+  for (let i = 0; i < 120 && player.blockedTime === 0; i++) frame(world, input(0, 1))
+  assert.ok(player.blockedTime > 0 && player.blockedTime < 0.55)
+  assert.equal(movementPrompt(none), none, 'a brief bump must stay quiet')
+  for (let i = 0; i < 40; i++) frame(world, input(0, 1))
+  assert.equal(movementPrompt(none).kind, 'movement-hint')
+  for (const kind of ['enter', 'mission', 'transit', 'interior-enter', 'interior-exit']) {
+    const action = { kind, prompt: 'Available action' }
+    assert.equal(movementPrompt(action), action, `${kind} must take priority over collision feedback`)
+  }
+  frame(world, input(0, 0))
+  assert.equal(movementPrompt(none), none, 'release must clear the hint immediately')
+  for (let i = 0; i < 40; i++) frame(world, input(0, 1))
+  assert.equal(movementPrompt(none).kind, 'movement-hint')
+  teleportPlayer(0, 0)
+  assert.equal(movementPrompt(none), none, 'a room transition must not carry a stale hint')
 })

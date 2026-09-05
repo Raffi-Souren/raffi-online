@@ -25,6 +25,7 @@ export const player = {
   vehicle: null,
   nearbyVehicle: null,
   animState: 'idle',
+  blockedTime: 0,
   /** Active board trick, if any: { name, t, duration, boost }. */
   trick: null,
   /**
@@ -44,6 +45,7 @@ const KICKFLIP = {
 }
 
 export function initPlayer(scene, materials, atlas) {
+  player.blockedTime = 0
   const ped = makePed(
     data.npcs,
     'commuter',
@@ -159,6 +161,7 @@ export function findNearbyVehicle(vehicles, x, z) {
 
 export function enterVehicle(v) {
   if (!v) return false
+  player.blockedTime = 0
   v.occupied = true
   player.vehicle = v
   state.mode = 'vehicle'
@@ -252,6 +255,7 @@ export function exitVehicle(collisionWorld = null) {
 /** Moves the on-foot player safely between world-space interaction points. */
 export function teleportPlayer(x, z, yaw = state.player.yaw) {
   if (player.vehicle) exitVehicle()
+  player.blockedTime = 0
   const p = state.player
   p.x = x
   p.z = z
@@ -325,6 +329,9 @@ function updateWalking(dt, input, world, beatPhase) {
   p.y = res.y
 
   p.speed = dt > 0 ? Math.hypot(p.x - startX, p.z - startZ) / dt : 0
+  player.blockedTime = mag > 0.1 && res.hit && p.speed < 0.25
+    ? player.blockedTime + dt
+    : 0
   // Face movement; if almost stopped keep last facing.
   if (p.speed > 0.35 && mag > 0.01) p.yaw = heading
 
@@ -487,6 +494,12 @@ function syncRiderVisual(v, hop = 0, flip = 0) {
   player.group.rotation.y = v.yaw
   player.group.rotation.z = flip * 0.15
   player.group.rotation.x = player.trick ? -0.25 : 0
+}
+
+/** A movement hint never changes the context button's action or hides an available interaction. */
+export function movementPrompt(action) {
+  if (action?.kind !== 'none' || state.mode !== 'foot' || player.blockedTime < 0.55) return action
+  return { kind: 'movement-hint', key: 'WASD', prompt: 'PATH BLOCKED · MOVE AROUND' }
 }
 
 /** What the context button should say right now. */

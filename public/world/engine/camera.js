@@ -76,7 +76,8 @@ export function cycleCameraMode(dir = 1) {
     // Restore classic snap yaw when returning to iso.
     if (mode.id === 'classic') {
       const snap = (data.world.camera.yawSnapDeg || 90) * DEG
-      cam.desiredYaw = Math.round(cam.currentYaw / snap) * snap
+      const baseYaw = data.world.camera.yawDeg * DEG
+      cam.desiredYaw = baseYaw + Math.round((cam.currentYaw - baseYaw) / snap) * snap
       cam.desiredPitch = (data.world.camera.pitchDeg || 55) * DEG
     } else if (mode.id === 'birds') {
       cam.desiredPitch = (data.world.camera.birdsPitchDeg || 72) * DEG

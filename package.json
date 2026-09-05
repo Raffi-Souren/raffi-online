@@ -9,6 +9,7 @@
     "start": "next start",
     "test:world:browser": "node public/world/tools/onboarding-smoke.mjs",
     "test:world:collisions": "node public/world/tools/collision-browser-smoke.mjs",
+    "test:world:minimap": "node public/world/tools/minimap-browser-smoke.mjs",
     "test:signal:browser": "node scripts/signal-lost-smoke.mjs",
     "test:world:missions": "node public/world/tools/mission-campaign-smoke.mjs",
     "test": "tsc -p tsconfig.test.json && node --test .test-build/lib/*.test.js public/world/tools/*.test.mjs",
