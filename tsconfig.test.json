@@ -23,6 +23,7 @@
     "lib/signal-lost.ts",
     "lib/signal-lost.test.ts",
     "lib/game-utils.test.ts",
+    "lib/scoreboards.test.ts",
     "data/audio-library.ts",
     "data/crates-tracks.ts"
   ]

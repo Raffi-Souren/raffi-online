@@ -4,53 +4,28 @@ import { useEffect, useRef, useState } from "react"
 import { Disc3, Pause, Play } from "lucide-react"
 
 interface QuestionBlockProps {
-  onClick?: (catchNumber: number) => void
+  onClick?: () => void
   active?: boolean
 }
 
-const CATCH_STORAGE_KEY = "raffi-mystery-catches"
 const BLOCK_SIZE = 56
-
-function readCatchCount() {
-  const saved = Number(localStorage.getItem(CATCH_STORAGE_KEY))
-  return Number.isSafeInteger(saved) && saved > 0 ? saved : 0
-}
+const PLAYER_CLEARANCE = 190
 
 export default function QuestionBlock({ onClick, active = true }: QuestionBlockProps) {
   const fieldRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef<HTMLButtonElement>(null)
-  const motionRef = useRef({ active, paused: false, focused: false, reduced: false, catching: false, catches: 0 })
+  const motionRef = useRef({ active, paused: false, focused: false, reduced: false, revealing: false, settled: false })
   const rewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [catches, setCatches] = useState(0)
+  const [settled, setSettled] = useState(false)
   const [paused, setPaused] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
-  const [caught, setCaught] = useState(false)
+  const [revealing, setRevealing] = useState(false)
 
   useEffect(() => {
     motionRef.current.active = active
   }, [active])
 
   useEffect(() => {
-    try {
-      const saved = readCatchCount()
-      setCatches(saved)
-      motionRef.current.catches = saved
-    } catch {
-      /* The chase works without browser storage. */
-    }
-
-    const syncCatches = (event: StorageEvent) => {
-      if (event.key !== CATCH_STORAGE_KEY) return
-      try {
-        const total = readCatchCount()
-        motionRef.current.catches = total
-        setCatches(total)
-      } catch {
-        /* Keep this session's score when storage is unavailable. */
-      }
-    }
-    window.addEventListener("storage", syncCatches)
-
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)")
     const syncPreference = () => {
       motionRef.current.reduced = preference.matches
@@ -65,7 +40,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
     let width = field.clientWidth
     let height = field.clientHeight
     let x = Math.min(14, Math.max(0, width - BLOCK_SIZE))
-    let y = Math.max(0, height - BLOCK_SIZE - 46)
+    let y = Math.max(0, height - BLOCK_SIZE - PLAYER_CLEARANCE)
     let directionX = 1
     let directionY = -1
     let previous = 0
@@ -74,7 +49,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       width = field.clientWidth
       height = field.clientHeight
       x = Math.max(0, Math.min(x, width - BLOCK_SIZE))
-      y = Math.max(0, Math.min(y, height - BLOCK_SIZE - 38))
+      y = Math.max(0, Math.min(y, height - BLOCK_SIZE - PLAYER_CLEARANCE))
       block.style.transform = `translate3d(${x}px, ${y}px, 0)`
     })
     resize.observe(field)
@@ -83,10 +58,18 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       const dt = previous ? Math.min((now - previous) / 1000, 0.04) : 0
       previous = now
       const state = motionRef.current
-      if (state.active && !state.paused && !state.focused && !state.reduced && !state.catching && !document.hidden) {
-        const speed = 64 + Math.min(state.catches, 12) * 4
+      if (
+        state.active &&
+        !state.paused &&
+        !state.focused &&
+        !state.reduced &&
+        !state.revealing &&
+        !state.settled &&
+        !document.hidden
+      ) {
+        const speed = 64
         const maxX = Math.max(0, width - BLOCK_SIZE)
-        const maxY = Math.max(0, height - BLOCK_SIZE - 38)
+        const maxY = Math.max(0, height - BLOCK_SIZE - PLAYER_CLEARANCE)
         x += directionX * speed * dt
         y += directionY * speed * 0.72 * dt
         if (x <= 0 || x >= maxX) {
@@ -106,35 +89,26 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       cancelAnimationFrame(animation)
       resize.disconnect()
       preference.removeEventListener("change", syncPreference)
-      window.removeEventListener("storage", syncCatches)
       if (rewardTimerRef.current) clearTimeout(rewardTimerRef.current)
     }
   }, [])
 
-  const catchBlock = () => {
-    if (motionRef.current.catching) return
-    motionRef.current.catching = true
-    let previous = motionRef.current.catches
-    try {
-      previous = Math.max(previous, readCatchCount())
-    } catch {
-      /* Keep counting in memory. */
+  const revealSurprise = () => {
+    if (motionRef.current.revealing) return
+    if (motionRef.current.settled) {
+      onClick?.()
+      return
     }
-    const total = previous + 1
-    motionRef.current.catches = total
-    setCatches(total)
-    setCaught(true)
-    try {
-      localStorage.setItem(CATCH_STORAGE_KEY, String(total))
-    } catch {
-      /* Optional personal score. */
-    }
+    motionRef.current.revealing = true
+    motionRef.current.settled = true
+    setSettled(true)
+    setRevealing(true)
     rewardTimerRef.current = setTimeout(
       () => {
-        motionRef.current.catching = false
+        motionRef.current.revealing = false
         motionRef.current.focused = false
-        setCaught(false)
-        onClick?.(total)
+        setRevealing(false)
+        onClick?.()
       },
       motionRef.current.reduced ? 250 : 800,
     )
@@ -150,6 +124,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
     <div
       ref={fieldRef}
       data-mystery-chase="true"
+      data-settled={settled}
       style={{
         position: "fixed",
         inset:
@@ -162,9 +137,9 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       <button
         ref={blockRef}
         type="button"
-        aria-label={`Catch the mystery box. ${catches} ${catches === 1 ? "catch" : "catches"}. Opens the music crate.`}
-        title="Catch me for a surprise track. One click = one catch."
-        onClick={catchBlock}
+        aria-label={settled ? "Open your surprise" : "Discover a surprise"}
+        title={settled ? "Open Raf’s crate" : "There’s a surprise inside"}
+        onClick={revealSurprise}
         onFocus={() => {
           motionRef.current.focused = true
         }}
@@ -189,7 +164,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
         className="focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white"
       >
         <span
-          className={caught ? "caught-block" : ""}
+          className={revealing ? "surprise-block" : ""}
           style={{ display: "block", width: "100%", height: "100%", filter: "drop-shadow(0 4px 3px #0006)" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -207,25 +182,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
             }}
           />
         </span>
-        {catches > 0 && (
-          <span
-            style={{
-              position: "absolute",
-              right: -6,
-              bottom: -3,
-              borderRadius: 10,
-              background: "#163b71",
-              color: "#fff",
-              border: "2px solid #fff6c1",
-              fontSize: 11,
-              fontWeight: 800,
-              padding: "1px 5px",
-            }}
-          >
-            ×{catches}
-          </span>
-        )}
-        {caught && (
+        {revealing && (
           <Disc3
             className="found-record"
             size={38}
@@ -233,12 +190,12 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           />
         )}
       </button>
-      {!reducedMotion && (
+      {!reducedMotion && !settled && (
         <button
           type="button"
           onClick={toggleMotion}
           aria-pressed={paused}
-          aria-label={paused ? "Resume mystery box chase" : "Pause mystery box chase"}
+          aria-label={paused ? "Resume mystery box movement" : "Pause mystery box movement"}
           style={{
             position: "absolute",
             bottom: 0,
@@ -259,21 +216,21 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           className="hover:brightness-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
         >
           {paused ? <Play size={12} /> : <Pause size={12} />}
-          {paused ? "Resume chase" : "Pause chase"}
+          {paused ? "Resume movement" : "Pause movement"}
         </button>
       )}
       <span
         style={{
           position: "absolute",
           bottom: 7,
-          left: reducedMotion ? 4 : 112,
+          left: reducedMotion ? 4 : 142,
           color: "white",
           fontFamily: "Tahoma, sans-serif",
           fontSize: 11,
           textShadow: "0 1px 3px #000",
         }}
       >
-        {catches} {catches === 1 ? "catch" : "catches"} · Catch ? for a track
+        {!settled && "There’s a surprise inside"}
       </span>
       <div
         role="status"
@@ -285,25 +242,25 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           transform: "translateX(-50%)",
           maxWidth: "calc(100% - 20px)",
           width: "max-content",
-          padding: caught ? "12px 18px" : 0,
-          border: caught ? "2px solid #ffdf6f" : 0,
+          padding: revealing ? "12px 18px" : 0,
+          border: revealing ? "2px solid #ffdf6f" : 0,
           borderRadius: 6,
           background: "#173453",
           color: "#fff7d4",
           fontFamily: "Tahoma, sans-serif",
           textAlign: "center",
-          boxShadow: caught ? "0 5px 0 #0004" : "none",
+          boxShadow: revealing ? "0 5px 0 #0004" : "none",
         }}
       >
-        {caught && (
+        {revealing && (
           <>
-            <strong style={{ display: "block", fontSize: 17 }}>Catch #{catches}</strong>
-            <span style={{ fontSize: 12 }}>Nice catch. Here comes your surprise track…</span>
+            <strong style={{ display: "block", fontSize: 17 }}>A little surprise</strong>
+            <span style={{ fontSize: 12 }}>Here comes something from Raf’s crate…</span>
           </>
         )}
       </div>
       <style jsx>{`
-        @keyframes caught-block {
+        @keyframes surprise-block {
           35% {
             transform: translateY(-14px) rotate(-8deg) scale(1.16);
           }
@@ -324,14 +281,14 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
             opacity: 0;
           }
         }
-        .caught-block {
-          animation: caught-block 650ms ease-out;
+        .surprise-block {
+          animation: surprise-block 650ms ease-out;
         }
         :global(.found-record) {
           animation: found-record 800ms ease-out both;
         }
         @media (prefers-reduced-motion: reduce) {
-          .caught-block,
+          .surprise-block,
           :global(.found-record) {
             animation: none;
           }

@@ -16,6 +16,7 @@ import {
 import { useWindowActivity } from "../../components/ui/WindowShell"
 import { BRAWL_WAVES, createBrawl, stepBrawl, type BrawlStatus } from "../../lib/brawl-game"
 import { drawBrawl } from "../../lib/brawl-scene"
+import ScoreEntry from "./ScoreEntry"
 
 type Control = "left" | "right" | "up" | "down" | "attack" | "jump" | "dodge"
 const KEYS: Record<string, Control> = {
@@ -51,6 +52,7 @@ export default function BlockPartyBrawl() {
   const { active } = useWindowActivity()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef(createBrawl())
+  const runId = useRef(0)
   const keysRef = useRef(new Set<string>())
   const touchesRef = useRef(new Set<Control>())
   const pendingRef = useRef(new Set<Control>())
@@ -77,6 +79,7 @@ export default function BlockPartyBrawl() {
   }, [])
   const start = useCallback(() => {
     clearInput()
+    runId.current++
     gameRef.current = createBrawl()
     gameRef.current.status = "playing"
     setStatus("playing")
@@ -150,7 +153,8 @@ export default function BlockPartyBrawl() {
     const keyDown = (event: KeyboardEvent) => {
       if (
         !activeRef.current ||
-        (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName))
+        (event.target instanceof HTMLElement &&
+          (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName) || event.target.isContentEditable))
       )
         return
       const key = event.key.toLowerCase()
@@ -374,17 +378,18 @@ export default function BlockPartyBrawl() {
               position: "absolute",
               inset: 0,
               padding: 14,
-              display: "flex",
+              display: status === "won" || status === "lost" ? "block" : "flex",
               alignItems: "center",
               justifyContent: "center",
               overflowY: "auto",
+              overscrollBehavior: "contain",
               background: "#38314b60",
             }}
           >
             <div
               style={{
                 width: "min(390px, 100%)",
-                margin: "auto",
+                margin: status === "won" || status === "lost" ? "0 auto" : "auto",
                 padding: "clamp(16px, 3vw, 24px)",
                 borderRadius: 10,
                 border: "3px solid #d39ab2",
@@ -444,6 +449,16 @@ export default function BlockPartyBrawl() {
                 <Play size={16} fill="currentColor" />
                 {status === "ready" ? "Hit the street" : status === "paused" ? "Back to the block" : "Play again"}
               </button>
+              {(status === "won" || status === "lost") && (
+                <div style={{ marginTop: 16 }}>
+                  <ScoreEntry
+                    key={`block-party-brawl-${runId.current}`}
+                    gameName="block-party-brawl"
+                    score={gameRef.current.score}
+                    level={gameRef.current.wave + 1}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

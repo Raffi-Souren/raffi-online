@@ -70,42 +70,12 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
           </div>
         </div>
 
-        {/* ACM ICAIF Keynote Embed */}
-        <div
-          className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
-        >
-          <h3
-            className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block"
-          >
-            🎓 ACM ICAIF KEYNOTE - LLM OUTPUT DRIFT
-          </h3>
-          <p className="text-gray-600 mb-3">
-            Nov 15, 2025 • Singapore
-          </p>
-          <p className="text-gray-700 mb-3">
-            LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows
-          </p>
-          <div className="w-full">
-            <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
-              <iframe
-                src="https://player.vimeo.com/video/1137311394?h=f943914abd"
-                loading="lazy"
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
-                allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                title="ACM ICAIF Keynote - LLM Output Drift"
-                className="rounded-lg border border-gray-200"
-              />
-            </div>
-          </div>
-        </div>
-
         {/* AI Summit Keynote Embed */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h3
             className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block"
           >
-            🌀 AI SUMMIT KEYNOTE - BANKING ON AI AGENTS
+            🌀 BANKING ON AI AGENTS · AI SUMMIT 2024
           </h3>
           <p className="text-gray-600 mb-3">
             Finance stage at Javits Center NYC - Dec 14, 2024

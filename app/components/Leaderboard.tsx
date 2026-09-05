@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { formatScore, getScoreboard } from "@/lib/scoreboards"
 
 interface Score {
   player_name: string
@@ -12,10 +13,12 @@ interface Score {
 interface LeaderboardProps {
   gameName: string
   currentScore?: number
+  level?: number
   onClose?: () => void
 }
 
-export default function Leaderboard({ gameName, currentScore, onClose }: LeaderboardProps) {
+export default function Leaderboard({ gameName, currentScore, level, onClose }: LeaderboardProps) {
+  const board = getScoreboard(gameName)
   const [scores, setScores] = useState<Score[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +31,10 @@ export default function Leaderboard({ gameName, currentScore, onClose }: Leaderb
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/scores?game=${encodeURIComponent(gameName)}&limit=10`, {
+      const query = new URLSearchParams({ game: gameName, limit: "10" })
+      if (level !== undefined) query.set("level", String(level))
+      const res = await fetch(`/api/scores?${query}`, {
+        cache: "no-store",
         signal: controller.signal,
       })
       if (!res.ok) throw new Error("Failed to fetch")
@@ -44,7 +50,7 @@ export default function Leaderboard({ gameName, currentScore, onClose }: Leaderb
         if (!controller.signal.aborted) setLoading(false)
       }
     }
-  }, [gameName])
+  }, [gameName, level])
 
   useEffect(() => {
     void fetchScores()
@@ -85,19 +91,25 @@ export default function Leaderboard({ gameName, currentScore, onClose }: Leaderb
   return (
     <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg p-4 sm:p-6 max-w-md w-full mx-auto text-white">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl sm:text-2xl font-bold capitalize flex items-center gap-2">🏆 {gameName} Leaderboard</h3>
+        <h3 className="text-lg font-bold">
+          {board?.name || gameName} · {board?.label || "Leaderboard"}
+        </h3>
         {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none p-2">
+          <button
+            aria-label="Close leaderboard"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white text-2xl leading-none p-2"
+          >
             ×
           </button>
         )}
       </div>
 
       {/* Current score indicator */}
-      {typeof currentScore === "number" && currentScore > 0 && (
+      {typeof currentScore === "number" && Number.isFinite(currentScore) && (
         <div className="mb-4 p-3 bg-blue-600/30 border border-blue-500 rounded-lg text-center">
-          <p className="text-sm text-blue-300">Your Score</p>
-          <p className="text-2xl font-bold text-blue-400">{currentScore.toLocaleString()}</p>
+          <p className="text-sm text-blue-300">Your {board?.metric === "milliseconds" ? "time" : "score"}</p>
+          <p className="text-xl font-bold text-blue-400">{formatScore(gameName, currentScore)}</p>
         </div>
       )}
 
@@ -130,11 +142,17 @@ export default function Leaderboard({ gameName, currentScore, onClose }: Leaderb
                 <span className="font-bold text-lg w-8 flex-shrink-0 text-center">{getRankIcon(index)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{score.player_name}</p>
-                  <p className="text-xs opacity-70">Level {score.level}</p>
+                  {board?.levelLabel && (
+                    <p className="text-xs opacity-70">
+                      {board.levelLabel} {score.level}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="font-bold text-lg">{score.score.toLocaleString()}</span>
+                <span className="font-bold text-sm" style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {formatScore(gameName, score.score)}
+                </span>
                 <span className="text-xs opacity-70 hidden sm:block">{formatDate(score.created_at)}</span>
               </div>
             </div>
@@ -144,6 +162,9 @@ export default function Leaderboard({ gameName, currentScore, onClose }: Leaderb
 
       {/* Refresh button */}
       <div className="mt-4 text-center">
+        <p className="text-xs text-gray-400 mb-2">
+          Best submitted result per nickname. {board?.order === "asc" ? "Lower time wins." : "Higher score wins."}
+        </p>
         <button onClick={fetchScores} className="text-sm text-gray-400 hover:text-white transition-colors">
           🔄 Refresh
         </button>

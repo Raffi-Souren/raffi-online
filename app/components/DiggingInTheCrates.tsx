@@ -9,10 +9,9 @@ import { useWindowActivity } from "../../components/ui/WindowShell"
 interface DiggingInTheCratesProps {
   isOpen: boolean
   onClose?: () => void
-  catchNumber?: number | null
 }
 
-export default function DiggingInTheCrates({ isOpen, onClose, catchNumber = null }: DiggingInTheCratesProps) {
+export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
   const { currentTrack, isPlaying, isLoading, error, playTrack, setPlaylist, togglePlay } = useAudio()
   const { active, layer, onActivate } = useWindowActivity()
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -124,7 +123,7 @@ export default function DiggingInTheCrates({ isOpen, onClose, catchNumber = null
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span style={{ fontSize: "1.125rem" }}>🔔</span>
               <h2 id="secret-title" style={{ fontWeight: "bold", color: "#000000", margin: 0, fontSize: "1rem" }}>
-                {catchNumber === null ? "Raf’s crate" : `Crate digger · Catch #${catchNumber}`}
+                Raf’s crate
               </h2>
             </div>
             <button
@@ -164,13 +163,9 @@ export default function DiggingInTheCrates({ isOpen, onClose, catchNumber = null
                     fontSize: "0.9375rem",
                   }}
                 >
-                  {catchNumber === null ? "A surprise from Raf’s crate" : "You caught the block!"}
+                  A surprise from Raf’s crate
                 </p>
-                <p style={{ fontSize: "0.875rem", color: "#374151", margin: 0 }}>
-                  {catchNumber === null
-                    ? "Shuffle to dig for another track."
-                    : `${catchNumber} ${catchNumber === 1 ? "catch" : "catches"} saved on this browser. Each catch picks a track; songs can repeat.`}
-                </p>
+                <p style={{ fontSize: "0.875rem", color: "#374151", margin: 0 }}>Shuffle to dig for another track.</p>
               </div>
             </div>
 
