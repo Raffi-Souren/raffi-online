@@ -1,5 +1,7 @@
 "use client"
 
+import type { CSSProperties, ReactNode } from "react"
+import { Heart, List, Pause, Play, RotateCcw, X } from "lucide-react"
 import { formatTime } from "@/lib/game-utils"
 
 interface GameControlsProps {
@@ -15,6 +17,35 @@ interface GameControlsProps {
   showLevelSelect?: () => void
 }
 
+const shellButton: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 5,
+  flex: "1 1 0",
+  minWidth: 44,
+  minHeight: 44,
+  padding: "6px 8px",
+  border: "1px solid #8c988d",
+  borderRadius: 6,
+  background: "#e4e6da",
+  color: "#334835",
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: 0.3,
+  boxShadow: "0 3px 0 #97a494, inset 1px 1px 0 #fbfbf3",
+  touchAction: "manipulation",
+}
+
+function Stat({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <span style={{ fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: "#6a7a6c" }}>{label}</span>
+      <strong style={{ fontSize: 15, lineHeight: 1.2, fontVariantNumeric: "tabular-nums" }}>{children}</strong>
+    </div>
+  )
+}
+
 export default function GameControls({
   isPaused,
   onPause,
@@ -28,66 +59,102 @@ export default function GameControls({
   showLevelSelect,
 }: GameControlsProps) {
   return (
-    <div className="w-full bg-gray-800 rounded-lg p-2 sm:p-3">
-      {/* Stats Row */}
-      <div className="flex justify-between items-center mb-2 text-white text-xs sm:text-sm">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <span className="font-bold">
-            Score: <span className="text-yellow-400">{score.toLocaleString()}</span>
-          </span>
-          <span className="font-bold">
-            Level: <span className="text-blue-400">{level}</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4">
-          {typeof lives === "number" && (
-            <span className="font-bold text-red-400">{"❤️".repeat(Math.max(0, lives))}</span>
-          )}
-          {typeof timeElapsed === "number" && (
-            <span className="font-mono text-gray-400">{formatTime(timeElapsed)}</span>
-          )}
-        </div>
+    <div
+      role="group"
+      aria-label="Game controls"
+      className="game-touch"
+      style={{
+        width: "min(100%, 360px)",
+        padding: "10px 12px 12px",
+        border: "1px solid #adb3aa",
+        borderRadius: 12,
+        background: "linear-gradient(120deg, #f0f0e6, #dcded3)",
+        boxShadow: "inset 2px 2px 0 #fff, inset -3px -3px 1px #b8bfb5, 0 4px 0 #99a39a",
+        color: "#364938",
+        fontFamily: "'Trebuchet MS', Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          gap: 12,
+          marginBottom: 10,
+          padding: "6px 10px",
+          background: "#9bbb58",
+          border: "3px solid #626d67",
+          borderRadius: 5,
+          boxShadow: "inset 0 2px 4px #0004",
+          color: "#1f2f1c",
+        }}
+      >
+        <Stat label="Score">{score.toLocaleString()}</Stat>
+        <Stat label="Level">{level}</Stat>
+        {typeof lives === "number" && (
+          <Stat label="Lives">
+            <span
+              aria-label={`${lives} lives`}
+              style={{ display: "inline-flex", gap: 2, minHeight: 18, alignItems: "center" }}
+            >
+              {Array.from({ length: Math.max(0, lives) }, (_, i) => (
+                <Heart key={i} size={13} fill="currentColor" aria-hidden="true" />
+              ))}
+            </span>
+          </Stat>
+        )}
+        {typeof timeElapsed === "number" && <Stat label="Time">{formatTime(timeElapsed)}</Stat>}
       </div>
 
-      {/* Control Buttons */}
-      <div className="flex flex-wrap justify-center gap-2">
+      <div style={{ display: "flex", gap: 7 }}>
         {isPaused ? (
           <button
+            type="button"
             onClick={onResume}
-            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-500 text-white rounded font-bold hover:bg-green-600 transition-colors text-xs sm:text-sm min-h-[36px]"
+            style={{ ...shellButton, background: "#c9d9a3", borderColor: "#7f9660" }}
+            className="active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
           >
-            ▶ Resume
+            <Play size={15} fill="currentColor" aria-hidden="true" /> Resume
           </button>
         ) : (
           <button
+            type="button"
             onClick={onPause}
-            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-500 text-white rounded font-bold hover:bg-yellow-600 transition-colors text-xs sm:text-sm min-h-[36px]"
+            style={{ ...shellButton, background: "#f1dfa1", borderColor: "#b39a4e" }}
+            className="active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
           >
-            ⏸ Pause
+            <Pause size={15} aria-hidden="true" /> Pause
           </button>
         )}
 
         <button
+          type="button"
           onClick={onRestart}
-          className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded font-bold hover:bg-blue-600 transition-colors text-xs sm:text-sm min-h-[36px]"
+          style={shellButton}
+          className="active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
         >
-          🔄 Restart
+          <RotateCcw size={15} aria-hidden="true" /> Restart
         </button>
 
         {showLevelSelect && (
           <button
+            type="button"
             onClick={showLevelSelect}
-            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-500 text-white rounded font-bold hover:bg-purple-600 transition-colors text-xs sm:text-sm min-h-[36px]"
+            style={shellButton}
+            className="active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
           >
-            📋 Levels
+            <List size={15} aria-hidden="true" /> Levels
           </button>
         )}
 
         <button
+          type="button"
           onClick={onQuit}
-          className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-500 text-white rounded font-bold hover:bg-red-600 transition-colors text-xs sm:text-sm min-h-[36px]"
+          aria-label="Quit to menu"
+          style={{ ...shellButton, flex: "0 0 auto", background: "#e7c9cf", borderColor: "#9d6a76" }}
+          className="active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
         >
-          ✕ Quit
+          <X size={16} aria-hidden="true" />
         </button>
       </div>
     </div>

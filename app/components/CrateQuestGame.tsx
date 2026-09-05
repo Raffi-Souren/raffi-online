@@ -561,15 +561,18 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
               <button
                 key={code}
                 aria-label={"Walk " + code.slice(5).toLowerCase()}
+                className="game-touch"
                 style={{
                   ...button,
-                  minHeight: 32,
+                  minHeight: 44,
+                  minWidth: 44,
                   padding: 3,
                   gridColumn: column,
                   gridRow: row,
                   touchAction: "none",
                   userSelect: "none",
                 }}
+                onContextMenu={(event) => event.preventDefault()}
                 onPointerDown={(event) => {
                   event.preventDefault()
                   event.currentTarget.setPointerCapture(event.pointerId)
