@@ -22,7 +22,26 @@ async function check(name, page, run) {
     report.checks.push(name)
     console.info(`PASS ${name}`)
   } catch (error) {
-    report.failures.push({ name, error: error.stack })
+    const dom = await page.evaluate(() => {
+      const dialog = document.querySelector('[role="dialog"][data-window-id="games"]')
+      const card = dialog?.querySelector('button[aria-label="Play Minesweeper"]')
+      const ancestors = []
+      for (let element = card ?? dialog; element; element = element.parentElement) {
+        const style = getComputedStyle(element)
+        ancestors.push({ tag: element.tagName, ariaHidden: element.getAttribute("aria-hidden"), inert: element.hasAttribute("inert"), display: style.display, visibility: style.visibility })
+      }
+      return {
+        url: location.href,
+        gameTaskState: document.querySelector('[data-window-task="games"]')?.getAttribute("data-window-state"),
+        gameShellModal: dialog?.getAttribute("aria-modal"),
+        gameButtonLabels: Array.from(dialog?.querySelectorAll("button") ?? []).map((button) => button.getAttribute("aria-label") ?? button.textContent?.trim()),
+        minesweeperCount: dialog?.querySelectorAll('button[aria-label="Play Minesweeper"]').length,
+        minesweeperHtml: card?.outerHTML,
+        ancestors,
+      }
+    }).catch((failure) => ({ unavailable: failure.message }))
+    const minesweeperRoleCount = await page.getByRole("button", { name: "Play Minesweeper", exact: true }).count().catch(() => null)
+    report.failures.push({ name, error: error.stack, dom, minesweeperRoleCount })
     console.error(`FAIL ${name}: ${error.message}`)
     await page.screenshot({ path: `${out}/${name.replace(/[^a-z0-9-]+/gi, "-")}-failure.png` }).catch(() => {})
   }
@@ -31,10 +50,18 @@ async function open(page, app, query = "") {
   await page.goto(`${base}/?app=${app}${query}`, { waitUntil: "domcontentloaded" })
   await shell(page, app).waitFor({ state: "visible", timeout: 60000 })
   await task(page, app).waitFor()
+  // Visible chrome can arrive before its activity/focus contract settles.
+  // Wait for the usable app, rather than giving a role query a fixed head start.
+  await page.waitForFunction((app) => {
+    const dialog = document.querySelector(`[role="dialog"][data-window-id="${app}"]`)
+    const button = document.querySelector(`[data-window-task="${app}"]`)
+    return button?.getAttribute("data-window-state") === "active"
+      && dialog?.getAttribute("aria-modal") === "true"
+      && !dialog.closest('[aria-hidden="true"], [inert]')
+  }, app)
   // Projects loads inside a parent-owned shell, so its initial shell can be
   // visible before the dynamic content has established its natural height.
   if (app === "projects") await shell(page, app).getByRole("heading", { name: "Projects", exact: true }).waitFor()
-  await pause(page)
   return shell(page, app)
 }
 async function bounds(page, dialog, name) {
