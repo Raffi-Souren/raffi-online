@@ -17,7 +17,7 @@ import {
   usageIdentity,
 } from "@/lib/raf-os-server"
 
-import { buildGeminiRequest, requestGemini } from "@/lib/raf-os-gemini"
+import { buildGeminiRequest, checkGeminiModel, requestGemini } from "@/lib/raf-os-gemini"
 import { configuredProviders, routingPlan, runRoutedReview } from "@/lib/raf-os-routing"
 
 export const runtime = "nodejs"
@@ -59,6 +59,20 @@ export async function GET(request: Request) {
     available = available && providers.length > 0
   } catch {
     available = false
+  }
+  if (new URL(request.url).searchParams.get("check") === "gemini") {
+    if (process.env.RAF_OS_ENABLED === "false")
+      return NextResponse.json({ error: "Connection checks are temporarily unavailable." }, { status: 503, headers })
+    if (!isSameOrigin(request))
+      return NextResponse.json({ error: "Open RAF OS on this site to check its connection." }, { status: 403, headers })
+    const gemini = providers.find((item) => item.provider === "gemini")
+    if (!gemini)
+      return NextResponse.json({ error: "Gemini is not configured." }, { status: 503, headers })
+    const connection = await checkGeminiModel(gemini.model, gemini.apiKey, request.signal)
+    return NextResponse.json(
+      { provider: "gemini", ...connection, note: "Model metadata access only; this does not verify review generation." },
+      { status: connection.reachable ? 200 : 503, headers },
+    )
   }
   const response = NextResponse.json(
     {
