@@ -18,6 +18,7 @@
 import { makeRng } from '../engine/state.js'
 import { FACADE_BAYS, FACADE_FLOORS } from './atlas.js'
 import { lotHalfExtents } from './blocks.js'
+import { emitSurfaceTiles } from './roads.js'
 
 const SIDES = ['south', 'north', 'east', 'west']
 const SIDES_TOP = [...SIDES, 'up']
@@ -199,11 +200,19 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
 
   const top = shells[shells.length - 1]
   const roofY = top.y + top.h / 2
+  const cap = arch.cap || { type: 'parapet', height: 0.6 }
   // Roof deck slightly inset so the cornice / parapet can overshoot.
-  b.plane({
-    x: lot.x, y: roofY + 0.02, z: lot.z,
-    w: top.w * 0.98, d: top.d * 0.98, ry: lot.ry,
-    color: '#b8b4ac', rect: flatRect,
+  if (cap.type !== 'cornice' && cap.type !== 'parapet') {
+    emitSurfaceTiles(b, {
+      x: lot.x, y: roofY + 0.02, z: lot.z,
+      w: top.w * 0.98, d: top.d * 0.98, ry: lot.ry,
+      color: '#ffffff', rect: atlas.uv('roof-tar'),
+    }, 48)
+  }
+  set.alpha.plane({
+    x: lot.x + 1.6, y: 0.235, z: lot.z + 1.2,
+    w: lot.w + 7, d: lot.d + 7, ry: lot.ry,
+    color: '#ffffff', rect: atlas.uv('blob'),
   })
 
   // ---------------------------------------------------------- windows ---
@@ -222,8 +231,14 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
   }
 
   // --------------------------------------------------------------- cap ---
-  const cap = arch.cap || { type: 'parapet', height: 0.6 }
   addCap(b, lot, top, roofY, cap, flatRect, rng)
+  if (cap.type === 'cornice' || cap.type === 'parapet') {
+    emitSurfaceTiles(b, {
+      x: lot.x, y: roofY + (cap.height || 0.9) + 0.025, z: lot.z,
+      w: top.w - 0.6, d: top.d - 0.6, ry: lot.ry,
+      color: '#ffffff', rect: atlas.uv('roof-tar'),
+    }, 48)
+  }
 
   // ------------------------------------------------------------- stoop ---
   if (arch.stoop && rng.chance(arch.stoop.chance)) {
@@ -353,8 +368,8 @@ function addPilasters(b, lot, s, color, rect, bays) {
 
 function addWindowGrid(b, atlas, lot, ctx) {
   const { shells, fh, bays, totalH, rng, frameColor, style, skipGround } = ctx
-  const darkPane = style === 'curtain' ? '#1c2a38' : '#1a2230'
-  const paneRect = atlas.uv(style === 'curtain' ? 'flat/glass-blue' : 'litwindow') || atlas.uv('white')
+  const darkPane = style === 'curtain' ? '#a5b6c4' : '#d5d1c5'
+  const paneRect = atlas.uv('window-reflection')
   const white = atlas.uv('white')
 
   let placed = 0

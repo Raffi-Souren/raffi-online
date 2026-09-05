@@ -324,6 +324,86 @@ function configurationDiagnostic(message: string | undefined) {
   return result || "unknown"
 }
 
+export type GeminiModelCheck = {
+  reachable: boolean
+  providerStatus: number
+  model: string
+  supportsGeneration: boolean
+  diagnostic?: string
+}
+const modelMetadataSchema = z.object({
+  name: z.string().regex(/^models\/gemini-[a-z0-9][a-z0-9.-]{0,90}$/i),
+  supportedGenerationMethods: z.array(z.string().max(100)).max(30),
+})
+
+/** Read-only model visibility; successful metadata does not establish that a generation request will succeed. */
+export async function checkGeminiModel(model: string, apiKey: string, signal: AbortSignal): Promise<GeminiModelCheck> {
+  const result: GeminiModelCheck = {
+    reachable: false,
+    providerStatus: 0,
+    model: modelName.test(model) ? model : "unavailable",
+    supportsGeneration: false,
+  }
+  if (!modelName.test(model) || !apiKey) return { ...result, diagnostic: "MODEL_CONFIGURATION_ERROR" }
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  signal.addEventListener("abort", abort, { once: true })
+  if (signal.aborted) abort()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    abort()
+  }, 5000)
+  try {
+    if (controller.signal.aborted) return { ...result, diagnostic: "ABORTED" }
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model, {
+      method: "GET",
+      headers: { "x-goog-api-key": apiKey },
+      signal: controller.signal,
+      cache: "no-store",
+      redirect: "error",
+    }).catch((error: unknown) => {
+      if (error instanceof TypeError) throw networkFailure()
+      throw error
+    })
+    result.providerStatus = response.status
+    const value = await readProviderJson(response.body, response.ok ? 32_000 : 16_000, controller.signal)
+    if (!response.ok) {
+      const failure = failureSchema.safeParse(value)
+      let diagnostic = "unknown"
+      if (failure.success) {
+        const reasons = failure.data.error.details?.map((detail) => detail.reason) ?? []
+        diagnostic =
+          reasons.find(
+            (reason): reason is string => typeof reason === "string" && /^[A-Z][A-Z_]{0,99}$/.test(reason),
+          ) ??
+          messageDiagnostic(failure.data.error.message) ??
+          (/^[A-Z][A-Z_]{0,99}$/.test(failure.data.error.status ?? "") ? failure.data.error.status! : "unknown")
+      }
+      return { ...result, diagnostic }
+    }
+    const metadata = modelMetadataSchema.safeParse(value)
+    if (!metadata.success) return { ...result, diagnostic: "INVALID_MODEL_METADATA" }
+    return {
+      ...result,
+      reachable: true,
+      supportsGeneration: metadata.data.supportedGenerationMethods.includes("generateContent"),
+    }
+  } catch (error) {
+    const diagnostic = controller.signal.aborted
+      ? timedOut
+        ? "TIMEOUT"
+        : "ABORTED"
+      : error instanceof RafHttpError && error.diagnostic?.providerCode === "NETWORK_ERROR"
+        ? "NETWORK_ERROR"
+        : "UNREADABLE_MODEL_METADATA"
+    return { ...result, diagnostic }
+  } finally {
+    clearTimeout(timer)
+    signal.removeEventListener("abort", abort)
+  }
+}
+
 export async function requestGemini(
   request: ReturnType<typeof buildGeminiRequest>,
   apiKey: string,

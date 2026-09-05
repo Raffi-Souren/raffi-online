@@ -17,8 +17,8 @@ const submission = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-test("all eight games have an explicit ranking direction and valid result contract", () => {
-  assert.equal(SCOREBOARD_IDS.length, 8)
+test("all nine games have an explicit ranking direction and valid result contract", () => {
+  assert.equal(SCOREBOARD_IDS.length, 9)
   for (const gameName of SCOREBOARD_IDS) {
     const board = getScoreboard(gameName)!
     assert.equal(board.order, ["borough-gp", "dockyard", "minesweeper"].includes(gameName) ? "asc" : "desc")
@@ -91,4 +91,11 @@ test("race results retain milliseconds so adjacent finishes remain distinguishab
   assert.equal(formatScore("dockyard", 3_600_001), "60:00.001")
   assert.equal(formatScore("signal-lost", 1234), "1,234")
   assert.equal(formatScore("snake", 0), "0")
+})
+
+test("Overtime ranks completed match points and accepts only the single match format", () => {
+  assert.equal(getScoreboard("overtime")?.order, "desc")
+  assert.equal(validateScoreSubmission(submission({ gameName: "overtime", score: 550 })).ok, true)
+  assert.equal(validateScoreSubmission(submission({ gameName: "overtime", score: 550, level: 2 })).ok, false)
+  assert.equal(validateScoreSubmission(submission({ gameName: "overtime", score: -1 })).ok, false)
 })

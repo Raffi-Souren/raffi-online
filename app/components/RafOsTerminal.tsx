@@ -25,7 +25,7 @@ const ink = "#d7e4d9",
 const control: CSSProperties = {
   border: `1px solid ${line}`,
   borderRadius: 2,
-  padding: "9px 12px",
+  padding: "8px 11px",
   color: ink,
   background: "#17271d",
   font: "inherit",
@@ -39,10 +39,11 @@ const field: CSSProperties = {
   color: ink,
   border: `1px solid ${line}`,
   borderRadius: 2,
-  padding: 12,
+  padding: "10px 12px",
   font: "inherit",
   fontSize: 13,
-  lineHeight: 1.7,
+  lineHeight: 1.6,
+  caretColor: green,
   resize: "vertical",
 }
 const sample =
@@ -414,14 +415,16 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           flexDirection: "column",
           background: "#101d15",
           color: ink,
-          fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
+          fontFamily: '"SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace',
           fontSize: 13,
+          lineHeight: 1.6,
+          colorScheme: "dark",
         }}
       >
         <header
           className="raf-header"
           style={{
-            padding: "var(--raf-header-padding, 18px 20px 13px)",
+            padding: "var(--raf-header-padding, 13px 20px 12px)",
             borderBottom: `1px solid ${line}`,
             display: "flex",
             gap: 12,
@@ -430,10 +433,10 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           }}
         >
           <div>
-            <div style={{ display: "flex", gap: 9, alignItems: "center", color: green, fontSize: 16, fontWeight: 700 }}>
-              <Terminal size={18} /> IDEA → PILOT → PROOF
+            <div style={{ display: "flex", gap: 8, alignItems: "center", color: green, fontSize: 14, fontWeight: 600 }}>
+              <Terminal size={16} aria-hidden="true" /> IDEA → PILOT → PROOF
             </div>
-            <p className="raf-tagline" style={{ color: muted, fontSize: 12, margin: "8px 0 0" }}>
+            <p className="raf-tagline" style={{ color: muted, fontSize: 11, margin: "4px 0 0" }}>
               Did the pitch get stronger—or just sound better?
             </p>
           </div>
@@ -471,17 +474,42 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
         </nav>
         <div
           ref={outputArea}
-          style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "18px 20px", overflowWrap: "anywhere" }}
+          className="raf-output"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            padding: "var(--raf-output-padding, 16px 20px)",
+            overflowWrap: "anywhere",
+            scrollbarColor: `${line} #101d15`,
+          }}
         >
-          <div role="status" aria-live="polite" style={{ color: busy ? green : muted, fontSize: 11, marginBottom: 12 }}>
-            {busy
-              ? "Reviewing supplied material… You can cancel this request."
-              : fileBusy
-                ? "Reading your PDF…"
-                : notice ||
-                  (available === false
-                    ? ">> Live analysis is temporarily unavailable. Your draft stays here; the GPT version is available above."
-                    : ">> Latest six reviews stay in this tab. Closing preserves the session; refreshing clears it.")}
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              display: "flex",
+              gap: 10,
+              color: busy ? green : muted,
+              fontSize: 11,
+              marginBottom: 16,
+              paddingBottom: 12,
+              borderBottom: `1px dashed ${line}`,
+            }}
+          >
+            <span aria-hidden="true" style={{ color: green, flexShrink: 0 }}>
+              status
+            </span>
+            <span>
+              {busy
+                ? "Reviewing supplied material… You can cancel this request."
+                : fileBusy
+                  ? "Reading your PDF…"
+                  : notice ||
+                    (available === false
+                      ? "Live analysis is temporarily unavailable. Your draft stays here; the GPT version is available above."
+                      : "Latest six reviews stay in this tab. Closing preserves the session; refreshing clears it.")}
+            </span>
           </div>
           {error && (
             <p
@@ -502,7 +530,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   flexWrap: "wrap",
                 }}
               >
-                <h2 style={{ fontSize: 14, margin: "4px 0 12px" }}>
+                <h2 style={{ fontSize: 13, fontWeight: 600, margin: "4px 0 12px" }}>
                   — {runs.length ? "Revise your pitch" : "Start with the business"}
                 </h2>
                 <button
@@ -743,14 +771,14 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
           {view === "review" && active && (
             <>
               <h2 style={{ fontSize: 14, color: green }}>— Analysis</h2>
-              <p style={{ fontSize: 14, lineHeight: 1.8 }}>{active.result.review.snapshot}</p>
+              <p style={{ fontSize: 13, lineHeight: 1.75, maxWidth: "86ch" }}>{active.result.review.snapshot}</p>
               <p style={{ color: amber, fontSize: 11 }}>
                 Scores assess this submission. Unknown means missing information, not zero. Supplied material is not
                 independently verified.
               </p>
               <div style={{ overflowX: "auto", margin: "18px 0" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead>
+                  <thead style={{ color: muted, background: "#0c1811" }}>
                     <tr>
                       <th style={{ textAlign: "left", padding: 8 }}>Dimension</th>
                       <th style={{ textAlign: "left", padding: 8 }}>0–5</th>
@@ -760,9 +788,18 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                   <tbody>
                     {active.result.review.scorecard.map((s) => (
                       <tr key={s.dimension} style={{ borderTop: `1px solid ${line}` }}>
-                        <td style={{ padding: 8 }}>{s.dimension}</td>
-                        <td style={{ padding: 8, color: s.score === null ? muted : green }}>{s.score ?? "Unknown"}</td>
-                        <td style={{ padding: 8, lineHeight: 1.6, minWidth: 180 }}>
+                        <td style={{ padding: 8, verticalAlign: "top" }}>{s.dimension}</td>
+                        <td
+                          style={{
+                            padding: 8,
+                            color: s.score === null ? muted : green,
+                            verticalAlign: "top",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {s.score ?? "Unknown"}
+                        </td>
+                        <td style={{ padding: 8, lineHeight: 1.6, minWidth: 180, verticalAlign: "top" }}>
                           {s.reason}
                           <References ids={s.refs} sources={active.sources} />
                         </td>
@@ -992,8 +1029,8 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
         <footer
           style={{
             borderTop: `1px solid ${line}`,
-            background: "#112018",
-            padding: "10px 14px",
+            background: "#0c1710",
+            padding: "8px 14px",
             display: "flex",
             gap: 8,
             flexWrap: "wrap",
@@ -1028,25 +1065,36 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
             </>
           )}
           <form
+            className="raf-command-line"
             onSubmit={(e) => {
               e.preventDefault()
               const input = e.currentTarget.elements.namedItem("command") as HTMLInputElement
               command(input.value)
               input.value = ""
             }}
-            style={{ flex: "1 1 120px", display: "flex", minWidth: 0 }}
+            style={{
+              flex: "1 1 240px",
+              display: "flex",
+              alignItems: "center",
+              minWidth: 0,
+              minHeight: 40,
+              padding: "0 10px",
+              border: `1px solid var(--raf-command-border, ${line})`,
+              borderRadius: 2,
+              background: "#09130d",
+            }}
           >
-            <label htmlFor="raf-command" style={{ color: green, padding: "10px 7px 0 0" }}>
-              &gt;
+            <label htmlFor="raf-command" style={{ color: green, paddingRight: 10, fontSize: 12, whiteSpace: "nowrap" }}>
+              <span style={{ color: muted }}>raf-os</span> &gt;
             </label>
             <input
               id="raf-command"
               name="command"
               aria-label="Terminal command"
-              placeholder="/help"
+              placeholder="/help for commands"
               autoComplete="off"
               maxLength={40}
-              style={{ ...field, minWidth: 0, padding: 8, height: 38 }}
+              style={{ ...field, minWidth: 0, padding: "8px 0", height: 38, border: 0, background: "transparent" }}
             />
           </form>
           {busy && view !== "draft" && (
@@ -1093,11 +1141,21 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
             opacity: 0.5;
             cursor: default;
           }
+          .raf-command-line:focus-within {
+            --raf-command-border: #a1e7a8;
+          }
+          .raf-terminal textarea::placeholder,
+          .raf-terminal input::placeholder {
+            color: #809386;
+          }
           .raf-terminal :global(:focus-visible) {
             outline: 2px solid #a1e7a8;
             outline-offset: 3px;
           }
           @media (max-width: 600px) {
+            .raf-output {
+              --raf-output-padding: 14px 12px;
+            }
             .raf-comparison {
               grid-template-columns: minmax(0, 1fr);
             }

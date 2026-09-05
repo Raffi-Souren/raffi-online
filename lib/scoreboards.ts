@@ -1,5 +1,5 @@
 export const MAX_PLAYER_NAME = 24
-export const SCORE_SCHEMA_VERSION = 2
+export const SCORE_SCHEMA_VERSION = 3
 const invisibleCharacters = new RegExp("\\p{C}", "u")
 const nameCharacters = new RegExp("[\\p{L}\\p{N}]", "u")
 
@@ -15,6 +15,14 @@ interface Scoreboard {
 }
 
 export const SCOREBOARDS = {
+  overtime: {
+    name: "Overtime",
+    metric: "points",
+    order: "desc",
+    label: "High scores",
+    maxScore: 100_000,
+    maxLevel: 1,
+  },
   snake: {
     name: "Snake",
     metric: "points",

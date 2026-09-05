@@ -22,7 +22,7 @@ async function ensureScoreSchema(sql: ReturnType<typeof getSql>) {
         SELECT EXISTS (
           SELECT 1 FROM pg_constraint
           WHERE conrelid = to_regclass('public.game_scores')
-            AND conname = 'valid_game_name_scoreboards_v2' AND convalidated
+            AND conname = 'valid_game_name_scoreboards_v3' AND convalidated
         ) AS ready
       `
       if (schema.ready) return
@@ -47,13 +47,21 @@ async function ensureScoreSchema(sql: ReturnType<typeof getSql>) {
             IF NOT EXISTS (
               SELECT 1 FROM pg_constraint
               WHERE conrelid = 'public.game_scores'::regclass
-                AND conname = 'valid_game_name_scoreboards_v2' AND convalidated
+                AND conname = 'valid_game_name_scoreboards_v3' AND convalidated
             ) THEN
               ALTER TABLE public.game_scores DROP CONSTRAINT IF EXISTS valid_game_name;
+              ALTER TABLE public.game_scores DROP CONSTRAINT IF EXISTS valid_game_name_scoreboards_v2;
+              ALTER TABLE public.game_scores ADD CONSTRAINT valid_game_name_scoreboards_v3
+                CHECK (game_name IN (
+                  'snake', 'brickbreaker', 'parachute', 'block-party-brawl',
+                  'borough-gp', 'dockyard', 'minesweeper', 'signal-lost', 'overtime'
+                ));
+              -- Keep the previous deployment's readiness marker with the wider allowlist.
+              -- Otherwise an overlapping v2 cold start can recreate its restrictive CHECK.
               ALTER TABLE public.game_scores ADD CONSTRAINT valid_game_name_scoreboards_v2
                 CHECK (game_name IN (
                   'snake', 'brickbreaker', 'parachute', 'block-party-brawl',
-                  'borough-gp', 'dockyard', 'minesweeper', 'signal-lost'
+                  'borough-gp', 'dockyard', 'minesweeper', 'signal-lost', 'overtime'
                 ));
             END IF;
           END;

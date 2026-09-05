@@ -98,12 +98,7 @@ export function createDockyard(): DockyardState {
   return state
 }
 
-export function orderDockyard(
-  state: DockyardState,
-  ids: number[],
-  point: DockyardPoint,
-  resourceId?: number,
-) {
+export function orderDockyard(state: DockyardState, ids: number[], point: DockyardPoint, resourceId?: number) {
   if (state.phase !== "playing") return
   const selected = state.units.filter((unit) => unit.team === "crew" && ids.includes(unit.id))
   selected.forEach((unit, index) => {
@@ -120,26 +115,31 @@ export function orderDockyard(
         : "Crew moving. Guards engage nearby rivals automatically."
 }
 
-export function buildDockyard(
+/** The preview and the purchase share one placement rule; inspecting a site never spends salvage. */
+export function dockyardBuildIssue(
   state: DockyardState,
   kind: "workshop" | "sentry",
   point: DockyardPoint,
-): boolean {
-  if (state.phase !== "playing") return false
+): string | null {
+  if (state.phase !== "playing") return "Resume the dock before building."
   const hq = state.buildings.find((building) => building.kind === "hq" && building.team === "crew")
-  if (!hq || distance(point, hq) > 260 || point.x < 55 || point.x > 785 || point.y < 65 || point.y > 435) {
-    state.message = "Build on the dock within the dotted HQ supply radius."
-    return false
-  }
+  if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return "Choose a spot on the dock."
+  if (!hq || distance(point, hq) > 260 || point.x < 55 || point.x > 785 || point.y < 65 || point.y > 435)
+    return "Build on the dock within the dotted HQ supply radius."
   if (
     state.buildings.some((building) => distance(point, building) < 75) ||
     state.resources.some((resource) => resource.amount > 0 && distance(point, resource) < 48)
-  ) {
-    state.message = "That spot is occupied. Leave room around buildings and salvage."
-    return false
-  }
-  if (state.scrap < DOCKYARD_COSTS[kind]) {
-    state.message = "Gather more salvage before building."
+  )
+    return "That spot is occupied. Leave room around buildings and salvage."
+  if (state.scrap < DOCKYARD_COSTS[kind]) return "Gather more salvage before building."
+  return null
+}
+
+export function buildDockyard(state: DockyardState, kind: "workshop" | "sentry", point: DockyardPoint): boolean {
+  if (state.phase !== "playing") return false
+  const issue = dockyardBuildIssue(state, kind, point)
+  if (issue) {
+    state.message = issue
     return false
   }
   const hp = kind === "sentry" ? 220 : 280
@@ -179,9 +179,7 @@ export function trainDockyard(state: DockyardState, kind: "worker" | "guard"): b
     return false
   }
   state.scrap -= DOCKYARD_COSTS[kind]
-  state.units.push(
-    makeUnit(state, kind, building.x + 38, Math.min(438, building.y + 35 + (state.nextId % 4) * 6)),
-  )
+  state.units.push(makeUnit(state, kind, building.x + 38, Math.min(438, building.y + 35 + (state.nextId % 4) * 6)))
   state.message =
     kind === "worker"
       ? "Worker ready. Select workers and tap Gather."
@@ -278,9 +276,7 @@ export function tickDockyard(state: DockyardState, delta: number) {
       unit,
       enemyUnits.filter((other) => distance(unit, other) < (unit.team === "crew" ? 125 : 170)),
     )
-    const enemyBuildings = state.buildings.filter(
-      (building) => building.team !== unit.team && building.hp > 0,
-    )
+    const enemyBuildings = state.buildings.filter((building) => building.team !== unit.team && building.hp > 0)
     const nearbyBuilding = nearest(
       unit,
       enemyBuildings.filter((building) => distance(unit, building) < 140),
@@ -299,9 +295,7 @@ export function tickDockyard(state: DockyardState, delta: number) {
     const range = building.kind === "sentry" ? 170 : building.team === "crew" ? 145 : 105
     const target = nearest(
       building,
-      state.units.filter(
-        (unit) => unit.team !== building.team && unit.hp > 0 && distance(building, unit) <= range,
-      ),
+      state.units.filter((unit) => unit.team !== building.team && unit.hp > 0 && distance(building, unit) <= range),
     )
     if (target)
       strike(

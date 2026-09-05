@@ -5,6 +5,7 @@ import { sampleRunBefore, sampleRunEvidence, sampleSubmissionBefore } from "./ra
 import { buildModelRequest, prepareSubmission, RafHttpError } from "./raf-os-server"
 import {
   buildGeminiRequest,
+  checkGeminiModel,
   DEFAULT_GEMINI_MODEL,
   parseGeminiResponse,
   projectGeminiSchema,
@@ -22,6 +23,179 @@ const responseEnvelope = (result = sampleRunBefore.result) => ({
   modelVersion,
   candidates: [{ finishReason: "STOP", content: { role: "model", parts: [{ text: JSON.stringify(result) }] } }],
 })
+
+test(
+  "Gemini model check performs one bodyless metadata GET and returns only public visibility fields",
+  { concurrency: false },
+  async () => {
+    const originalFetch = globalThis.fetch
+    let calls = 0
+    globalThis.fetch = async (url, options) => {
+      calls++
+      assert.equal(url, "https://generativelanguage.googleapis.com/v1beta/models/" + DEFAULT_GEMINI_MODEL)
+      assert.equal(options?.method, "GET")
+      assert.equal(options?.body, undefined)
+      assert.equal(options?.redirect, "error")
+      assert.equal(options?.cache, "no-store")
+      assert.equal(new Headers(options?.headers).get("x-goog-api-key"), fakeKey)
+      return new Response(
+        JSON.stringify({
+          name: "models/" + DEFAULT_GEMINI_MODEL,
+          supportedGenerationMethods: ["generateContent"],
+          description: "Private metadata " + fakeKey,
+          extra: { secret: fakeKey },
+        }),
+      )
+    }
+    try {
+      assert.deepEqual(await checkGeminiModel(DEFAULT_GEMINI_MODEL, fakeKey, new AbortController().signal), {
+        reachable: true,
+        providerStatus: 200,
+        model: DEFAULT_GEMINI_MODEL,
+        supportsGeneration: true,
+      })
+      assert.equal(calls, 1)
+      globalThis.fetch = async () =>
+        new Response(
+          JSON.stringify({ name: "models/" + DEFAULT_GEMINI_MODEL, supportedGenerationMethods: ["countTokens"] }),
+        )
+      assert.deepEqual(await checkGeminiModel(DEFAULT_GEMINI_MODEL, fakeKey, new AbortController().signal), {
+        reachable: true,
+        providerStatus: 200,
+        model: DEFAULT_GEMINI_MODEL,
+        supportsGeneration: false,
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  },
+)
+
+test(
+  "Gemini model check bounds metadata and sanitizes key, provider and network failures",
+  { concurrency: false },
+  async () => {
+    const originalFetch = globalThis.fetch
+    const scenarios = [
+      {
+        response: () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                status: "INVALID_ARGUMENT",
+                message: fakeKey,
+                details: [{ reason: "API_KEY_INVALID", metadata: { key: fakeKey } }],
+              },
+            }),
+            { status: 400 },
+          ),
+        status: 400,
+        diagnostic: "API_KEY_INVALID",
+      },
+      {
+        response: () =>
+          new Response(
+            JSON.stringify({
+              error: { status: "<private>" + fakeKey, message: fakeKey, details: [{ reason: "PRIVATE\n" + fakeKey }] },
+            }),
+            { status: 400 },
+          ),
+        status: 400,
+        diagnostic: "unknown",
+      },
+      {
+        response: () =>
+          new Response(
+            JSON.stringify({
+              name: "models/" + DEFAULT_GEMINI_MODEL,
+              supportedGenerationMethods: ["generateContent"],
+              description: "x".repeat(32_001),
+            }),
+          ),
+        status: 200,
+        diagnostic: "UNREADABLE_MODEL_METADATA",
+      },
+      {
+        response: () =>
+          new Response(JSON.stringify({ name: fakeKey, supportedGenerationMethods: ["generateContent"] })),
+        status: 200,
+        diagnostic: "INVALID_MODEL_METADATA",
+      },
+      {
+        response: () => new Response(new Uint8Array([0xff, 0xfe])),
+        status: 200,
+        diagnostic: "UNREADABLE_MODEL_METADATA",
+      },
+      {
+        response: () => {
+          throw new TypeError("Network private " + fakeKey)
+        },
+        status: 0,
+        diagnostic: "NETWORK_ERROR",
+      },
+    ]
+    try {
+      for (const scenario of scenarios) {
+        let calls = 0
+        globalThis.fetch = async () => {
+          calls++
+          return scenario.response()
+        }
+        const result = await checkGeminiModel(DEFAULT_GEMINI_MODEL, fakeKey, new AbortController().signal)
+        assert.deepEqual(result, {
+          reachable: false,
+          providerStatus: scenario.status,
+          model: DEFAULT_GEMINI_MODEL,
+          supportsGeneration: false,
+          diagnostic: scenario.diagnostic,
+        })
+        assert.equal(JSON.stringify(result).includes(fakeKey), false)
+        assert.equal(calls, 1)
+      }
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  },
+)
+
+test(
+  "Gemini model check respects cancellation and refuses unsafe model paths before sending anything",
+  { concurrency: false },
+  async () => {
+    const originalFetch = globalThis.fetch
+    let calls = 0
+    globalThis.fetch = async () => {
+      calls++
+      throw new Error("Unexpected request")
+    }
+    try {
+      const controller = new AbortController()
+      controller.abort()
+      assert.equal((await checkGeminiModel(DEFAULT_GEMINI_MODEL, fakeKey, controller.signal)).diagnostic, "ABORTED")
+      const unsafe = await checkGeminiModel("../private?key=" + fakeKey, fakeKey, new AbortController().signal)
+      assert.deepEqual(unsafe, {
+        reachable: false,
+        providerStatus: 0,
+        model: "unavailable",
+        supportsGeneration: false,
+        diagnostic: "MODEL_CONFIGURATION_ERROR",
+      })
+      assert.equal(calls, 0)
+      const pending = new AbortController()
+      globalThis.fetch = async (_url, options) => {
+        calls++
+        return new Promise<Response>((_resolve, reject) => {
+          options?.signal?.addEventListener("abort", () => reject(new TypeError(fakeKey)), { once: true })
+          queueMicrotask(() => pending.abort())
+        })
+      }
+      assert.equal((await checkGeminiModel(DEFAULT_GEMINI_MODEL, fakeKey, pending.signal)).diagnostic, "ABORTED")
+      assert.equal(calls, 1)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  },
+)
 
 test("Gemini converts the same source-bearing input and schema into native text and inline PDF parts", async () => {
   const pdf = await PDFDocument.create()

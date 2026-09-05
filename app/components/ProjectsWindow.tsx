@@ -81,7 +81,8 @@ export default function ProjectsWindow() {
         {projects.map((project, index) => (
           <div
             key={index}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
+            className="bg-white p-4 hover:shadow-sm transition-shadow"
+            style={{ border: "1px solid #b9c7d9", borderRadius: 6 }}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -99,7 +100,7 @@ export default function ProjectsWindow() {
                   href={project.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
                 >
                   <Github className="w-3.5 h-3.5" />
                   Code
@@ -109,7 +110,7 @@ export default function ProjectsWindow() {
                     href={project.lab}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
                   >
                     <FlaskConical className="w-3.5 h-3.5" />
                     Lab
@@ -120,7 +121,7 @@ export default function ProjectsWindow() {
                     href={project.demo}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Demo
@@ -138,7 +139,7 @@ export default function ProjectsWindow() {
           href="https://github.com/Raffi-Souren"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
         >
           <Github className="w-4 h-4" />
           View all on GitHub

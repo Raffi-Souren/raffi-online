@@ -786,3 +786,12 @@ export function missionSnapshot() {
     available: availableMissions().map((mission) => mission.id),
   }
 }
+
+/** A local optional discovery, separate from the six-record campaign objective. */
+export function completeCrateQuest() {
+  if (completed.has('crate-quest')) return false
+  completed.add('crate-quest')
+  toast('CRATE QUEST COMPLETE · VINYL SET ASSEMBLED', 5)
+  if (!run) setObjective('CRATE QUEST COMPLETE · KEEP EXPLORING')
+  return true
+}

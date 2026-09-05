@@ -132,16 +132,20 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
         </div>
 
         {/* Search and Filter */}
-        <div className="rounded-xl p-4 border space-y-4" style={{ backgroundColor: "#ffffff", borderColor: "#e5e7eb" }}>
+        <div
+          className="p-4 space-y-4"
+          style={{ backgroundColor: "#ffffff", border: "1px solid #b9c7d9", borderRadius: 6 }}
+        >
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#9ca3af" }} />
             <Input
               type="text"
+              aria-label="Search sites"
               placeholder="Search sites..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
-              style={{ backgroundColor: "#ffffff", color: "#111827", border: "1px solid #d1d5db" }}
+              style={{ backgroundColor: "#ffffff", color: "#111827", border: "1px solid #b9c7d9" }}
             />
           </div>
 
@@ -149,12 +153,13 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
             {categories.map((category) => (
               <Button
                 key={category}
+                aria-pressed={selectedCategory === category}
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category)}
                 style={{
                   fontSize: "0.75rem",
-                  backgroundColor: selectedCategory === category ? "#2563eb" : "#ffffff",
+                  backgroundColor: selectedCategory === category ? "#245edb" : "#ffffff",
                   color: selectedCategory === category ? "#ffffff" : "#111827",
                   border: selectedCategory === category ? "none" : "1px solid #e5e7eb",
                 }}
@@ -170,8 +175,8 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
           {filteredItems.map((item) => (
             <Card
               key={item.id}
-              className="group hover:shadow-md transition-all duration-200"
-              style={{ backgroundColor: "#ffffff", border: "1px solid #e5e7eb" }}
+              className="group hover:shadow-md transition-shadow duration-200"
+              style={{ backgroundColor: "#ffffff", border: "1px solid #b9c7d9", borderRadius: 6 }}
             >
               <CardContent className="p-4" style={{ borderBottom: "1px solid #f3f4f6" }}>
                 <div className="flex items-start justify-between mb-2">
@@ -221,7 +226,7 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm font-medium hover:underline gap-1"
+                  className="inline-flex items-center text-sm font-medium hover:underline gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
                   style={{ color: "#2563eb" }}
                 >
                   Visit Site <ExternalLink className="h-3 w-3" />

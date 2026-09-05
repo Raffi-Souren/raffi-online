@@ -9,7 +9,7 @@
 import * as THREE from 'three'
 import { makeRng } from '../engine/state.js'
 import { makeBuilderSet, meshesFrom } from './builder.js'
-import { buildRoadGraph, buildRoadGeometry } from './roads.js'
+import { buildRoadGraph, buildRoadGeometry, emitSurfaceTiles } from './roads.js'
 import { layoutLots, findOpenSpots } from './blocks.js'
 import { buildDistrictBuildings } from './buildings.js'
 import { emitProp, placeStreetFurniture, placeRoofProps } from './props.js'
@@ -30,6 +30,24 @@ function buildWater(scene, world, materials) {
   mesh.updateMatrix()
   scene.add(mesh)
   return mesh
+}
+
+/** Fill the walkable land between district pads without painting over harbor water. */
+export function landBasePatches(world) {
+  let patches = [{ ...world.bounds }]
+  for (const cut of world.harbor || []) {
+    patches = patches.flatMap((p) => {
+      const x0 = Math.max(p.minX, cut.minX), x1 = Math.min(p.maxX, cut.maxX)
+      const z0 = Math.max(p.minZ, cut.minZ), z1 = Math.min(p.maxZ, cut.maxZ)
+      if (x0 >= x1 || z0 >= z1) return [p]
+      return [
+        { ...p, maxX: x0 }, { ...p, minX: x1 },
+        { minX: x0, maxX: x1, minZ: p.minZ, maxZ: z0 },
+        { minX: x0, maxX: x1, minZ: z1, maxZ: p.maxZ },
+      ].filter((r) => r.maxX > r.minX && r.maxZ > r.minZ)
+    })
+  }
+  return patches
 }
 
 /** Unreachable painted backdrop. Always stays a card. */
@@ -162,7 +180,7 @@ export function buildLandmarks(set, atlas, propsData, world, districtId) {
         const d = isClub ? 58 : 44
         set.opaque.box({
           x: lm.at.x, y: 6, z: lm.at.z, w, h: 12, d,
-          color: '#ffffff', rect: atlas.uv(isClub ? 'wall/panel-black' : 'wall/brick-red'),
+          color: '#ffffff', rect: atlas.uv(isClub ? 'wall/panel-black' : 'flat/brick-brown'),
           faces: ['east', 'west', 'south', 'north', 'up'],
         })
         set.emissive.billboard({
@@ -199,6 +217,32 @@ export function buildLandmarks(set, atlas, propsData, world, districtId) {
         if (isClub) {
           groundProp('neon-pole', lm.at.x - w / 2 - 3, lm.at.z - d / 2 + 6, 0, rng)
           groundProp('neon-pole', lm.at.x + w / 2 + 3, lm.at.z - d / 2 + 6, 0, rng)
+        } else {
+          emitSurfaceTiles(set.opaque, { x: lm.at.x, y: 12.4, z: lm.at.z, w: w - 1, d: d - 1, color: '#ffffff', rect: atlas.uv('roof-tar') })
+          emitSurfaceTiles(set.opaque, { x: lm.at.x, y: 0.225, z: frontZ - 3.5, w, d: 7, color: '#a4a29a', rect: atlas.uv('sidewalk') }, 8)
+          // Shop bays sit inside the existing facade collider. Only the two
+          // planters and lamps below add solid ground props, away from the door.
+          for (const offset of [-29, -4, 4, 29]) {
+            set.opaque.box({ x: lm.at.x + offset, y: 3.5, z: frontZ + 0.18, w: 1, h: 7, d: 0.35, color: '#ae9879', rect: white })
+          }
+          for (const side of [-1, 1]) {
+            const x = lm.at.x + side * w * 0.26
+            const half = w * 0.18
+            set.opaque.quad([
+              { x: x - half, y: 7.1, z: frontZ - 0.03 },
+              { x: x + half, y: 7.1, z: frontZ - 0.03 },
+              { x: x + half, y: 6.45, z: frontZ - 2.2 },
+              { x: x - half, y: 6.45, z: frontZ - 2.2 },
+            ], '#ffffff', atlas.uv('awning-stripe'))
+            set.opaque.billboard({ x, y: 6.2, z: frontZ - 2.21, w: half * 2, h: 0.5, ry: Math.PI, color: '#ffffff', rect: atlas.uv('awning-stripe') })
+            set.emissive.billboard({ x, y: 6.1, z: frontZ - 0.16, w: half * 1.8, h: 0.13, ry: Math.PI, color: '#e1b879', rect: white, emissive: true })
+            const treeX = lm.at.x + side * 27
+            groundProp('planter-tree', treeX, frontZ - 4, 0, rng)
+            set.opaque.sphere({ x: treeX, y: 4.7, z: frontZ - 4, r: 2.5, seg: 6, color: '#617753', rect: white })
+            groundProp('streetlight-heritage', lm.at.x + side * 8, frontZ - 3, 0, rng)
+            set.alpha.plane({ x: lm.at.x + side * 8, y: 0.24, z: frontZ - 4, w: 10, d: 9, color: '#ffffff', rect: atlas.uv('warm-pool'), emissive: true })
+          }
+          emitProp(set, atlas, propsData, 'water-tank', lm.at.x + 20, 12.4, lm.at.z + 12, 0, rng)
         }
         break
       }
@@ -207,15 +251,44 @@ export function buildLandmarks(set, atlas, propsData, world, districtId) {
         // The player's apartment. Save point and wardrobe.
         set.opaque.box({
           x: lm.at.x, y: 9, z: lm.at.z, w: 26, h: 18, d: 22,
-          color: '#ffffff', rect: atlas.uv('wall/brownstone-tan'), su: 1, sv: 0.62,
+          color: '#ffffff', rect: atlas.uv('flat/brick-brown'), su: 1, sv: 0.62,
           faces: ['east', 'west', 'south', 'north'],
         })
-        set.opaque.plane({ x: lm.at.x, y: 18, z: lm.at.z, w: 26, d: 22, color: '#6e5236', rect: white })
+        emitSurfaceTiles(set.opaque, { x: lm.at.x, y: 18.5, z: lm.at.z, w: 26, d: 22, color: '#ffffff', rect: atlas.uv('roof-tar') })
         for (const [y, width, depth, height] of [[17.8, 27.2, 23.2, 0.5], [18.3, 28, 24, 0.35]]) {
           set.opaque.box({ x: lm.at.x, y, z: lm.at.z, w: width, h: height, d: depth, color: '#9f896e', rect: white })
         }
         set.opaque.billboard({ x: lm.at.x, y: 3.4, z: lm.at.z + 11.08, w: 3.5, h: 4.4, color: '#304842', rect: white })
         set.emissive.billboard({ x: lm.at.x, y: 6, z: lm.at.z + 11.1, w: 3.5, h: 0.9, color: '#d6ae73', rect: atlas.uv('litwindow'), emissive: true })
+        // Recessed apartment bays, masonry lintels and warm inhabited rooms.
+        for (const face of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+          const side = Math.abs(Math.sin(face)) > 0.5
+          for (let floor = 0; floor < 4; floor++) {
+            for (const bay of [-1, 0, 1]) {
+              if (!side && face === 0 && floor === 0 && bay === 0) continue
+              const along = bay * (side ? 5.5 : 7.5)
+              const outward = (side ? 13 : 11) + 0.12
+              const x = lm.at.x + along * Math.cos(face) + outward * Math.sin(face)
+              const z = lm.at.z + outward * Math.cos(face) - along * Math.sin(face)
+              const y = 3.4 + floor * 3.6
+              set.opaque.billboard({ x, y, z, w: 2.8, h: 3, ry: -face, color: '#d4c2a2', rect: white })
+              const lit = (floor + bay + (side ? 1 : 0)) % 3 === 0
+              const surface = lit ? set.emissive : set.opaque
+              surface.billboard({
+                x: x + Math.sin(face) * 0.02, y, z: z + Math.cos(face) * 0.02,
+                w: 2.15, h: 2.55, ry: -face, color: lit ? '#e6b674' : '#bbc8cd',
+                rect: atlas.uv(lit ? 'litwindow' : 'window-reflection'), emissive: lit,
+              })
+              set.opaque.box({ x, y: y - 1.6, z, w: 3.05, h: 0.22, d: 0.6, ry: -face, color: '#b7a789', rect: white })
+            }
+          }
+        }
+        for (const side of [-1, 1]) {
+          groundProp('planter-tree', lm.at.x + side * 16, lm.at.z + 15, 0, rng)
+          set.opaque.sphere({ x: lm.at.x + side * 16, y: 4.6, z: lm.at.z + 15, r: 2.6, seg: 6, color: '#64815b', rect: white })
+          groundProp('streetlight-heritage', lm.at.x + side * 5, lm.at.z + 13.8, 0, rng)
+          set.alpha.plane({ x: lm.at.x + side * 5, y: 0.24, z: lm.at.z + 15.5, w: 9, d: 9, color: '#ffffff', rect: atlas.uv('warm-pool'), emissive: true })
+        }
         emitProp(set, atlas, propsData, 'water-tank', lm.at.x + 6, 18.5, lm.at.z - 4, 0, rng)
         for (let i = 0; i < 5; i++) {
           const h = 1.3 * (1 - i / 5)
@@ -331,7 +404,7 @@ export function buildDistrict(district, ctx) {
 
   // Ground pad for the district.
   const b = district.bounds
-  set.opaque.plane({
+  emitSurfaceTiles(set.opaque, {
     x: (b.minX + b.maxX) / 2,
     y: 0.005,
     z: (b.minZ + b.maxZ) / 2,
@@ -339,7 +412,7 @@ export function buildDistrict(district, ctx) {
     d: b.maxZ - b.minZ,
     color: dcfg.ground?.tint || '#ffffff',
     rect: atlas.uv(dcfg.ground?.tile || 'dirt'),
-  })
+  }, 36)
 
   buildRoadGeometry(set, atlas, ctx.graph, data.world, district)
 
@@ -392,6 +465,14 @@ export function buildWorld(ctx) {
   const root = new THREE.Group()
   root.name = 'city'
   scene.add(root)
+  const landSet = makeBuilderSet(data.blocks.vertexLighting, atlas)
+  for (const p of landBasePatches(data.world)) {
+    landSet.opaque.plane({
+      x: (p.minX + p.maxX) / 2, y: -0.04, z: (p.minZ + p.maxZ) / 2,
+      w: p.maxX - p.minX, d: p.maxZ - p.minZ, color: '#a8a59a', rect: atlas.uv('white'),
+    })
+  }
+  root.add(meshesFrom(landSet, materials, 'land-base'))
 
   const collision = []
   const districts = new Map()

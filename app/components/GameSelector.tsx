@@ -7,6 +7,7 @@ import WindowShell from "../../components/ui/WindowShell"
 import Leaderboard from "./Leaderboard"
 
 const GAME_COMPONENTS = {
+  overtime: dynamic(() => import("./OvertimeGame")),
   "borough-gp": dynamic(() => import("./KartGame")),
   snake: dynamic(() => import("./SnakeGame")),
   parachute: dynamic(() => import("./ParachuteGame")),
@@ -22,7 +23,7 @@ type GameId = keyof typeof GAME_COMPONENTS
 type GameCategory = "Originals" | "Handhelds" | "Desktop & arcade"
 
 interface Game {
-  id: GameId
+  id: GameId | "world" | "smash-fun"
   name: string
   device: string
   category: GameCategory
@@ -34,15 +35,34 @@ interface Game {
 interface GameSelectorProps {
   isOpen: boolean
   onClose: () => void
+  onOpenWorld?: () => void
 }
 
 const GAMES: Game[] = [
+  {
+    id: "world",
+    name: "Raffi World",
+    device: "Brooklyn open world",
+    category: "Originals",
+    description: "GTA-inspired Brooklyn exploration, neighborhood missions, and a hidden record store.",
+    icon: "🌆",
+    color: "#bdcedd",
+  },
+  {
+    id: "overtime",
+    name: "Overtime",
+    device: "Rooftop car soccer",
+    category: "Originals",
+    description: "Rocket League-inspired car soccer. Boost, jump, and score on a Brooklyn rooftop.",
+    icon: "⚽",
+    color: "#a7d6df",
+  },
   {
     id: "borough-gp",
     name: "Borough Grand Prix",
     device: "Raffi Racing",
     category: "Originals",
-    description: "Three laps. Five rivals. Drift along the Brooklyn waterfront.",
+    description: "Mario Kart-inspired racing along the Brooklyn waterfront. Three laps, five rivals.",
     icon: "🏎️",
     color: "#b7e2e2",
   },
@@ -87,7 +107,7 @@ const GAMES: Game[] = [
     name: "Block Party Brawl",
     device: "Arcade",
     category: "Originals",
-    description: "Clear the block. Bring the sound system back.",
+    description: "X-Men arcade-inspired street brawling. Clear the block and bring the sound system back.",
     icon: "🥊",
     color: "#e8d49a",
   },
@@ -96,16 +116,25 @@ const GAMES: Game[] = [
     name: "Dockyard",
     device: "Harbor strategy",
     category: "Originals",
-    description: "Salvage, build and defend your corner of the harbor.",
+    description: "Age of Empires-inspired harbor strategy. Salvage, build, and defend your dock.",
     icon: "⚓",
     color: "#d9c6a7",
+  },
+  {
+    id: "smash-fun",
+    name: "Smash.fun",
+    device: "Opens smash.fun ↗",
+    category: "Desktop & arcade",
+    description: "A fan-made Super Smash Bros. 64 browser port by Thomas Dimson. Opens in a new tab.",
+    icon: "💥",
+    color: "#e6bcce",
   },
   {
     id: "signal-lost",
     name: "Signal Lost",
     device: "Pulse blaster",
     category: "Originals",
-    description: "Take back a Brooklyn substation from rogue speaker drones.",
+    description: "Doom-inspired action. Take back a Brooklyn substation from rogue speaker drones.",
     icon: "📡",
     color: "#d9bcc7",
   },
@@ -113,10 +142,10 @@ const GAMES: Game[] = [
 
 // Canvas games need a definite viewport height. Device-shaped games keep their
 // intrinsic height and a top-aligned scroll origin so every control is reachable.
-const VIEWPORT_GAMES = new Set<GameId>(["signal-lost", "block-party-brawl", "borough-gp", "dockyard"])
+const VIEWPORT_GAMES = new Set<GameId>(["signal-lost", "block-party-brawl", "borough-gp", "dockyard", "overtime"])
 const CATEGORIES = ["All games", "Originals", "Handhelds", "Desktop & arcade"] as const
 
-export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
+export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All games")
   const [activeGame, setActiveGame] = useState<GameId | null>(null)
@@ -159,7 +188,7 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
               borderRadius: 4,
             }}
           >
-            {GAMES.map((game) => (
+            {GAMES.filter((game) => game.id !== "world" && game.id !== "smash-fun").map((game) => (
               <option key={game.id} value={game.id}>
                 {game.name}
               </option>
@@ -184,7 +213,13 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
         fill={viewport}
         fullBleed={viewport}
         compact={viewport}
-        maxWidth={activeGame === "borough-gp" ? "1160px" : game.category === "Handhelds" ? "560px" : "1024px"}
+        maxWidth={
+          activeGame === "borough-gp" || activeGame === "overtime"
+            ? "1160px"
+            : game.category === "Handhelds"
+              ? "560px"
+              : "1024px"
+        }
       >
         <nav
           aria-label="Game navigation"
@@ -408,74 +443,86 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
         <div
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}
         >
-          {filtered.map((game) => (
-            <button
-              key={game.id}
-              type="button"
-              onClick={() => setActiveGame(game.id)}
-              aria-label={`Play ${game.name}`}
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-                gap: 0,
-                minWidth: 0,
-                padding: 7,
-                textAlign: "left",
-                background: "#e6e7df",
-                border: "1px solid #b1bab5",
-                borderRadius: "7px 7px 14px 7px",
-                boxShadow: "inset 1px 1px 0 #fff, inset -2px -2px 0 #ced2c8, 0 3px 0 #c3c9c0",
-              }}
-              className="hover:brightness-105 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
-            >
-              <div
-                aria-hidden="true"
+          {filtered.map((game) => {
+            const Card = game.id === "smash-fun" ? "a" : "button"
+            return (
+              <Card
+                key={game.id}
+                {...(game.id === "smash-fun"
+                  ? { href: "https://smash.fun", target: "_blank", rel: "noopener noreferrer" }
+                  : { type: "button" as const })}
+                onClick={() => {
+                  if (game.id === "world") {
+                    if (onOpenWorld) onOpenWorld()
+                    else window.location.assign("/?app=world")
+                  } else if (game.id !== "smash-fun") setActiveGame(game.id)
+                }}
+                aria-label={game.id === "smash-fun" ? "Open Smash.fun in a new tab" : `Play ${game.name}`}
                 style={{
+                  position: "relative",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  width: 65,
-                  minHeight: 95,
-                  background: game.color,
-                  border: "1px solid #89968e70",
-                  borderRadius: "3px 0 0 3px",
-                  fontSize: 34,
-                }}
-              >
-                {game.icon}
-              </div>
-              <div
-                style={{
-                  flex: 1,
+                  alignItems: "stretch",
+                  gap: 0,
                   minWidth: 0,
-                  padding: "9px 10px",
-                  background: "#f9f8ed",
-                  border: "1px solid #bec4b9",
-                  borderLeft: 0,
-                  borderRadius: "0 3px 6px 0",
+                  padding: 7,
+                  textAlign: "left",
+                  background: "#e6e7df",
+                  border: "1px solid #b1bab5",
+                  borderRadius: "7px 7px 14px 7px",
+                  boxShadow: "inset 1px 1px 0 #fff, inset -2px -2px 0 #ced2c8, 0 3px 0 #c3c9c0",
                 }}
+                className="hover:brightness-105 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
               >
-                <span style={{ display: "block", fontSize: 10, color: "#687972", marginBottom: 4 }}>{game.device}</span>
-                <span
+                <div
+                  aria-hidden="true"
                   style={{
-                    display: "block",
-                    fontSize: 15,
-                    fontWeight: 900,
-                    lineHeight: 1.1,
-                    color: "#344c55",
-                    marginBottom: 5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    width: 65,
+                    minHeight: 95,
+                    background: game.color,
+                    border: "1px solid #89968e70",
+                    borderRadius: "3px 0 0 3px",
+                    fontSize: 34,
                   }}
                 >
-                  {game.name}
-                </span>
-                <span style={{ display: "block", fontSize: 11, lineHeight: 1.4, color: "#68747a" }}>
-                  {game.description}
-                </span>
-              </div>
-            </button>
-          ))}
+                  {game.icon}
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: "9px 10px",
+                    background: "#f9f8ed",
+                    border: "1px solid #bec4b9",
+                    borderLeft: 0,
+                    borderRadius: "0 3px 6px 0",
+                  }}
+                >
+                  <span style={{ display: "block", fontSize: 10, color: "#687972", marginBottom: 4 }}>
+                    {game.device}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: 15,
+                      fontWeight: 900,
+                      lineHeight: 1.1,
+                      color: "#344c55",
+                      marginBottom: 5,
+                    }}
+                  >
+                    {game.name}
+                  </span>
+                  <span style={{ display: "block", fontSize: 11, lineHeight: 1.4, color: "#68747a" }}>
+                    {game.description}
+                  </span>
+                </div>
+              </Card>
+            )
+          })}
         </div>
         {filtered.length === 0 && (
           <div role="status" style={{ padding: "30px 12px", textAlign: "center", fontSize: 13 }}>

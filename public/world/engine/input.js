@@ -200,19 +200,30 @@ function onPinchEnd(e) {
 
 // ---------------------------------------------------------------- init ---
 
+export function resetInput() {
+  keys.clear()
+  input.held.clear()
+  input.pressed.clear()
+  input.move.x = 0
+  input.move.y = 0
+  input.moveAmount = 0
+  input.throttle = 0
+  input.brake = 0
+  input.run = false
+  input.handbrake = false
+  stick.id = null
+  stick.x = 0
+  stick.y = 0
+  activePinch.clear()
+  setStickVisual(false)
+}
+
 export function initInput(elements) {
   els = elements
 
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
-  window.addEventListener('blur', () => {
-    keys.clear()
-    input.held.clear()
-    stick.id = null
-    stick.x = 0
-    stick.y = 0
-    setStickVisual(false)
-  })
+  window.addEventListener('blur', resetInput)
 
   if (els.zone) {
     els.zone.addEventListener('touchstart', (e) => { e.preventDefault(); onStickDown(e) }, { passive: false })
