@@ -33,6 +33,7 @@ export default function HandheldConsole({
   return (
     <section
       aria-label={`${title} handheld console`}
+      className="game-touch"
       style={{
         width: "min(100%, 360px)",
         padding: "18px clamp(10px, 3vw, 22px) 20px",
@@ -73,9 +74,10 @@ export default function HandheldConsole({
           aria-label="Directional pad"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 34px)",
-            gridTemplateRows: "repeat(3, 34px)",
+            gridTemplateColumns: "repeat(3, 44px)",
+            gridTemplateRows: "repeat(3, 44px)",
             flexShrink: 0,
+            touchAction: "none",
           }}
         >
           <span
@@ -89,10 +91,15 @@ export default function HandheldConsole({
                 key={direction}
                 type="button"
                 aria-label={`Move ${direction.toLowerCase()}`}
+                onContextMenu={(event) => event.preventDefault()}
                 onPointerDown={(event) => {
                   event.preventDefault()
-                  event.currentTarget.setPointerCapture(event.pointerId)
                   onDirection(direction, true)
+                  try {
+                    event.currentTarget.setPointerCapture(event.pointerId)
+                  } catch {
+                    /* A finger that already lifted still releases through pointerup. */
+                  }
                 }}
                 onPointerUp={() => onDirection(direction, false)}
                 onPointerCancel={() => onDirection(direction, false)}
@@ -133,12 +140,13 @@ export default function HandheldConsole({
           style={{
             border: "1px solid #8c988d",
             borderRadius: 20,
-            padding: "7px 12px",
+            padding: "7px 14px",
             background: "#aeb8ac",
             color: "#334835",
             fontSize: 10,
             fontWeight: 800,
-            minHeight: 34,
+            minHeight: 44,
+            minWidth: 64,
             boxShadow: "0 3px 0 #83917f, inset 1px 1px 0 #e3e7de",
             transform: "rotate(-12deg)",
           }}

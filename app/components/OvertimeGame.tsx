@@ -245,7 +245,7 @@ export default function OvertimeGame() {
         background: held.includes(control) ? "#91d5e8" : accent ? "#e8b868" : "#dce6e9",
         boxShadow: "0 2px 0 #102938",
       }}
-      className={focusClass}
+      className={`game-touch ${focusClass}`}
     >
       {content}
     </button>

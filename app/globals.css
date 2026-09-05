@@ -92,6 +92,18 @@
   }
 }
 
+/* Held game controls (steer, gas, d-pad). React's inline `userSelect` only
+   emits the unprefixed property, and iOS Safari still needs the -webkit-
+   prefixed selection and callout rules, so a long press on a held button was
+   starting a text selection instead of driving. Inputs stay selectable. */
+.game-touch,
+.game-touch :not(input, textarea, select, [contenteditable="true"]) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Removed .sc-player-wrapper CSS - using inline styles in component for SoundCloud widget */
 
 /* Mario Question Block Styles */
@@ -542,10 +554,10 @@ html {
 .bb-menu-row button { flex: 1 1 auto; }
 .bb-deck { padding-top: 12px; }
 .bb-stage-label { text-align: center; color: #c8d2df; font: 11px/1.4 Menlo, Consolas, monospace; margin-bottom: 7px; }
-.bb-touch-strip { display: flex; justify-content: space-between; align-items: center; height: 42px; padding: 0 15px; background: linear-gradient(#121c28, #2c3746); border: 1px solid #667487; border-radius: 22px; touch-action: none; color: #98bce9; font-size: 11px; user-select: none; }
+.bb-touch-strip { display: flex; justify-content: space-between; align-items: center; height: 42px; padding: 0 15px; background: linear-gradient(#121c28, #2c3746); border: 1px solid #667487; border-radius: 22px; touch-action: none; color: #98bce9; font-size: 11px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .bb-touch-strip span:first-child, .bb-touch-strip span:last-child { font-size: 28px; }
 .bb-play-controls { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; margin-top: 9px; }
-.bb-play-controls button { touch-action: none; }
+.bb-play-controls button { touch-action: none; min-height: 44px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .bb-play-controls kbd { font-size: 9px; padding: 2px 3px; border: 1px solid #91a5cc; border-radius: 2px; font-weight: normal; }
 .bb-status { min-height: 16px; margin-top: 9px; color: #e3cd94; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; }
 .bb-powers { color: #a5d4ed; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; }

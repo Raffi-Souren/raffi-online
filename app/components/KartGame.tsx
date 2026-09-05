@@ -241,12 +241,17 @@ export default function KartGame() {
       type="button"
       aria-label={label}
       aria-pressed={held.includes(control)}
-      className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 active:translate-y-px"
+      className="game-touch focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 active:translate-y-px"
+      onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault()
-        event.currentTarget.setPointerCapture(event.pointerId)
         touchRef.current.add(control)
         setHeld(Array.from(touchRef.current))
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId)
+        } catch {
+          /* A finger that already lifted still releases through pointerup. */
+        }
       }}
       onPointerUp={() => {
         touchRef.current.delete(control)
@@ -299,6 +304,7 @@ export default function KartGame() {
   return (
     <section
       aria-label="Borough Grand Prix racing game"
+      className="game-touch"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -627,13 +633,16 @@ export default function KartGame() {
       </div>
 
       <div
+        role="group"
+        aria-label="Touch driving controls"
         style={{
           display: "flex",
           gap: 7,
-          padding: "10px 12px 12px",
+          padding: "10px 12px calc(12px + env(safe-area-inset-bottom, 0px))",
           background: "#e8eddf",
           borderTop: "2px solid #a8b8bc",
           flexShrink: 0,
+          touchAction: "none",
         }}
       >
         {touchButton("left", "Steer left", <ArrowLeft size={20} />)}

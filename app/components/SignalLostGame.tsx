@@ -289,7 +289,9 @@ export default function SignalLostGame() {
     <button
       type="button"
       aria-label={label}
+      className="game-touch"
       style={{ ...button, width: 48, height: 46, padding: 0, touchAction: "none", userSelect: "none", ...style }}
+      onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault()
         heldControls.current.set(event.pointerId, value)

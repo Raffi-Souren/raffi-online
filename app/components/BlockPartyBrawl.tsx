@@ -243,10 +243,11 @@ export default function BlockPartyBrawl() {
         touchesRef.current.delete(control)
         setHeld(Array.from(touchesRef.current))
       }}
-      className="active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+      onContextMenu={(event) => event.preventDefault()}
+      className="game-touch active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
       style={{
         ...buttonStyle,
-        minWidth: 42,
+        minWidth: 44,
         minHeight: 44,
         flex: 1,
         padding: "7px 4px",
