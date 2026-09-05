@@ -14,7 +14,7 @@ import {
   initCamera, updateCamera, rotateView, setPinch, cam,
   cycleCameraMode, getCameraMode, setCameraMode,
 } from './camera.js'
-import { initInput, updateInput, endInputFrame, input, consume, setActionLabel, setSecondLabel, setCamLabel } from './input.js'
+import { initInput, updateInput, endInputFrame, input, consume, resetInput, setActionLabel, setSecondLabel, setCamLabel } from './input.js'
 import { CollisionWorld, resolveCircle, clampToBounds } from './physics.js'
 import { buildAtlas } from '../gen/atlas.js'
 import { buildWorld } from '../gen/world.js'
@@ -38,7 +38,9 @@ import {
   initMissions, updateMissions, missionContext, startMission,
   focusFirstMission, missionSnapshot, startMissionById, confirmMissionBriefing,
   missionWantsAction, missionActionLabel, noteMissionPulse, noteMissionKick, noteAimLane,
+  completeCrateQuest,
 } from '../game/missions.js'
+import { CRATE_QUEST_MESSAGE, crateQuestContext, isCrateQuestReturn } from '../game/crate-quest-core.js'
 import {
   initInteriors, enterInterior, exitInterior, interiorDoorContext, interiorSnapshot,
 } from '../game/interiors.js'
@@ -66,7 +68,32 @@ const world = {
   mobilityHub: null,
   transitBusy: false,
   managerBriefed: false,
+  crateQuestActive: false,
 }
+
+function recordShopQuest() {
+  if (window.parent === window || world.transitBusy) return null
+  const point = data.world.districts.find((district) => district.id === 'strip')?.spawnPoints.find((spawn) => spawn.id === 'record-store')
+  return crateQuestContext(state, point, world.crateQuestActive, missionSnapshot().completed.includes('crate-quest'))
+}
+
+function openCrateQuest() {
+  if (!recordShopQuest() || state.paused) return false
+  world.crateQuestActive = true
+  state.paused = true
+  resetInput()
+  setInteractionPrompt(null)
+  window.parent.postMessage({ type: CRATE_QUEST_MESSAGE, action: 'open' }, location.origin)
+  return true
+}
+
+window.addEventListener('message', (event) => {
+  if (!isCrateQuestReturn(event, window.parent, location.origin, world.crateQuestActive)) return
+  world.crateQuestActive = false
+  resetInput()
+  state.paused = false
+  if (event.data.action === 'complete') completeCrateQuest()
+})
 
 function grab() {
   const $ = (id) => document.getElementById(id)
@@ -593,7 +620,7 @@ function loop(now) {
 
   updateInput(state.mode, player.vehicle?.kind || null)
 
-  if (consume('pause')) {
+  if (consume('pause') && !world.crateQuestActive) {
     setPaused(!state.paused)
   }
 
@@ -616,7 +643,7 @@ function loop(now) {
 
     // Context priority: dialogue → mission/transit → nearby ride. Touch GAS
     // is a distinct input from keyboard E, so it can never eject the rider.
-    const ctx = contextAction(world.vehicles, [missionContext(), transitAction(), interiorDoorContext()])
+    const ctx = contextAction(world.vehicles, [recordShopQuest(), missionContext(), transitAction(), interiorDoorContext()])
     const controls = player.vehicle?.controls
     const dialogueBlocking = isDialogueBlocking()
     const missionAction = missionActionLabel()
@@ -668,11 +695,17 @@ function loop(now) {
         if (ctx.kind === 'enter' && enterVehicle(ctx.target)) onRideMounted(ctx.target)
         else if (ctx.kind === 'transit') void beginFastTravel(ctx.target)
         else if (ctx.kind === 'mission') startMission(ctx.target)
+        else if (ctx.kind === 'crate-quest') openCrateQuest()
         else if (ctx.kind === 'interior-enter') enterInterior(ctx.target)
         else if (ctx.kind === 'interior-exit') exitInterior()
       }
     }
 
+    // The parent now owns input; do not advance actors or mission clocks on this frame.
+    if (world.crateQuestActive) {
+      endInputFrame()
+      return
+    }
     const flying = state.debug.on && updateDebugCamera(dt, input)
     if (!flying && !world.transitBusy && !isDialogueBlocking()) {
       updatePlayer(dt, input, world.collision, state.radio.beatPhase)

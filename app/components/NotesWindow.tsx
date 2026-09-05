@@ -45,6 +45,12 @@ interface Podcast {
 
 const ARTICLES: Article[] = [
   {
+    version: "Latest",
+    title: "Is AI punk?",
+    url: "https://raf94.substack.com/p/is-ai-punk",
+    platform: "substack",
+  },
+  {
     version: "v5",
     title: "From Prompting Agents to Governing Loops & Buying Real Estate",
     url: "https://raf94.substack.com/p/variables-v5-from-prompting-agents",
@@ -158,7 +164,8 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
     title: "Forecasting Future Language: Context Design for Mention Markets",
     url: "https://arxiv.org/abs/2602.21229",
     date: "Feb 2026",
-    coAuthors: "Sumin Kim, Jihoon Kwon, Yoon Kim, Nicole Kagan, Raffi Khatchadourian, Wonbin Ahn, Alejandro Lopez-Lira, Jaewon Lee, Yoontae Hwang, Oscar Levy, Yongjae Lee, Chanyeol Choi",
+    coAuthors:
+      "Sumin Kim, Jihoon Kwon, Yoon Kim, Nicole Kagan, Raffi Khatchadourian, Wonbin Ahn, Alejandro Lopez-Lira, Jaewon Lee, Yoontae Hwang, Oscar Levy, Yongjae Lee, Chanyeol Choi",
   },
   {
     title: "Replayable Financial Agents: A Determinism-Faithfulness Assurance Harness for Tool-Using LLM Agents",
@@ -586,9 +593,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                             {paper.date}
                           </span>
                         </div>
-                        <h4 style={{ fontWeight: "600", color: "#111827" }}>
-                          {paper.title}
-                        </h4>
+                        <h4 style={{ fontWeight: "600", color: "#111827" }}>{paper.title}</h4>
                         {paper.coAuthors && (
                           <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
                             Co-authors: {paper.coAuthors}
@@ -854,9 +859,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                     {PRESS.map((item) => (
                       <div key={item.url} style={{ ...cardStyle, borderLeft: "4px solid #9ca3af" }}>
-                        <div style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>
-                          {item.title}
-                        </div>
+                        <div style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>{item.title}</div>
                         <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
                           {item.publication}
                         </div>

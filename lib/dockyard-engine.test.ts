@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import {
   buildDockyard,
   createDockyard,
+  dockyardBuildIssue,
   DOCKYARD_COSTS,
   orderDockyard,
   tickDockyard,
@@ -28,9 +29,8 @@ test("workers collect finite salvage and deliver it to the HQ", () => {
   assert.ok(state.scrap > 110, "workers must deposit salvage, not just show a gathering animation")
   assert.ok(resource.amount < 300)
   assert.ok(
-    Math.abs(
-      state.scrap - 110 + workers.reduce((sum, unit) => sum + unit.carried, 0) - (300 - resource.amount),
-    ) < 0.001,
+    Math.abs(state.scrap - 110 + workers.reduce((sum, unit) => sum + unit.carried, 0) - (300 - resource.amount)) <
+      0.001,
     "salvage is conserved between the pile, workers and treasury",
   )
 })
@@ -55,6 +55,31 @@ test("guards require a workshop and training spends the exact cost", () => {
   assert.equal(trainDockyard(state, "guard"), true)
   assert.equal(state.scrap, 200 - DOCKYARD_COSTS.workshop - DOCKYARD_COSTS.guard)
   assert.equal(state.units.filter((unit) => unit.kind === "guard").length, 2)
+})
+
+test("placement previews are read-only and agree with real purchases at occupied, invalid and clear sites", () => {
+  for (const point of [
+    { x: 125, y: 335 },
+    { x: 235, y: 300 },
+    { x: 700, y: 360 },
+    { x: Number.NaN, y: 345 },
+    { x: 315, y: 345 },
+  ]) {
+    const state = createDockyard()
+    state.phase = "playing"
+    const before = JSON.stringify(state)
+    const issue = dockyardBuildIssue(state, "workshop", point)
+    assert.equal(JSON.stringify(state), before, "moving a preview must not mutate the simulation")
+    assert.equal(buildDockyard(state, "workshop", point), issue === null)
+    assert.equal(state.scrap, issue === null ? 30 : 110)
+    if (issue) assert.equal(state.message, issue)
+  }
+  const state = createDockyard()
+  state.phase = "playing"
+  state.scrap = 0
+  assert.match(dockyardBuildIssue(state, "workshop", { x: 315, y: 345 })!, /salvage/)
+  state.phase = "paused"
+  assert.match(dockyardBuildIssue(state, "workshop", { x: 315, y: 345 })!, /Resume/)
 })
 
 test("pause freezes economy, combat and wave timing", () => {

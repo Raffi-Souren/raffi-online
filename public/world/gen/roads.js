@@ -13,6 +13,23 @@ import { makeRng } from '../engine/state.js'
 export const ROAD_Y = 0.02
 export const SIDEWALK_Y = 0.22
 
+/** Keep atlas grain at street scale; one stretched tile made whole blocks streak. */
+export function emitSurfaceTiles(builder, surface, span = 24) {
+  const nx = Math.ceil(surface.w / span)
+  const nz = Math.ceil(surface.d / span)
+  const w = surface.w / nx
+  const d = surface.d / nz
+  const c = Math.cos(surface.ry || 0)
+  const s = Math.sin(surface.ry || 0)
+  for (let iz = 0; iz < nz; iz++) {
+    for (let ix = 0; ix < nx; ix++) {
+      const x = -surface.w / 2 + (ix + 0.5) * w
+      const z = -surface.d / 2 + (iz + 0.5) * d
+      builder.plane({ ...surface, x: surface.x + x * c - z * s, z: surface.z + x * s + z * c, w, d })
+    }
+  }
+}
+
 function key(x, z) { return `${x}|${z}` }
 
 function insideKeepout(x, z, keepouts, margin = 0) {
@@ -176,11 +193,11 @@ export function buildRoadGeometry(set, atlas, graph, world, district = null) {
     const len = s.length
 
     if (s.horizontal) {
-      b.plane({ x: midX, y: ROAD_Y, z: s.az, w: len, d: hw * 2, color: '#ffffff', rect: road })
+      emitSurfaceTiles(b, { x: midX, y: ROAD_Y, z: s.az, w: len, d: hw * 2, color: '#ffffff', rect: road })
       // Sidewalks + curbs on both sides.
       for (const sign of [-1, 1]) {
         const cz = s.az + sign * (hw + sw / 2)
-        b.plane({ x: midX, y: SIDEWALK_Y, z: cz, w: len, d: sw, color: '#ffffff', rect: walkTile })
+        emitSurfaceTiles(b, { x: midX, y: SIDEWALK_Y, z: cz, w: len, d: sw, color: '#ffffff', rect: walkTile }, 12)
         b.box({
           x: midX, y: curbH / 2, z: s.az + sign * hw, w: len, h: curbH, d: 0.35,
           color: '#b4b0a4', rect: atlas.uv('white'), faces: ['up', 'south', 'north'],
@@ -194,10 +211,10 @@ export function buildRoadGeometry(set, atlas, graph, world, district = null) {
         b.plane({ x, y: ROAD_Y + 0.01, z: s.az, w: 3.0, d: 0.28, color: '#ffffff', rect: lane })
       }
     } else {
-      b.plane({ x: s.ax, y: ROAD_Y, z: midZ, w: hw * 2, d: len, color: '#ffffff', rect: road })
+      emitSurfaceTiles(b, { x: s.ax, y: ROAD_Y, z: midZ, w: hw * 2, d: len, color: '#ffffff', rect: road })
       for (const sign of [-1, 1]) {
         const cx = s.ax + sign * (hw + sw / 2)
-        b.plane({ x: cx, y: SIDEWALK_Y, z: midZ, w: sw, d: len, color: '#ffffff', rect: walkTile })
+        emitSurfaceTiles(b, { x: cx, y: SIDEWALK_Y, z: midZ, w: sw, d: len, color: '#ffffff', rect: walkTile }, 12)
         b.box({
           x: s.ax + sign * hw, y: curbH / 2, z: midZ, w: 0.35, h: curbH, d: len,
           color: '#b4b0a4', rect: atlas.uv('white'), faces: ['up', 'east', 'west'],

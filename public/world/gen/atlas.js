@@ -2,12 +2,12 @@
  * RAFFI WORLD — the one and only texture.
  *
  * Everything visible in Port Vantage samples a single procedurally painted
- * 1152x1152 canvas: facades (with their window grids already baked in), road
+ * 1280x1280 canvas: facades (with their window grids already baked in), road
  * surfaces, sidewalks, signage text, chainlink, blob shadows. No files are
  * downloaded, and one atlas means one material, which is what keeps the draw
  * call budget reachable.
  *
- * Layout: a 9x9 grid of 128px cells. UVs are always clamped inside a cell —
+ * Layout: a 10x10 grid of 128px cells. UVs are always clamped inside a cell —
  * nothing tiles across cell borders, so there is no bleeding. Where a facade
  * needs fewer floors than the painted grid, the geometry samples a sub-rect of
  * the cell instead of repeating.
@@ -16,7 +16,7 @@
 import * as THREE from 'three'
 import { makeRng } from '../engine/state.js'
 
-export const ATLAS_SIZE = 1152
+export const ATLAS_SIZE = 1280
 export const CELL = 128
 export const COLS = ATLAS_SIZE / CELL
 
@@ -300,17 +300,17 @@ export function buildAtlas(blocks, dialogue, seed = 'atlas') {
   // --- ground surfaces ------------------------------------------------------
   {
     const { cx, cy } = nextCell('road')
-    ctx.fillStyle = '#405563'
+    ctx.fillStyle = '#41484e'
     ctx.fillRect(cx, cy, CELL, CELL)
     for (let i = 0; i < 260; i++) {
-      const g = 55 + Math.floor(rng.next() * 30)
-      ctx.fillStyle = `rgba(${g},${g + 7},${g + 12},0.45)`
+      const g = 55 + Math.floor(rng.next() * 25)
+      ctx.fillStyle = `rgba(${g},${g + 2},${g + 4},0.4)`
       ctx.fillRect(cx + rng.next() * CELL, cy + rng.next() * CELL, 2, 2)
     }
     // Faint patch seams so a big road plane is not a dead flat colour.
     ctx.strokeStyle = 'rgba(0,0,0,0.18)'
     ctx.lineWidth = 1
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 2; i++) {
       ctx.beginPath()
       ctx.moveTo(cx + rng.next() * CELL, cy)
       ctx.lineTo(cx + rng.next() * CELL, cy + CELL)
@@ -322,25 +322,25 @@ export function buildAtlas(blocks, dialogue, seed = 'atlas') {
     const { cx, cy } = nextCell('sidewalk')
     ctx.fillStyle = '#c7b49f'
     ctx.fillRect(cx, cy, CELL, CELL)
-    ctx.strokeStyle = 'rgba(0,0,0,0.22)'
-    ctx.lineWidth = 1
-    for (let i = 0; i <= CELL; i += 32) {
+    ctx.strokeStyle = 'rgba(0,0,0,0.14)'
+    ctx.lineWidth = 0.6
+    for (let i = 0; i <= CELL; i += 8) {
       ctx.beginPath(); ctx.moveTo(cx + i + 0.5, cy); ctx.lineTo(cx + i + 0.5, cy + CELL); ctx.stroke()
       ctx.beginPath(); ctx.moveTo(cx, cy + i + 0.5); ctx.lineTo(cx + CELL, cy + i + 0.5); ctx.stroke()
     }
-    noise(ctx, cx, cy, 0.07, rng)
+    noise(ctx, cx, cy, 0.035, rng)
   }
 
   {
     const { cx, cy } = nextCell('cobble')
-    ctx.fillStyle = '#afa18e'
+    ctx.fillStyle = '#7f817d'
     ctx.fillRect(cx, cy, CELL, CELL)
-    for (let y = 0; y < CELL; y += 8) {
-      for (let x = 0; x < CELL; x += 10) {
-        const off = (y / 8) % 2 ? 5 : 0
-        const g = 112 + Math.floor(rng.next() * 36)
-        ctx.fillStyle = `rgb(${g},${g - 4},${g - 12})`
-        ctx.fillRect(cx + x + off, cy + y, 8, 6)
+    for (let y = 0; y < CELL; y += 4) {
+      for (let x = 0; x < CELL; x += 5) {
+        const off = (y / 4) % 2 ? 2.5 : 0
+        const g = 137 + Math.floor(rng.next() * 18)
+        ctx.fillStyle = `rgb(${g},${g - 1},${g - 6})`
+        ctx.fillRect(cx + x + off, cy + y, 4.5, 3.5)
       }
     }
   }
@@ -361,7 +361,7 @@ export function buildAtlas(blocks, dialogue, seed = 'atlas') {
 
   {
     const { cx, cy } = nextCell('lane')
-    ctx.fillStyle = '#405563'
+    ctx.fillStyle = '#41484e'
     ctx.fillRect(cx, cy, CELL, CELL)
     ctx.fillStyle = '#d8d2be'
     // One dash centred in the cell; road segments map a strip of this.
@@ -370,7 +370,7 @@ export function buildAtlas(blocks, dialogue, seed = 'atlas') {
 
   {
     const { cx, cy } = nextCell('crosswalk')
-    ctx.fillStyle = '#405563'
+    ctx.fillStyle = '#41484e'
     ctx.fillRect(cx, cy, CELL, CELL)
     ctx.fillStyle = '#e0dbc8'
     for (let x = 6; x < CELL; x += 22) ctx.fillRect(cx + x, cy + 6, 12, CELL - 12)
@@ -452,6 +452,61 @@ export function buildAtlas(blocks, dialogue, seed = 'atlas') {
 
   const recordWindow = nextCell('record-window')
   paintRecordWindow(ctx, recordWindow.cx, recordWindow.cy)
+
+  // Dedicated materials keep rooftops and glass from borrowing brick/window tiles.
+  // A separate stream leaves all existing generated texture choices stable.
+  const surfaceRng = makeRng('surface-materials-v2')
+  {
+    const { cx, cy } = nextCell('roof-tar')
+    ctx.fillStyle = '#525a60'
+    ctx.fillRect(cx, cy, CELL, CELL)
+    for (let y = 0; y < CELL; y += 32) {
+      ctx.fillStyle = y % 64 ? '#596166' : '#4e565d'
+      ctx.fillRect(cx, cy + y, CELL, 30)
+      ctx.fillStyle = '#768087'
+      ctx.fillRect(cx, cy + y, CELL, 1)
+    }
+    ctx.fillStyle = '#414950'
+    ctx.fillRect(cx + 24, cy + 16, 30, 24)
+    ctx.fillRect(cx + 80, cy + 75, 35, 18)
+    noise(ctx, cx, cy, 0.07, surfaceRng)
+  }
+  {
+    const { cx, cy } = nextCell('window-reflection')
+    const glass = ctx.createLinearGradient(cx, cy, cx + 35, cy + CELL)
+    glass.addColorStop(0, '#7b929e')
+    glass.addColorStop(0.5, '#455b68')
+    glass.addColorStop(1, '#263a47')
+    ctx.fillStyle = glass
+    ctx.fillRect(cx, cy, CELL, CELL)
+    ctx.fillStyle = 'rgba(227,222,197,0.25)'
+    ctx.fillRect(cx + 8, cy + 10, 19, CELL - 20)
+    ctx.fillRect(cx + 101, cy + 10, 19, CELL - 20)
+    ctx.fillStyle = '#22313d'
+    ctx.fillRect(cx + 61, cy, 6, CELL)
+    ctx.fillRect(cx, cy + 63, CELL, 5)
+    ctx.fillStyle = 'rgba(225,233,230,0.5)'
+    ctx.fillRect(cx + 5, cy + 5, CELL - 10, 3)
+  }
+  {
+    const { cx, cy } = nextCell('awning-stripe')
+    ctx.fillStyle = '#35565d'
+    ctx.fillRect(cx, cy, CELL, CELL)
+    ctx.fillStyle = '#c5b69a'
+    for (let x = 0; x < CELL; x += 32) ctx.fillRect(cx + x, cy, 13, CELL)
+    ctx.fillStyle = 'rgba(20,32,35,0.22)'
+    ctx.fillRect(cx, cy + CELL - 18, CELL, 18)
+  }
+  {
+    const { cx, cy } = nextCell('warm-pool')
+    const glow = ctx.createRadialGradient(cx + CELL / 2, cy + CELL / 2, 0, cx + CELL / 2, cy + CELL / 2, CELL / 2)
+    glow.addColorStop(0, 'rgba(246,197,111,0.3)')
+    glow.addColorStop(0.35, 'rgba(231,169,87,0.14)')
+    glow.addColorStop(1, 'rgba(231,169,87,0)')
+    ctx.clearRect(cx, cy, CELL, CELL)
+    ctx.fillStyle = glow
+    ctx.fillRect(cx, cy, CELL, CELL)
+  }
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace

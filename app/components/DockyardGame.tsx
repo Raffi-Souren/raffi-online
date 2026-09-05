@@ -6,6 +6,7 @@ import ScoreEntry from "./ScoreEntry"
 import {
   buildDockyard,
   createDockyard,
+  dockyardBuildIssue,
   DOCKYARD_COSTS,
   DOCKYARD_HEIGHT,
   DOCKYARD_WIDTH,
@@ -39,11 +40,15 @@ function drawDockyard(
   placement: "workshop" | "sentry" | null,
   pointer: DockyardPoint | null,
 ) {
-  ctx.fillStyle = palette.sea
+  const water = ctx.createLinearGradient(0, 0, 840, 500)
+  water.addColorStop(0, "#41666a")
+  water.addColorStop(0.5, "#204850")
+  water.addColorStop(1, "#102f3c")
+  ctx.fillStyle = water
   ctx.fillRect(0, 0, DOCKYARD_WIDTH, DOCKYARD_HEIGHT)
   ctx.lineWidth = 1
-  ctx.strokeStyle = "#83aca633"
-  for (let y = 12; y < 500; y += 17) {
+  ctx.strokeStyle = "#a3c7be30"
+  for (let y = 12; y < 500; y += 12) {
     ctx.beginPath()
     for (let x = 0; x <= 840; x += 10) {
       const wave = Math.sin(x / 46 + y + state.time * 0.65) * 2.5
@@ -52,12 +57,38 @@ function drawDockyard(
     }
     ctx.stroke()
   }
-  ctx.fillStyle = "#102d3480"
-  ctx.fillRect(46, 60, 755, 394)
-  ctx.fillStyle = palette.ground
+  ctx.fillStyle = "#092a3590"
+  ctx.fillRect(46, 64, 760, 391)
+  ctx.fillStyle = "#656e60"
+  ctx.fillRect(38, 48, 760, 403)
+  const concrete = ctx.createLinearGradient(38, 48, 740, 443)
+  concrete.addColorStop(0, "#e1d7b7")
+  concrete.addColorStop(1, "#aaa88e")
+  ctx.fillStyle = concrete
   ctx.fillRect(38, 48, 760, 395)
-  ctx.fillStyle = "#a6a58e"
-  for (let x = 77; x < 760; x += 133) ctx.fillRect(x, 443, 63, 31)
+  ctx.fillStyle = "#f0e3be"
+  ctx.fillRect(38, 48, 760, 3)
+  ctx.fillStyle = "#ebe0b7"
+  ctx.fillRect(38, 438, 760, 4)
+  for (let x = 77; x < 760; x += 133) {
+    ctx.fillStyle = "#0f303b88"
+    ctx.fillRect(x + 5, 447, 63, 31)
+    ctx.fillStyle = "#796f53"
+    ctx.fillRect(x, 443, 63, 31)
+    for (let plank = 0; plank < 5; plank++) {
+      ctx.fillStyle = plank % 2 ? "#a0926c" : "#b7a780"
+      ctx.fillRect(x + 2, 445 + plank * 5, 59, 4)
+    }
+    ctx.fillStyle = "#243d3c"
+    ctx.fillRect(x + 6, 447, 5, 7)
+    ctx.fillRect(x + 51, 464, 5, 7)
+  }
+  for (let x = 57; x < 798; x += 64) {
+    ctx.fillStyle = "#414a41"
+    ctx.fillRect(x, 431, 12, 6)
+    ctx.fillStyle = "#f5df8b"
+    ctx.fillRect(x + 2, 430, 8, 2)
+  }
   ctx.strokeStyle = "#877f6933"
   ctx.lineWidth = 1
   for (let x = 40; x <= 798; x += 38) {
@@ -144,10 +175,16 @@ function drawDockyard(
     for (let i = 0; i < 5; i++) {
       const x = resource.x - 20 + (i % 3) * 13,
         y = resource.y - 15 + Math.floor(i / 3) * 13
+      ctx.fillStyle = "#514c3c"
+      ctx.fillRect(x + 3, y + 4, 17, 14)
       ctx.fillStyle = ["#997b5d", "#5d7b7a", "#af724d"][i % 3]
       ctx.fillRect(x, y, 16, 13)
-      ctx.strokeStyle = "#ddc9a4"
+      ctx.fillStyle = ["#c9ad80", "#8ba39a", "#d9a379"][i % 3]
+      ctx.fillRect(x, y - 4, 16, 5)
+      ctx.strokeStyle = "#ddc9a499"
       ctx.strokeRect(x + 1, y + 1, 14, 11)
+      ctx.fillStyle = "#e0cc9b"
+      ctx.fillRect(x + 6, y - 3, 3, 15)
     }
     ctx.font = "bold 11px 'Trebuchet MS', sans-serif"
     ctx.fillStyle = palette.ink
@@ -159,38 +196,76 @@ function drawDockyard(
     const friendly = building.team === "crew",
       color = friendly ? palette.crew : palette.rival
     const width = building.kind === "hq" ? 60 : building.kind === "workshop" ? 50 : 26
-    ctx.fillStyle = "#283b3455"
-    ctx.fillRect(building.x - width / 2 + 5, building.y - 17 + 8, width, 40)
-    ctx.fillStyle = friendly ? "#28555b" : "#773e32"
-    ctx.fillRect(building.x - width / 2, building.y - 17, width, 39)
+    const left = building.x - width / 2
+    ctx.fillStyle = "#243b3450"
+    ctx.beginPath()
+    ctx.moveTo(left, building.y + 17)
+    ctx.lineTo(left + width + 24, building.y + 30)
+    ctx.lineTo(left + width + 32, building.y + 14)
+    ctx.lineTo(left + width, building.y - 21)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = friendly ? "#294e50" : "#713f34"
+    ctx.fillRect(left, building.y - 12, width, 34)
+    ctx.fillStyle = friendly ? "#173d45" : "#502f2a"
+    ctx.beginPath()
+    ctx.moveTo(left + width, building.y - 27)
+    ctx.lineTo(left + width + 9, building.y - 17)
+    ctx.lineTo(left + width + 9, building.y + 22)
+    ctx.lineTo(left + width, building.y + 22)
+    ctx.fill()
     ctx.fillStyle = color
-    ctx.fillRect(building.x - width / 2, building.y - 24, width, 34)
-    ctx.strokeStyle = "#ffffff3a"
+    ctx.fillRect(left, building.y - 28, width, 28)
+    ctx.fillStyle = friendly ? "#65a1a0" : "#d98c69"
+    ctx.fillRect(left, building.y - 28, width, 3)
+    ctx.strokeStyle = "#e4dfb749"
     ctx.lineWidth = 1
-    for (let x = building.x - width / 2 + 6; x < building.x + width / 2; x += 8) {
+    for (let x = left + 6; x < left + width; x += 8) {
       ctx.beginPath()
-      ctx.moveTo(x, building.y - 23)
-      ctx.lineTo(x, building.y + 9)
+      ctx.moveTo(x, building.y - 24)
+      ctx.lineTo(x, building.y - 2)
       ctx.stroke()
     }
-    ctx.fillStyle = "#f1e4bd"
-    ctx.fillRect(building.x - 6, building.y - 14, 12, 9)
-    if (building.kind === "sentry") {
+    // Raised roof vent, lit clerestory and loading door keep each structure legible at map scale.
+    ctx.fillStyle = "#344f4e"
+    ctx.fillRect(left + 7, building.y - 24, 13, 9)
+    ctx.fillStyle = "#99a797"
+    ctx.fillRect(left + 7, building.y - 26, 13, 3)
+    if (building.kind !== "sentry") {
+      ctx.fillStyle = "#172f34"
+      ctx.fillRect(building.x - 9, building.y + 4, 18, 18)
+      ctx.fillStyle = "#8a9b86"
+      for (let y = 5; y < 20; y += 4) ctx.fillRect(building.x - 8, building.y + y, 16, 1)
+      ctx.fillStyle = "#efd79b"
+      ctx.fillRect(left + 5, building.y + 5, 7, 6)
+      ctx.fillRect(left + width - 12, building.y + 5, 7, 6)
+      ctx.fillStyle = "#183b40"
+      ctx.fillRect(left - 3, building.y + 21, width + 6, 4)
+      if (building.kind === "hq") {
+        ctx.strokeStyle = "#ede1b7"
+        ctx.beginPath()
+        ctx.moveTo(building.x + 21, building.y - 25)
+        ctx.lineTo(building.x + 21, building.y - 44)
+        ctx.stroke()
+        ctx.fillStyle = friendly ? "#f3d57c" : "#e78965"
+        ctx.fillRect(building.x + 22, building.y - 44, 14, 8)
+      }
+    } else {
+      ctx.fillStyle = "#c7bc92"
+      ctx.fillRect(left - 3, building.y + 17, width + 6, 6)
       ctx.fillStyle = "#273c39"
       ctx.beginPath()
-      ctx.arc(building.x, building.y - 10, 9, 0, Math.PI * 2)
+      ctx.arc(building.x, building.y - 10, 10, 0, Math.PI * 2)
       ctx.fill()
+      ctx.fillStyle = "#819687"
+      ctx.fillRect(building.x - 4, building.y - 15, 9, 3)
+      ctx.fillStyle = "#273c39"
       ctx.fillRect(building.x, building.y - 13, 24, 6)
     }
     ctx.fillStyle = "#233a38"
     ctx.fillRect(building.x - width / 2, building.y + 28, width, 4)
     ctx.fillStyle = friendly ? "#427747" : "#b44836"
-    ctx.fillRect(
-      building.x - width / 2,
-      building.y + 28,
-      width * Math.max(0, building.hp / building.maxHp),
-      4,
-    )
+    ctx.fillRect(building.x - width / 2, building.y + 28, width * Math.max(0, building.hp / building.maxHp), 4)
     ctx.font = "bold 11px 'Trebuchet MS', sans-serif"
     ctx.fillStyle = palette.ink
     ctx.textAlign = "center"
@@ -241,13 +316,18 @@ function drawDockyard(
       ctx.fillStyle = unit.team === "crew" ? "#74a66a" : "#cd6b50"
       ctx.fillRect(unit.x - 9, unit.y - 18, (18 * unit.hp) / unit.maxHp, 3)
     }
-    if (isSelected && unit.target && unit.resourceId === null) {
-      ctx.strokeStyle = "#19798644"
+    const destination =
+      unit.kind === "worker" &&
+      (unit.carried >= 15 || (!state.resources.some((resource) => resource.amount > 0) && unit.carried > 0))
+        ? state.buildings.find((building) => building.team === "crew" && building.kind === "hq")
+        : state.resources.find((resource) => resource.id === unit.resourceId && resource.amount > 0) || unit.target
+    if (isSelected && destination) {
+      ctx.strokeStyle = "#195b6090"
       ctx.lineWidth = 1
       ctx.setLineDash([3, 5])
       ctx.beginPath()
       ctx.moveTo(unit.x, unit.y)
-      ctx.lineTo(unit.target.x, unit.target.y)
+      ctx.lineTo(destination.x, destination.y)
       ctx.stroke()
       ctx.setLineDash([])
     }
@@ -267,10 +347,21 @@ function drawDockyard(
     }
   }
   if (placement && pointer) {
-    ctx.globalAlpha = 0.6
-    ctx.fillStyle = palette.crew
-    ctx.fillRect(pointer.x - 22, pointer.y - 20, 44, 40)
-    ctx.globalAlpha = 1
+    const issue = dockyardBuildIssue(state, placement, pointer)
+    ctx.fillStyle = issue ? "#b4483666" : "#19798666"
+    ctx.fillRect(pointer.x - 25, pointer.y - 24, 50, 47)
+    ctx.strokeStyle = issue ? "#963729" : "#12585c"
+    ctx.lineWidth = 2
+    ctx.strokeRect(pointer.x - 25, pointer.y - 24, 50, 47)
+    ctx.font = "bold 11px 'Trebuchet MS', sans-serif"
+    ctx.textAlign = "center"
+    const label = issue ? "CANNOT BUILD HERE" : `PLACE ${placement.toUpperCase()} · ${DOCKYARD_COSTS[placement]}`
+    const labelX = Math.max(105, Math.min(735, pointer.x))
+    const labelY = Math.max(20, pointer.y - 36)
+    ctx.fillStyle = "#f3ecd9"
+    ctx.fillRect(labelX - 102, labelY - 13, 204, 19)
+    ctx.fillStyle = issue ? "#963729" : "#12585c"
+    ctx.fillText(label, labelX, labelY)
   }
   ctx.textAlign = "left"
 }
@@ -288,6 +379,11 @@ export default function DockyardGame() {
     workers: 3,
     guards: 1,
     hp: 650,
+    rivalHp: 550,
+    idleWorkers: 3,
+    selectedWorkers: 0,
+    selectedGuards: 0,
+    orders: "Select workers or guards to give an order.",
     wave: 0,
     nextWave: 45,
     time: 0,
@@ -302,15 +398,41 @@ export default function DockyardGame() {
   const refreshHud = () => {
     const state = stateRef.current
     selectedRef.current = selectedRef.current.filter((id) => state.units.some((unit) => unit.id === id))
+    const selection = state.units.filter((unit) => selectedRef.current.includes(unit.id))
+    const tasks = new Map<string, number>()
+    for (const unit of selection) {
+      const remainingSalvage = state.resources.some((resource) => resource.amount > 0)
+      const task =
+        unit.kind === "worker" && (unit.carried >= 15 || (!remainingSalvage && unit.carried > 0))
+          ? "delivering"
+          : unit.kind === "worker" && unit.resourceId !== null
+            ? "salvaging"
+            : unit.target
+              ? "advancing"
+              : unit.kind === "guard"
+                ? "defending"
+                : "idle"
+      tasks.set(task, (tasks.get(task) || 0) + 1)
+    }
     setHud({
+      rivalHp: Math.max(
+        0,
+        Math.ceil(state.buildings.find((building) => building.team === "rival" && building.kind === "hq")?.hp || 0),
+      ),
+      idleWorkers: state.units.filter(
+        (unit) => unit.kind === "worker" && unit.resourceId === null && !unit.target && unit.carried === 0,
+      ).length,
+      selectedWorkers: selection.filter((unit) => unit.kind === "worker").length,
+      selectedGuards: selection.filter((unit) => unit.kind === "guard").length,
+      orders:
+        Array.from(tasks, ([task, count]) => `${count} ${task}`).join(" · ") ||
+        "Select workers or guards to give an order.",
       scrap: Math.floor(state.scrap),
       workers: state.units.filter((unit) => unit.kind === "worker").length,
       guards: state.units.filter((unit) => unit.kind === "guard").length,
       hp: Math.max(
         0,
-        Math.ceil(
-          state.buildings.find((building) => building.team === "crew" && building.kind === "hq")?.hp || 0,
-        ),
+        Math.ceil(state.buildings.find((building) => building.team === "crew" && building.kind === "hq")?.hp || 0),
       ),
       wave: state.wave,
       nextWave: Math.max(0, Math.ceil(state.nextWave - state.time)),
@@ -380,6 +502,10 @@ export default function DockyardGame() {
     }
   }, [])
 
+  const cancelPlacement = () => {
+    placementRef.current = null
+    setPlacement(null)
+  }
   const selectCrew = (kind: "worker" | "guard") => {
     selectedRef.current = stateRef.current.units.filter((unit) => unit.kind === kind).map((unit) => unit.id)
     placementRef.current = null
@@ -392,30 +518,43 @@ export default function DockyardGame() {
   }
   const gather = () => {
     const state = stateRef.current
+    if (state.phase !== "playing") return
+    cancelPlacement()
     const ids = state.units.filter((unit) => unit.kind === "worker").map((unit) => unit.id)
     selectedRef.current = ids
     const resource = state.resources
       .filter((item) => item.amount > 0)
       .sort((a, b) => Math.hypot(a.x - 125, a.y - 335) - Math.hypot(b.x - 125, b.y - 335))[0]
-    if (resource) orderDockyard(state, ids, resource, resource.id)
+    if (!ids.length) state.message = "Train a worker at your HQ to collect salvage."
+    else if (resource) orderDockyard(state, ids, resource, resource.id)
     else state.message = "All salvage collected. Use your crew to finish the rival HQ."
     refreshHud()
   }
   const assault = () => {
     const state = stateRef.current
+    if (state.phase !== "playing") return
+    cancelPlacement()
     const guards = state.units.filter((unit) => unit.kind === "guard")
     const hq = state.buildings.find((building) => building.kind === "hq" && building.team === "rival")
     selectedRef.current = guards.map((unit) => unit.id)
-    if (hq) orderDockyard(state, selectedRef.current, hq)
+    if (!guards.length) state.message = "Train guards at a workshop before attacking."
+    else if (hq) orderDockyard(state, selectedRef.current, hq)
     refreshHud()
   }
   const setBuildMode = (kind: "workshop" | "sentry") => {
+    if (placementRef.current === kind) {
+      cancelPlacement()
+      stateRef.current.message = "Build cancelled. Select crew or give an order."
+      refreshHud()
+      return
+    }
     placementRef.current = kind
     setPlacement(kind)
     stateRef.current.message = `Tap inside the supply radius to place a ${kind}. Escape cancels.`
     refreshHud()
   }
   const train = (kind: "worker" | "guard") => {
+    cancelPlacement()
     trainDockyard(stateRef.current, kind)
     refreshHud()
   }
@@ -463,9 +602,7 @@ export default function DockyardGame() {
       .filter((unit) => unit.team === "crew")
       .find((unit) => Math.hypot(unit.x - point.x, unit.y - point.y) < 20)
     if (clicked) {
-      selectedRef.current = event.shiftKey
-        ? Array.from(new Set([...selectedRef.current, clicked.id]))
-        : [clicked.id]
+      selectedRef.current = event.shiftKey ? Array.from(new Set([...selectedRef.current, clicked.id])) : [clicked.id]
       state.message =
         clicked.kind === "worker"
           ? "Worker selected. Tap salvage to gather, or a position to move."
@@ -508,7 +645,7 @@ export default function DockyardGame() {
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    minHeight: 36,
+    minHeight: 40,
     padding: "6px 9px",
     border: "1px solid #b2b39e",
     borderRadius: 3,
@@ -518,8 +655,35 @@ export default function DockyardGame() {
     fontWeight: 700,
     cursor: "pointer",
     flex: "1 1 110px",
+    boxShadow: "0 1px 0 #ffffff8c inset, 0 1px 1px #52615422",
   }
   const playing = hud.phase === "playing"
+  const crewFull = hud.workers + hud.guards >= 24
+  const nextOrder =
+    hud.workers === 0
+      ? "Train a worker to restart your salvage supply."
+      : hud.idleWorkers > 0
+        ? `${hud.idleWorkers} idle ${hud.idleWorkers === 1 ? "worker" : "workers"} — use Gather to keep salvage coming.`
+        : !hud.workshop
+          ? "Build a workshop near your HQ to unlock guards."
+          : hud.guards < 5
+            ? "Train a guard squad. Sentries can protect home while you advance."
+            : "Your squad is ready. Attack the rival HQ to secure the waterfront."
+  const purchaseNote = (kind: keyof typeof DOCKYARD_COSTS) => {
+    if ((kind === "worker" || kind === "guard") && crewFull) return "Crew full · 24 / 24"
+    if (kind === "guard" && !hud.workshop) return "Requires workshop"
+    const missing = DOCKYARD_COSTS[kind] - hud.scrap
+    if (missing > 0) return `Need ${missing} more salvage`
+    return kind === "worker" || kind === "guard" ? "Ready to train" : "Choose a site"
+  }
+  const purchaseLabel = (kind: keyof typeof DOCKYARD_COSTS, label: string) => (
+    <span style={{ display: "flex", flexDirection: "column", gap: 3, textAlign: "left" }}>
+      <span>
+        {label} <span style={{ color: "#695e35", fontVariantNumeric: "tabular-nums" }}>· {DOCKYARD_COSTS[kind]}</span>
+      </span>
+      <span style={{ fontSize: 10, fontWeight: 400, color: "#526153" }}>{purchaseNote(kind)}</span>
+    </span>
+  )
 
   return (
     <div
@@ -556,7 +720,9 @@ export default function DockyardGame() {
       >
         <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
           <strong style={{ fontSize: 21, letterSpacing: -1 }}>Dockyard</strong>
-          <span style={{ fontSize: 11, color: "#c3cbb8" }}>Take back the waterfront.</span>
+          <span style={{ fontSize: 10, color: "#c3cbb8", letterSpacing: 1.5, textTransform: "uppercase" }}>
+            North Pier / Operations
+          </span>
         </div>
         <div
           style={{
@@ -570,7 +736,7 @@ export default function DockyardGame() {
           <span aria-label="Salvage available">
             <strong style={{ color: "#edcf78" }}>{hud.scrap}</strong> salvage
           </span>
-          <span>HQ {hud.hp}</span>
+          <span>{hud.workers + hud.guards}/24 crew</span>
           <span>{clock(hud.time)}</span>
           <button
             className={focusClass}
@@ -591,9 +757,45 @@ export default function DockyardGame() {
         </div>
       </div>
       <div
-        ref={viewportRef}
-        style={{ position: "relative", flex: "1 0 250px", minHeight: 250, overflow: "hidden" }}
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "8px 20px",
+          alignItems: "center",
+          padding: "8px 12px",
+          background: "#21454a",
+          flexShrink: 0,
+        }}
       >
+        <div style={{ flex: "1 1 240px", fontSize: 11, lineHeight: 1.4 }}>
+          <strong style={{ color: "#f2d889" }}>OBJECTIVE: DESTROY THE RIVAL HQ</strong>
+          <div style={{ color: "#d1d9c8", marginTop: 2 }}>{nextOrder}</div>
+        </div>
+        <div style={{ display: "flex", gap: 14, flex: "0 1 220px" }}>
+          {[
+            { label: "Your HQ", hp: hud.hp, max: 650, color: "#8bbe91" },
+            { label: "Rival HQ", hp: hud.rivalHp, max: 550, color: "#ed947a" },
+          ].map((base) => (
+            <div key={base.label} style={{ flex: 1, minWidth: 88 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10, marginBottom: 4 }}>
+                <span>{base.label}</span>
+                <strong>{base.hp}</strong>
+              </div>
+              <div
+                role="meter"
+                aria-label={`${base.label} health`}
+                aria-valuemin={0}
+                aria-valuemax={base.max}
+                aria-valuenow={base.hp}
+                style={{ height: 4, background: "#102f34" }}
+              >
+                <div style={{ height: "100%", width: `${(base.hp / base.max) * 100}%`, background: base.color }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div ref={viewportRef} style={{ position: "relative", flex: "1 0 250px", minHeight: 250, overflow: "hidden" }}>
         <canvas
           ref={canvasRef}
           aria-label="Waterfront map. Select crew, then click salvage to gather or ground to move. Use crew command buttons on touch screens."
@@ -651,7 +853,7 @@ export default function DockyardGame() {
               </h2>
               <p style={{ fontSize: 13, lineHeight: 1.5, marginTop: 12 }}>
                 {hud.phase === "briefing"
-                  ? "Gather salvage, build a workshop, and train guards. Protect your HQ from rival waves, then take down their red HQ across the pier."
+                  ? "Keep your HQ standing and destroy the red rival HQ across the pier. Salvage pays for every worker, building and guard."
                   : hud.phase === "paused"
                     ? "The simulation is paused. Your crew and the rivals will wait."
                     : hud.phase === "won"
@@ -667,10 +869,23 @@ export default function DockyardGame() {
                 />
               )}
               {hud.phase === "briefing" && (
-                <p style={{ marginTop: 10, fontSize: 11, lineHeight: 1.5 }}>
-                  Tap crew to select; tap the map to give orders. W selects workers, F selects guards, G
-                  gathers. Space pauses. Crew buttons work on touch screens.
-                </p>
+                <>
+                  <ol style={{ paddingLeft: 18, marginTop: 12, fontSize: 12, lineHeight: 1.8 }}>
+                    <li>
+                      <strong>Gather</strong> sends workers to collect and return salvage.
+                    </li>
+                    <li>
+                      <strong>Build a workshop</strong> inside your HQ supply radius.
+                    </li>
+                    <li>
+                      <strong>Train guards</strong> and send a squad at the rival HQ.
+                    </li>
+                  </ol>
+                  <p style={{ marginTop: 10, fontSize: 11, lineHeight: 1.5 }}>
+                    Tap crew, then tap a destination. W: workers · F: guards · G: gather · A: attack. Space pauses.
+                    Every command also has a touch button.
+                  </p>
+                </>
               )}
               <button
                 className={focusClass}
@@ -726,27 +941,39 @@ export default function DockyardGame() {
             marginBottom: 7,
           }}
         >
-          <span>
-            {hud.selected ? `${hud.selected} crew selected` : "Select a crew group"}
-            {placement ? ` · Place ${placement}` : ""}
-          </span>
-          <span>
-            Wave {hud.wave + 1} in {hud.nextWave}s
+          <div style={{ lineHeight: 1.5 }}>
+            <strong>
+              {placement
+                ? `PLACE ${placement.toUpperCase()}`
+                : hud.selected
+                  ? `${hud.selectedWorkers ? `${hud.selectedWorkers} ${hud.selectedWorkers === 1 ? "worker" : "workers"}` : ""}${hud.selectedWorkers && hud.selectedGuards ? " + " : ""}${hud.selectedGuards ? `${hud.selectedGuards} ${hud.selectedGuards === 1 ? "guard" : "guards"}` : ""} selected`
+                  : "CREW ORDERS"}
+            </strong>
+            <div style={{ color: "#516051" }}>
+              {placement ? "Green = clear site · Red = blocked · Tap the build button again to cancel" : hud.orders}
+            </div>
+          </div>
+          <span style={{ color: hud.nextWave <= 10 ? "#933c2c" : "#526153", fontWeight: 700 }}>
+            Rival wave {hud.wave + 1} · {hud.nextWave}s
           </span>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 5 }}>
           <button
             disabled={!playing}
-            className={`${focusClass} disabled:opacity-40`}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={() => selectCrew("worker")}
-            style={actionStyle}
+            aria-pressed={!placement && hud.selectedWorkers > 0 && hud.selectedGuards === 0}
+            style={{
+              ...actionStyle,
+              background: !placement && hud.selectedWorkers > 0 && hud.selectedGuards === 0 ? "#c1d2bd" : palette.paper,
+            }}
           >
             <HardHat size={14} />
             Workers ({hud.workers})
           </button>
           <button
-            disabled={!playing}
-            className={`${focusClass} disabled:opacity-40`}
+            disabled={!playing || hud.workers === 0}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={gather}
             style={actionStyle}
           >
@@ -755,16 +982,20 @@ export default function DockyardGame() {
           </button>
           <button
             disabled={!playing}
-            className={`${focusClass} disabled:opacity-40`}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={() => selectCrew("guard")}
-            style={actionStyle}
+            aria-pressed={!placement && hud.selectedGuards > 0 && hud.selectedWorkers === 0}
+            style={{
+              ...actionStyle,
+              background: !placement && hud.selectedGuards > 0 && hud.selectedWorkers === 0 ? "#c1d2bd" : palette.paper,
+            }}
           >
             <Shield size={14} />
             Guards ({hud.guards})
           </button>
           <button
             disabled={!playing || hud.guards === 0}
-            className={`${focusClass} disabled:opacity-40`}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={assault}
             style={actionStyle}
           >
@@ -772,39 +1003,46 @@ export default function DockyardGame() {
             Attack rival HQ
           </button>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 5, marginTop: 5 }}
+        >
           <button
-            disabled={!playing || hud.scrap < DOCKYARD_COSTS.worker}
-            className={`${focusClass} disabled:opacity-40`}
+            disabled={!playing || crewFull || hud.scrap < DOCKYARD_COSTS.worker}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={() => train("worker")}
             style={actionStyle}
           >
-            Worker · {DOCKYARD_COSTS.worker}
+            <HardHat size={15} />
+            {purchaseLabel("worker", "Train worker")}
           </button>
           <button
             disabled={!playing || hud.scrap < DOCKYARD_COSTS.workshop}
-            className={`${focusClass} disabled:opacity-40`}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={() => setBuildMode("workshop")}
+            aria-pressed={placement === "workshop"}
             style={{ ...actionStyle, background: placement === "workshop" ? "#c7d3ba" : palette.paper }}
           >
             <Warehouse size={14} />
-            Workshop · {DOCKYARD_COSTS.workshop}
+            {purchaseLabel("workshop", "Workshop")}
           </button>
           <button
             disabled={!playing || hud.scrap < DOCKYARD_COSTS.sentry}
-            className={`${focusClass} disabled:opacity-40`}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={() => setBuildMode("sentry")}
+            aria-pressed={placement === "sentry"}
             style={{ ...actionStyle, background: placement === "sentry" ? "#c7d3ba" : palette.paper }}
           >
-            Sentry · {DOCKYARD_COSTS.sentry}
+            <Shield size={15} />
+            {purchaseLabel("sentry", "Sentry")}
           </button>
           <button
-            disabled={!playing || !hud.workshop || hud.scrap < DOCKYARD_COSTS.guard}
-            className={`${focusClass} disabled:opacity-40`}
+            disabled={!playing || crewFull || !hud.workshop || hud.scrap < DOCKYARD_COSTS.guard}
+            className={`${focusClass} disabled:opacity-60`}
             onClick={() => train("guard")}
             style={actionStyle}
           >
-            Guard · {DOCKYARD_COSTS.guard}
+            <Shield size={15} />
+            {purchaseLabel("guard", "Train guard")}
           </button>
         </div>
         <p role="status" style={{ marginTop: 7, fontSize: 11, lineHeight: 1.35, minHeight: 15 }}>

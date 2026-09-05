@@ -29,7 +29,6 @@ const DESKTOP_SHORTCUTS = [
   { action: "notes", icon: "📝", label: "NOTES" },
   { action: "ipod", icon: "🎧", label: "iPod" },
   { action: "projects", icon: "🛠️", label: "PROJECTS" },
-  { action: "world", icon: "🌆", label: "RAFFI WORLD" },
   { action: "startup", icon: "💡", label: "RAF OS TERMINAL" },
 ] as const
 
@@ -156,7 +155,13 @@ export default function Home() {
       case "about":
         return <AboutWindow isOpen={openWindows.about} onClose={() => closeWindow("about")} />
       case "games":
-        return <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />
+        return (
+          <GameSelector
+            isOpen={openWindows.games}
+            onClose={() => closeWindow("games")}
+            onOpenWorld={() => openWindow("world")}
+          />
+        )
       case "crates":
         return <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />
       case "blogroll":

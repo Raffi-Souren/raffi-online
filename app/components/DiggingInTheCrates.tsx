@@ -113,7 +113,8 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "center",
+              position: "relative",
               background: "linear-gradient(to right, #FBBF24, #F59E0B)",
               padding: "4px 12px",
               minHeight: "52px",
@@ -123,7 +124,16 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
               borderTopRightRadius: "9px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0 44px",
+                width: "100%",
+              }}
+            >
               <span style={{ fontSize: "1.125rem" }}>🔔</span>
               <h2 id="secret-title" style={{ fontWeight: "bold", color: "#000000", margin: 0, fontSize: "1rem" }}>
                 Raf’s crate
@@ -132,25 +142,42 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             <button
               aria-label="Close"
               onClick={handleClose}
-              className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#795800]"
+              className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#795800]"
               style={{
-                borderRadius: "0.25rem",
-                padding: "0.5rem",
+                position: "absolute",
+                left: "6px",
+                borderRadius: "5px",
+                padding: 0,
                 color: "#000000",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
-                transition: "background-color 0.2s",
                 minWidth: "44px",
                 minHeight: "44px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F59E0B")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
-              <X size={18} />
+              <span
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  background: "#ff6058",
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <X
+                  size={10}
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                  className="opacity-0 group-hover:opacity-80 group-focus-visible:opacity-80"
+                />
+              </span>
             </button>
           </div>
 

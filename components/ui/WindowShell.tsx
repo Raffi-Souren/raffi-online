@@ -132,7 +132,6 @@ export default function WindowShell({
   const shellLayer = layer ?? activity.layer
   const activate = onActivate ?? activity.onActivate
   const edgeInset = compact ? "0px" : "8px"
-  const controlSize = compact ? 34 : 44
   const windowRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll while window is open
@@ -202,18 +201,13 @@ export default function WindowShell({
   )
 
   const windowActions = [
-    ...(!terminalChrome && onMinimize
-      ? [{ key: "minimize", label: `Minimize ${title}`, action: onMinimize, minimize: true }]
-      : []),
     {
       key: "dismiss",
       label: dismissAction === "minimize" ? `Minimize ${title}` : "Close window",
       action: onClose,
       minimize: dismissAction === "minimize",
     },
-    ...(terminalChrome && onMinimize
-      ? [{ key: "minimize", label: `Minimize ${title}`, action: onMinimize, minimize: true }]
-      : []),
+    ...(onMinimize ? [{ key: "minimize", label: `Minimize ${title}`, action: onMinimize, minimize: true }] : []),
     ...(terminalChrome
       ? [
           {
@@ -225,7 +219,7 @@ export default function WindowShell({
         ]
       : []),
   ]
-  const titleSideInset = Math.max(44, windowActions.length * 30 + 4)
+  const titleSideInset = Math.max(44, windowActions.length * 34 + 4)
 
   return (
     <>
@@ -302,7 +296,7 @@ export default function WindowShell({
               boxShadow: terminalChrome ? undefined : "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
               display: "flex",
               alignItems: "center",
-              justifyContent: terminalChrome ? "center" : "space-between",
+              justifyContent: "center",
               borderTopLeftRadius: "9px",
               borderTopRightRadius: "9px",
               flexShrink: 0,
@@ -316,12 +310,12 @@ export default function WindowShell({
                 fontWeight: "bold",
                 fontSize: terminalChrome ? "12px" : "1rem",
                 fontFamily: terminalChrome ? '"SFMono-Regular", Consolas, monospace' : "Tahoma, Verdana, sans-serif",
-                textAlign: terminalChrome ? "center" : "left",
+                textAlign: "center",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                padding: terminalChrome ? `0 ${titleSideInset}px` : "0 8px 0 0",
-                width: terminalChrome ? "100%" : undefined,
+                padding: `0 ${titleSideInset}px`,
+                width: "100%",
                 margin: 0,
               }}
             >
@@ -330,10 +324,10 @@ export default function WindowShell({
             <div
               style={{
                 display: "flex",
-                gap: terminalChrome ? 0 : 4,
+                gap: 0,
                 flexShrink: 0,
-                position: terminalChrome ? "absolute" : undefined,
-                left: terminalChrome ? "6px" : undefined,
+                position: "absolute",
+                left: "6px",
               }}
             >
               {windowActions.map((action) => (
@@ -352,58 +346,47 @@ export default function WindowShell({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: terminalChrome ? 30 : controlSize,
-                    height: terminalChrome ? 34 : controlSize,
+                    width: 34,
+                    height: terminalChrome || compact ? 40 : 44,
                     padding: 0,
-                    border: terminalChrome ? 0 : "1px solid rgba(255, 255, 255, 0.5)",
-                    borderRadius: terminalChrome ? 5 : 7,
+                    border: 0,
+                    borderRadius: 5,
                     color: "white",
-                    background: terminalChrome
-                      ? "transparent"
-                      : action.minimize
-                        ? "rgba(255, 255, 255, 0.16)"
-                        : "linear-gradient(180deg, #e87570 0%, #ca4844 100%)",
-                    boxShadow: terminalChrome ? undefined : "inset 0 1px 0 rgba(255, 255, 255, 0.22)",
+                    background: "transparent",
                     cursor: "pointer",
                     WebkitTapHighlightColor: "transparent",
                   }}
                 >
-                  {terminalChrome ? (
+                  <span
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#142017",
+                      background: action.key === "maximize" ? "#28c840" : action.minimize ? "#ffbd2e" : "#ff6058",
+                      border: "1px solid rgba(0, 0, 0, 0.15)",
+                    }}
+                  >
                     <span
-                      style={{
-                        width: 14,
-                        height: 14,
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#142017",
-                        background: action.key === "maximize" ? "#28c840" : action.minimize ? "#ffbd2e" : "#ff6058",
-                        border: "1px solid rgba(0, 0, 0, 0.15)",
-                      }}
+                      className="opacity-0 group-hover:opacity-80 group-focus-visible:opacity-80"
+                      aria-hidden="true"
                     >
-                      <span
-                        className="opacity-0 group-hover:opacity-80 group-focus-visible:opacity-80"
-                        aria-hidden="true"
-                      >
-                        {action.key === "maximize" ? (
-                          maximized ? (
-                            <Minimize2 size={10} strokeWidth={2.5} />
-                          ) : (
-                            <Maximize2 size={10} strokeWidth={2.5} />
-                          )
-                        ) : action.minimize ? (
-                          <Minus size={10} strokeWidth={2.5} />
+                      {action.key === "maximize" ? (
+                        maximized ? (
+                          <Minimize2 size={10} strokeWidth={2.5} />
                         ) : (
-                          <X size={10} strokeWidth={2.5} />
-                        )}
-                      </span>
+                          <Maximize2 size={10} strokeWidth={2.5} />
+                        )
+                      ) : action.minimize ? (
+                        <Minus size={10} strokeWidth={2.5} />
+                      ) : (
+                        <X size={10} strokeWidth={2.5} />
+                      )}
                     </span>
-                  ) : action.minimize ? (
-                    <Minus size={22} strokeWidth={2.5} />
-                  ) : (
-                    <X size={22} strokeWidth={2.5} />
-                  )}
+                  </span>
                 </button>
               ))}
             </div>

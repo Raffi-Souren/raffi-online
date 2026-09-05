@@ -17,8 +17,6 @@ const schemaKeywords = new Set([
   "enum",
   "items",
   "prefixItems",
-  "minItems",
-  "maxItems",
   "minimum",
   "maximum",
   "anyOf",
@@ -50,6 +48,21 @@ export function projectGeminiSchema(schema: unknown): unknown {
     } else {
       projected[key] = structuredClone(value)
     }
+  }
+  // Nested array bounds make Gemini's constrained decoder reject this otherwise
+  // valid review schema. Keep the guidance here and enforce every bound in Zod.
+  const bounds = schema as Record<string, unknown>
+  if (projected.type === "array" && (typeof bounds.minItems === "number" || typeof bounds.maxItems === "number")) {
+    const count =
+      bounds.minItems === bounds.maxItems
+        ? `Return exactly ${bounds.minItems} items.`
+        : [
+            typeof bounds.minItems === "number" ? `Return at least ${bounds.minItems} items.` : "",
+            typeof bounds.maxItems === "number" ? `Return at most ${bounds.maxItems} items.` : "",
+          ]
+            .filter(Boolean)
+            .join(" ")
+    projected.description = [projected.description, count].filter(Boolean).join(" ")
   }
   if (
     projected.properties !== null &&

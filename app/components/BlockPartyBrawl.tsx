@@ -198,10 +198,11 @@ export default function BlockPartyBrawl() {
     }
   }, [clearInput, pause, resume, start])
 
-  const controlButton = (control: Control, label: string, icon: ReactNode, color?: string) => (
+  const controlButton = (control: Control, label: string, icon: ReactNode, color?: string, shortcut?: string) => (
     <button
       type="button"
       aria-label={label}
+      aria-keyshortcuts={shortcut}
       aria-pressed={held.includes(control)}
       onPointerDown={(event) => {
         event.preventDefault()
@@ -225,6 +226,7 @@ export default function BlockPartyBrawl() {
       onKeyDown={(event) => {
         if (event.key === " " || event.key === "Enter") {
           event.preventDefault()
+          event.stopPropagation()
           touchesRef.current.add(control)
           pendingRef.current.add(control)
           setHeld(Array.from(touchesRef.current))
@@ -232,6 +234,7 @@ export default function BlockPartyBrawl() {
       }}
       onKeyUp={(event) => {
         if (event.key === " " || event.key === "Enter") {
+          event.stopPropagation()
           touchesRef.current.delete(control)
           setHeld(Array.from(touchesRef.current))
         }
@@ -253,7 +256,21 @@ export default function BlockPartyBrawl() {
       }}
     >
       {icon}
-      <span className="hidden sm:inline">{label}</span>
+      <span className={control === "attack" ? undefined : "hidden sm:inline"}>{label}</span>
+      {shortcut && (
+        <kbd
+          aria-hidden="true"
+          style={{
+            font: "bold 11px monospace",
+            padding: "2px 4px",
+            border: "1px solid #f1dfbd88",
+            borderRadius: 3,
+            background: "#28223366",
+          }}
+        >
+          {shortcut}
+        </kbd>
+      )}
     </button>
   )
 
@@ -486,7 +503,7 @@ export default function BlockPartyBrawl() {
         <div style={{ display: "flex", gap: 6, flex: "1 1 auto", flexWrap: "wrap", justifyContent: "flex-end" }}>
           {controlButton("dodge", "Dodge", <ChevronsRight size={20} />, "#5c7890")}
           {controlButton("jump", "Jump", <ArrowUp size={20} />, "#817087")}
-          {controlButton("attack", "Punch", <Zap size={20} />, "#a65e7b")}
+          {controlButton("attack", "Punch", <Zap size={20} />, "#a65e7b", "J")}
           <span style={{ flexBasis: "100%", textAlign: "right", fontSize: 10, color: "#d8ceda" }}>
             {hud.dodge > 0 ? "Dodge recharging…" : "Dodge ready"}
           </span>

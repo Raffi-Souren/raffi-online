@@ -28,6 +28,7 @@ const materials = Object.fromEntries(
   ['opaque', 'emissive', 'alpha', 'actor'].map((key) => [key, new THREE.MeshBasicMaterial()]),
 )
 const noopBuilder = {
+  quad() {},
   box() {},
   plane() {},
   billboard() {},
@@ -179,6 +180,20 @@ test('ground landmark furniture registers solids while roof details leave the st
   const entrance = moveCircle(collisionWorld(...all), lobby.at.x, lobby.at.z + 27, 0, -10, 0.45)
   close(entrance.z, lobby.at.z + 17)
   assert.equal(entrance.hit, false, 'the lobby south entrance remains open')
+})
+
+test('new apartment and record-shop planters are solid while the mission approaches remain open', () => {
+  const all = worldData.districts.flatMap((district) => buildLandmarks(noopSet, atlas, props, worldData, district.id))
+  const solids = collisionWorld(...all)
+  for (const [x, z] of [[-466, -160], [-434, -160], [-87, 114], [-33, 114]]) {
+    assert.equal(resolveCircle(solids, x, z, 0.45).hit, true, `planter at ${x},${z}`)
+  }
+  const apartment = moveCircle(solids, -450, -154, 0, -8, 0.45)
+  close(apartment.z, -162)
+  assert.equal(apartment.hit, false, 'apartment entrance stays accessible')
+  const records = moveCircle(solids, -60, 105, 0, 7, 0.45)
+  close(records.z, 112)
+  assert.equal(records.hit, false, 'Crate Quest discovery point stays accessible')
 })
 
 test('interior booth and goal posts are solid, with the goal mouth and spawn routes open', () => {
