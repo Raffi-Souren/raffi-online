@@ -438,7 +438,7 @@ test("audit request commitments bind actual model settings and instructions with
     { ...payload, model: "different-test-model" },
     { ...payload, instructions: payload.instructions + " A different authored instruction." },
     { ...payload, max_output_tokens: payload.max_output_tokens - 1 },
-    { ...payload, reasoning: { effort: "medium" } },
+    { ...payload, reasoning: { effort: "low" } },
   ]) {
     assert.notEqual(
       auditRun(body, sampleRunEvidence.result, sampleRunEvidence.sources, changed).modelRequestSha256,
@@ -563,3 +563,14 @@ test(
     }
   },
 )
+
+
+test("comparison requests allocate more reasoning while keeping both versions in one call", async () => {
+  const baseline = request()
+  const compared = request({ previous: sampleSubmissionBefore, current: sampleSubmissionEvidence, action: "compare" })
+  const inputs = [await prepareSubmission(sampleSubmissionBefore, "v1"), await prepareSubmission(sampleSubmissionEvidence, "v2")]
+  assert.equal(buildModelRequest(baseline, inputs.slice(0, 1)).reasoning.effort, "low")
+  const payload = buildModelRequest(compared, inputs)
+  assert.equal(payload.reasoning.effort, "medium")
+  assert.equal(payload.input.length, 1)
+})

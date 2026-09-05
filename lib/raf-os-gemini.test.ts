@@ -320,7 +320,7 @@ test(
         status: 400,
         body: { error: { status: "INVALID_ARGUMENT", message: entry.message + " " + fakeKey } },
         code: entry.code,
-        parameter: "unknown",
+        parameter: entry.code === "INVALID_ARGUMENT" ? "thinking.billing.schema" : "unknown",
       })),
       ...["api_key_invalid", "API_KEY_INVALID\nPRIVATE", "API_KEY_INVALID<script>", "A".repeat(101)].map((reason) => ({
         status: 400,
@@ -397,6 +397,126 @@ test(
           },
         )
         assert.equal(calls, 1)
+      }
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  },
+)
+
+test(
+  "Gemini generic configuration hints contain only fixed public words and never replace specific diagnostics",
+  { concurrency: false },
+  async () => {
+    const originalFetch = globalThis.fetch
+    const request = buildGeminiRequest(await modelRequest())
+    const words = new Set([
+      "responseJsonSchema",
+      "responseSchema",
+      "additionalProperties",
+      "anyOf",
+      "oneOf",
+      "type",
+      "nesting",
+      "depth",
+      "scorecard",
+      "score",
+      "thinking",
+      "model",
+      "billing",
+      "location",
+      "schema",
+      "states",
+      "constraint",
+      "enum",
+      "property",
+      "properties",
+      "required",
+      "token",
+      "limit",
+      "max",
+      "min",
+      "unsupported",
+      "invalid",
+      "array",
+      "null",
+      "integer",
+      "format",
+      "disabled",
+    ])
+    const scenarios = [
+      {
+        error: {
+          status: "INVALID_ARGUMENT",
+          message:
+            "Invalid response_json_schema at properties.scorecard.score.anyOf: unsupported type null. ConfidentialCustomerZ9 " +
+            fakeKey,
+        },
+        expected: [
+          "responseJsonSchema",
+          "properties",
+          "scorecard",
+          "score",
+          "anyOf",
+          "type",
+          "null",
+          "unsupported",
+          "invalid",
+        ],
+      },
+      {
+        error: {
+          status: "INVALID_ARGUMENT",
+          message: Array.from(words).join(" ").repeat(10) + " ConfidentialCustomerZ9 " + fakeKey,
+        },
+        bounded: true,
+      },
+      { error: { status: "PERMISSION_DENIED", message: "billing invalid model " + fakeKey }, exact: "unknown" },
+      {
+        error: {
+          status: "INVALID_ARGUMENT",
+          message: "schema invalid thinking " + fakeKey,
+          details: [{ fieldViolations: [{ field: "known.field" }] }],
+        },
+        exact: "known.field",
+      },
+      {
+        error: {
+          status: "INVALID_ARGUMENT",
+          message: "schema invalid " + fakeKey,
+          details: [{ reason: "API_KEY_INVALID" }],
+        },
+        exact: "unknown",
+      },
+      {
+        error: {
+          status: "INVALID_ARGUMENT",
+          message: "noschema prethinking invalidator modelled ConfidentialCustomerZ9 " + fakeKey,
+        },
+        exact: "unknown",
+      },
+    ]
+    try {
+      for (const scenario of scenarios) {
+        globalThis.fetch = async () => new Response(JSON.stringify({ error: scenario.error }), { status: 400 })
+        await assert.rejects(
+          requestGemini(request, fakeKey, [], false, new AbortController().signal),
+          (error: unknown) => {
+            assert.ok(error instanceof RafHttpError)
+            const parameter = error.diagnostic?.providerParameter ?? ""
+            assert.ok(parameter.length <= 100)
+            assert.equal((JSON.stringify(error) + error.message).includes(fakeKey), false)
+            assert.equal(JSON.stringify(error).includes("ConfidentialCustomerZ9"), false)
+            if (scenario.exact) assert.equal(parameter, scenario.exact)
+            else {
+              const tokens = parameter.split(".")
+              assert.ok(tokens.every((word) => words.has(word)))
+              if (scenario.expected) assert.ok(scenario.expected.every((word) => tokens.includes(word)))
+              if (scenario.bounded) assert.ok(tokens.length < words.size)
+            }
+            return true
+          },
+        )
       }
     } finally {
       globalThis.fetch = originalFetch
