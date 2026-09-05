@@ -259,6 +259,58 @@ function messageDiagnostic(message: string | undefined) {
   return categories.find((category) => category.phrases.some((phrase) => normalized.includes(phrase)))?.code
 }
 
+const configurationWords = [
+  "responseJsonSchema",
+  "responseSchema",
+  "additionalProperties",
+  "anyOf",
+  "oneOf",
+  "type",
+  "nesting",
+  "depth",
+  "scorecard",
+  "score",
+  "thinking",
+  "model",
+  "billing",
+  "location",
+  "schema",
+  "states",
+  "constraint",
+  "enum",
+  "property",
+  "properties",
+  "required",
+  "token",
+  "limit",
+  "max",
+  "min",
+  "unsupported",
+  "invalid",
+  "array",
+  "null",
+  "integer",
+  "format",
+  "disabled",
+].map((word) => ({ word, pattern: new RegExp("(?:^|[^a-z0-9])" + word + "(?:$|[^a-z0-9])", "i") }))
+
+/** Only fixed public configuration words may leave an otherwise unclassified provider error. */
+function configurationDiagnostic(message: string | undefined) {
+  const normalized = (message ?? "")
+    .replace(/response_json_schema/gi, "responseJsonSchema")
+    .replace(/response_schema/gi, "responseSchema")
+    .replace(/additional_properties/gi, "additionalProperties")
+    .replace(/any_of/gi, "anyOf")
+    .replace(/one_of/gi, "oneOf")
+  let result = ""
+  for (const { word, pattern } of configurationWords) {
+    if (!pattern.test(normalized)) continue
+    const candidate = result ? result + "." + word : word
+    if (candidate.length <= 100) result = candidate
+  }
+  return result || "unknown"
+}
+
 export async function requestGemini(
   request: ReturnType<typeof buildGeminiRequest>,
   apiKey: string,
@@ -302,6 +354,9 @@ export async function requestGemini(
           providerParameter = safeDiagnostic(
             parsed.data.error.details?.flatMap((detail) => detail.fieldViolations ?? [])[0]?.field,
           )
+          if (providerCode === "INVALID_ARGUMENT" && providerParameter === "unknown") {
+            providerParameter = configurationDiagnostic(parsed.data.error.message)
+          }
         }
       } catch {
         // Provider messages and field descriptions can contain credentials or submitted text.

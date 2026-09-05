@@ -212,7 +212,7 @@ export function buildModelRequest(request: RunRequest, prepared: PreparedSubmiss
     model,
     store: false,
     max_output_tokens: 6500,
-    reasoning: { effort: "low" },
+    reasoning: { effort: request.previous ? "medium" : "low" },
     instructions: criticInstructions + "\n\nCurated reference guidance:\n" + RAF_REFERENCES,
     input: [
       {
