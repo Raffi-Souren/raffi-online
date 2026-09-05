@@ -2,6 +2,21 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
+import YouTubePlayer from "react-player/youtube"
+import {
+  ChevronRight,
+  Disc3,
+  Maximize2,
+  Minimize2,
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Volume2,
+} from "lucide-react"
 import { useAudio, type Track } from "../context/AudioContext"
 import { FEATURED_RAFS_CRATE } from "@/data/audio-library"
 
@@ -211,50 +226,22 @@ interface MenuItem {
   submenu?: MenuScreen
 }
 
-interface IPodPlayerProps {
-  onExpandVideo?: (youtubeId: string, title: string) => void
-}
-
 const IPOD_WIDTH = 280
 const IPOD_HEIGHT = 460
 const MIN_USABLE_SCALE = 0.75
-
-// One detent per 30 degrees — twelve rows per full turn. Coarse enough that a
-// resting hand never registers, fine enough that a flick walks a long list.
 const WHEEL_DETENT_DEGREES = 30
-// Angles are unstable near the hub, where a pixel of travel swings the bearing
-// wildly. Ignore samples inside this fraction of the radius; 0.4 of the 160px
-// wheel clears the 60px Select button.
 const WHEEL_DEAD_ZONE_RATIO = 0.4
-// Pixels of copy to move per detent on screens that scroll text instead of
-// highlighting rows.
-const WHEEL_SCROLL_PIXELS_PER_DETENT = 28
-// Total swept rotation that promotes a press from "tap" to "spin". Below this a
-// press is left completely alone so it lands on MENU, a skip button or
-// play/pause; above it the wheel takes over the pointer and eats the closing
-// click. Both effects share this one threshold so a press can never fall
-// between them and do nothing at all.
 const WHEEL_GESTURE_CONFIRM_DEGREES = 8
+const focusClass =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+const lcdFont = '"Lucida Grande", "Trebuchet MS", sans-serif'
+const ellipsis: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
 
-/**
- * Bearing of a point on the wheel, in degrees clockwise from 3 o'clock.
- *
- * Returns 0-359 so the seam sits at 3 o'clock, and `null` inside the dead zone
- * so callers can drop the sample instead of acting on a meaningless angle.
- */
 function wheelBearingDegrees(dx: number, dy: number, radius: number) {
   if (Math.hypot(dx, dy) < radius * WHEEL_DEAD_ZONE_RATIO) return null
-  const degrees = Math.atan2(dy, dx) * (180 / Math.PI)
-  return (degrees + 360) % 360
+  return (Math.atan2(dy, dx) * (180 / Math.PI) + 360) % 360
 }
 
-/**
- * Signed shortest rotation from one bearing to another.
- *
- * Bearings wrap at the 359/0 seam, so a pointer crossing it reads as a ~359
- * degree jump in the wrong direction. Folding the raw difference back into
- * (-180, 180] keeps one continuous drag continuous.
- */
 function shortestAngleDelta(fromDegrees: number, toDegrees: number) {
   let delta = (toDegrees - fromDegrees) % 360
   if (delta > 180) delta -= 360
@@ -262,7 +249,16 @@ function shortestAngleDelta(fromDegrees: number, toDegrees: number) {
   return delta
 }
 
-export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
+function formatTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00"
+  return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0")}`
+}
+
+type VideoStatus = "connecting" | "ready" | "playing" | "paused" | "buffering" | "error"
+
+export default function IPodPlayer() {
   const {
     currentTrack,
     isPlaying,
@@ -278,18 +274,23 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     repeatMode,
     toggleShuffle,
     cycleRepeatMode,
+    isLoading,
+    error,
+    volume,
+    setVolume,
+    seekTo,
   } = useAudio()
-
   const [currentScreen, setCurrentScreen] = useState<MenuScreen>("main")
-  const [menuStack, setMenuStack] = useState<MenuScreen[]>([])
+  const [menuStack, setMenuStack] = useState<{ screen: MenuScreen; index: number }[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [currentVideoPlaylist, setCurrentVideoPlaylist] = useState<Video[]>(ANALOG_DIGITAL_VIDEOS)
-  const [isVideoPlaying, setIsVideoPlaying] = useState(true)
+  const [videoRequested, setVideoRequested] = useState(false)
+  const [videoStatus, setVideoStatus] = useState<VideoStatus>("ready")
+  const [expandedVideo, setExpandedVideo] = useState(false)
   const [currentPodcast, setCurrentPodcast] = useState<Podcast | null>(null)
+  const [playbackControl, setPlaybackControl] = useState<"volume" | "seek">("volume")
   const [playerLayout, setPlayerLayout] = useState({ scale: 1, needsVerticalScroll: false })
-
   const playerViewportRef = useRef<HTMLDivElement>(null)
   const wheelRef = useRef<HTMLDivElement>(null)
   const lastAngleRef = useRef<number | null>(null)
@@ -298,35 +299,44 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   const scrollRotationRef = useRef(0)
   const lastScrollAtRef = useRef(0)
   const wheelDidRotateRef = useRef(false)
-  // Mouse, touch and pen all arrive as pointer events, so one captured pointer
-  // id is the whole gesture bookkeeping.
   const wheelPointerIdRef = useRef<number | null>(null)
-  const videoIframeRef = useRef<HTMLIFrameElement>(null)
-  const selectedItemRef = useRef<HTMLDivElement>(null)
+  const videoPlayerRef = useRef<YouTubePlayer>(null)
+  const selectedItemRef = useRef<HTMLButtonElement>(null)
   const menuListRef = useRef<HTMLDivElement>(null)
   const screenScrollRef = useRef<HTMLDivElement>(null)
+  const currentVideo = currentVideoPlaylist[currentVideoIndex]
 
-  const handleVideoPlayPause = useCallback(() => {
-    if (videoIframeRef.current?.contentWindow) {
-      if (isVideoPlaying) {
-        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*")
-      } else {
-        videoIframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', "*")
-      }
-      setIsVideoPlaying(!isVideoPlaying)
-    }
-  }, [isVideoPlaying])
+  const navigate = useCallback(
+    (screen: MenuScreen, index = selectedIndex) => {
+      setMenuStack((stack) => [...stack, { screen: currentScreen, index }])
+      setCurrentScreen(screen)
+      setSelectedIndex(0)
+    },
+    [currentScreen, selectedIndex],
+  )
 
-  const formatTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return "0:00"
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
+  const playVideo = useCallback(
+    (videos: Video[], index: number) => {
+      pauseTrack()
+      setCurrentVideoPlaylist(videos)
+      setCurrentVideoIndex(index)
+      setVideoStatus("connecting")
+      setVideoRequested(true)
+      navigate("videoPlayer", index)
+    },
+    [navigate, pauseTrack],
+  )
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
+  const playMusic = useCallback(
+    (tracks: Track[], index: number) => {
+      setPlaylist(tracks)
+      playTrack(tracks[index])
+      navigate("nowPlaying", index)
+    },
+    [navigate, playTrack, setPlaylist],
+  )
 
-  const getMenuItems = useCallback((): MenuItem[] => {
+  const menuItems: MenuItem[] = (() => {
     switch (currentScreen) {
       case "main":
         return [
@@ -335,7 +345,7 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
           { label: "Podcasts / Talks", submenu: "podcasts" },
           { label: "Now Playing", submenu: "nowPlaying" },
           { label: "Settings", submenu: "settings" },
-          { label: "About", submenu: "about" },
+          { label: "About Raffi", submenu: "about" },
         ]
       case "music":
         return [{ label: "Playlists", submenu: "playlists" }]
@@ -348,194 +358,185 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
         return [{ label: "Playlists", submenu: "videoPlaylists" }]
       case "videoPlaylists":
         return [
-          { label: "DJ SETS", submenu: "djSets" },
+          { label: "DJ Sets", submenu: "djSets" },
           { label: "ANALOG & DIGITAL", submenu: "analogDigital" },
         ]
       case "analogDigital":
         return ANALOG_DIGITAL_VIDEOS.map((video, index) => ({
           label: video.title,
-          action: () => {
-            setCurrentVideoPlaylist(ANALOG_DIGITAL_VIDEOS)
-            setCurrentVideo(video)
-            setCurrentVideoIndex(index)
-            setIsVideoPlaying(true)
-            setCurrentScreen("videoPlayer")
-          },
+          action: () => playVideo(ANALOG_DIGITAL_VIDEOS, index),
         }))
       case "djSets":
         return DJ_SETS.map((video, index) => ({
           label: video.title,
-          action: () => {
-            setCurrentVideoPlaylist(DJ_SETS)
-            setCurrentVideo(video)
-            setCurrentVideoIndex(index)
-            setIsVideoPlaying(true)
-            setCurrentScreen("videoPlayer")
-          },
+          action: () => playVideo(DJ_SETS, index),
         }))
       case "podcasts":
-        return PODCASTS.map((podcast) => ({
+        return PODCASTS.map((podcast, index) => ({
           label: podcast.title,
           action: () => {
             setCurrentPodcast(podcast)
-            setCurrentScreen("podcastDetail")
+            navigate("podcastDetail", index)
           },
         }))
-      case "podcastDetail":
-        return []
       case "badcompany":
-        return BADCOMPANY_MIXES.map((track) => ({
+        return BADCOMPANY_MIXES.map((track, index) => ({
           label: track.title,
-          action: () => {
-            setPlaylist(BADCOMPANY_MIXES)
-            playTrack(track)
-            setCurrentScreen("nowPlaying")
-          },
+          action: () => playMusic(BADCOMPANY_MIXES, index),
         }))
       case "rafscrate":
-        return FEATURED_RAFS_CRATE.map((track) => ({
+        return FEATURED_RAFS_CRATE.map((track, index) => ({
           label: track.title,
-          action: () => {
-            setPlaylist(FEATURED_RAFS_CRATE)
-            playTrack(track)
-            setCurrentScreen("nowPlaying")
-          },
+          action: () => playMusic(FEATURED_RAFS_CRATE, index),
         }))
       case "settings":
         return [
-          {
-            label: `Shuffle: ${shuffle ? "On" : "Off"}`,
-            action: toggleShuffle,
-          },
+          { label: `Shuffle: ${shuffle ? "On" : "Off"}`, action: toggleShuffle },
           {
             label: `Repeat: ${repeatMode === "off" ? "Off" : repeatMode === "one" ? "One" : "All"}`,
             action: cycleRepeatMode,
           },
-          { label: "EQ: Flat" },
         ]
-      case "about":
-        return [{ label: "BadCompany Radio" }, { label: "notgoodcompany.com" }, { label: "v1.0" }]
       default:
         return []
     }
-  }, [currentScreen, playTrack, setPlaylist, shuffle, repeatMode, toggleShuffle, cycleRepeatMode])
+  })()
 
-  const menuItems = getMenuItems()
+  const hasSelectableRows = menuItems.length > 0
+  const hasScrollableCopy = currentScreen === "podcastDetail" || currentScreen === "about"
+  const wheelCanRotate =
+    hasSelectableRows ||
+    hasScrollableCopy ||
+    currentScreen === "nowPlaying" ||
+    currentScreen === "videoPlayer"
 
-  // The wheel only ever moves something that already exists on screen. Now
-  // Playing and the video player have no rows and no scrollable copy, so the
-  // wheel stays inert there rather than inventing navigation or interrupting
-  // whatever is playing.
-  const hasSelectableRows =
-    currentScreen !== "nowPlaying" && currentScreen !== "videoPlayer" && menuItems.length > 0
-  const hasScrollableCopy = currentScreen === "podcastDetail"
-  const wheelCanRotate = hasSelectableRows || hasScrollableCopy
+  const handleVideoPlayPause = useCallback(() => {
+    const player = videoPlayerRef.current?.getInternalPlayer()
+    if (videoStatus === "playing" || videoStatus === "buffering") {
+      player?.pauseVideo?.()
+      setVideoRequested(false)
+    } else {
+      pauseTrack()
+      player?.playVideo?.()
+      setVideoRequested(true)
+    }
+  }, [pauseTrack, videoStatus])
 
-  // Seed the default playlist once, but never hijack a session that's already
-  // playing (e.g. a record dug out of the crate).
-  const seededPlaylistRef = useRef(false)
-  useEffect(() => {
-    if (seededPlaylistRef.current) return
-    seededPlaylistRef.current = true
-    if (!currentTrack) setPlaylist(BADCOMPANY_MIXES)
-  }, [currentTrack, setPlaylist])
+  const handlePlayPause = () => {
+    if (currentScreen === "videoPlayer") handleVideoPlayPause()
+    else if (isPlaying) pauseTrack()
+    else if (currentTrack) resumeTrack()
+    else playMusic(BADCOMPANY_MIXES, 0)
+  }
 
-  const handleSelect = useCallback(() => {
-    if (currentScreen === "nowPlaying") {
-      if (isPlaying) {
-        pauseTrack()
-      } else {
-        resumeTrack()
-      }
+  const activateItem = (index: number) => {
+    const item = menuItems[index]
+    if (item?.action) item.action()
+    else if (item?.submenu) navigate(item.submenu, index)
+  }
+
+  const watchPodcast = () => {
+    if (!currentPodcast) return
+    playVideo(
+      [{ id: currentPodcast.id, title: currentPodcast.title, youtubeId: currentPodcast.youtubeId }],
+      0,
+    )
+  }
+
+  const handleSelect = () => {
+    if (currentScreen === "nowPlaying") setPlaybackControl((mode) => (mode === "volume" ? "seek" : "volume"))
+    else if (currentScreen === "videoPlayer") handleVideoPlayPause()
+    else if (currentScreen === "podcastDetail") watchPodcast()
+    else activateItem(selectedIndex)
+  }
+
+  const handleBack = () => {
+    if (expandedVideo) {
+      setExpandedVideo(false)
       return
     }
+    const previous = menuStack[menuStack.length - 1]
+    if (!previous) return
+    if (currentScreen === "videoPlayer") setVideoRequested(false)
+    setMenuStack((stack) => stack.slice(0, -1))
+    setCurrentScreen(previous.screen)
+    setSelectedIndex(previous.index)
+  }
 
-    if (currentScreen === "videoPlayer") {
-      handleVideoPlayPause()
-      return
+  const changeVideo = (direction: number) => {
+    if (!currentVideoPlaylist.length) return
+    const count = currentVideoPlaylist.length
+    const offset = shuffle && count > 1 ? 1 + Math.floor(Math.random() * (count - 1)) : direction
+    const next = (currentVideoIndex + offset + count) % count
+    if (next === currentVideoIndex) {
+      videoPlayerRef.current?.seekTo(0, "seconds")
+      videoPlayerRef.current?.getInternalPlayer()?.playVideo?.()
+    } else {
+      setCurrentVideoIndex(next)
+      setVideoStatus("connecting")
     }
+    pauseTrack()
+    setVideoRequested(true)
+  }
 
-    const item = menuItems[selectedIndex]
-    if (item?.action) {
-      item.action()
-    } else if (item?.submenu) {
-      setMenuStack((prev) => [...prev, currentScreen])
-      setCurrentScreen(item.submenu)
-      setSelectedIndex(0)
-    }
-  }, [currentScreen, menuItems, selectedIndex, isPlaying, pauseTrack, resumeTrack, handleVideoPlayPause])
-
-  const handleBack = useCallback(() => {
-    if (menuStack.length > 0) {
-      const prevScreen = menuStack[menuStack.length - 1]
-      setMenuStack((prev) => prev.slice(0, -1))
-      setCurrentScreen(prevScreen)
-      setSelectedIndex(0)
-    }
-  }, [menuStack])
+  const handleVideoEnded = () => {
+    if (repeatMode === "one") {
+      videoPlayerRef.current?.seekTo(0, "seconds")
+      videoPlayerRef.current?.getInternalPlayer()?.playVideo?.()
+    } else if (repeatMode === "off" && !shuffle && currentVideoIndex === currentVideoPlaylist.length - 1) {
+      setVideoRequested(false)
+      setVideoStatus("paused")
+    } else changeVideo(1)
+  }
 
   const navigateByWheel = useCallback(
     (steps: number) => {
       if (!steps) return
-
-      if (hasSelectableRows) {
-        setSelectedIndex((prev) => Math.max(0, Math.min(menuItems.length - 1, prev + steps)))
-        return
-      }
-
-      if (hasScrollableCopy) {
-        // Detail screens have no highlighted rows, but the click wheel should
-        // still work like an iPod wheel and move their scrollable copy.
-        screenScrollRef.current?.scrollBy({
-          top: steps * WHEEL_SCROLL_PIXELS_PER_DETENT,
-          behavior: "auto",
-        })
-      }
+      if (hasSelectableRows)
+        setSelectedIndex((index) => Math.max(0, Math.min(menuItems.length - 1, index + steps)))
+      else if (hasScrollableCopy) screenScrollRef.current?.scrollBy({ top: steps * 28, behavior: "auto" })
+      else if (currentScreen === "nowPlaying" && playbackControl === "seek") seekTo(currentTime + steps * 5)
+      else setVolume(Math.max(0, Math.min(100, volume + steps * 5)))
     },
-    [hasScrollableCopy, hasSelectableRows, menuItems.length],
+    [
+      currentScreen,
+      currentTime,
+      hasScrollableCopy,
+      hasSelectableRows,
+      menuItems.length,
+      playbackControl,
+      seekTo,
+      setVolume,
+      volume,
+    ],
   )
 
-  // Bearing of a client point on the wheel, or null if the wheel is gone or the
-  // point sits in the hub dead zone.
   const readWheelBearing = useCallback((clientX: number, clientY: number) => {
-    const wheel = wheelRef.current
-    if (!wheel) return null
-
-    const rect = wheel.getBoundingClientRect()
-    const radius = rect.width / 2
-    if (radius <= 0) return null
-
-    return wheelBearingDegrees(clientX - (rect.left + radius), clientY - (rect.top + rect.height / 2), radius)
+    const rect = wheelRef.current?.getBoundingClientRect()
+    if (!rect || rect.width <= 0) return null
+    return wheelBearingDegrees(
+      clientX - (rect.left + rect.width / 2),
+      clientY - (rect.top + rect.height / 2),
+      rect.width / 2,
+    )
   }, [])
 
   const trackWheelRotation = useCallback(
     (clientX: number, clientY: number) => {
       const bearing = readWheelBearing(clientX, clientY)
-
       if (bearing === null) {
-        // Inside the dead zone: pause the gesture rather than end it, and
-        // re-seed on the way out so crossing the hub emits nothing.
         lastAngleRef.current = null
         return
       }
-
-      const previousBearing = lastAngleRef.current
+      const previous = lastAngleRef.current
       lastAngleRef.current = bearing
-      if (previousBearing === null) return
-
-      const delta = shortestAngleDelta(previousBearing, bearing)
+      if (previous === null) return
+      const delta = shortestAngleDelta(previous, bearing)
       accumulatedRotationRef.current += delta
       sweptRotationRef.current += Math.abs(delta)
-      if (sweptRotationRef.current >= WHEEL_GESTURE_CONFIRM_DEGREES) {
-        wheelDidRotateRef.current = true
-      }
-
-      // Emit every whole detent the pointer swept, so a fast spin moves several
-      // rows instead of getting stuck on one.
+      if (sweptRotationRef.current >= WHEEL_GESTURE_CONFIRM_DEGREES) wheelDidRotateRef.current = true
       const steps = Math.trunc(accumulatedRotationRef.current / WHEEL_DETENT_DEGREES)
       if (!steps) return
-
-      // Keep the leftover rotation so slow movement stays smooth.
       accumulatedRotationRef.current -= steps * WHEEL_DETENT_DEGREES
       navigateByWheel(steps)
     },
@@ -544,23 +545,17 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
 
   const handleJogWheelScroll = useCallback(
     (event: WheelEvent) => {
-      // Screens with nothing to move keep native scrolling.
       if (!wheelCanRotate) return
       event.preventDefault()
-
       const now = performance.now()
       if (now - lastScrollAtRef.current > 180) scrollRotationRef.current = 0
       lastScrollAtRef.current = now
-
-      const multiplier = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1
-      scrollRotationRef.current += event.deltaY * multiplier
-
-      const STEP = 36
-      const steps = Math.max(-3, Math.min(3, Math.trunc(scrollRotationRef.current / STEP)))
+      scrollRotationRef.current +=
+        event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1)
+      const steps = Math.max(-3, Math.min(3, Math.trunc(scrollRotationRef.current / 36)))
       if (!steps) return
-
       navigateByWheel(steps)
-      scrollRotationRef.current -= steps * STEP
+      scrollRotationRef.current -= steps * 36
     },
     [navigateByWheel, wheelCanRotate],
   )
@@ -568,116 +563,84 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
   useEffect(() => {
     const viewport = playerViewportRef.current
     if (!viewport) return
-
-    const updatePlayerLayout = () => {
-      const availableWidth = viewport.clientWidth
-      const availableHeight = viewport.clientHeight
-      if (availableWidth <= 0 || availableHeight <= 0) return
-
-      const widthScale = availableWidth / IPOD_WIDTH
-      const heightScale = availableHeight / IPOD_HEIGHT
-      const fitScale = Math.min(1, widthScale, heightScale)
-      // Never create horizontal overflow. On short screens, preserve a usable
-      // click wheel and let this local viewport scroll vertically instead.
-      const minimumScale = Math.min(1, widthScale, MIN_USABLE_SCALE)
-      const scale = Math.max(fitScale, minimumScale)
-      const needsVerticalScroll = IPOD_HEIGHT * scale > availableHeight + 1
-
-      setPlayerLayout((previous) => {
-        if (Math.abs(previous.scale - scale) < 0.001 && previous.needsVerticalScroll === needsVerticalScroll) {
-          return previous
-        }
-        return { scale, needsVerticalScroll }
-      })
+    const update = () => {
+      const { clientWidth: width, clientHeight: height } = viewport
+      if (width <= 0 || height <= 0) return
+      const scale = Math.max(
+        Math.min(1, width / IPOD_WIDTH, height / IPOD_HEIGHT),
+        Math.min(1, width / IPOD_WIDTH, MIN_USABLE_SCALE),
+      )
+      const needsVerticalScroll = IPOD_HEIGHT * scale > height + 1
+      setPlayerLayout((previous) =>
+        Math.abs(previous.scale - scale) < 0.001 && previous.needsVerticalScroll === needsVerticalScroll
+          ? previous
+          : { scale, needsVerticalScroll },
+      )
     }
-
-    updatePlayerLayout()
-
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", updatePlayerLayout)
-      return () => window.removeEventListener("resize", updatePlayerLayout)
-    }
-
-    const resizeObserver = new ResizeObserver(updatePlayerLayout)
-    resizeObserver.observe(viewport)
-    return () => resizeObserver.disconnect()
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(viewport)
+    return () => observer.disconnect()
   }, [])
 
-  // Keep the highlighted row in view when scrolling long lists so the selection
-  // never disappears off-screen. This nudges the list's own scrollTop instead of
-  // calling scrollIntoView, which would also drag the surrounding window and the
-  // page around while the wheel is being spun.
+  useEffect(() => {
+    playerViewportRef.current?.focus({ preventScroll: true })
+  }, [currentScreen])
+
   useEffect(() => {
     const row = selectedItemRef.current
     const list = menuListRef.current
     if (!row || !list) return
-
     const listRect = list.getBoundingClientRect()
     if (listRect.height <= 0) return
     const rowRect = row.getBoundingClientRect()
-    // The chassis is CSS-scaled, so convert measured client pixels back into
-    // the list's own unscaled scroll pixels.
-    const toScrollPixels = list.clientHeight / listRect.height
-
-    if (rowRect.top < listRect.top) {
-      list.scrollTop -= (listRect.top - rowRect.top) * toScrollPixels
-    } else if (rowRect.bottom > listRect.bottom) {
-      list.scrollTop += (rowRect.bottom - listRect.bottom) * toScrollPixels
-    }
+    const factor = list.clientHeight / listRect.height
+    if (rowRect.top < listRect.top) list.scrollTop -= (listRect.top - rowRect.top) * factor
+    else if (rowRect.bottom > listRect.bottom) list.scrollTop += (rowRect.bottom - listRect.bottom) * factor
   }, [currentScreen, selectedIndex])
 
-  // Guard against a stale selectedIndex when moving to a shorter menu.
   useEffect(() => {
-    setSelectedIndex((prev) => {
-      const maxIndex = Math.max(0, menuItems.length - 1)
-      return prev > maxIndex ? maxIndex : prev
-    })
-  }, [menuItems.length])
+    const wheel = wheelRef.current
+    if (!wheel) return
+    wheel.addEventListener("wheel", handleJogWheelScroll, { passive: false })
+    return () => wheel.removeEventListener("wheel", handleJogWheelScroll)
+  }, [handleJogWheelScroll])
 
-  const isCenterControl = (target: EventTarget | null) =>
-    target instanceof Element && target.closest("[data-wheel-center]") !== null
+  useEffect(() => {
+    if (currentScreen !== "videoPlayer" || videoStatus !== "connecting") return
+    const timeout = window.setTimeout(() => setVideoStatus("error"), 15000)
+    return () => window.clearTimeout(timeout)
+  }, [currentScreen, currentVideoIndex, videoStatus])
+
+  // A different desktop player can claim audio while the iPod is open.
+  useEffect(() => {
+    if (isPlaying && currentScreen === "videoPlayer") setVideoRequested(false)
+  }, [isPlaying, currentScreen])
 
   const handleWheelPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    // Secondary mouse buttons are not a spin. Touch and pen always report 0.
-    if (event.button > 0) return
-
-    // A fresh press ends the "this was a drag" state so the tap that follows
-    // reaches its button normally.
+    if (event.button > 0 || !event.isPrimary) return
     wheelDidRotateRef.current = false
-
-    // The hub owns Select; only the annulus rotates.
-    if (isCenterControl(event.target)) return
-    if (!wheelCanRotate) return
-    if (wheelPointerIdRef.current !== null) return
-    if (readWheelBearing(event.clientX, event.clientY) === null) return
-
+    if (event.target instanceof Element && event.target.closest("[data-wheel-center]")) return
+    if (
+      !wheelCanRotate ||
+      wheelPointerIdRef.current !== null ||
+      readWheelBearing(event.clientX, event.clientY) === null
+    )
+      return
     wheelPointerIdRef.current = event.pointerId
     lastAngleRef.current = null
     accumulatedRotationRef.current = 0
     sweptRotationRef.current = 0
-    // No pointer capture yet — capturing here would retarget the closing click
-    // to the wheel and kill every ordinary tap on the controls it covers.
     trackWheelRotation(event.clientX, event.clientY)
   }
 
   const handleWheelPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (wheelPointerIdRef.current !== event.pointerId) return
-    // Suppress page scrolling and text selection only while a spin is actually
-    // running; an idle pointer over the wheel behaves normally.
     if (event.cancelable) event.preventDefault()
     trackWheelRotation(event.clientX, event.clientY)
-
-    // Once this is definitely a spin, take the pointer so it survives leaving
-    // the 160px wheel — which happens constantly on the scaled-down phone
-    // layout — and so the release lands here to have its click swallowed.
-    //
-    // Only pointerup and pointercancel end the gesture. lostpointercapture must
-    // not: touch pointers are implicitly captured at pointerdown, so claiming
-    // them explicitly here fires a lostpointercapture for the implicit capture
-    // and would otherwise cancel the spin on its very first move.
-    if (wheelDidRotateRef.current && !event.currentTarget.hasPointerCapture(event.pointerId)) {
+    // Capture only confirmed spins so an ordinary press still clicks its button.
+    if (wheelDidRotateRef.current && !event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.setPointerCapture(event.pointerId)
-    }
   }
 
   const handleWheelPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -686,532 +649,608 @@ export default function IPodPlayer({ onExpandVideo }: IPodPlayerProps) {
     lastAngleRef.current = null
     accumulatedRotationRef.current = 0
     sweptRotationRef.current = 0
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-    // wheelDidRotateRef stays set so the click this release generates is
-    // swallowed below instead of firing MENU, play/pause or a skip button.
   }
 
   const handleWheelClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!wheelDidRotateRef.current) return
+    if (!wheelDidRotateRef.current || event.detail === 0) return
     wheelDidRotateRef.current = false
     event.preventDefault()
     event.stopPropagation()
   }
 
-  useEffect(() => {
-    const wheel = wheelRef.current
-    if (!wheel) return
-
-    wheel.addEventListener("wheel", handleJogWheelScroll, { passive: false })
-    return () => wheel.removeEventListener("wheel", handleJogWheelScroll)
-  }, [handleJogWheelScroll])
-
-  const getScreenTitle = () => {
-    switch (currentScreen) {
-      case "main":
-        return "iPod"
-      case "music":
-        return "Music"
-      case "playlists":
-        return "Playlists"
-      case "badcompany":
-        return "BadCompany"
-      case "rafscrate":
-        return "RAF's Crate"
-      case "nowPlaying":
-        return "Now Playing"
-      case "videos":
-        return "Videos"
-      case "videoPlaylists":
-        return "Playlists"
-      case "analogDigital":
-        return "ANALOG & DIGITAL"
-      case "djSets":
-        return "DJ SETS"
-      case "videoPlayer":
-        return currentVideo?.title || "Video"
-      case "podcasts":
-        return "Podcasts / Talks"
-      case "podcastDetail":
-        return currentPodcast?.show || "Talk"
-      case "settings":
-        return "Settings"
-      case "about":
-        return "About"
-      default:
-        return "iPod"
-    }
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.target instanceof HTMLInputElement) return
+    if (event.key === "ArrowDown") navigateByWheel(1)
+    else if (event.key === "ArrowUp") navigateByWheel(-1)
+    else if (event.key === "ArrowLeft" || event.key === "Backspace") handleBack()
+    else if (event.key === "ArrowRight") handleSelect()
+    else if (event.key === "Home" && hasSelectableRows) setSelectedIndex(0)
+    else if (event.key === "End" && hasSelectableRows) setSelectedIndex(menuItems.length - 1)
+    else if (
+      event.key === "Enter" &&
+      (event.target === event.currentTarget ||
+        (event.target instanceof Element && event.target.hasAttribute("data-ipod-row")))
+    )
+      handleSelect()
+    else if (event.key === " " && event.target === event.currentTarget) handlePlayPause()
+    else return
+    event.preventDefault()
+    event.stopPropagation()
   }
 
-  const handleNextVideo = useCallback(() => {
-    const nextIndex = (currentVideoIndex + 1) % currentVideoPlaylist.length
-    setCurrentVideoIndex(nextIndex)
-    setCurrentVideo(currentVideoPlaylist[nextIndex])
-    setIsVideoPlaying(true)
-  }, [currentVideoIndex, currentVideoPlaylist])
-
-  const handlePrevVideo = useCallback(() => {
-    const prevIndex = currentVideoIndex === 0 ? currentVideoPlaylist.length - 1 : currentVideoIndex - 1
-    setCurrentVideoIndex(prevIndex)
-    setCurrentVideo(currentVideoPlaylist[prevIndex])
-    setIsVideoPlaying(true)
-  }, [currentVideoIndex, currentVideoPlaylist])
-
-  const renderedWidth = IPOD_WIDTH * playerLayout.scale
-  const renderedHeight = IPOD_HEIGHT * playerLayout.scale
+  const titles: Record<MenuScreen, string> = {
+    main: "Raffi’s iPod",
+    music: "Music",
+    playlists: "Playlists",
+    badcompany: "BadCompany",
+    rafscrate: "RAF's Crate",
+    nowPlaying: "Now Playing",
+    videos: "Videos",
+    videoPlaylists: "Playlists",
+    analogDigital: "ANALOG & DIGITAL",
+    djSets: "DJ Sets",
+    videoPlayer: currentVideo?.title || "Video",
+    podcasts: "Podcasts / Talks",
+    podcastDetail: currentPodcast?.show || "Talk",
+    settings: "Settings",
+    about: "About Raffi",
+  }
+  const title = titles[currentScreen]
+  const videoActive = currentScreen === "videoPlayer"
+  const playing = videoActive ? videoStatus === "playing" : isPlaying && !isLoading && !error
+  const videoMessage = {
+    connecting: "Connecting to YouTube…",
+    ready: "Press play to start",
+    playing: "Playing",
+    paused: "Paused",
+    buffering: "Buffering…",
+    error: "Video unavailable. Open on YouTube.",
+  }[videoStatus]
+  const wheelButtonStyle: React.CSSProperties = {
+    position: "absolute",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: 0,
+    background: "transparent",
+    color: "#747976",
+    cursor: "pointer",
+    WebkitTapHighlightColor: "transparent",
+  }
 
   return (
     <div
       ref={playerViewportRef}
+      data-ipod-player
+      tabIndex={0}
+      aria-label="iPod player"
+      onKeyDown={handleKeyDown}
+      className={focusClass}
       style={{
         alignItems: "center",
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        justifyContent: playerLayout.needsVerticalScroll ? "flex-start" : "center",
+        justifyContent: playerLayout.needsVerticalScroll && !expandedVideo ? "flex-start" : "center",
         minHeight: 0,
         overflowX: "hidden",
         overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
         width: "100%",
+        outlineOffset: -2,
       }}
     >
       <div
         style={{
           flex: "0 0 auto",
-          height: `${renderedHeight}px`,
+          height: expandedVideo ? "100%" : IPOD_HEIGHT * playerLayout.scale,
           position: "relative",
-          width: `${renderedWidth}px`,
+          width: expandedVideo ? "100%" : IPOD_WIDTH * playerLayout.scale,
         }}
       >
         <div
-          className="relative select-none"
+          data-ipod-chassis
           style={{
-            width: `${IPOD_WIDTH}px`,
-            height: `${IPOD_HEIGHT}px`,
-            background: "linear-gradient(180deg, #e8e8e8 0%, #d4d4d4 50%, #c0c0c0 100%)",
-            borderRadius: "24px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)",
-            border: "1px solid #999",
-            transform: `scale(${playerLayout.scale})`,
+            position: "relative",
+            userSelect: "none",
+            width: expandedVideo ? "100%" : IPOD_WIDTH,
+            height: expandedVideo ? "100%" : IPOD_HEIGHT,
+            background: expandedVideo
+              ? "#151817"
+              : "linear-gradient(105deg, #c7cac7 0%, #fbfcf9 2%, #f5f6f2 46%, #e0e3dd 98%, #929892 100%)",
+            borderRadius: expandedVideo ? 8 : 28,
+            boxShadow: expandedVideo
+              ? "none"
+              : "0 14px 25px #12221f40, inset 0 1px 2px #fff, inset 0 -2px 4px #727b7280",
+            border: "1px solid #939b92",
+            transform: expandedVideo ? "none" : `scale(${playerLayout.scale})`,
             transformOrigin: "top left",
           }}
         >
-      <div
-        className="absolute"
-        style={{
-          top: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "200px",
-          height: "160px",
-          background: "#1a1a1a",
-          borderRadius: "4px",
-          padding: "4px",
-        }}
-      >
-        <div
-          className="flex h-full w-full flex-col overflow-hidden"
-          style={{
-            background: "linear-gradient(180deg, #b8c8b8 0%, #a8b8a8 100%)",
-            borderRadius: "2px",
-          }}
-        >
           <div
-            className="flex flex-shrink-0 items-center justify-between gap-1 px-2 py-1"
             style={{
-              background: "linear-gradient(180deg, #8898a8 0%, #7888a8 100%)",
-              borderBottom: "1px solid #6878a8",
+              position: "absolute",
+              top: expandedVideo ? 0 : 23,
+              left: expandedVideo ? 0 : 24,
+              width: expandedVideo ? "100%" : 230,
+              height: expandedVideo ? "100%" : 192,
+              background: "#333d34",
+              borderRadius: expandedVideo ? 8 : 8,
+              padding: expandedVideo ? 6 : 5,
+              boxShadow: expandedVideo ? "none" : "0 1px 1px #fff, inset 0 2px 4px #0008",
             }}
           >
-            {/* truncate + min-w-0: a long title like "Fred again.. — Boiler
-                Room London" used to wrap onto a second line, making this bar
-                taller than the 24px the screen below assumed and pushing the
-                Expand button out through the bezel. */}
-            <span
-              className="min-w-0 truncate text-xs font-bold"
-              style={{ color: "#000", fontFamily: "Chicago, system-ui" }}
-              title={getScreenTitle()}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                width: "100%",
+                overflow: "hidden",
+                background: "linear-gradient(#eaf0db, #d6dfc6)",
+                borderRadius: 3,
+                color: "#253026",
+                fontFamily: lcdFont,
+                fontSize: 12,
+              }}
             >
-              {getScreenTitle()}
-            </span>
-            <div className="flex flex-shrink-0 items-center gap-1">
-          {shuffle && (
-            <span className="text-xs font-bold" style={{ color: "#000" }} title="Shuffle on">
-              S
-            </span>
-          )}
-          {repeatMode !== "off" && (
-            <span className="text-xs font-bold" style={{ color: "#000" }} title={`Repeat ${repeatMode}`}>
-              {repeatMode === "one" ? "R1" : "R"}
-            </span>
-          )}
-              {isPlaying && (
-                <span className="text-xs" style={{ color: "#000" }}>
-                  ▶
+              <div
+                style={{
+                  display: "flex",
+                  flexShrink: 0,
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 6,
+                  padding: "5px 8px",
+                  height: 27,
+                  background: "linear-gradient(#f4f7e9, #c6d0b6)",
+                  borderBottom: "1px solid #98a58b",
+                }}
+              >
+                <span title={title} style={{ ...ellipsis, fontSize: 12, fontWeight: 700, minWidth: 0 }}>
+                  {title}
                 </span>
-              )}
-              <span className="text-xs" style={{ color: "#000" }}>
-                🔋
-              </span>
-            </div>
-          </div>
-
-          {/* flex-1 rather than calc(100% - 24px): the content area now derives
-              its height from whatever the header actually measures, so a taller
-              status bar can never overflow the screen. */}
-          <div className="min-h-0 flex-1 overflow-hidden p-1">
-            {currentScreen === "videoPlayer" && currentVideo ? (
-              // The video absorbs all leftover height; the caption and Expand
-              // button are flex-shrink-0 so they can never be clipped off the
-              // bottom. The old layout gave the frame a fixed 16:9 box that
-              // could not shrink (flex items default to min-height:auto), so on
-              // a long title the button overflowed a hidden container.
-              <div className="flex h-full flex-col items-center justify-center gap-1">
-                <div className="min-h-0 w-full flex-1 overflow-hidden rounded bg-black">
-                  <iframe
-                    ref={videoIframeRef}
-                    width="100%"
-                    height="100%"
-                    src={`https://www.youtube.com/embed/${currentVideo.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1`}
-                    title={currentVideo.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+                <div style={{ display: "flex", flexShrink: 0, alignItems: "center", gap: 4 }}>
+                  {shuffle && <Shuffle size={12} aria-label="Shuffle on" />}
+                  {repeatMode !== "off" &&
+                    (repeatMode === "one" ? (
+                      <Repeat1 size={13} aria-label="Repeat one" />
+                    ) : (
+                      <Repeat size={13} aria-label="Repeat all" />
+                    ))}
+                  {playing && <Play size={10} fill="currentColor" aria-label="Playing" />}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 17,
+                      height: 9,
+                      border: "1px solid #68785c",
+                      borderRadius: 1,
+                      boxShadow: "2px 0 0 -1px #68785c",
+                      background: "repeating-linear-gradient(90deg, #63765b 0 3px, transparent 3px 4px)",
+                      opacity: 0.6,
+                    }}
                   />
                 </div>
-                <p
-                  className="w-full flex-shrink-0 truncate text-center text-xs"
-                  style={{ color: "#000", fontSize: "9px" }}
-                >
-                  {currentVideo.title} ({currentVideoIndex + 1}/{currentVideoPlaylist.length})
-                </p>
-                {onExpandVideo && (
-                  <button
-                    onClick={() => onExpandVideo(currentVideo.youtubeId, currentVideo.title)}
-                    className="flex-shrink-0 rounded px-2 py-0.5 text-xs"
+              </div>
+              <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                {videoActive && currentVideo ? (
+                  <div
+                    style={{ display: "flex", height: "100%", flexDirection: "column", gap: 3, padding: 5 }}
+                  >
+                    <div
+                      data-ipod-video
+                      style={{ minHeight: 0, flex: 1, width: "100%", overflow: "hidden", background: "#000" }}
+                    >
+                      <YouTubePlayer
+                        ref={videoPlayerRef}
+                        url={`https://www.youtube.com/watch?v=${currentVideo.youtubeId}`}
+                        width="100%"
+                        height="100%"
+                        playing={videoRequested}
+                        controls
+                        playsinline
+                        volume={volume / 100}
+                        config={{ playerVars: { rel: 0 } }}
+                        onReady={() => setVideoStatus("ready")}
+                        onPlay={() => {
+                          pauseTrack()
+                          setVideoRequested(true)
+                          setVideoStatus("playing")
+                        }}
+                        onPause={() => {
+                          setVideoRequested(false)
+                          setVideoStatus("paused")
+                        }}
+                        onBuffer={() => setVideoStatus("buffering")}
+                        onBufferEnd={() =>
+                          setVideoStatus(
+                            videoPlayerRef.current?.getInternalPlayer()?.getPlayerState?.() === 1
+                              ? "playing"
+                              : "ready",
+                          )
+                        }
+                        onEnded={handleVideoEnded}
+                        onError={() => {
+                          setVideoRequested(false)
+                          setVideoStatus("error")
+                        }}
+                      />
+                    </div>
+                    <div role="status" style={{ ...ellipsis, fontSize: expandedVideo ? 12 : 9 }}>
+                      {videoMessage} · {currentVideoIndex + 1}/{currentVideoPlaylist.length}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 5,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <a
+                        className={focusClass}
+                        href={`https://www.youtube.com/watch?v=${currentVideo.youtubeId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: expandedVideo ? 12 : 9,
+                          color: "#254d7d",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        YouTube
+                      </a>
+                      <button
+                        className={focusClass}
+                        onClick={() => setExpandedVideo((value) => !value)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          border: "1px solid #6f805e",
+                          background: "#eef3e4",
+                          padding: "3px 6px",
+                          borderRadius: 3,
+                          fontSize: expandedVideo ? 12 : 10,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {expandedVideo ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                        {expandedVideo ? "Back to iPod" : "Expand"}
+                      </button>
+                    </div>
+                  </div>
+                ) : currentScreen === "podcastDetail" && currentPodcast ? (
+                  <div
+                    ref={screenScrollRef}
+                    style={{ height: "100%", overflowY: "auto", padding: 9, fontSize: 11 }}
+                  >
+                    <p style={{ fontWeight: 700, lineHeight: 1.25 }}>{currentPodcast.title}</p>
+                    <p style={{ marginTop: 5, lineHeight: 1.4 }}>{currentPodcast.description}</p>
+                    <button
+                      className={focusClass}
+                      onClick={watchPodcast}
+                      style={{
+                        width: "100%",
+                        margin: "8px 0",
+                        border: "1px solid #265488",
+                        background: "#376da1",
+                        color: "white",
+                        padding: 6,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Watch on iPod
+                    </button>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 7 }}>
+                      {[
+                        { label: "Apple", href: currentPodcast.apple },
+                        { label: "Spotify", href: currentPodcast.spotify },
+                        { label: "YouTube", href: currentPodcast.youtube },
+                      ].map((link) => (
+                        <a
+                          key={link.label}
+                          className={focusClass}
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#254d7d", textDecoration: "underline" }}
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : currentScreen === "nowPlaying" ? (
+                  <div
                     style={{
-                      background: "#3366cc",
-                      color: "#fff",
-                      fontSize: "8px",
-                      border: "1px solid #2255bb",
+                      height: "100%",
+                      padding: "9px 10px 5px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 5,
                     }}
                   >
-                    ⤢ Expand
-                  </button>
-                )}
-              </div>
-            ) : currentScreen === "podcastDetail" && currentPodcast ? (
-              <div ref={screenScrollRef} className="h-full overflow-y-auto px-2 py-1 text-left">
-                <p
-                  className="font-bold leading-tight"
-                  style={{ color: "#000", fontFamily: "Chicago, system-ui", fontSize: "11px" }}
-                >
-                  {currentPodcast.title}
-                </p>
-                <p className="mb-1" style={{ color: "#cc4400", fontSize: "9px" }}>
-                  {currentPodcast.show}
-                </p>
-                <p className="mb-2 leading-snug" style={{ color: "#333", fontSize: "9px" }}>
-                  {currentPodcast.description}
-                </p>
-                <button
-                  onClick={() => {
-                    const podcastVideo: Video = {
-                      id: currentPodcast.id,
-                      title: currentPodcast.title,
-                      youtubeId: currentPodcast.youtubeId,
-                    }
-                    setCurrentVideoPlaylist([podcastVideo])
-                    setCurrentVideo(podcastVideo)
-                    setCurrentVideoIndex(0)
-                    setIsVideoPlaying(true)
-                    setCurrentScreen("videoPlayer")
-                  }}
-                  className="w-full mb-2 rounded font-bold"
-                  style={{
-                    background: "#3366cc",
-                    color: "#fff",
-                    fontSize: "9px",
-                    padding: "4px 0",
-                    border: "1px solid #2255bb",
-                  }}
-                >
-                  ▶ Watch on iPod
-                </button>
-                <div className="flex gap-1">
-                  {[
-                    { label: "Apple", href: currentPodcast.apple },
-                    { label: "Spotify", href: currentPodcast.spotify },
-                    { label: "YouTube", href: currentPodcast.youtube },
-                  ].map((link) => (
+                    {currentTrack ? (
+                      <>
+                        <div style={{ display: "flex", gap: 9, alignItems: "center", minHeight: 45 }}>
+                          <div
+                            aria-hidden="true"
+                            style={{
+                              width: 44,
+                              height: 44,
+                              background: "#364535",
+                              borderRadius: 3,
+                              color: "#d7e1c7",
+                              display: "grid",
+                              placeItems: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Disc3 size={34} strokeWidth={1.2} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <p
+                              title={currentTrack.title}
+                              style={{ ...ellipsis, fontWeight: 700, fontSize: 11 }}
+                            >
+                              {currentTrack.title}
+                            </p>
+                            <p style={{ ...ellipsis, fontSize: 10, marginTop: 2 }}>{currentTrack.artist}</p>
+                          </div>
+                        </div>
+                        <input
+                          aria-label="Track position"
+                          className={focusClass}
+                          type="range"
+                          min={0}
+                          max={Math.max(duration, 1)}
+                          value={Math.min(currentTime, duration || 0)}
+                          step={1}
+                          disabled={!duration || !!error}
+                          onChange={(event) => seekTo(Number(event.target.value))}
+                          style={{ width: "100%", height: 12, accentColor: "#455a36", cursor: "pointer" }}
+                        />
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: 9,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          <span>{formatTime(currentTime)}</span>
+                          <span>−{formatTime(Math.max(0, duration - currentTime))}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 9 }}>
+                          <Volume2 size={12} />
+                          <input
+                            aria-label="Volume"
+                            className={focusClass}
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={5}
+                            value={volume}
+                            onChange={(event) => setVolume(Number(event.target.value))}
+                            style={{ minWidth: 0, width: "100%", height: 12, accentColor: "#455a36" }}
+                          />
+                          <span>{Math.round(volume)}%</span>
+                        </div>
+                        <p role="status" title={error || undefined} style={{ ...ellipsis, fontSize: 9 }}>
+                          {error
+                            ? "Unavailable — try next track"
+                            : isLoading
+                              ? "Connecting to SoundCloud…"
+                              : `${isPlaying ? "Playing" : "Paused"} · Wheel: ${playbackControl === "seek" ? "seek" : "volume"}`}
+                        </p>
+                      </>
+                    ) : (
+                      <div style={{ margin: "auto", textAlign: "center", fontSize: 11 }}>
+                        <Disc3 size={30} style={{ margin: "0 auto 8px" }} />
+                        <p>No track selected</p>
+                        <p style={{ marginTop: 4, fontSize: 10 }}>Press play or choose a playlist.</p>
+                      </div>
+                    )}
+                  </div>
+                ) : currentScreen === "about" ? (
+                  <div
+                    ref={screenScrollRef}
+                    style={{ height: "100%", overflowY: "auto", padding: 10, fontSize: 11, lineHeight: 1.5 }}
+                  >
+                    <strong>Raffi Khatchadourian</strong>
+                    <p style={{ marginTop: 5 }}>
+                      Field CTO at IBM. Co-founder of Bad Company and indify. Brooklyn, New York.
+                    </p>
+                    <p style={{ marginTop: 8 }}>
+                      Building AI products, digging for vinyl, and DJing with friends.
+                    </p>
                     <a
-                      key={link.label}
-                      href={link.href}
+                      className={focusClass}
+                      href="mailto:raffi@notgoodcompany.com"
+                      style={{
+                        display: "inline-block",
+                        marginTop: 8,
+                        color: "#254d7d",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      raffi@notgoodcompany.com
+                    </a>
+                    <p style={{ marginTop: 8 }}>
+                      Turn the wheel to browse. Press the center to select. MENU takes you back.
+                    </p>
+                    <p style={{ marginTop: 8 }}>
+                      While music plays, turn for volume. Press the center to switch to seeking.
+                    </p>
+                    <a
+                      className={focusClass}
+                      href="https://notgoodcompany.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 text-center rounded"
-                      style={{
-                        background: "#e0e0e0",
-                        color: "#000",
-                        fontSize: "8px",
-                        padding: "3px 0",
-                        border: "1px solid #aaa",
-                        textDecoration: "none",
-                      }}
+                      style={{ display: "inline-block", marginTop: 8, color: "#254d7d" }}
                     >
-                      {link.label}
+                      notgoodcompany.com
                     </a>
-                  ))}
-                </div>
-              </div>
-            ) : currentScreen === "nowPlaying" ? (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                {currentTrack ? (
-                  <>
-                    <div
-                      className="w-14 h-14 mb-2 flex items-center justify-center"
-                      style={{
-                        background: "linear-gradient(135deg, #FF5500 0%, #FF3300 100%)",
-                        borderRadius: "4px",
-                        border: "1px solid #333",
-                      }}
-                    >
-                      <span className="text-xl">🎵</span>
-                    </div>
-                    <p
-                      className="text-xs font-bold truncate w-full px-2"
-                      style={{ color: "#000", fontFamily: "Chicago, system-ui", fontSize: "10px" }}
-                    >
-                      {currentTrack.title}
-                    </p>
-                    <p className="text-xs truncate w-full px-2" style={{ color: "#333", fontSize: "9px" }}>
-                      {currentTrack.artist}
-                    </p>
-                    <div className="mt-2 w-full px-3">
-                      <div className="h-1.5 w-full rounded" style={{ background: "#666", border: "1px solid #444" }}>
-                        <div
-                          className="h-full rounded"
-                          style={{
-                            width: `${progressPercent}%`,
-                            background: "#333",
-                            transition: "width 0.5s linear",
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span style={{ color: "#333", fontSize: "8px", fontFamily: "monospace" }}>
-                          {formatTime(currentTime)}
-                        </span>
-                        <span style={{ color: "#333", fontSize: "8px", fontFamily: "monospace" }}>
-                          {formatTime(duration)}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs mt-1" style={{ color: "#333", fontSize: "9px" }}>
-                      {isPlaying ? "▶ Playing" : "❚❚ Paused"}
-                    </p>
-                  </>
+                  </div>
                 ) : (
-                  <div className="text-center">
-                    <p className="text-xs mb-2" style={{ color: "#333" }}>
-                      No track selected
-                    </p>
-                    <p className="text-xs" style={{ color: "#666", fontSize: "9px" }}>
-                      Go to Music → Playlists
-                    </p>
+                  <div ref={menuListRef} aria-label={title} style={{ overflowY: "auto", height: "100%" }}>
+                    {menuItems.map((item, index) => (
+                      <button
+                        key={`${currentScreen}-${index}`}
+                        ref={selectedIndex === index ? selectedItemRef : null}
+                        data-ipod-row
+                        data-selected={selectedIndex === index}
+                        tabIndex={selectedIndex === index ? 0 : -1}
+                        className={focusClass}
+                        onFocus={() => setSelectedIndex(index)}
+                        onClick={() => activateItem(index)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 6,
+                          width: "100%",
+                          border: 0,
+                          textAlign: "left",
+                          padding: "5px 8px",
+                          background:
+                            selectedIndex === index ? "linear-gradient(#4a88b7, #316490)" : "transparent",
+                          color: selectedIndex === index ? "white" : "#253026",
+                          fontFamily: lcdFont,
+                          fontSize: 12,
+                          lineHeight: "16px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span title={item.label} style={ellipsis}>
+                          {item.label}
+                        </span>
+                        {item.submenu && <ChevronRight size={12} style={{ flexShrink: 0 }} />}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
-            ) : (
-              <div ref={menuListRef} className="space-y-0 overflow-y-auto h-full">
-                {menuItems.map((item, index) => (
-                  <div
-                    key={index}
-                    ref={selectedIndex === index ? selectedItemRef : null}
-                    data-ipod-row
-                    data-selected={selectedIndex === index}
-                    className="flex items-center justify-between px-2 py-1"
-                    style={{
-                      background: selectedIndex === index ? "#3366cc" : "transparent",
-                      color: selectedIndex === index ? "#fff" : "#000",
-                      fontFamily: "Chicago, system-ui",
-                      fontSize: "11px",
-                    }}
-                  >
-                    <span className="truncate">{item.label}</span>
-                    {item.submenu && <span>▶</span>}
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div
-        ref={wheelRef}
-        aria-label="iPod click wheel. Rotate or scroll to navigate."
-        className="absolute cursor-pointer"
-        style={{
-          bottom: "40px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "160px",
-          height: "160px",
-          background: "linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 50%, #ccc 100%)",
-          borderRadius: "50%",
-          boxShadow: "inset 0 2px 10px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.1)",
-          // Only claim the touch gesture on screens the wheel can actually
-          // move; elsewhere a swipe over the wheel still scrolls the page.
-          touchAction: wheelCanRotate ? "none" : "auto",
-          WebkitTapHighlightColor: "transparent",
-        }}
-        onPointerDown={handleWheelPointerDown}
-        onPointerMove={handleWheelPointerMove}
-        onPointerUp={handleWheelPointerEnd}
-        onPointerCancel={handleWheelPointerEnd}
-        onClickCapture={handleWheelClickCapture}
-      >
-        <button
-          data-wheel-center
-          type="button"
-          aria-label={
-            currentScreen === "videoPlayer"
-              ? "Play or pause video"
-              : currentScreen === "nowPlaying"
-                ? "Play or pause track"
-                : "Select highlighted item"
-          }
-          className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
-          style={{
-            width: "60px",
-            height: "60px",
-            background: "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)",
-            borderRadius: "50%",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-            border: "none",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
-          }}
-          onClick={handleSelect}
-        />
-
-        <button
-          type="button"
-          aria-label="Back to previous menu"
-          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
-          style={{
-            alignItems: "flex-start",
-            cursor: "pointer",
-            display: "flex",
-            fontSize: "10px",
-            fontWeight: "bold",
-            color: "#333",
-            background: "none",
-            border: "none",
-            fontFamily: "system-ui",
-            height: "60px",
-            justifyContent: "center",
-            paddingTop: "8px",
-            top: 0,
-            WebkitTapHighlightColor: "transparent",
-            width: "80px",
-          }}
-          onClick={handleBack}
-        >
-          MENU
-        </button>
-
-        <button
-          type="button"
-          aria-label={currentScreen === "videoPlayer" ? "Previous video" : "Previous track"}
-          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
-          style={{
-            alignItems: "center",
-            cursor: "pointer",
-            display: "flex",
-            fontSize: "14px",
-            color: "#333",
-            background: "none",
-            border: "none",
-            height: "80px",
-            justifyContent: "flex-start",
-            left: 0,
-            paddingLeft: "12px",
-            WebkitTapHighlightColor: "transparent",
-            width: "50px",
-          }}
-          onClick={currentScreen === "videoPlayer" ? handlePrevVideo : previousTrack}
-        >
-          ⏮
-        </button>
-
-        <button
-          type="button"
-          aria-label={currentScreen === "videoPlayer" ? "Next video" : "Next track"}
-          className="absolute top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
-          style={{
-            alignItems: "center",
-            cursor: "pointer",
-            display: "flex",
-            fontSize: "14px",
-            color: "#333",
-            background: "none",
-            border: "none",
-            height: "80px",
-            justifyContent: "flex-end",
-            paddingRight: "12px",
-            right: 0,
-            WebkitTapHighlightColor: "transparent",
-            width: "50px",
-          }}
-          onClick={currentScreen === "videoPlayer" ? handleNextVideo : nextTrack}
-        >
-          ⏭
-        </button>
-
-        <button
-          type="button"
-          aria-label={currentScreen === "videoPlayer" ? "Play or pause video" : "Play or pause track"}
-          className="absolute left-1/2 -translate-x-1/2 transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
-          style={{
-            alignItems: "flex-end",
-            bottom: 0,
-            cursor: "pointer",
-            display: "flex",
-            fontSize: "12px",
-            color: "#333",
-            background: "none",
-            border: "none",
-            height: "60px",
-            justifyContent: "center",
-            paddingBottom: "8px",
-            WebkitTapHighlightColor: "transparent",
-            width: "80px",
-          }}
-          onClick={
-            currentScreen === "videoPlayer" ? handleVideoPlayPause : () => (isPlaying ? pauseTrack() : resumeTrack())
-          }
-        >
-          {currentScreen === "videoPlayer" ? (isVideoPlaying ? "❚❚" : "▶") : "▶❚❚"}
-        </button>
-      </div>
-
-      <div
-        className="absolute left-1/2 -translate-x-1/2 text-center"
-        style={{
-          bottom: "12px",
-          fontSize: "10px",
-          color: "#666",
-          fontFamily: "system-ui",
-          fontWeight: "500",
-        }}
-      >
-        iPod
-      </div>
+          <div
+            aria-hidden="true"
+            style={{
+              display: expandedVideo ? "none" : "block",
+              position: "absolute",
+              top: 233,
+              width: "100%",
+              textAlign: "center",
+              color: "#a1a7a0",
+              fontSize: 10,
+              fontFamily: lcdFont,
+            }}
+          >
+            iPod
+          </div>
+          <div
+            ref={wheelRef}
+            aria-label="iPod click wheel. Rotate or scroll to navigate."
+            style={{
+              display: expandedVideo ? "none" : "block",
+              position: "absolute",
+              bottom: 35,
+              left: 55,
+              width: 170,
+              height: 170,
+              background: "linear-gradient(135deg, #fafbf8, #e5e8e1)",
+              borderRadius: "50%",
+              boxShadow: "inset 0 1px 3px #626e6233, 0 1px 1px #fff",
+              touchAction: wheelCanRotate ? "none" : "auto",
+              WebkitTapHighlightColor: "transparent",
+            }}
+            onPointerDown={handleWheelPointerDown}
+            onPointerMove={handleWheelPointerMove}
+            onPointerUp={handleWheelPointerEnd}
+            onPointerCancel={handleWheelPointerEnd}
+            onPointerLeave={(event) => {
+              if (!event.currentTarget.hasPointerCapture(event.pointerId)) handleWheelPointerEnd(event)
+            }}
+            onClickCapture={handleWheelClickCapture}
+          >
+            <button
+              data-wheel-center
+              type="button"
+              aria-label={
+                videoActive
+                  ? "Play or pause video"
+                  : currentScreen === "nowPlaying"
+                    ? "Switch between volume and seek"
+                    : currentScreen === "podcastDetail"
+                      ? "Watch podcast"
+                      : "Select highlighted item"
+              }
+              className={`${focusClass} transition-transform active:scale-95`}
+              onClick={handleSelect}
+              style={{
+                ...wheelButtonStyle,
+                zIndex: 1,
+                left: 53,
+                top: 53,
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #f8faf5, #dce1d7)",
+                boxShadow: "0 1px 3px #87908077, inset 0 1px 2px #fff",
+              }}
+            />
+            <button
+              type="button"
+              aria-label="Back to previous menu"
+              className={`${focusClass} hover:opacity-70`}
+              onClick={handleBack}
+              style={{
+                ...wheelButtonStyle,
+                top: 0,
+                left: 45,
+                width: 80,
+                height: 49,
+                fontFamily: lcdFont,
+                fontWeight: 700,
+                fontSize: 11,
+              }}
+            >
+              MENU
+            </button>
+            <button
+              type="button"
+              aria-label={videoActive ? "Previous video" : "Previous track"}
+              className={`${focusClass} hover:opacity-70`}
+              onClick={videoActive ? () => changeVideo(-1) : previousTrack}
+              style={{ ...wheelButtonStyle, top: 55, left: 0, width: 49, height: 60 }}
+            >
+              <SkipBack size={20} fill="currentColor" strokeWidth={1} />
+            </button>
+            <button
+              type="button"
+              aria-label={videoActive ? "Next video" : "Next track"}
+              className={`${focusClass} hover:opacity-70`}
+              onClick={videoActive ? () => changeVideo(1) : nextTrack}
+              style={{ ...wheelButtonStyle, top: 55, right: 0, width: 49, height: 60 }}
+            >
+              <SkipForward size={20} fill="currentColor" strokeWidth={1} />
+            </button>
+            <button
+              type="button"
+              aria-label={videoActive ? "Play or pause video" : "Play or pause track"}
+              className={`${focusClass} hover:opacity-70`}
+              onClick={handlePlayPause}
+              style={{ ...wheelButtonStyle, bottom: 0, left: 45, width: 80, height: 49, gap: 3 }}
+            >
+              <Play size={13} fill="currentColor" />
+              <Pause size={13} fill="currentColor" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

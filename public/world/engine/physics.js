@@ -1,8 +1,8 @@
 /**
  * RAFFI WORLD — collision and vehicle dynamics.
  *
- * Colliders are axis-aligned boxes, circles and ramps in a uniform spatial
- * hash. The player and every actor is a circle; resolution is iterative
+ * Static boxes, circles and ramps live in a uniform spatial hash, with nearby
+ * actor bodies supplied separately. Resolution is iterative
  * push-out. Collisions push and slow, they never destroy — see WORLD-BIBLE §2.
  *
  * Note for the replay mechanic: the order colliders come out of the hash is
@@ -35,8 +35,12 @@ export class CollisionWorld {
       minX = collider.x - ext; maxX = collider.x + ext
       minZ = collider.z - ext; maxZ = collider.z + ext
     } else {
-      minX = collider.x - collider.hx; maxX = collider.x + collider.hx
-      minZ = collider.z - collider.hz; maxZ = collider.z + collider.hz
+      const cos = Math.abs(Math.cos(collider.ry || 0))
+      const sin = Math.abs(Math.sin(collider.ry || 0))
+      const ex = cos * collider.hx + sin * collider.hz
+      const ez = sin * collider.hx + cos * collider.hz
+      minX = collider.x - ex; maxX = collider.x + ex
+      minZ = collider.z - ez; maxZ = collider.z + ez
     }
     const x0 = Math.floor(minX / CELL)
     const x1 = Math.floor(maxX / CELL)
@@ -80,7 +84,7 @@ const scratch = []
  * Pushes a circle out of everything it overlaps.
  * @returns {{x, y, z, hit, normalX, normalZ}} resolved position + surface info
  */
-export function resolveCircle(world, x, z, r, iterations = 2) {
+export function resolveCircle(world, x, z, r, iterations = 2, bodies = []) {
   let px = x
   let pz = z
   let hit = false
@@ -90,18 +94,21 @@ export function resolveCircle(world, x, z, r, iterations = 2) {
 
   for (let iter = 0; iter < iterations; iter++) {
     const near = world.query(px, pz, r + 1, scratch)
+    // Static geometry gets the final correction when an actor crowds a wall.
+    near.unshift(...bodies)
     for (const c of near) {
       if (c.type === 'circle') {
         const dx = px - c.x
         const dz = pz - c.z
         const dist = Math.hypot(dx, dz)
         const min = r + c.r
-        if (dist < min && dist > 0.0001) {
-          const push = (min - dist) / dist
-          px += dx * push
-          pz += dz * push
-          nx += dx / dist
-          nz += dz / dist
+        if (dist < min) {
+          const directionX = dist > 0.0001 ? dx / dist : 1
+          const directionZ = dist > 0.0001 ? dz / dist : 0
+          px += directionX * (min - dist)
+          pz += directionZ * (min - dist)
+          nx += directionX
+          nz += directionZ
           hit = true
         }
       } else if (c.type === 'ramp') {
@@ -112,33 +119,30 @@ export function resolveCircle(world, x, z, r, iterations = 2) {
           groundY = Math.max(groundY, t * c.h)
         }
       } else {
-        const cx = clamp(px, c.x - c.hx, c.x + c.hx)
-        const cz = clamp(pz, c.z - c.hz, c.z + c.hz)
-        const dx = px - cx
-        const dz = pz - cz
+        const angle = c.ry || 0
+        const local = worldToLocal(px - c.x, pz - c.z, -angle)
+        const closestX = clamp(local.x, -c.hx, c.hx)
+        const closestZ = clamp(local.z, -c.hz, c.hz)
+        const dx = local.x - closestX
+        const dz = local.z - closestZ
         const distSq = dx * dx + dz * dz
         if (distSq < r * r) {
+          let pushX = 0, pushZ = 0
           if (distSq > 0.000001) {
             const dist = Math.sqrt(distSq)
-            const push = (r - dist) / dist
-            px += dx * push
-            pz += dz * push
-            nx += dx / dist
-            nz += dz / dist
+            pushX = dx * (r - dist) / dist
+            pushZ = dz * (r - dist) / dist
           } else {
-            // Centre is inside the box — eject along the shallowest axis.
-            const ox = c.hx + r - Math.abs(px - c.x)
-            const oz = c.hz + r - Math.abs(pz - c.z)
-            if (ox < oz) {
-              const s = Math.sign(px - c.x) || 1
-              px = c.x + s * (c.hx + r)
-              nx += s
-            } else {
-              const s = Math.sign(pz - c.z) || 1
-              pz = c.z + s * (c.hz + r)
-              nz += s
-            }
+            const ox = c.hx + r - Math.abs(local.x)
+            const oz = c.hz + r - Math.abs(local.z)
+            if (ox < oz) pushX = (Math.sign(local.x) || 1) * ox
+            else pushZ = (Math.sign(local.z) || 1) * oz
           }
+          const push = worldToLocal(pushX, pushZ, angle)
+          const length = Math.hypot(push.x, push.z)
+          px += push.x
+          pz += push.z
+          if (length > 0) { nx += push.x / length; nz += push.z / length }
           hit = true
         }
       }
@@ -154,6 +158,21 @@ export function resolveCircle(world, x, z, r, iterations = 2) {
     normalX: nl > 0 ? nx / nl : 0,
     normalZ: nl > 0 ? nz / nl : 0,
   }
+}
+
+/** Resolve the whole movement path so a sprint or long frame cannot skip a thin body. */
+export function moveCircle(world, x, z, dx, dz, r, bodies = []) {
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / Math.max(0.1, r * 0.5)))
+  let result = { x, z, y: 0, hit: false, normalX: 0, normalZ: 0 }
+  let normalX = 0, normalZ = 0, hit = false
+  for (let step = 0; step < steps; step++) {
+    result = resolveCircle(world, result.x + dx / steps, result.z + dz / steps, r, 4, bodies)
+    hit ||= result.hit
+    normalX += result.normalX
+    normalZ += result.normalZ
+  }
+  const length = Math.hypot(normalX, normalZ)
+  return { ...result, hit, normalX: length ? normalX / length : 0, normalZ: length ? normalZ / length : 0 }
 }
 
 function worldToLocal(dx, dz, ry) {

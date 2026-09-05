@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface Score {
   player_name: string
@@ -19,26 +19,37 @@ export default function Leaderboard({ gameName, currentScore, onClose }: Leaderb
   const [scores, setScores] = useState<Score[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const requestRef = useRef<AbortController | null>(null)
 
-  useEffect(() => {
-    fetchScores()
-  }, [gameName])
-
-  const fetchScores = async () => {
+  const fetchScores = useCallback(async () => {
+    requestRef.current?.abort()
+    const controller = new AbortController()
+    requestRef.current = controller
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/scores?game=${gameName}&limit=10`)
+      const res = await fetch(`/api/scores?game=${encodeURIComponent(gameName)}&limit=10`, {
+        signal: controller.signal,
+      })
       if (!res.ok) throw new Error("Failed to fetch")
       const data = await res.json()
-      setScores(data.scores || [])
+      if (!controller.signal.aborted) setScores(data.scores || [])
     } catch (err) {
+      if (controller.signal.aborted) return
       console.error("Failed to fetch scores:", err)
       setError("Could not load leaderboard")
     } finally {
-      setLoading(false)
+      if (requestRef.current === controller) {
+        requestRef.current = null
+        if (!controller.signal.aborted) setLoading(false)
+      }
     }
-  }
+  }, [gameName])
+
+  useEffect(() => {
+    void fetchScores()
+    return () => requestRef.current?.abort()
+  }, [fetchScores])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

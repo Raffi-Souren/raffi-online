@@ -12,10 +12,72 @@ let rooms = new Map()
 let cityCollision = null
 let activeId = null
 let returnPose = null
+let returnGrade = null
+const hiddenExterior = new Set()
+
+/** Exterior-only actors that must not render over a swapped-in room. */
+export function isExteriorEntity(object) {
+  const name = object?.name || ''
+  return name === 'water' ||
+    name === 'replay-ghosts' ||
+    name.startsWith('ped:') ||
+    name.startsWith('npc') ||
+    name.startsWith('vehicle:') ||
+    name.startsWith('pursuer-')
+}
+
+function belongsTo(object, root) {
+  if (!root) return false
+  for (let current = object; current; current = current.parent) {
+    if (current === root) return true
+  }
+  return false
+}
+
+/**
+ * Hide only entities that are visible now and remember exactly which objects
+ * changed. The player root is excluded even though its mesh is named `ped:*`.
+ */
+export function hideExteriorEntities(root, playerRoot = null, hidden = new Set()) {
+  root?.traverse((object) => {
+    if (!object.visible || !isExteriorEntity(object) || belongsTo(object, playerRoot)) return
+    object.visible = false
+    hidden.add(object)
+  })
+  return hidden
+}
+
+/** Restore only objects hidden by hideExteriorEntities; pooled actors stay off. */
+export function restoreExteriorEntities(hidden = hiddenExterior) {
+  for (const object of hidden) object.visible = true
+  hidden.clear()
+}
+
+export function captureGradeState(grade) {
+  return {
+    current: grade.current,
+    target: grade.target,
+    blend: grade.blend,
+    forced: grade.forced ?? null,
+  }
+}
+
+export function restoreGradeState(grade, saved) {
+  if (!saved) return grade
+  grade.current = saved.current
+  grade.target = saved.target
+  grade.blend = saved.blend
+  grade.forced = saved.forced
+  return grade
+}
 
 export function initInteriors(options) {
   deps = options
   cityCollision = options.cityCollision
+  activeId = null
+  returnPose = null
+  returnGrade = null
+  hiddenExterior.clear()
   rooms = buildAllInteriors(
     data.world,
     options.atlas,
@@ -86,6 +148,8 @@ export function enterInterior(id, options = {}) {
       z: state.player.z,
       yaw: state.player.yaw,
     }
+    returnGrade = captureGradeState(state.grade)
+    hideExteriorEntities(deps.exteriorRoot || deps.scene, deps.playerRoot, hiddenExterior)
   } else {
     const prev = rooms.get(activeId)
     if (prev) prev.group.visible = false
@@ -123,12 +187,13 @@ export function exitInterior() {
   state.interior = null
   if (pose) teleportPlayer(pose.x, pose.z, pose.yaw || 0)
 
-  const grade = state.grade.forced || 'dusk'
-  state.grade.current = grade
-  state.grade.target = grade
-  state.grade.blend = 1
-  applyGrade(grade, 1)
+  if (returnGrade) {
+    restoreGradeState(state.grade, returnGrade)
+    applyGrade(returnGrade.target, returnGrade.blend, returnGrade.current)
+  }
+  restoreExteriorEntities(hiddenExterior)
   returnPose = null
+  returnGrade = null
   deps.onExit?.(room)
   return true
 }

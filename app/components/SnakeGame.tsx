@@ -5,20 +5,36 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import Leaderboard from "./Leaderboard"
 import GameOverScreen from "./GameOverScreen"
 import GameControls from "./GameControls"
-import { SNAKE_LEVELS, loadGameProgress, saveGameProgress, type GameProgress } from "@/lib/game-utils"
+import HandheldConsole from "../../components/ui/HandheldConsole"
+import { useWindowActivity } from "../../components/ui/WindowShell"
+import {
+  SNAKE_LEVELS,
+  loadGameProgress,
+  saveGameProgress,
+  readGameStorage,
+  writeGameStorage,
+  type GameProgress,
+} from "@/lib/game-utils"
+import {
+  chooseSnakeFood,
+  moveSnake,
+  placeSnakeObstacles,
+  queueSnakeTurn,
+  type SnakeDirection,
+} from "@/lib/handheld-engine"
 
 interface Position {
   x: number
   y: number
 }
 
-type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT"
 type GameView = "menu" | "playing" | "paused" | "gameover" | "leaderboard"
 
 const GRID_SIZE = 20
 const CANVAS_SIZE = 400
 
 export default function SnakeGame() {
+  const { active } = useWindowActivity()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [gameView, setGameView] = useState<GameView>("menu")
   const [score, setScore] = useState(0)
@@ -27,18 +43,40 @@ export default function SnakeGame() {
   const [snake, setSnake] = useState<Position[]>([{ x: 200, y: 200 }])
   const [food, setFood] = useState<Position>({ x: 100, y: 100 })
   const [obstacles, setObstacles] = useState<Position[]>([])
-  const [direction, setDirection] = useState<Direction>("RIGHT")
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [progress, setProgress] = useState<GameProgress | null>(null)
+  const [isNewHighScore, setIsNewHighScore] = useState(false)
+  const [boardCleared, setBoardCleared] = useState(false)
 
   const gameLoopRef = useRef<NodeJS.Timeout>()
+  const snakeRef = useRef<Position[]>([{ x: 200, y: 200 }])
+  const gameOverHandledRef = useRef(false)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const directionRef = useRef<SnakeDirection>("RIGHT")
+  const turnsRef = useRef<SnakeDirection[]>([])
+  const queueTurn = useCallback((next: SnakeDirection) => {
+    turnsRef.current = queueSnakeTurn(directionRef.current, turnsRef.current, next)
+  }, [])
+
+  useEffect(() => {
+    if (!active) setGameView((view) => (view === "playing" ? "paused" : view))
+    const pause = () => setGameView((view) => (view === "playing" ? "paused" : view))
+    const visibility = () => {
+      if (document.hidden) pause()
+    }
+    window.addEventListener("blur", pause)
+    document.addEventListener("visibilitychange", visibility)
+    return () => {
+      window.removeEventListener("blur", pause)
+      document.removeEventListener("visibilitychange", visibility)
+    }
+  }, [active])
 
   // Load progress
   useEffect(() => {
     setProgress(loadGameProgress("snake"))
-    const savedHighScore = localStorage.getItem("snake-high-score")
-    if (savedHighScore) setHighScore(Number.parseInt(savedHighScore))
+    const savedHighScore = Number(readGameStorage("snake-high-score"))
+    if (Number.isFinite(savedHighScore) && savedHighScore > 0) setHighScore(savedHighScore)
   }, [])
 
   // Timer
@@ -52,52 +90,27 @@ export default function SnakeGame() {
     return SNAKE_LEVELS[Math.min(lvl - 1, SNAKE_LEVELS.length - 1)]
   }
 
-  const generateFood = useCallback((currentSnake: Position[], currentObstacles: Position[]): Position => {
-    let newFood: Position
-    do {
-      newFood = {
-        x: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)) * GRID_SIZE,
-        y: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)) * GRID_SIZE,
-      }
-    } while (
-      currentSnake.some((s) => s.x === newFood.x && s.y === newFood.y) ||
-      currentObstacles.some((o) => o.x === newFood.x && o.y === newFood.y)
-    )
-    return newFood
-  }, [])
-
-  const generateObstacles = useCallback((count: number, currentSnake: Position[]): Position[] => {
-    const obs: Position[] = []
-    for (let i = 0; i < count; i++) {
-      let pos: Position
-      do {
-        pos = {
-          x: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)) * GRID_SIZE,
-          y: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)) * GRID_SIZE,
-        }
-      } while (
-        currentSnake.some((s) => Math.abs(s.x - pos.x) < GRID_SIZE * 3 && Math.abs(s.y - pos.y) < GRID_SIZE * 3) ||
-        obs.some((o) => o.x === pos.x && o.y === pos.y)
-      )
-      obs.push(pos)
-    }
-    return obs
-  }, [])
-
   const startGame = useCallback(() => {
     const config = getLevelConfig(1)
     const initialSnake = [{ x: 200, y: 200 }]
-    const initialObstacles = generateObstacles(config.obstacles, initialSnake)
+    const initialObstacles = placeSnakeObstacles(config.obstacles, initialSnake)
+    const initialFood = chooseSnakeFood(initialSnake, initialObstacles)
+    if (!initialFood) return
 
+    gameOverHandledRef.current = false
+    snakeRef.current = initialSnake
     setGameView("playing")
     setScore(0)
     setLevel(1)
     setSnake(initialSnake)
-    setFood(generateFood(initialSnake, initialObstacles))
+    setFood(initialFood)
     setObstacles(initialObstacles)
-    setDirection("RIGHT")
+    directionRef.current = "RIGHT"
+    turnsRef.current = []
     setTimeElapsed(0)
-  }, [generateFood, generateObstacles])
+    setIsNewHighScore(false)
+    setBoardCleared(false)
+  }, [])
 
   // Update level based on score
   useEffect(() => {
@@ -109,13 +122,20 @@ export default function SnakeGame() {
     if (actualLevel !== level) {
       setLevel(actualLevel)
       const config = getLevelConfig(actualLevel)
-      setObstacles(generateObstacles(config.obstacles, snake))
+      setObstacles(placeSnakeObstacles(config.obstacles, snake, food))
     }
-  }, [score, level, gameView, snake, generateObstacles])
+  }, [score, level, gameView, snake, food])
 
   // Keyboard controls
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLButtonElement && (e.key === " " || e.key === "Enter")) return
+      if (!active || (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return
+      if (e.key === "Escape" && gameView === "paused") {
+        e.preventDefault()
+        setGameView("playing")
+        return
+      }
       if (gameView === "menu" || gameView === "gameover") {
         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Enter"].includes(e.key)) {
           e.preventDefault()
@@ -134,22 +154,22 @@ export default function SnakeGame() {
           case "ArrowUp":
           case "w":
             e.preventDefault()
-            if (direction !== "DOWN") setDirection("UP")
+            queueTurn("UP")
             break
           case "ArrowDown":
           case "s":
             e.preventDefault()
-            if (direction !== "UP") setDirection("DOWN")
+            queueTurn("DOWN")
             break
           case "ArrowLeft":
           case "a":
             e.preventDefault()
-            if (direction !== "RIGHT") setDirection("LEFT")
+            queueTurn("LEFT")
             break
           case "ArrowRight":
           case "d":
             e.preventDefault()
-            if (direction !== "LEFT") setDirection("RIGHT")
+            queueTurn("RIGHT")
             break
         }
       }
@@ -157,7 +177,7 @@ export default function SnakeGame() {
 
     window.addEventListener("keydown", handleKeyPress)
     return () => window.removeEventListener("keydown", handleKeyPress)
-  }, [gameView, direction, startGame])
+  }, [gameView, startGame, active, queueTurn])
 
   // Touch controls
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -178,16 +198,53 @@ export default function SnakeGame() {
 
     if (gameView === "playing") {
       if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 30 && direction !== "LEFT") setDirection("RIGHT")
-        else if (dx < -30 && direction !== "RIGHT") setDirection("LEFT")
+        if (dx > 30) queueTurn("RIGHT")
+        else if (dx < -30) queueTurn("LEFT")
       } else {
-        if (dy > 30 && direction !== "UP") setDirection("DOWN")
-        else if (dy < -30 && direction !== "DOWN") setDirection("UP")
+        if (dy > 30) queueTurn("DOWN")
+        else if (dy < -30) queueTurn("UP")
       }
     }
 
     touchStartRef.current = null
   }
+
+  const handleGameOver = useCallback(
+    (completed = false, finalScore = score) => {
+      if (gameOverHandledRef.current) return
+      gameOverHandledRef.current = true
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current)
+        gameLoopRef.current = undefined
+      }
+
+      const beatHighScore = finalScore > highScore
+      setIsNewHighScore(beatHighScore)
+      setBoardCleared(completed)
+      setScore(finalScore)
+      setGameView("gameover")
+
+      if (beatHighScore) {
+        setHighScore(finalScore)
+        writeGameStorage("snake-high-score", finalScore.toString())
+      }
+
+      if (progress) {
+        const newProgress: GameProgress = {
+          ...progress,
+          highScores: {
+            ...progress.highScores,
+            [level]: Math.max(progress.highScores[level] || 0, finalScore),
+          },
+          totalScore: progress.totalScore + finalScore,
+          gamesPlayed: progress.gamesPlayed + 1,
+        }
+        saveGameProgress("snake", newProgress)
+        setProgress(newProgress)
+      }
+    },
+    [score, highScore, level, progress],
+  )
 
   // Game loop
   useEffect(() => {
@@ -195,81 +252,33 @@ export default function SnakeGame() {
 
     const config = getLevelConfig(level)
 
-    gameLoopRef.current = setInterval(() => {
-      setSnake((currentSnake) => {
-        const newSnake = [...currentSnake]
-        const head = { ...newSnake[0] }
-
-        switch (direction) {
-          case "UP":
-            head.y -= GRID_SIZE
-            break
-          case "DOWN":
-            head.y += GRID_SIZE
-            break
-          case "LEFT":
-            head.x -= GRID_SIZE
-            break
-          case "RIGHT":
-            head.x += GRID_SIZE
-            break
+    const interval = setInterval(() => {
+      directionRef.current = turnsRef.current.shift() ?? directionRef.current
+      const next = moveSnake(snakeRef.current, directionRef.current, food, obstacles, CANVAS_SIZE, GRID_SIZE)
+      if (next.collision) {
+        handleGameOver()
+        return
+      }
+      snakeRef.current = next.snake
+      setSnake(next.snake)
+      if (next.grows) {
+        const finalScore = score + 10 * level
+        const nextFood = chooseSnakeFood(next.snake, obstacles)
+        if (!nextFood) {
+          handleGameOver(true, finalScore)
+          return
         }
-
-        // Wall collision
-        if (head.x < 0 || head.x >= CANVAS_SIZE || head.y < 0 || head.y >= CANVAS_SIZE) {
-          handleGameOver()
-          return currentSnake
-        }
-
-        // Self collision
-        if (newSnake.some((s) => s.x === head.x && s.y === head.y)) {
-          handleGameOver()
-          return currentSnake
-        }
-
-        // Obstacle collision
-        if (obstacles.some((o) => o.x === head.x && o.y === head.y)) {
-          handleGameOver()
-          return currentSnake
-        }
-
-        newSnake.unshift(head)
-
-        // Food collision
-        if (head.x === food.x && head.y === food.y) {
-          const points = 10 * level
-          setScore((prev) => prev + points)
-          setFood(generateFood(newSnake, obstacles))
-        } else {
-          newSnake.pop()
-        }
-
-        return newSnake
-      })
+        setScore(finalScore)
+        setFood(nextFood)
+      }
     }, config.speed)
+    gameLoopRef.current = interval
 
     return () => {
-      if (gameLoopRef.current) clearInterval(gameLoopRef.current)
+      clearInterval(interval)
+      if (gameLoopRef.current === interval) gameLoopRef.current = undefined
     }
-  }, [gameView, direction, food, level, obstacles, generateFood])
-
-  const handleGameOver = useCallback(() => {
-    setGameView("gameover")
-
-    if (score > highScore) {
-      setHighScore(score)
-      localStorage.setItem("snake-high-score", score.toString())
-    }
-
-    if (progress) {
-      const newProgress = { ...progress }
-      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, score)
-      newProgress.totalScore += score
-      newProgress.gamesPlayed += 1
-      saveGameProgress("snake", newProgress)
-      setProgress(newProgress)
-    }
-  }, [score, highScore, level, progress])
+  }, [gameView, food, level, score, obstacles, handleGameOver])
 
   // Draw game
   useEffect(() => {
@@ -329,8 +338,6 @@ export default function SnakeGame() {
     }
   }, [gameView, snake, food, obstacles, score, level, highScore])
 
-  const isHighScore = score > highScore
-
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto px-2">
       {(gameView === "playing" || gameView === "paused") && (
@@ -346,54 +353,75 @@ export default function SnakeGame() {
         />
       )}
 
-      <div className="relative w-full aspect-square max-w-[400px]">
-        <div className="w-full h-full bg-[#9BBB58] border-4 border-gray-800 rounded-xl shadow-xl overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_SIZE}
-            height={CANVAS_SIZE}
-            className="w-full h-full"
-            style={{ imageRendering: "pixelated", touchAction: "none" }}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onClick={() => gameView === "menu" && startGame()}
-          />
-        </div>
+      <HandheldConsole
+        title="Snake"
+        paused={gameView === "paused"}
+        onStart={() => {
+          if (gameView === "playing") setGameView("paused")
+          else if (gameView === "paused") setGameView("playing")
+          else startGame()
+        }}
+        onDirection={(next, held) => {
+          if (!held || gameView !== "playing") return
+          queueTurn(next)
+        }}
+      >
+        <div className="relative w-full aspect-square max-w-[400px]">
+          <div className="w-full h-full bg-[#9BBB58] border-4 border-gray-800 rounded-xl shadow-xl overflow-hidden">
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_SIZE}
+              height={CANVAS_SIZE}
+              className="w-full h-full"
+              style={{ imageRendering: "pixelated", touchAction: "none" }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onClick={() => gameView === "menu" && startGame()}
+            />
+          </div>
 
-        {gameView === "paused" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-xl">
-            <div className="text-center text-white">
-              <h2 className="text-2xl font-bold mb-2">PAUSED</h2>
-              <p className="text-sm text-gray-300">Press ESC or Resume</p>
+          {gameView === "paused" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-xl">
+              <div className="text-center text-white">
+                <h2 className="text-2xl font-bold mb-2">PAUSED</h2>
+                <p className="text-sm text-gray-300">Press ESC or Resume</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {gameView === "gameover" && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl">
-            <GameOverScreen
-              score={score}
-              level={level}
-              isHighScore={isHighScore}
-              gameName="snake"
-              onRestart={startGame}
-              onQuit={() => setGameView("menu")}
-              onViewLeaderboard={() => setGameView("leaderboard")}
-              stats={{ timeElapsed }}
-            />
-          </div>
-        )}
+          {gameView === "gameover" && (
+            <div
+              className="rounded-xl"
+              style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+            >
+              <GameOverScreen
+                score={score}
+                level={level}
+                isHighScore={isNewHighScore}
+                gameName="snake"
+                completed={boardCleared}
+                onRestart={startGame}
+                onQuit={() => setGameView("menu")}
+                onViewLeaderboard={() => setGameView("leaderboard")}
+                stats={{ timeElapsed }}
+              />
+            </div>
+          )}
 
-        {gameView === "leaderboard" && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl overflow-auto">
-            <Leaderboard
-              gameName="snake"
-              currentScore={score > 0 ? score : undefined}
-              onClose={() => setGameView("menu")}
-            />
-          </div>
-        )}
-      </div>
+          {gameView === "leaderboard" && (
+            <div
+              className="rounded-xl"
+              style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+            >
+              <Leaderboard
+                gameName="snake"
+                currentScore={score > 0 ? score : undefined}
+                onClose={() => setGameView("menu")}
+              />
+            </div>
+          )}
+        </div>
+      </HandheldConsole>
 
       <div className="text-sm text-gray-600 font-mono text-center">
         <span className="hidden md:inline">Arrow Keys to Move • Level up every 100 pts</span>

@@ -17,6 +17,7 @@ import {
   beginShootoutRound,
   resolveShootoutKick,
   allProgressComplete,
+  missionPrerequisitesMet,
 } from '../game/mission-core.js'
 
 const missionData = JSON.parse(fs.readFileSync(new URL('../data/missions.json', import.meta.url), 'utf8'))
@@ -270,6 +271,53 @@ test('BLACKOUT applies the city-dark effect then needs the route and an evade', 
   assert.equal(run.status, 'active')
   stepMissionRun(run, { mode: 'vehicle', x: route.points.at(-1).x, z: route.points.at(-1).z, compliance: 0 }, 0.2)
   assert.equal(run.status, 'complete')
+})
+
+test('BLACKOUT arms compliance before accepting a zero-compliance evade', () => {
+  const run = of(blackout)
+  const stale = stepMissionRun(run, {
+    mode: 'vehicle', x: 0, z: 0, compliance: 0,
+  }, 0.2)
+  assert.equal(stale.some((event) => event.type === 'evade-start' && event.compliance === 5), true)
+  assert.equal(stale.some((event) => event.type === 'evade-complete'), false)
+  assert.equal(run.completedKinds.includes('evade'), false)
+
+  const escalated = stepMissionRun(run, {
+    mode: 'vehicle', x: 0, z: 0, compliance: 5,
+  }, 0.2)
+  assert.equal(escalated.some((event) => event.type === 'evade-complete'), false)
+  assert.equal(run.completedKinds.includes('evade'), false)
+
+  const escaped = stepMissionRun(run, {
+    mode: 'vehicle', x: 0, z: 0, compliance: 0,
+  }, 0.2)
+  assert.equal(escaped.some((event) => event.type === 'evade-complete'), true)
+  assert.equal(run.completedKinds.includes('evade'), true)
+})
+
+test('campaign prerequisites block both branch shortcuts to the finale', () => {
+  const all = missionData.missions
+  const byId = (id) => all.find((mission) => mission.id === id)
+
+  const yardFirst = new Set(['deal-clock', 'crate-dig', 'set-time', 'cold-boot', 'yard-run'])
+  assert.equal(missionPrerequisitesMet(byId('escort'), yardFirst, all), false)
+  assert.equal(missionPrerequisitesMet(byId('blackout'), yardFirst, all), false)
+
+  const shootoutFirst = new Set(['deal-clock', 'crate-dig', 'set-time', 'cold-boot', 'shootout'])
+  assert.equal(missionPrerequisitesMet(byId('escort'), shootoutFirst, all), true)
+  shootoutFirst.add('escort')
+  assert.equal(missionPrerequisitesMet(byId('blackout'), shootoutFirst, all), false)
+
+  const everyPreFinale = new Set(
+    all.filter((mission) => !mission.finale).map((mission) => mission.id)
+  )
+  assert.equal(missionPrerequisitesMet(byId('blackout'), everyPreFinale, all), true)
+
+  everyPreFinale.delete('shootout')
+  assert.equal(missionPrerequisitesMet(byId('blackout'), everyPreFinale, all), false)
+  everyPreFinale.add('shootout')
+  everyPreFinale.delete('yard-run')
+  assert.equal(missionPrerequisitesMet(byId('blackout'), everyPreFinale, all), false)
 })
 
 test('objective copy uses authored templates', () => {

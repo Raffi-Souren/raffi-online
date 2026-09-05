@@ -3,6 +3,25 @@
 export const CONSTRAINT_KINDS = new Set(['timer', 'avoid'])
 export const EFFECT_KINDS = new Set(['blackoutCity'])
 
+/**
+ * Normal campaign availability is stricter than receiving an unlock token:
+ * authored parent missions must be complete, and the finale waits for every
+ * non-finale job. Debug helpers may still start a mission directly for audits.
+ */
+export function missionPrerequisitesMet(mission, completedIds, allMissions = []) {
+  const completed = completedIds instanceof Set ? completedIds : new Set(completedIds || [])
+  const authored = Array.isArray(mission.unlockedBy)
+    ? mission.unlockedBy
+    : mission.unlockedBy
+      ? [mission.unlockedBy]
+      : []
+  if (!authored.every((id) => completed.has(id))) return false
+  if (!mission.finale) return true
+  return allMissions.every((candidate) =>
+    candidate.id === mission.id || candidate.finale || completed.has(candidate.id)
+  )
+}
+
 export function isProgressKind(kind, handler = null) {
   if (CONSTRAINT_KINDS.has(kind)) return false
   if (kind === 'custom' && EFFECT_KINDS.has(handler)) return false
@@ -343,6 +362,10 @@ function stepEvade(run, actor, events) {
   if (!run.evadeArmed) {
     run.evadeArmed = true
     events.push({ type: 'evade-start', compliance: spec.startCompliance || 0 })
+    // The browser applies this escalation after the pure step returns. Do not
+    // read the pre-escalation actor snapshot in the same frame or a stale zero
+    // will complete BLACKOUT before the chase has even started.
+    return
   }
   if ((actor.compliance ?? 0) <= 0) {
     markKind(run, 'evade')

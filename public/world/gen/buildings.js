@@ -230,6 +230,11 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
     addStoop(b, lot, arch.stoop, atlas)
   }
 
+  // Decorative only: a separate seed leaves the lot's gameplay layout intact.
+  if (m.pilasters && floors >= 3 && makeRng('escape:' + lot.id).chance(0.55)) {
+    addFireEscape(b, atlas, lot, floors, fh)
+  }
+
   // ------------------------------------------------- ground floor retail ---
   const ground = arch.ground
   if (ground && ground.type === 'retail') {
@@ -584,6 +589,27 @@ function addStoop(b, lot, stoop, atlas) {
   }
 }
 
+function addFireEscape(b, atlas, lot, floors, fh) {
+  const rect = atlas.uv('white')
+  const color = '#39434a'
+  const front = lot.d / 2 + 0.9
+  const levels = Math.min(floors - 1, 4)
+  const piece = (lx, y, lz, w, h, d) => {
+    const p = lotPoint(lot, lx, lz)
+    b.box({ x: p.x, y, z: p.z, w, h, d, ry: lot.ry, color, rect, faces: SIDES_TOP })
+  }
+  for (let floor = 1; floor <= levels; floor++) {
+    const y = floor * fh + 0.1
+    piece(0, y, front, 4.2, 0.12, 1.4)
+    piece(0, y + 0.95, front + 0.62, 4.2, 0.1, 0.1)
+    for (const x of [-2, 0, 2]) piece(x, y + 0.5, front + 0.62, 0.08, 0.9, 0.08)
+    if (floor < levels) {
+      for (const x of [0.95, 1.65]) piece(x, y + fh / 2, front + 0.1, 0.08, fh, 0.08)
+      for (let rung = 1; rung < 5; rung++) piece(1.3, y + rung * fh / 5, front + 0.1, 0.8, 0.08, 0.08)
+    }
+  }
+}
+
 function addStorefront(b, set, atlas, lot, ctx) {
   const { fh, ground, rng, shopCount, frameColor } = ctx
   const white = atlas.uv('white')
@@ -611,9 +637,9 @@ function addStorefront(b, set, atlas, lot, ctx) {
     })
   }
 
-  // Bulkhead under glass
+  const bulkhead = lotPoint(lot, 0, faceZ)
   b.box({
-    x: lot.x, y: 0.28, z: lotPoint(lot, 0, faceZ).z,
+    x: bulkhead.x, y: 0.28, z: bulkhead.z,
     w: lot.w * 0.96, h: 0.55, d: 0.2,
     ry: lot.ry, color: '#5a5550', rect: white, faces: SIDES_TOP,
   })

@@ -62,8 +62,9 @@ export function initNpcSim({ scene, materials, atlas, collision, seed }) {
     const arch = data.npcs.archetypes[archId]
     const ang = rng.range(0, Math.PI * 2)
     const rad = rng.range(8, 36)
-    const x = spawn.x + Math.cos(ang) * rad
-    const z = spawn.z + Math.sin(ang) * rad
+    const spawnPosition = resolveCircle(collision, spawn.x + Math.cos(ang) * rad, spawn.z + Math.sin(ang) * rad, NPC_RADIUS, 4)
+    const x = spawnPosition.x
+    const z = spawnPosition.z
     const yaw = rng.range(0, Math.PI * 2)
     const phase = rng.range(0, Math.PI * 2)
     const ped = makePed(
@@ -288,8 +289,13 @@ export function updateNpcSim(dt, ctx = {}) {
             sz += (ddz / d) * push
           }
         }
-        a.x = sx
-        a.z = sz
+        const playerBody = state.mode === 'foot' && !state.interior
+          ? [{ type: 'circle', x: state.player.x, z: state.player.z, r: 0.45 }]
+          : []
+        // Peer separation must not push a pedestrian into walls or through the player.
+        const separated = resolveCircle(collisionRef, sx, sz, NPC_RADIUS, 4, playerBody)
+        a.x = separated.x
+        a.z = separated.z
       }
     }
 

@@ -9,6 +9,9 @@ import { chromium } from 'playwright'
 
 const BASE = process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3000/world/index.html'
 const OUT = process.env.RAFFI_SMOKE_OUT || '/tmp'
+const CPU_RATE = Number(process.env.RAFFI_SMOKE_CPU_RATE || 1)
+const STEP_TIMEOUT = 15_000
+await fs.mkdir(OUT, { recursive: true })
 
 const world = JSON.parse(await fs.readFile(new URL('../data/world.json', import.meta.url), 'utf8'))
 const missions = JSON.parse(await fs.readFile(new URL('../data/missions.json', import.meta.url), 'utf8'))
@@ -54,15 +57,43 @@ async function readyPage(context) {
   page.on('requestfailed', (request) => errors.push('request: ' + request.url()))
   await page.goto(BASE + '?debug=1&auto=1&seed=FIXED', { waitUntil: 'domcontentloaded', timeout: 120_000 })
   await page.waitForFunction(() => window.RAFFI_WORLD?.ready && window.RAFFI_WORLD.stats().drawCalls > 0, null, { timeout: 120_000 })
-  await page.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
+  await page.evaluate(async () => {
+    window.RAFFI_WORLD.dismissDialogue()
+    // Cache only a reference for synchronous polling; never mutate engine state.
+    window.__ONBOARDING_STATE__ = (await import('/world/engine/state.js')).state
+  })
+  if (CPU_RATE > 1) {
+    const session = await context.newCDPSession(page)
+    await session.send('Emulation.setCPUThrottlingRate', { rate: CPU_RATE })
+  }
   return page
 }
 
-async function pressKey(page, key, holdMs = 70) {
-  await page.keyboard.down(key)
-  await page.waitForTimeout(holdMs)
-  await page.keyboard.up(key)
+// The engine buffers key edges until the next game frame. GPU-bound CI can take
+// longer than 70–180ms to render one frame, so wall-clock sleeps race live state.
+// Two completed frames also let prompts reflect a mount/exit handled in frame one.
+async function waitGameFrames(page, count = 2) {
+  const target = await page.evaluate((frames) => window.__ONBOARDING_STATE__.frame + frames, count)
+  await page.waitForFunction((frame) => window.__ONBOARDING_STATE__.frame >= frame, target, { timeout: STEP_TIMEOUT })
 }
+
+async function waitGameTime(page, seconds) {
+  const target = await page.evaluate((duration) => window.__ONBOARDING_STATE__.time + duration, seconds)
+  await page.waitForFunction((time) => window.__ONBOARDING_STATE__.time >= time, target, { timeout: STEP_TIMEOUT })
+}
+
+async function pressKey(page, key) {
+  await page.keyboard.press(key)
+  await waitGameFrames(page)
+}
+
+async function waitPaused(page, expected) {
+  await page.waitForFunction((paused) =>
+    window.RAFFI_WORLD.getState().paused === paused &&
+    document.querySelector('#pause').classList.contains('hidden') !== paused,
+    expected, { timeout: STEP_TIMEOUT })
+}
+
 
 try {
 const desktopContext = await browser.newContext({ viewport: { width: 1280, height: 720 } })
@@ -77,15 +108,14 @@ assert.match(initial.objective, /CHOOSE A RIDE OR TAKE THE SUBWAY/)
 assert.match(initial.label, /CRIB GARAGE/)
 assert.notEqual(initial.radius, '0px')
 
-// Pause is a real mode, not decorative chrome. The two implemented controls
-// must update live state, while deferred systems must say so and stay disabled.
+// Pause controls must update live state and preserve keyboard navigation.
 await pressKey(desktop, 'Tab')
-await desktop.waitForTimeout(80)
+await waitPaused(desktop, true)
 assert.equal(await desktop.evaluate(async () => (await import('/world/engine/state.js')).state.paused), true)
 assert.equal(await desktop.locator('#pause').isVisible(), true)
 await desktop.screenshot({ path: OUT + '/raffi-world-pause-desktop.png' })
 await desktop.locator('[data-pause="resume"]').click()
-await desktop.waitForTimeout(80)
+await waitPaused(desktop, false)
 assert.equal(
   await desktop.evaluate(async () => (await import('/world/engine/state.js')).state.paused),
   false,
@@ -108,7 +138,7 @@ assert.equal(
   'pause did not focus RESUME on open'
 )
 await desktop.keyboard.press('Tab')
-await desktop.waitForTimeout(30)
+await waitGameFrames(desktop)
 // Next focus may be REWIND (when a run is recorded) or GRADE (when rewind is disabled).
 const nextPause = await desktop.evaluate(() => document.activeElement?.getAttribute('data-pause'))
 assert.ok(
@@ -119,11 +149,11 @@ assert.equal(await desktop.evaluate(async () => (await import('/world/engine/sta
 // Land on grade for the cycle test (skip rewind if focused).
 if (nextPause === 'rewind') {
   await desktop.keyboard.press('Tab')
-  await desktop.waitForTimeout(30)
+  await waitGameFrames(desktop)
 }
 for (const expected of ['DUSK', 'HAZE', 'NIGHT', 'AUTO']) {
   await gradeButton.click()
-  await desktop.waitForTimeout(30)
+  await waitGameFrames(desktop)
   assert.match(
     await gradeButton.textContent(),
     new RegExp(expected),
@@ -136,26 +166,23 @@ for (const expected of ['DUSK', 'HAZE', 'NIGHT', 'AUTO']) {
     `pause grade state did not become ${expected}`
   )
 }
-// REWIND is a real mechanic (may be enabled once a run is recorded).
-// MAP / QUIT remain deferred chrome.
+// The pause menu exposes supported actions only; REWIND arms after recording.
 for (const action of ['map', 'quit']) {
-  const deferred = desktop.locator(`[data-pause="${action}"]`)
-  assert.equal(await deferred.isDisabled(), true, `deferred pause action ${action} still presents as enabled`)
-  assert.match(await deferred.textContent(), /COMING SOON/)
+  assert.equal(await desktop.locator(`[data-pause="${action}"]`).count(), 0, `unsupported pause action ${action} is still shown`)
 }
 const rewindBtn = desktop.locator('[data-pause="rewind"]')
 assert.match(await rewindBtn.textContent(), /REWIND/)
-await desktop.keyboard.press('Escape')
+await pressKey(desktop, 'Escape')
 await desktop.waitForFunction(() => window.RAFFI_WORLD.getState().paused === false, null, { timeout: 5_000 })
 assert.equal(await desktop.evaluate(async () => (await import('/world/engine/state.js')).state.paused), false)
 assert.equal(await desktop.locator('#pause').isVisible(), false)
 
 const board = hub.rides.find((ride) => ride.archetype === 'skateboard')
 await desktop.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), board.at)
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 assert.match(await desktop.locator('#interaction-prompt').textContent(), /SPACE.*RIDE SKATEBOARD/s)
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(180)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'skateboard')
 assert.match(await desktop.locator('#interaction-prompt').textContent(), /SPACE \/ E.*EXIT SKATEBOARD/s)
 
@@ -163,14 +190,14 @@ assert.match(await desktop.locator('#interaction-prompt').textContent(), /SPACE 
 // ride must be available again as soon as the player steps off. This guards
 // the complete mount -> exit -> remount state cycle, not merely first mount.
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   null,
   'fresh skateboard mount ignored its first exit press'
 )
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   'skateboard',
@@ -178,7 +205,7 @@ assert.equal(
 )
 const beforeBoard = await desktop.evaluate(() => window.RAFFI_WORLD.getState().player)
 await desktop.keyboard.down('w')
-await desktop.waitForTimeout(1800)
+await waitGameTime(desktop, 1.8)
 await desktop.keyboard.up('w')
 const afterBoard = await desktop.evaluate(() => window.RAFFI_WORLD.getState().player)
 const boardDistance = Math.hypot(afterBoard.x - beforeBoard.x, afterBoard.z - beforeBoard.z)
@@ -187,7 +214,7 @@ assert.match(await desktop.locator('#objective').textContent(), /DEAL CLOCK/)
 
 await desktop.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(500)
+await waitGameFrames(desktop)
 const movingBoardExit = await desktop.evaluate(() => window.RAFFI_WORLD.getState().player)
 assert.equal(
   movingBoardExit.vehicle,
@@ -197,44 +224,44 @@ assert.equal(
 assert.equal(movingBoardExit.speed, 0, 'skateboard velocity leaked into on-foot movement')
 assert.match(await desktop.locator('#interaction-prompt').textContent(), /RIDE SKATEBOARD/)
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   'skateboard',
   'moving skateboard could not be remounted after exit'
 )
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, null)
 
 const cribCar = hub.rides.find((ride) => ride.archetype === 'grand-tourer')
 await desktop.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), cribCar.at)
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'grand-tourer')
 assert.match(await desktop.locator('#interaction-prompt').textContent(), /E.*EXIT GRAND TOURER/s)
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   null,
   'fresh travel-vehicle mount ignored its first exit press'
 )
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   'grand-tourer',
   'same travel vehicle could not be remounted after exit'
 )
 await desktop.keyboard.down('w')
-await desktop.waitForTimeout(700)
+await waitGameTime(desktop, 0.7)
 await desktop.keyboard.up('w')
 const movingCar = await desktop.evaluate(() => window.RAFFI_WORLD.getState().player)
 assert.ok(movingCar.speed > 0.25, `travel vehicle did not move before exit (${movingCar.speed})`)
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 const movingCarExit = await desktop.evaluate(() => window.RAFFI_WORLD.getState().player)
 assert.equal(
   movingCarExit.vehicle,
@@ -244,39 +271,43 @@ assert.equal(
 assert.equal(movingCarExit.speed, 0, 'travel-vehicle velocity leaked into on-foot movement')
 assert.match(await desktop.locator('#interaction-prompt').textContent(), /DRIVE GRAND TOURER/)
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   'grand-tourer',
   'moving travel vehicle could not be remounted after exit'
 )
+const parkedCribCar = await desktop.evaluate(() => {
+  const { x, z } = window.RAFFI_WORLD.getState().player
+  return { x, z }
+})
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, null)
 
 await desktop.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), hub.transit.at)
 await desktop.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
-await desktop.keyboard.press('e')
+await pressKey(desktop, 'e')
 await desktop.waitForFunction(() => !document.querySelector('#travel').classList.contains('hidden'), null, { timeout: 4_000 })
 await desktop.waitForFunction(() => document.querySelector('#travel').classList.contains('hidden'), null, { timeout: 5_000 })
 const arrived = await desktop.evaluate(() => window.RAFFI_WORLD.getState().player)
 assert.ok(Math.hypot(arrived.x - dealClock.marker.x, arrived.z - dealClock.marker.z) <= 8, 'subway arrived outside mission interaction range')
 
 await desktop.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 assert.match(await desktop.locator('#interaction-prompt').textContent(), /START DEAL CLOCK/)
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.missionSnapshot())).status, 'briefing')
-await desktop.keyboard.press('e')
-await desktop.waitForTimeout(80)
+await pressKey(desktop, 'e')
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.missionSnapshot())).status, 'briefing')
 assert.equal(await desktop.locator('#subtitle-text').textContent(), dialogue.lines[dealClock.startLine].text)
 assert.equal(await desktop.locator('#subtitle').evaluate((element) => element.classList.contains('show')), true)
 assert.equal(await desktop.locator('#subtitle-kicker').textContent(), 'INCOMING CALL')
 assert.equal(await desktop.locator('#subtitle-speaker').textContent(), 'MANAGER')
-await desktop.keyboard.press('e')
-await desktop.waitForTimeout(120)
+await pressKey(desktop, 'e')
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.missionSnapshot())).status, 'active')
 
 // Runtime retry, not merely a fresh pure-core object: fail the live run, close
@@ -288,26 +319,26 @@ await desktop.evaluate(async () => {
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.missionSnapshot())).active, null)
 assert.match(await desktop.locator('#objective').textContent(), /RETRY · DEAL CLOCK/)
 await desktop.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 assert.match(await desktop.locator('#interaction-prompt').textContent(), /START DEAL CLOCK/)
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.missionSnapshot())).status, 'briefing')
-await desktop.keyboard.press('e')
-await desktop.waitForTimeout(40)
-await desktop.keyboard.press('e')
-await desktop.waitForTimeout(120)
+await pressKey(desktop, 'e')
+await waitGameFrames(desktop)
+await pressKey(desktop, 'e')
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.missionSnapshot())).status, 'active')
 const firstStopLabel = await desktop.locator('#minimap-label').textContent()
 assert.match(firstStopLabel, /STOP 1/)
 
 await desktop.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), dealClock.startVehicle.at)
-await desktop.keyboard.press('e')
-await desktop.waitForTimeout(180)
+await pressKey(desktop, 'e')
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, dealClock.startVehicle.archetype)
 assert.equal(await desktop.locator('#minimap-label').textContent(), firstStopLabel, 'mounting the loaner reset the active GPS stop')
 await pressKey(desktop, 'Space')
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   dealClock.startVehicle.archetype,
@@ -327,7 +358,7 @@ for (let stopNumber = 1; stopNumber <= 4; stopNumber++) {
     player.vehicle.speed = 0
     player.vehicle.mesh.position.set(x, 0, z)
   }, waypoint)
-  await desktop.waitForTimeout(260)
+  await waitGameFrames(desktop)
   const stopSnapshot = await desktop.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   if (stopNumber < 4) {
     assert.equal(
@@ -365,7 +396,7 @@ async function advancePursuit(page, seconds, pull = false) {
 
 // Tier 1: drone pursues past hold without catching.
 await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(1))
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 let pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
 assert.equal(pursuit.roster.kinds.drone, 1, 'tier 1 must compile one drone')
 assert.equal(pursuit.roster.canCatch, 0, 'tier 1 must not be catch-capable')
@@ -377,7 +408,7 @@ assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compl
 
 // Tier 2: catch only after full hold.
 await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(2))
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
 assert.equal(pursuit.roster.kinds.foot, 1)
 const hold = pursuit.tuning.caughtHoldSeconds
@@ -405,7 +436,7 @@ await desktop.screenshot({ path: OUT + '/raffi-world-pursuit-catch-desktop.png' 
 
 // Tier 3: exactly one sedan.
 await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(3))
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
 assert.equal(pursuit.roster.kinds.vehicle, 1, 'tier 3 must be exactly one sedan')
 assert.equal(pursuit.active.filter((a) => a.kind === 'vehicle').length, 1)
@@ -416,7 +447,7 @@ assert.ok(
 
 // Tier 4 counts (multi-sedan surround approach — honest multi-unit chase).
 await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(4))
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 pursuit = await desktop.evaluate(() => window.RAFFI_WORLD.pursuitSnapshot())
 assert.equal(pursuit.roster.kinds.vehicle, 3, 'tier 4 must compile three sedans')
 assert.equal(pursuit.active.filter((a) => a.kind === 'vehicle').length, 3)
@@ -428,7 +459,7 @@ await desktop.evaluate(async () => {
   window.RAFFI_WORLD.setWaypoint({ x: 60, z: -380 }, 'DEAL CLOCK · STOP 2')
   window.RAFFI_WORLD.setComplianceTier(2)
 })
-await desktop.waitForTimeout(60)
+await waitGameFrames(desktop)
 const missionLabelBefore = await desktop.locator('#minimap-label').textContent()
 await advancePursuit(desktop, 3.0, true)
 for (let i = 0; i < 40; i++) {
@@ -452,7 +483,7 @@ await desktop.evaluate(async () => {
 
 // Budgets at max implemented multi-unit tier.
 await desktop.evaluate(() => window.RAFFI_WORLD.setComplianceTier(4))
-await desktop.waitForTimeout(100)
+await waitGameFrames(desktop)
 const pursuitBudget = await desktop.evaluate(() => window.RAFFI_WORLD.stats())
 assert.ok(pursuitBudget.drawCalls < 120, `pursuit draws ${pursuitBudget.drawCalls} >= 120`)
 assert.ok(pursuitBudget.triangles < 60_000, `pursuit tris ${pursuitBudget.triangles} >= 60000`)
@@ -465,7 +496,7 @@ await desktop.screenshot({ path: OUT + '/raffi-world-pursuit-desktop-night.png' 
 // Free-roam guidance must point at an authored shop without hardcoding coords
 // in the engine (data-driven nearest shop).
 await desktop.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
-await desktop.waitForTimeout(120)
+await waitGameFrames(desktop)
 const repaintGuide = await desktop.evaluate(() => ({
   label: document.querySelector('#minimap-label')?.textContent,
   waypoint: window.RAFFI_WORLD.getWaypoint(),
@@ -514,25 +545,25 @@ await desktop.evaluate(async () => {
 
 // On-foot negative: exit, sit in bay, must not clear.
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(120)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, null)
 await desktop.evaluate((shop) => {
   window.RAFFI_WORLD.setComplianceTier(3)
   window.RAFFI_WORLD.teleport(shop.at.x, shop.at.z)
 }, nearestShopToSpawn)
-await desktop.waitForTimeout(350)
+await waitGameTime(desktop, 0.35)
 assert.equal(
   (await desktop.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier,
   3,
   'on-foot Reply All Repaint entry cleared COMPLIANCE'
 )
 
-// Remount generated grand tourer at the crib, then park in the bay.
-const repaintCar = hub.rides.find((ride) => ride.archetype === 'grand-tourer')
-await desktop.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), repaintCar.at)
-await desktop.waitForTimeout(80)
+// The earlier drive moved the crib car away from its authored spawn. Return to
+// its actual parked position, then use the same live E interaction to remount.
+await desktop.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), parkedCribCar)
+await waitGameFrames(desktop)
 await pressKey(desktop, 'e')
-await desktop.waitForTimeout(150)
+await waitGameFrames(desktop)
 assert.equal((await desktop.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'grand-tourer')
 
 // High-speed negative: enter bay too fast — must not clear.
@@ -580,7 +611,7 @@ await desktop.evaluate(async (shop) => {
   state.player.speed = 0.4
   updateCompliance(0.016)
 }, nearestShopToSpawn)
-await desktop.waitForTimeout(80)
+await waitGameFrames(desktop)
 
 const cleared = await desktop.evaluate(async () => {
   const { player } = await import('/world/game/player.js')
@@ -701,7 +732,7 @@ for (const grade of ['dusk', 'night']) {
     state.player.x = payload.shop.at.x
     state.player.z = payload.shop.at.z
   }, { grade, shop: nearestShopToSpawn })
-  await desktop.waitForTimeout(80)
+  await waitGameFrames(desktop)
   await desktop.screenshot({ path: OUT + `/raffi-world-repaint-desktop-${grade}.png` })
 }
 
@@ -735,7 +766,7 @@ assert.ok(
   `touch pause control is out of bounds (${JSON.stringify(mobilePauseBox)})`
 )
 await mobile.locator('#btn-pause').tap()
-await mobile.waitForTimeout(80)
+await waitPaused(mobile, true)
 assert.equal(
   await mobile.evaluate(async () => (await import('/world/engine/state.js')).state.paused),
   true,
@@ -744,7 +775,7 @@ assert.equal(
 assert.equal(await mobile.locator('#pause').isVisible(), true)
 await mobile.screenshot({ path: OUT + '/raffi-world-pause-mobile.png' })
 await mobile.locator('[data-pause="resume"]').tap()
-await mobile.waitForTimeout(80)
+await waitPaused(mobile, false)
 assert.equal(
   await mobile.evaluate(async () => (await import('/world/engine/state.js')).state.paused),
   false,
@@ -752,7 +783,7 @@ assert.equal(
 )
 assert.equal(await mobile.locator('#pause').isVisible(), false)
 await mobile.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), board.at)
-await mobile.waitForTimeout(80)
+await waitGameFrames(mobile)
 const promptLayout = await mobile.evaluate(() => {
   const box = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON()
   return { prompt: box('#interaction-prompt'), action: box('#btn-action') }
@@ -768,19 +799,19 @@ assert.equal(
   `mobile ride prompt overlaps its action button (${JSON.stringify(promptLayout)})`
 )
 await mobile.locator('#btn-action').tap()
-await mobile.waitForTimeout(180)
+await waitGameFrames(mobile)
 assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'skateboard')
 
 assert.equal(await mobile.locator('#btn-exit').isVisible(), true)
 await mobile.locator('#btn-exit').tap()
-await mobile.waitForTimeout(100)
+await waitGameFrames(mobile)
 assert.equal(
   (await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   null,
   'fresh touch skateboard mount ignored its visible EXIT button'
 )
 await mobile.locator('#btn-action').tap()
-await mobile.waitForTimeout(100)
+await waitGameFrames(mobile)
 assert.equal(
   (await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle,
   'skateboard',
@@ -796,9 +827,9 @@ assert.equal(await mobile.locator('#btn-radio').isVisible(), true)
 assert.equal(await mobile.locator('#btn-cam').isVisible(), true)
 const beforeMobileGas = await mobile.evaluate(() => window.RAFFI_WORLD.getState().player)
 await mobile.locator('#btn-action').dispatchEvent('mousedown', { button: 0 })
-await mobile.waitForTimeout(1100)
+await waitGameTime(mobile, 1.1)
 await mobile.evaluate(() => window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })))
-await mobile.waitForTimeout(120)
+await waitGameFrames(mobile)
 const afterMobileGas = await mobile.evaluate(() => window.RAFFI_WORLD.getState().player)
 assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'skateboard', 'touch GAS ejected rider')
 assert.ok(
@@ -808,14 +839,14 @@ assert.ok(
 assert.equal(await mobile.locator('#btn-exit').isVisible(), true)
 await mobile.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
 await mobile.locator('#btn-exit').tap()
-await mobile.waitForTimeout(180)
+await waitGameFrames(mobile)
 assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, null)
 
 await mobile.evaluate(async () => {
   const { bus } = await import('/world/engine/state.js')
   bus.emit('dialogue', { id: 'garage-choice', blocking: true })
 })
-await mobile.waitForTimeout(250)
+await waitGameFrames(mobile)
 assert.equal(await mobile.locator('#touch').getAttribute('class'), 'dialogue')
 assert.equal(await mobile.locator('#btn-second').isVisible(), false)
 assert.equal(await mobile.locator('#btn-radio').isVisible(), false)
@@ -839,9 +870,9 @@ await mobile.screenshot({ path: OUT + '/raffi-world-onboarding-mobile.png' })
 await mobile.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
 const mobileCar = hub.rides.find((ride) => ride.archetype === 'grand-tourer')
 await mobile.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), mobileCar.at)
-await mobile.waitForTimeout(80)
+await waitGameFrames(mobile)
 await mobile.locator('#btn-action').tap()
-await mobile.waitForTimeout(150)
+await waitGameFrames(mobile)
 assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'grand-tourer')
 await mobile.evaluate(() => window.RAFFI_WORLD.setComplianceTier(2))
 await mobile.evaluate(async (shop) => {
@@ -859,7 +890,7 @@ await mobile.evaluate(async (shop) => {
 assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).compliance.tier, 0)
 for (const grade of ['dusk', 'night']) {
   await mobile.evaluate((g) => window.RAFFI_WORLD.setGrade(g), grade)
-  await mobile.waitForTimeout(60)
+  await waitGameFrames(mobile)
   await mobile.screenshot({ path: OUT + `/raffi-world-repaint-mobile-${grade}.png` })
 }
 
@@ -867,6 +898,28 @@ await mobileContext.close()
 
 assert.deepEqual(errors, [])
 console.info('RAFFI WORLD onboarding smoke: pause, rides, subway, DEAL CLOCK, Reply All Repaint, and mobile controls passed')
+} catch (error) {
+  const pages = browser.contexts().flatMap((context) => context.pages())
+  for (const [index, page] of pages.entries()) {
+    if (page.isClosed()) continue
+    const prefix = `${OUT}/raffi-world-failure-${index}`
+    await page.screenshot({ path: prefix + '.png', timeout: 5_000 }).catch(() => {})
+    const evidence = await page.evaluate(async () => {
+      const { state } = await import('/world/engine/state.js')
+      const { input } = await import('/world/engine/input.js')
+      return {
+        frame: state.frame, time: state.time, paused: state.paused,
+        state: window.RAFFI_WORLD?.getState(), mission: window.RAFFI_WORLD?.missionSnapshot(),
+        pressed: [...input.pressed], held: [...input.held],
+        focus: { tag: document.activeElement?.tagName, id: document.activeElement?.id, pauseAction: document.activeElement?.getAttribute('data-pause') },
+        pause: document.querySelector('#pause')?.outerHTML,
+        prompt: document.querySelector('#interaction-prompt')?.textContent,
+        objective: document.querySelector('#objective')?.textContent,
+      }
+    }).catch((failure) => ({ captureError: failure.message }))
+    await fs.writeFile(prefix + '.json', JSON.stringify({ error: error.stack, errors, cpuRate: CPU_RATE, ...evidence }, null, 2))
+  }
+  throw error
 } finally {
   await browser.close()
 }

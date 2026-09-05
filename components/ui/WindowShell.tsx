@@ -1,7 +1,54 @@
 "use client"
 
-import { type ReactNode, useEffect, useRef, useCallback } from "react"
-import { X } from "lucide-react"
+import {
+  type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react"
+import { Minus, X } from "lucide-react"
+
+interface WindowActivityContextValue {
+  active: boolean
+  layer: number
+  onActivate?: () => void
+}
+
+const WindowActivityContext = createContext<WindowActivityContextValue>({
+  active: true,
+  layer: 100,
+})
+
+/** Lets legacy/custom-chrome windows participate in the shared window stack. */
+export function useWindowActivity() {
+  return useContext(WindowActivityContext)
+}
+
+interface WindowActivityProviderProps {
+  active: boolean
+  layer: number
+  onActivate?: () => void
+  children: ReactNode
+}
+
+/**
+ * Supplies shell-level focus and stacking state without forcing callers to
+ * thread new props through every window component. Keeping each provider in a
+ * stable DOM slot is especially important for iframe apps: moving an iframe to
+ * bring it forward can reload its browsing context and destroy its state.
+ */
+export function WindowActivityProvider({
+  active,
+  layer,
+  onActivate,
+  children,
+}: WindowActivityProviderProps) {
+  const value = useMemo(() => ({ active, layer, onActivate }), [active, layer, onActivate])
+  return <WindowActivityContext.Provider value={value}>{children}</WindowActivityContext.Provider>
+}
 
 interface WindowShellProps {
   title: string
@@ -26,6 +73,36 @@ interface WindowShellProps {
   maxWidth?: string
   /** Trim chrome so full-bleed apps remain usable in short landscape views. */
   compact?: boolean
+  /** Override context activity when a shell is used without a provider. */
+  active?: boolean
+  /** Override the context stacking layer when needed by a standalone caller. */
+  layer?: number
+  /** Called when the user interacts with the window surface. */
+  onActivate?: () => void
+  /** Use minimize affordances while retaining the existing onClose callback. */
+  dismissAction?: "close" | "minimize"
+  /** Games reserve Escape for pause; the title-bar close button stays available. */
+  closeOnEscape?: boolean
+}
+
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, iframe, [tabindex]:not([tabindex="-1"])'
+
+let bodyScrollLockCount = 0
+let bodyOverflowBeforeLocks = ""
+
+function acquireBodyScrollLock() {
+  if (bodyScrollLockCount === 0) {
+    bodyOverflowBeforeLocks = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+  }
+  bodyScrollLockCount++
+  return () => {
+    bodyScrollLockCount = Math.max(0, bodyScrollLockCount - 1)
+    if (bodyScrollLockCount === 0) {
+      document.body.style.overflow = bodyOverflowBeforeLocks
+    }
+  }
 }
 
 export default function WindowShell({
@@ -39,7 +116,16 @@ export default function WindowShell({
   fullBleed = false,
   maxWidth = "1024px",
   compact = false,
+  active,
+  layer,
+  onActivate,
+  dismissAction = "close",
+  closeOnEscape = true,
 }: WindowShellProps) {
+  const activity = useContext(WindowActivityContext)
+  const isActive = active ?? activity.active
+  const shellLayer = layer ?? activity.layer
+  const activate = onActivate ?? activity.onActivate
   const edgeInset = compact ? "0px" : "8px"
   const titlePadding = compact ? "0.25rem 0.5rem" : "0.75rem 1rem"
   const closeSize = compact ? "34px" : "44px"
@@ -48,28 +134,38 @@ export default function WindowShell({
   // Lock body scroll while window is open
   useEffect(() => {
     if (hidden) return
-    const originalOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = originalOverflow
-    }
+    return acquireBodyScrollLock()
   }, [hidden])
 
   // Handle ESC key
   useEffect(() => {
-    if (hidden) return
+    if (hidden || !isActive || !closeOnEscape) return
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
+      if (e.key === "Escape" && !e.defaultPrevented) onClose()
     }
     document.addEventListener("keydown", handleEscape)
     return () => document.removeEventListener("keydown", handleEscape)
-  }, [hidden, onClose])
+  }, [hidden, isActive, closeOnEscape, onClose])
+
+  // Move keyboard focus into the newly active dialog. Inactive windows remain
+  // mounted, but only the top one participates in the modal focus contract.
+  useEffect(() => {
+    if (hidden || !isActive) return
+    const frame = window.requestAnimationFrame(() => {
+      const dialog = windowRef.current
+      if (!dialog || dialog.contains(document.activeElement)) return
+      const first = dialog.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+      const focusTarget = first ?? dialog
+      focusTarget.focus({ preventScroll: true })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [hidden, isActive])
 
   // Focus trap
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== "Tab" || !windowRef.current) return
-    const focusable = windowRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    const focusable = Array.from(
+      windowRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
     )
     if (focusable.length === 0) return
     const first = focusable[0]
@@ -80,6 +176,16 @@ export default function WindowShell({
     } else if (!e.shiftKey && document.activeElement === last) {
       e.preventDefault()
       first.focus()
+    } else {
+      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement)
+      const nextIndex = currentIndex + (e.shiftKey ? -1 : 1)
+      const next = focusable[nextIndex]
+      // Browsers are inconsistent about advancing from parent chrome into an
+      // iframe. Move focus explicitly so keyboard players can enter game apps.
+      if (next?.tagName === "IFRAME") {
+        e.preventDefault()
+        next.focus()
+      }
     }
   }, [])
 
@@ -94,7 +200,7 @@ export default function WindowShell({
           right: 0,
           bottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
           maxHeight: "calc(100dvh - 40px - env(safe-area-inset-bottom, 0px))",
-          zIndex: 100,
+          zIndex: shellLayer,
           backgroundColor: "rgba(0, 0, 0, 0.5)",
           display: hidden ? "none" : undefined,
         }}
@@ -112,19 +218,22 @@ export default function WindowShell({
           maxHeight: `calc(100dvh - max(${edgeInset}, env(safe-area-inset-top, 0px)) - ${
             compact ? "42px" : "48px"
           } - env(safe-area-inset-bottom, 0px))`,
-          zIndex: 101,
+          zIndex: shellLayer + 1,
           display: hidden ? "none" : "flex",
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
         }}
-        aria-hidden={hidden ? "true" : undefined}
+        aria-hidden={hidden || !isActive ? "true" : undefined}
       >
         <div
           ref={windowRef}
           onKeyDown={handleKeyDown}
+          onPointerDownCapture={activate}
           role="dialog"
           aria-label={title}
+          aria-modal={isActive && !hidden ? "true" : undefined}
+          tabIndex={-1}
           style={{
             backgroundColor: "#ffffff",
             color: "#111827",
@@ -189,7 +298,7 @@ export default function WindowShell({
                 alignItems: "center",
                 justifyContent: "center",
                 position: "relative",
-                zIndex: 102,
+                zIndex: shellLayer + 2,
                 minWidth: closeSize,
                 minHeight: closeSize,
                 width: closeSize,
@@ -203,9 +312,14 @@ export default function WindowShell({
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)"
               }}
-              aria-label="Close window"
+              aria-label={dismissAction === "minimize" ? `Minimize ${title}` : "Close window"}
+              title={dismissAction === "minimize" ? `Minimize ${title}` : "Close window"}
             >
-              <X size={24} strokeWidth={2.5} />
+              {dismissAction === "minimize" ? (
+                <Minus size={24} strokeWidth={2.5} />
+              ) : (
+                <X size={24} strokeWidth={2.5} />
+              )}
             </button>
           </div>
 

@@ -105,12 +105,11 @@
   <!-- ================= PAUSE ================= -->
   <div id="pause" class="hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title" aria-hidden="true">
     <div class="pause-panel">
-      <h2 id="pause-title">PAUSED</h2>
-      <button data-pause="resume">RESUME</button>
-      <button data-pause="rewind" disabled>REWIND — COMING SOON</button>
+      <h2 id="pause-title">Take five.</h2>
+      <p class="pause-location">Port Vantage will wait.</p>
+      <button data-pause="resume">Back to the block</button>
+      <button data-pause="rewind" disabled>Rewind unavailable</button>
       <button data-pause="grade">COLOUR GRADE: AUTO</button>
-      <button data-pause="map" disabled>MAP — COMING SOON</button>
-      <button data-pause="quit" disabled>QUIT TO DESKTOP — COMING SOON</button>
       <div class="pause-controls">
         <h3>CONTROLS</h3>
         <div class="pc-grid">
@@ -126,7 +125,7 @@
         </div>
         <div class="pc-touch">TOUCH — left thumb: stick to move / steer · right: GAS, BRAKE, RADIO, CAM</div>
       </div>
-      <div class="pause-foot">Port Vantage — everything here is generated in code.</div>
+      <div class="pause-foot">C cycles isometric, chase, free and overhead cameras. Minimize the game window to keep your session open.</div>
     </div>
   </div>
 
@@ -149,12 +148,53 @@
 
   <!-- ================= BOOT / LOADER ================= -->
   <div id="boot">
+    <div class="boot-art" aria-hidden="true">
+      <svg viewBox="0 0 600 560" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="boot-windows" width="38" height="51" patternUnits="userSpaceOnUse">
+            <path fill="#233a50" d="M10 9h17v29H10z"/>
+            <path fill="#e4b575" d="M12 11h13v11H12z"/>
+            <path stroke="#9f795e" stroke-width="3" d="M8 39h21"/>
+          </pattern>
+          <pattern id="boot-brick" width="36" height="14" patternUnits="userSpaceOnUse">
+            <path stroke="#6d4d44" stroke-width="1" d="M0 13h36M18 0v13"/>
+          </pattern>
+        </defs>
+        <circle cx="379" cy="186" r="122" fill="#a67e81"/>
+        <path fill="#283d52" d="M32 276h54V128h44v-24h42v182h31V196h52v-51h34v180h49V226h67v82h44V145h25V99h24v46h24v150h38v173H32z"/>
+        <path fill="#192b3e" d="M26 450 474 404 585 458 144 530z"/>
+        <path fill="#c19b78" d="M100 259 246 222 358 275 209 319z"/>
+        <path fill="#966c54" d="M100 259v197l109 53V310z"/>
+        <path fill="url(#boot-brick)" d="M100 259v197l109 53V310z"/>
+        <path fill="#674e46" d="m209 310 149-35v189l-149 45z"/>
+        <path fill="#b08363" d="m223 315 121-29v166l-121 30z"/>
+        <path fill="url(#boot-windows)" d="m223 315 121-29v166l-121 30z"/>
+        <path fill="#cbab85" d="m93 250 152-39 122 57v15l-158 38-116-56z"/>
+        <path fill="#645047" d="m209 306 158-38v15l-158 38z"/>
+        <path fill="#d2b48d" d="m356 222 75-18 69 33-75 22z"/>
+        <path fill="#805c4e" d="m356 222 69 32v207l-69-31z"/>
+        <path fill="#a4795c" d="m425 254 75-17v207l-75 17z"/>
+        <path fill="url(#boot-windows)" d="m434 266 58-14v178l-58 14z"/>
+        <path stroke="#253746" stroke-width="6" d="M447 277v136m29-143v136m-39-92 49-12m-49 56 49-12m-49 56 49-12"/>
+        <path stroke="#b59f7b" stroke-width="4" d="M263 177v43m42-34v43"/>
+        <path fill="#665448" d="M256 155h59v48c-17 9-41 3-59-7z"/>
+        <path fill="#8f7960" d="m252 155 32-18 35 24c-16 8-47 4-67-6z"/>
+        <path stroke="#edd29a" stroke-width="3" d="m160 480 10 5m10 5 10 5m10 5 10 5m10 5 10 5"/>
+        <path stroke="#172c3d" stroke-width="6" d="M373 469V357l-19-9"/>
+        <path stroke="#efd292" stroke-width="5" d="m344 348 16 7"/>
+        <path fill="#345b68" d="m284 449 40-9 20 10v20l-40 10-20-10z"/>
+        <path fill="#88a2a5" d="m292 445 10-14 20-5 14 17-32 9z"/>
+      </svg>
+    </div>
     <div id="boot-inner">
-      <div class="boot-title">RAFFI WORLD</div>
-      <div class="boot-sub">PORT VANTAGE</div>
+      <div class="boot-sub">Port Vantage</div>
+      <h1 class="boot-title">Raffi<br>World<span>Vol. 2</span></h1>
+      <p class="boot-description">Brownstones, B-sides, and a city to get lost in.</p>
       <div id="boot-bar"><i id="boot-progress"></i></div>
       <div id="boot-status">loading…</div>
-      <button id="boot-start" class="hidden">START</button>
+      <button id="boot-start" class="hidden">Step outside <span aria-hidden="true">↗</span></button>
+      <div class="boot-controls"><span><kbd>WASD</kbd> Move</span><span><kbd>E</kbd> Interact</span><span><kbd>C</kbd> Camera</span></div>
+      <p class="boot-touch-controls">Left thumb to move. Right thumb to ride, talk and change the view.</p>
     </div>
   </div>
 </div>

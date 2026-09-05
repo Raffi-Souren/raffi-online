@@ -22,7 +22,7 @@ import { findOpenSpots } from '../gen/blocks.js'
 import { nearestRoad } from '../gen/roads.js'
 import { makeRng } from './state.js'
 import {
-  initPlayer, updatePlayer, spawnVehicle, contextAction,
+  initPlayer, updatePlayer, settlePlayerContacts, spawnVehicle, contextAction, movementPrompt,
   enterVehicle, exitVehicle, teleportPlayer, player,
   tryKickflip, isBoardTrickActive,
 } from '../game/player.js'
@@ -266,6 +266,8 @@ function setPaused(paused) {
   els.pause?.classList.toggle('hidden', !state.paused)
   els.pause?.setAttribute('aria-hidden', String(!state.paused))
   if (state.paused) {
+    player.blockedTime = 0
+    setInteractionPrompt(null)
     // Freeze run A when the player opens pause mid-record so REWIND can arm.
     if (getReplayPhase() === 'recording') endRecordingRun()
     els.pause?.querySelector('[data-pause="resume"]')?.focus({ preventScroll: true })
@@ -456,20 +458,8 @@ async function boot() {
     cityRoot: built.root,
     cityCollision: collision,
     world,
-    onEnter: () => {
-      const water = gfx.scene.getObjectByName('water')
-      if (water) water.visible = false
-      gfx.scene.traverse((obj) => {
-        if (obj.name?.startsWith('ped:') || obj.name?.startsWith('npc')) obj.visible = false
-      })
-    },
-    onExit: () => {
-      const water = gfx.scene.getObjectByName('water')
-      if (water) water.visible = true
-      gfx.scene.traverse((obj) => {
-        if (obj.name?.startsWith('ped:') || obj.name?.startsWith('npc')) obj.visible = true
-      })
-    },
+    exteriorRoot: gfx.scene,
+    playerRoot: player.group,
   })
   initMissions({
     scene: gfx.scene,
@@ -573,7 +563,7 @@ function startGame() {
   beginRecordingRun()
   const d = districtAt(state.player.x, state.player.z)
   if (d) bus.emit('district', d)
-  if (!query.auto) toast('WASD move  ·  E interact  ·  C camera (3D)', 4.5)
+  if (!query.auto) toast(device.touch ? 'Left thumb to move · Right buttons to interact' : 'WASD move · E interact · C camera (3D)', 4.5)
   if (query.to) {
     queueDialogue(['greeter-hello', 'greeter-brief', 'greeter-quest'], {
       substitutions: { name: query.to },
@@ -641,7 +631,7 @@ function loop(now) {
     els.touchRoot?.classList.toggle('dialogue', dialogueBlocking)
     // Touch has a dedicated EXIT button while mounted. Desktop needs the
     // keyboard affordance kept on screen so entering a ride is never a trap.
-    setInteractionPrompt(dialogueBlocking || (device.touch && state.mode === 'vehicle') ? null : ctx)
+    setInteractionPrompt(dialogueBlocking || world.transitBusy || (device.touch && state.mode === 'vehicle') ? null : movementPrompt(ctx))
     els.action?.classList.toggle('hint', !dialogueBlocking && state.mode !== 'vehicle' && ctx.kind !== 'none')
 
     const keyboardAction = consume('action')
@@ -705,6 +695,8 @@ function loop(now) {
         return false
       },
     })
+
+    if (!world.transitBusy) settlePlayerContacts(world.collision)
 
     // Catch freeze owns locomotion for the invite beat.
     if (pursuitBlocksControl()) {

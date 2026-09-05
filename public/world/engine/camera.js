@@ -76,7 +76,8 @@ export function cycleCameraMode(dir = 1) {
     // Restore classic snap yaw when returning to iso.
     if (mode.id === 'classic') {
       const snap = (data.world.camera.yawSnapDeg || 90) * DEG
-      cam.desiredYaw = Math.round(cam.currentYaw / snap) * snap
+      const baseYaw = data.world.camera.yawDeg * DEG
+      cam.desiredYaw = baseYaw + Math.round((cam.currentYaw - baseYaw) / snap) * snap
       cam.desiredPitch = (data.world.camera.pitchDeg || 55) * DEG
     } else if (mode.id === 'birds') {
       cam.desiredPitch = (data.world.camera.birdsPitchDeg || 72) * DEG
@@ -260,6 +261,7 @@ function updateOrthoRig(mode, c, sx, sy) {
   const dirY = Math.sin(pitch)
   const dirZ = horiz * Math.cos(cam.currentYaw)
   const dist = mode.id === 'birds' ? cam.distance * 1.15 : cam.distance
+  cam.ortho.userData.fogOffset = dist
 
   cam.ortho.position.set(
     cam.target.x + dirX * dist + sx,
@@ -313,11 +315,10 @@ function updatePerspRig(mode, sx, sy, focus = null) {
 /**
  * Movement axes for WASD / stick.
  *
- * CHASE 3D — body-relative ("moves with you"):
- *   W = face forward, A/D = strafe left/right of facing. Turning around does
- *   not invert left/right the way a lagging camera basis does.
+ * CHASE 3D while driving — body-relative:
+ *   W = drive forward, A/D = steer relative to the vehicle.
  *
- * FREE / CLASSIC / BIRDS — camera matrix axes:
+ * Walking in every view, plus FREE / CLASSIC / BIRDS driving — camera axes:
  *   W = into the frame, D = toward the right edge of the screen.
  *   Uses the camera's world +X / -Z so signs stay stable in every yaw.
  */

@@ -37,7 +37,7 @@ function buildClub(spec, atlas, materials, props, lighting) {
   colliders.push(wallBox(set, atlas, b.maxX - 0.4, wallH / 2, 0, 0.8, wallH, d, '#1c1422'))
 
   // DJ booth at the south end — the player stands here for SET TIME.
-  wallBox(set, atlas, 0, 0.6, -22, 8, 1.2, 2.4, '#2a2030')
+  colliders.push(wallBox(set, atlas, 0, 0.6, -22, 8, 1.2, 2.4, '#2a2030'))
   set.emissive.box({
     x: 0, y: 1.5, z: -22, w: 6.4, h: 0.18, d: 1.6,
     color: '#39E6FF', rect: white, emissive: true, faces: ['up', 'south', 'east', 'west'],
@@ -129,6 +129,7 @@ function buildPitch(spec, atlas, materials, _props, lighting) {
       x, y: 1.6, z: -30, w: 0.28, h: 3.2, d: 0.28,
       color: '#f2f2f0', rect: white, faces: ['east', 'west', 'south', 'north', 'up'],
     })
+    colliders.push({ type: 'box', x, z: -30, hx: 0.14, hz: 0.14, tag: 'goal-post' })
   }
   set.opaque.box({
     x: 0, y: 3.2, z: -30, w: 8.8, h: 0.24, d: 0.24,

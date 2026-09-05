@@ -86,25 +86,53 @@ export const PARACHUTE_LEVELS = [
 const STORAGE_KEYS = {
   PROGRESS: "game_progress_",
   PLAYER_NAME: "player_name",
-  SOUND_ENABLED: "sound_enabled",
 }
 
 // Save game progress to localStorage
-export function saveGameProgress(gameName: string, progress: GameProgress): void {
+export function readGameStorage(key: string): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+export function writeGameStorage(key: string, value: string): void {
   if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.PROGRESS + gameName, JSON.stringify(progress))
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    /* Games remain playable without persistent storage. */
+  }
+}
+
+export function saveGameProgress(gameName: string, progress: GameProgress): void {
+  writeGameStorage(STORAGE_KEYS.PROGRESS + gameName, JSON.stringify(progress))
 }
 
 // Load game progress from localStorage
 export function loadGameProgress(gameName: string): GameProgress {
-  if (typeof window === "undefined") {
-    return { currentLevel: 1, unlockedLevels: [1], highScores: {}, totalScore: 0, gamesPlayed: 0 }
-  }
-
-  const stored = localStorage.getItem(STORAGE_KEYS.PROGRESS + gameName)
+  const stored = readGameStorage(STORAGE_KEYS.PROGRESS + gameName)
   if (stored) {
     try {
-      return JSON.parse(stored)
+      const parsed = JSON.parse(stored) as Partial<GameProgress> | null
+      if (
+        parsed &&
+        Number.isInteger(parsed.currentLevel) &&
+        (parsed.currentLevel ?? 0) > 0 &&
+        Array.isArray(parsed.unlockedLevels) &&
+        parsed.unlockedLevels.every((level) => Number.isInteger(level) && level > 0) &&
+        parsed.highScores &&
+        typeof parsed.highScores === "object" &&
+        !Array.isArray(parsed.highScores) &&
+        Object.values(parsed.highScores).every((score) => Number.isFinite(score) && score >= 0) &&
+        Number.isFinite(parsed.totalScore) &&
+        (parsed.totalScore ?? -1) >= 0 &&
+        Number.isInteger(parsed.gamesPlayed) &&
+        (parsed.gamesPlayed ?? -1) >= 0
+      )
+        return parsed as GameProgress
     } catch {
       // Return default if parse fails
     }
@@ -114,24 +142,11 @@ export function loadGameProgress(gameName: string): GameProgress {
 
 // Get/set player name
 export function getPlayerName(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem(STORAGE_KEYS.PLAYER_NAME) || ""
+  return readGameStorage(STORAGE_KEYS.PLAYER_NAME) || ""
 }
 
 export function setPlayerName(name: string): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.PLAYER_NAME, name)
-}
-
-// Sound preference
-export function getSoundEnabled(): boolean {
-  if (typeof window === "undefined") return true
-  return localStorage.getItem(STORAGE_KEYS.SOUND_ENABLED) !== "false"
-}
-
-export function setSoundEnabled(enabled: boolean): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, String(enabled))
+  writeGameStorage(STORAGE_KEYS.PLAYER_NAME, name)
 }
 
 // Calculate stars based on score vs target

@@ -14,6 +14,8 @@ export default function NowPlaying() {
     playlist,
     currentTime,
     duration,
+    isLoading,
+    error,
     shuffle,
     repeatMode,
     toggleShuffle,
@@ -24,9 +26,8 @@ export default function NowPlaying() {
 
   const hasPlaylist = playlist.length > 0
 
-  // Format time helper
   const formatTime = (seconds: number) => {
-    if (!seconds) return "0:00"
+    if (!Number.isFinite(seconds) || seconds <= 0) return "0:00"
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`
@@ -161,7 +162,7 @@ export default function NowPlaying() {
             >
               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 <span
-                  className="animate-pulse"
+                  className={isPlaying && !isLoading && !error ? "motion-safe:animate-pulse" : undefined}
                   style={{
                     width: "6px",
                     height: "6px",
@@ -170,7 +171,9 @@ export default function NowPlaying() {
                     display: "inline-block",
                   }}
                 />
-                <span style={{ fontSize: "9px", opacity: 0.75 }}>Now Playing</span>
+                <span style={{ fontSize: "9px", opacity: 0.9 }}>
+                  {error ? "Stream unavailable" : isLoading ? "Loading stream" : isPlaying ? "Now playing" : "Paused"}
+                </span>
               </div>
               <div style={{ fontSize: "9px", fontFamily: "monospace", opacity: 0.9 }}>
                 {formatTime(currentTime)} / {formatTime(duration)}
