@@ -80,7 +80,7 @@ const GAMES: Game[] = [
     name: "Brick Breaker",
     device: "Raffi Pocket",
     category: "Handhelds",
-    description: "Clear the bricks and keep the ball in play.",
+    description: "BlackBerry-inspired brickbreaking. 34 original boards, capsules, lasers and rockets.",
     icon: "🧱",
     color: "#e8c4b2",
   },
@@ -133,7 +133,14 @@ const GAMES: Game[] = [
 
 // Canvas games need a definite viewport height. Device-shaped games keep their
 // intrinsic height and a top-aligned scroll origin so every control is reachable.
-const VIEWPORT_GAMES = new Set<GameId>(["signal-lost", "block-party-brawl", "borough-gp", "dockyard", "overtime"])
+const VIEWPORT_GAMES = new Set<GameId>([
+  "signal-lost",
+  "block-party-brawl",
+  "borough-gp",
+  "dockyard",
+  "overtime",
+  "brickbreaker",
+])
 const CATEGORIES = ["All games", "Originals", "Handhelds", "Desktop & arcade"] as const
 
 export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelectorProps) {
@@ -207,9 +214,11 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
         maxWidth={
           activeGame === "borough-gp" || activeGame === "overtime"
             ? "1160px"
-            : game.category === "Handhelds"
-              ? "560px"
-              : "1024px"
+            : activeGame === "brickbreaker"
+              ? "740px"
+              : game.category === "Handhelds"
+                ? "560px"
+                : "1024px"
         }
       >
         <nav

@@ -1,1079 +1,620 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
-import Leaderboard from "./Leaderboard"
-import LevelSelector from "./LevelSelector"
-import GameControls from "./GameControls"
-import GameOverScreen from "./GameOverScreen"
-import HandheldConsole from "../../components/ui/HandheldConsole"
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react"
+import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw, Volume2, VolumeX, X } from "lucide-react"
 import { useWindowActivity } from "../../components/ui/WindowShell"
-import { BRICKBREAKER_LEVELS, loadGameProgress, saveGameProgress, type GameProgress } from "@/lib/game-utils"
-import { releaseBrickBall } from "@/lib/handheld-engine"
+import { loadGameProgress, readGameStorage, saveGameProgress, writeGameStorage } from "@/lib/game-utils"
+import {
+  BRICK_LEVELS,
+  FIELD,
+  PICKUPS,
+  createBrickbreaker,
+  nextBrickLevel,
+  pauseBrickbreaker,
+  startBrickbreaker,
+  stepBrickbreaker,
+  type BrickRun,
+} from "@/lib/brickbreaker-engine"
+import { drawBrickbreaker } from "@/lib/brickbreaker-render"
+import ScoreEntry from "./ScoreEntry"
+import Leaderboard from "./Leaderboard"
 
-const getCanvasDimensions = () => {
-  if (typeof window !== "undefined") {
-    const isMobile = window.innerWidth < 640
-    const isTablet = window.innerWidth >= 640 && window.innerWidth < 1024
-
-    if (isMobile) {
-      // Mobile: use most of screen width, maintain 9:16 aspect ratio
-      const maxWidth = Math.min(window.innerWidth - 40, 380)
-      return {
-        width: maxWidth,
-        height: Math.max(280, Math.min(maxWidth * 1.58, window.innerHeight - 200)),
-      }
-    } else if (isTablet) {
-      // Tablet: medium size
-      return {
-        width: 400,
-        height: 630,
-      }
-    } else {
-      // Desktop: original size
-      return {
-        width: 380,
-        height: 600,
-      }
-    }
-  }
-  return { width: 380, height: 600 }
+const button: CSSProperties = {
+  minHeight: 42,
+  border: "1px solid #6f7c8d",
+  borderRadius: 5,
+  padding: "8px 12px",
+  background: "linear-gradient(#465264, #293340)",
+  color: "#f0f3f7",
+  fontSize: 12,
+  fontWeight: 700,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+  cursor: "pointer",
+  boxShadow: "inset 0 1px #ffffff20, 0 2px 0 #111922",
 }
-
-const PADDLE_WIDTH_RATIO = 0.2
-const PADDLE_HEIGHT = 10
-const BALL_RADIUS = 5
-const BRICK_COLUMNS = 10
-const BRICK_PADDING = 2
-
-type CapsuleType = "long" | "slow" | "multi" | "laser" | "catch" | "life" | "bomb" | "flip"
-
-interface Capsule {
-  x: number
-  y: number
-  dy: number
-  type: CapsuleType
-  active: boolean
-}
-
-interface Brick {
-  x: number
-  y: number
-  width: number
-  height: number
-  status: number
-  color: string
-  points: number
-  hits: number
-  maxHits: number
-  unbreakable?: boolean // Added silver unbreakable bricks
-  hasCapsule?: CapsuleType | false
-}
-
-interface Ball {
-  x: number
-  y: number
-  dx: number
-  dy: number
-  active: boolean
-  heldSpeed?: number
-}
-
-type GameView = "menu" | "playing" | "paused" | "gameover" | "levelcomplete" | "leaderboard" | "levelselect"
+const primary: CSSProperties = { ...button, background: "linear-gradient(#557bc7, #294b94)", borderColor: "#91b5ec" }
+const blankInput = () => ({
+  keys: new Set<string>(),
+  touches: new Set<string>(),
+  target: undefined as number | undefined,
+  shot: false,
+})
+const snapshot = (g: BrickRun) => ({
+  phase: g.phase,
+  aim: g.aim,
+  paused: g.paused,
+  level: g.level,
+  lives: g.lives,
+  score: g.score,
+  rockets: g.rockets,
+  powers: { ...g.powers },
+  message: g.messageTime > 0 ? g.message : "",
+  held: g.balls.some((b) => b.held),
+  practice: g.practice,
+})
 
 export default function Brickbreaker() {
   const { active } = useWindowActivity()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [dimensions, setDimensions] = useState(getCanvasDimensions())
-  const [gameView, setGameView] = useState<GameView>("menu")
-  const [score, setScore] = useState(0)
-  const [lives, setLives] = useState(3)
-  const [level, setLevel] = useState(1)
-  const [timeElapsed, setTimeElapsed] = useState(0)
-  const [combo, setCombo] = useState(0)
-  const [maxCombo, setMaxCombo] = useState(0)
-  const [progress, setProgress] = useState<GameProgress | null>(null)
-  const livesRef = useRef(3)
-  const terminalHandledRef = useRef(false)
-  const scoreRef = useRef(0)
-  const comboRef = useRef(0)
-  const maxComboRef = useRef(0)
-  const [isNewHighScore, setIsNewHighScore] = useState(false)
-  const addScore = useCallback((points: number) => {
-    scoreRef.current += points
-    setScore(scoreRef.current)
+  const activeRef = useRef(active)
+  const game = useRef(createBrickbreaker())
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const input = useRef(blankInput())
+  const drag = useRef<{ id: number; x: number; paddle: number } | null>(null)
+  const audio = useRef<AudioContext | null>(null)
+  const soundOn = useRef(false)
+  const progress = useRef(loadGameProgress("brickbreaker"))
+  const runId = useRef(0)
+  const stageStartScore = useRef(0)
+  const [hud, setHud] = useState(() => snapshot(game.current))
+  const [screen, setScreen] = useState<"game" | "help" | "levels" | "scores">("game")
+  const screenRef = useRef(screen)
+  const [best, setBest] = useState(0)
+  const [soundEnabled, setSoundEnabled] = useState(false)
+  const publish = useCallback(() => setHud(snapshot(game.current)), [])
+  const clearInput = useCallback(() => {
+    input.current = blankInput()
+    drag.current = null
   }, [])
-
-  const CANVAS_WIDTH = dimensions.width
-  const CANVAS_HEIGHT = dimensions.height
-  const PADDLE_WIDTH = CANVAS_WIDTH * PADDLE_WIDTH_RATIO
-  const BRICK_HEIGHT = CANVAS_HEIGHT * 0.035
-
-  // Load progress on mount
-  useEffect(() => {
-    setProgress(loadGameProgress("brickbreaker"))
-  }, [])
-
-  const gameStateRef = useRef({
-    paddleX: (CANVAS_WIDTH - PADDLE_WIDTH) / 2,
-    balls: [] as Ball[], // Support multiple balls for multi-ball capsule
-    bricks: [] as Brick[][],
-    capsules: [] as Capsule[],
-    animationId: null as number | null,
-    keys: {} as Record<string, boolean>,
-    lastComboTime: 0,
-    paddleHits: 0, // Track paddle hits for speed changes
-    speedCycle: 0, // Track slow/fast cycles
-    activePowerups: new Set<CapsuleType>(),
-    laserShots: [] as { x: number; y: number }[],
-    caughtBall: null as Ball | null,
-  })
-
-  const getLevelConfig = (lvl: number) => {
-    return BRICKBREAKER_LEVELS[Math.min(lvl - 1, BRICKBREAKER_LEVELS.length - 1)]
+  const pause = useCallback(() => {
+    if (["serve", "playing"].includes(game.current.phase)) {
+      pauseBrickbreaker(game.current, true)
+      clearInput()
+      publish()
+    }
+  }, [clearInput, publish])
+  const resume = () => {
+    pauseBrickbreaker(game.current, false)
+    clearInput()
+    publish()
+    canvas.current?.focus()
   }
-
-  useEffect(() => {
-    if (gameView !== "playing") gameStateRef.current.keys = {}
-    const pause = () => {
-      gameStateRef.current.keys = {}
-      setGameView((view) => (view === "playing" ? "paused" : view))
-    }
-    if (!active) pause()
-    const visibility = () => {
-      if (document.hidden) pause()
-    }
-    const resume = (event: KeyboardEvent) => {
-      if (active && event.key === "Escape" && gameView === "paused") {
-        event.preventDefault()
-        setGameView("playing")
-      }
-    }
-    window.addEventListener("blur", pause)
-    window.addEventListener("keydown", resume)
-    document.addEventListener("visibilitychange", visibility)
-    return () => {
-      window.removeEventListener("blur", pause)
-      window.removeEventListener("keydown", resume)
-      document.removeEventListener("visibilitychange", visibility)
-    }
-  }, [active, gameView])
-
-  const createBricks = useCallback(
-    (currentLevel: number) => {
-      const bricks: Brick[][] = []
-      const config = getLevelConfig(currentLevel)
-      const colors = ["#FF0000", "#FF8800", "#FFFF00", "#00FF00", "#0088FF", "#0000FF", "#8800FF", "#FF00FF"]
-      const BRICK_WIDTH = (CANVAS_WIDTH - (BRICK_COLUMNS + 1) * BRICK_PADDING) / BRICK_COLUMNS
-
-      const capsuleTypes: CapsuleType[] = ["long", "slow", "multi", "laser", "catch", "life", "bomb", "flip"]
-
-      for (let c = 0; c < BRICK_COLUMNS; c++) {
-        bricks[c] = []
-        for (let r = 0; r < config.rows; r++) {
-          const brickX = c * (BRICK_WIDTH + BRICK_PADDING) + BRICK_PADDING
-          const brickY = r * (BRICK_HEIGHT + BRICK_PADDING) + 60
-
-          // Add silver unbreakable bricks on higher levels
-          const isUnbreakable = currentLevel > 5 && Math.random() < 0.1 && r > 1
-
-          const hitsRequired = isUnbreakable ? 999 : r < config.multiHitRows ? 2 : 1
-
-          // Randomly add capsules to some bricks
-          const hasCapsule =
-            !isUnbreakable && Math.random() < 0.15
-              ? capsuleTypes[Math.floor(Math.random() * capsuleTypes.length)]
-              : false
-
-          bricks[c][r] = {
-            x: brickX,
-            y: brickY,
-            width: BRICK_WIDTH,
-            height: BRICK_HEIGHT,
-            status: 1,
-            color: isUnbreakable ? "#C0C0C0" : colors[r % colors.length],
-            points: (config.rows - r) * 10,
-            hits: hitsRequired,
-            maxHits: hitsRequired,
-            unbreakable: isUnbreakable,
-            hasCapsule,
-          }
-        }
-      }
-      return bricks
-    },
-    [CANVAS_WIDTH, BRICK_HEIGHT],
-  )
-
-  useEffect(() => {
-    const handleResize = () => setDimensions(getCanvasDimensions())
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
-
-  // Timer effect
-  useEffect(() => {
-    if (gameView !== "playing") return
-    const timer = setInterval(() => setTimeElapsed((t) => t + 1), 1000)
-    return () => clearInterval(timer)
-  }, [gameView])
-
-  const initializeGame = useCallback(
-    (startLevel: number) => {
-      const config = getLevelConfig(startLevel)
-      const baseSpeed = CANVAS_WIDTH * 0.006 * config.ballSpeed // Slower initial speed for authentic feel
-      terminalHandledRef.current = false
-      livesRef.current = 3
-      scoreRef.current = 0
-      comboRef.current = 0
-      maxComboRef.current = 0
-      setIsNewHighScore(false)
-
-      gameStateRef.current = {
-        paddleX: (CANVAS_WIDTH - PADDLE_WIDTH) / 2,
-        balls: [
-          {
-            x: CANVAS_WIDTH / 2,
-            y: CANVAS_HEIGHT - 60,
-            dx: baseSpeed * (Math.random() > 0.5 ? 1 : -1),
-            dy: -baseSpeed,
-            active: true,
-          },
-        ],
-        bricks: createBricks(startLevel),
-        capsules: [],
-        animationId: null,
-        keys: {},
-        lastComboTime: 0,
-        paddleHits: 0,
-        speedCycle: 0,
-        activePowerups: new Set(),
-        laserShots: [],
-        caughtBall: null,
-      }
-      setScore(0)
-      setLives(3)
-      setLevel(startLevel)
-      setTimeElapsed(0)
-      setCombo(0)
-      setMaxCombo(0)
-    },
-    [CANVAS_WIDTH, CANVAS_HEIGHT, PADDLE_WIDTH, createBricks],
-  )
-
-  const startGame = (startLevel = 1) => {
-    initializeGame(startLevel)
-    setGameView("playing")
+  const start = (level = 1, practice = false) => {
+    game.current = createBrickbreaker(level, practice)
+    startBrickbreaker(game.current)
+    stageStartScore.current = 0
+    runId.current++
+    clearInput()
+    setScreen("game")
+    publish()
+    canvas.current?.focus()
   }
-
-  const handleLevelComplete = useCallback(() => {
-    if (terminalHandledRef.current) return
-    terminalHandledRef.current = true
-    setGameView("levelcomplete")
-
-    // Update progress
-    if (progress) {
-      const newProgress = {
-        ...progress,
-        highScores: { ...progress.highScores },
-        unlockedLevels: [...progress.unlockedLevels],
-      }
-      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, scoreRef.current)
-      newProgress.totalScore += scoreRef.current
-      newProgress.gamesPlayed += 1
-
-      // Unlock next level
-      if (level < BRICKBREAKER_LEVELS.length && !newProgress.unlockedLevels.includes(level + 1)) {
-        newProgress.unlockedLevels.push(level + 1)
-      }
-
-      saveGameProgress("brickbreaker", newProgress)
-      setProgress(newProgress)
-    }
-  }, [level, progress])
-
-  const handleGameOver = useCallback(() => {
-    if (terminalHandledRef.current) return
-    terminalHandledRef.current = true
-    setGameView("gameover")
-    setIsNewHighScore(scoreRef.current > (progress?.highScores[level] || 0))
-
-    // Update progress
-    if (progress) {
-      const newProgress = { ...progress, highScores: { ...progress.highScores } }
-      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, scoreRef.current)
-      newProgress.totalScore += scoreRef.current
-      newProgress.gamesPlayed += 1
-      saveGameProgress("brickbreaker", newProgress)
-      setProgress(newProgress)
-    }
-  }, [level, progress])
-
-  const nextLevel = () => {
-    terminalHandledRef.current = false
-    const newLevel = level + 1
-    if (newLevel > BRICKBREAKER_LEVELS.length) {
-      // Game completed!
-      setGameView("gameover")
-      return
-    }
-
-    const config = getLevelConfig(newLevel)
-    const baseSpeed = CANVAS_WIDTH * 0.006 * config.ballSpeed
-
-    gameStateRef.current = {
-      ...gameStateRef.current,
-      paddleX: (CANVAS_WIDTH - PADDLE_WIDTH) / 2,
-      balls: [
-        {
-          x: CANVAS_WIDTH / 2,
-          y: CANVAS_HEIGHT - 60,
-          dx: baseSpeed * (Math.random() > 0.5 ? 1 : -1),
-          dy: -baseSpeed,
-          active: true,
-        },
-      ],
-      bricks: createBricks(newLevel),
-      capsules: [],
-      paddleHits: 0,
-      speedCycle: 0,
-      activePowerups: new Set(),
-      laserShots: [],
-      caughtBall: null,
-    }
-
-    setLevel(newLevel)
-    livesRef.current = Math.min(livesRef.current + 1, 5)
-    setLives(livesRef.current)
-    comboRef.current = 0
-    setCombo(0)
-    setGameView("playing")
+  const menu = () => {
+    game.current = createBrickbreaker()
+    clearInput()
+    setScreen("game")
+    publish()
   }
-
-  const releaseBall = useCallback(() => {
-    const state = gameStateRef.current
-    if (!state.caughtBall) return
-    const baseSpeed =
-      CANVAS_WIDTH * 0.006 * BRICKBREAKER_LEVELS[Math.min(level - 1, BRICKBREAKER_LEVELS.length - 1)].ballSpeed
-    releaseBrickBall(state.caughtBall, baseSpeed, CANVAS_HEIGHT - PADDLE_HEIGHT - BALL_RADIUS - 10)
-    state.caughtBall = null
-  }, [CANVAS_WIDTH, CANVAS_HEIGHT, level])
-
-  // Main game loop
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || gameView !== "playing" || !active) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    ctx.imageSmoothingEnabled = false
-
-    const gameState = gameStateRef.current
-    const config = getLevelConfig(level)
-    const baseSpeed = CANVAS_WIDTH * 0.006 * config.ballSpeed
-    const BRICK_WIDTH = (CANVAS_WIDTH - (BRICK_COLUMNS + 1) * BRICK_PADDING) / BRICK_COLUMNS
-
-    let currentPaddleWidth = gameState.activePowerups.has("long") ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLButtonElement && (e.key === " " || e.key === "Enter")) return
-      if (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return
-      if (["ArrowLeft", "ArrowRight", " ", "Escape"].includes(e.key)) e.preventDefault()
-      gameState.keys[e.key] = true
-      if (e.key === "Escape") setGameView("paused")
-      if (e.key === " " && gameState.activePowerups.has("catch") && gameState.caughtBall) {
-        // Release caught ball
-        releaseBall()
-      }
-      if (e.key === " " && gameState.activePowerups.has("laser")) {
-        // Fire laser
-        gameState.laserShots.push({ x: gameState.paddleX + currentPaddleWidth / 2, y: CANVAS_HEIGHT - 20 })
-      }
-    }
-    const handleKeyUp = (e: KeyboardEvent) => {
-      gameState.keys[e.key] = false
-    }
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect()
-      const relativeX = e.clientX - rect.left
-      const scaleX = CANVAS_WIDTH / rect.width
-      gameState.paddleX = Math.max(
-        0,
-        Math.min(CANVAS_WIDTH - currentPaddleWidth, relativeX * scaleX - currentPaddleWidth / 2),
-      )
-    }
-
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault()
-      const rect = canvas.getBoundingClientRect()
-      const relativeX = e.touches[0].clientX - rect.left
-      const scaleX = CANVAS_WIDTH / rect.width
-      gameState.paddleX = Math.max(
-        0,
-        Math.min(CANVAS_WIDTH - currentPaddleWidth, relativeX * scaleX - currentPaddleWidth / 2),
-      )
-    }
-
-    const drawBall = (ball: Ball) => {
-      ctx.beginPath()
-      ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2)
-      ctx.fillStyle = "#FFFFFF"
-      ctx.fill()
-      ctx.strokeStyle = "#CCCCCC"
-      ctx.lineWidth = 1
-      ctx.stroke()
-      ctx.closePath()
-    }
-
-    const drawPaddle = () => {
-      ctx.fillStyle = gameState.activePowerups.has("laser")
-        ? "#FF00FF"
-        : gameState.activePowerups.has("catch")
-          ? "#00FFFF"
-          : "#00AAFF"
-      ctx.fillRect(gameState.paddleX, CANVAS_HEIGHT - PADDLE_HEIGHT - 8, currentPaddleWidth, PADDLE_HEIGHT)
-      ctx.strokeStyle = "#0088CC"
-      ctx.lineWidth = 1
-      ctx.strokeRect(gameState.paddleX, CANVAS_HEIGHT - PADDLE_HEIGHT - 8, currentPaddleWidth, PADDLE_HEIGHT)
-    }
-
-    const drawBricks = () => {
-      for (let c = 0; c < BRICK_COLUMNS; c++) {
-        for (let r = 0; r < gameState.bricks[c]?.length; r++) {
-          const brick = gameState.bricks[c][r]
-          if (brick.status === 1) {
-            ctx.fillStyle = brick.color
-            ctx.fillRect(brick.x, brick.y, brick.width, brick.height)
-
-            // Border for definition
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.3)"
-            ctx.lineWidth = 1
-            ctx.strokeRect(brick.x, brick.y, brick.width, brick.height)
-
-            // Highlight for 3D effect
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
-            ctx.lineWidth = 1
-            ctx.beginPath()
-            ctx.moveTo(brick.x, brick.y + brick.height)
-            ctx.lineTo(brick.x, brick.y)
-            ctx.lineTo(brick.x + brick.width, brick.y)
-            ctx.stroke()
-
-            if (brick.hasCapsule) {
-              ctx.fillStyle = "#FFFFFF"
-              ctx.font = `${Math.floor(BRICK_HEIGHT * 0.5)}px Arial`
-              ctx.textAlign = "center"
-              ctx.textBaseline = "middle"
-              ctx.fillText("●", brick.x + brick.width / 2, brick.y + brick.height / 2)
-            }
-
-            // Show hit count for multi-hit bricks
-            if (brick.maxHits > 1 && !brick.unbreakable) {
-              ctx.fillStyle = "#000000"
-              ctx.font = `bold ${Math.floor(BRICK_HEIGHT * 0.6)}px Arial`
-              ctx.textAlign = "center"
-              ctx.textBaseline = "middle"
-              ctx.fillText(brick.hits.toString(), brick.x + brick.width / 2, brick.y + brick.height / 2)
-            }
-
-            if (brick.unbreakable) {
-              ctx.fillStyle = "#404040"
-              ctx.font = `bold ${Math.floor(BRICK_HEIGHT * 0.7)}px Arial`
-              ctx.textAlign = "center"
-              ctx.textBaseline = "middle"
-              ctx.fillText("S", brick.x + brick.width / 2, brick.y + brick.height / 2)
-            }
-          }
-        }
-      }
-    }
-
-    const drawCapsules = () => {
-      gameState.capsules.forEach((capsule) => {
-        if (capsule.active) {
-          const capsuleColors: Record<CapsuleType, string> = {
-            long: "#00FF00",
-            slow: "#FFFF00",
-            multi: "#FF00FF",
-            laser: "#FF0000",
-            catch: "#00FFFF",
-            life: "#FF69B4",
-            bomb: "#FF8800",
-            flip: "#8800FF",
-          }
-          ctx.fillStyle = capsuleColors[capsule.type]
-          ctx.fillRect(capsule.x - 8, capsule.y - 8, 16, 16)
-          ctx.strokeStyle = "#FFFFFF"
-          ctx.lineWidth = 2
-          ctx.strokeRect(capsule.x - 8, capsule.y - 8, 16, 16)
-
-          // Draw letter indicator
-          ctx.fillStyle = "#000000"
-          ctx.font = "bold 10px Arial"
-          ctx.textAlign = "center"
-          ctx.textBaseline = "middle"
-          ctx.fillText(capsule.type[0].toUpperCase(), capsule.x, capsule.y)
-        }
-      })
-    }
-
-    const drawLasers = () => {
-      ctx.fillStyle = "#FF00FF"
-      gameState.laserShots.forEach((shot) => {
-        ctx.fillRect(shot.x - 2, shot.y, 4, 20)
-      })
-    }
-
-    const collisionDetection = () => {
-      const now = Date.now()
-
-      gameState.balls.forEach((ball) => {
-        if (!ball.active) return
-
-        for (let c = 0; c < BRICK_COLUMNS; c++) {
-          for (let r = 0; r < gameState.bricks[c]?.length; r++) {
-            const brick = gameState.bricks[c][r]
-            if (brick.status === 1) {
-              // Swept collision detection
-              const ballNextX = ball.x + ball.dx
-              const ballNextY = ball.y + ball.dy
-
-              if (
-                ballNextX + BALL_RADIUS > brick.x &&
-                ballNextX - BALL_RADIUS < brick.x + brick.width &&
-                ballNextY + BALL_RADIUS > brick.y &&
-                ballNextY - BALL_RADIUS < brick.y + brick.height
-              ) {
-                // Determine collision side for more accurate bounce
-                const fromLeft = ball.x < brick.x
-                const fromRight = ball.x > brick.x + brick.width
-                const fromTop = ball.y < brick.y
-                const fromBottom = ball.y > brick.y + brick.height
-
-                if (fromLeft || fromRight) {
-                  ball.dx = -ball.dx
-                } else {
-                  ball.dy = -ball.dy
-                }
-
-                if (!brick.unbreakable) {
-                  brick.hits--
-
-                  if (brick.hits <= 0) {
-                    brick.status = 0
-
-                    if (brick.hasCapsule) {
-                      gameState.capsules.push({
-                        x: brick.x + brick.width / 2,
-                        y: brick.y + brick.height,
-                        dy: 2,
-                        type: brick.hasCapsule as CapsuleType,
-                        active: true,
-                      })
-                    }
-
-                    // Combo system
-                    comboRef.current = now - gameState.lastComboTime < 1000 ? comboRef.current + 1 : 1
-                    maxComboRef.current = Math.max(maxComboRef.current, comboRef.current)
-                    setCombo(comboRef.current)
-                    setMaxCombo(maxComboRef.current)
-                    gameState.lastComboTime = now
-
-                    const comboMultiplier = Math.min(comboRef.current, 5)
-                    addScore(brick.points * comboMultiplier)
-                  }
-                }
-                return
-              }
-            }
-          }
-        }
-      })
-
-      gameState.laserShots.forEach((shot) => {
-        for (let c = 0; c < BRICK_COLUMNS; c++) {
-          for (let r = 0; r < gameState.bricks[c]?.length; r++) {
-            const brick = gameState.bricks[c][r]
-            if (brick.status === 1 && !brick.unbreakable) {
-              if (
-                shot.x > brick.x &&
-                shot.x < brick.x + brick.width &&
-                shot.y > brick.y &&
-                shot.y < brick.y + brick.height
-              ) {
-                brick.status = 0
-                shot.y = -100 // Deactivate shot
-                addScore(brick.points)
-              }
-            }
-          }
-        }
-      })
-    }
-
-    const updatePaddle = () => {
-      const speed = 8
-      if (gameState.keys["ArrowLeft"] || gameState.keys["a"]) {
-        gameState.paddleX = Math.max(0, gameState.paddleX - speed)
-      }
-      if (gameState.keys["ArrowRight"] || gameState.keys["d"]) {
-        gameState.paddleX = Math.min(CANVAS_WIDTH - currentPaddleWidth, gameState.paddleX + speed)
-      }
-
-      // Move caught ball with paddle
-      if (gameState.caughtBall) {
-        gameState.caughtBall.x = gameState.paddleX + currentPaddleWidth / 2
-      }
-    }
-
-    const updateCapsules = () => {
-      gameState.capsules.forEach((capsule) => {
-        if (capsule.active) {
-          capsule.y += capsule.dy
-
-          // Check if paddle catches capsule
-          if (
-            capsule.y >= CANVAS_HEIGHT - PADDLE_HEIGHT - 16 &&
-            capsule.y <= CANVAS_HEIGHT - 8 &&
-            capsule.x >= gameState.paddleX &&
-            capsule.x <= gameState.paddleX + currentPaddleWidth
-          ) {
-            capsule.active = false
-            activateCapsule(capsule.type)
-          }
-
-          // Remove if off-screen
-          if (capsule.y > CANVAS_HEIGHT) {
-            capsule.active = false
-          }
-        }
-      })
-      gameState.capsules = gameState.capsules.filter((c) => c.active)
-    }
-
-    const activateCapsule = (type: CapsuleType) => {
-      gameState.activePowerups.add(type)
-
-      switch (type) {
-        case "long":
-          // Extend paddle - already handled by currentPaddleWidth
-          setTimeout(() => gameState.activePowerups.delete("long"), 15000)
-          break
-        case "slow":
-          // Slow down all balls
-          gameState.balls.forEach((ball) => {
-            ball.dx *= 0.6
-            ball.dy *= 0.6
-          })
-          setTimeout(() => {
-            gameState.balls.forEach((ball) => {
-              ball.dx /= 0.6
-              ball.dy /= 0.6
-            })
-            gameState.activePowerups.delete("slow")
-          }, 10000)
-          break
-        case "multi":
-          // Add two more balls
-          const mainBall = gameState.balls[0]
-          if (mainBall) {
-            gameState.balls.push(
-              { x: mainBall.x, y: mainBall.y, dx: mainBall.dx * 1.2, dy: -Math.abs(mainBall.dy), active: true },
-              { x: mainBall.x, y: mainBall.y, dx: mainBall.dx * -1.2, dy: -Math.abs(mainBall.dy), active: true },
-            )
-          }
-          break
-        case "laser":
-          setTimeout(() => gameState.activePowerups.delete("laser"), 15000)
-          break
-        case "catch":
-          setTimeout(() => gameState.activePowerups.delete("catch"), 20000)
-          break
-        case "life":
-          livesRef.current = Math.min(livesRef.current + 1, 5)
-          setLives(livesRef.current)
-          break
-        case "bomb":
-          // Destroy multiple random bricks
-          let destroyed = 0
-          for (let c = 0; c < BRICK_COLUMNS && destroyed < 5; c++) {
-            for (let r = 0; r < gameState.bricks[c]?.length && destroyed < 5; r++) {
-              if (gameState.bricks[c][r].status === 1 && !gameState.bricks[c][r].unbreakable && Math.random() < 0.3) {
-                gameState.bricks[c][r].status = 0
-                addScore(gameState.bricks[c][r].points)
-                destroyed++
-              }
-            }
-          }
-          break
-        case "flip":
-          // Flip paddle controls temporarily
-          // This would need more complex implementation
-          break
-      }
-    }
-
-    const updateLasers = () => {
-      gameState.laserShots.forEach((shot) => {
-        shot.y -= 8
-      })
-      gameState.laserShots = gameState.laserShots.filter((shot) => shot.y > -50)
-    }
-
-    const draw = () => {
-      if (terminalHandledRef.current) return
-      currentPaddleWidth = gameState.activePowerups.has("long") ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH
-      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-
-      ctx.fillStyle = "#000000"
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-
-      drawBricks()
-      gameState.balls.forEach((ball) => ball.active && drawBall(ball))
-      drawPaddle()
-      drawCapsules()
-      drawLasers()
-      collisionDetection()
-      updatePaddle()
-      updateCapsules()
-      updateLasers()
-      if (
-        gameState.bricks.length > 0 &&
-        !gameState.bricks.some((column) => column.some((brick) => brick.status === 1 && !brick.unbreakable))
-      ) {
-        handleLevelComplete()
+  const next = () => {
+    stageStartScore.current = game.current.score
+    nextBrickLevel(game.current)
+    clearInput()
+    publish()
+    canvas.current?.focus()
+  }
+  const openScreen = (view: typeof screen) => {
+    pause()
+    setScreen(view)
+  }
+  const toggleSound = () => {
+    if (!audio.current) {
+      try {
+        audio.current = new AudioContext()
+      } catch {
         return
       }
-
-      if (level >= 10) {
-        gameState.paddleHits++
-        if (gameState.paddleHits % 50 === 0) {
-          const speedMultiplier = gameState.speedCycle % 2 === 0 ? 1.5 : 0.7
-          gameState.balls.forEach((ball) => {
-            ball.dx *= speedMultiplier
-            ball.dy *= speedMultiplier
-          })
-          gameState.speedCycle++
-        }
+    }
+    soundOn.current = !soundOn.current
+    setSoundEnabled(soundOn.current)
+    if (soundOn.current) void audio.current.resume().catch(() => {})
+  }
+  useEffect(() => {
+    activeRef.current = active
+    if (!active) pause()
+  }, [active, pause])
+  useEffect(() => {
+    screenRef.current = screen
+  }, [screen])
+  useEffect(() => {
+    const value = Number(readGameStorage("brickbreaker_circuit_best"))
+    setBest(Number.isFinite(value) && value > 0 ? value : 0)
+    progress.current = loadGameProgress("brickbreaker")
+    return () => {
+      void audio.current?.close().catch(() => {})
+    }
+  }, [])
+  useEffect(() => {
+    const element = canvas.current,
+      ctx = element?.getContext("2d")
+    if (!element || !ctx) return
+    const motion = matchMedia("(prefers-reduced-motion: reduce)")
+    let frame = 0,
+      previous = 0,
+      lastHud = 0,
+      lastEvent = 0
+    let oldPhase = game.current.phase
+    const resize = () => {
+      const bounds = element.getBoundingClientRect(),
+        ratio = Math.min(devicePixelRatio || 1, 2)
+      element.width = Math.max(1, Math.round(bounds.width * ratio))
+      element.height = Math.max(1, Math.round(bounds.height * ratio))
+    }
+    const observer = new ResizeObserver(resize)
+    observer.observe(element)
+    resize()
+    const animate = (now: number) => {
+      const g = game.current,
+        controls = input.current
+      const down = (code: string) => controls.keys.has(code) || controls.touches.has(code)
+      if (activeRef.current && !document.hidden && screenRef.current === "game") {
+        stepBrickbreaker(
+          g,
+          {
+            move: Number(down("ArrowRight") || down("KeyD")) - Number(down("ArrowLeft") || down("KeyA")),
+            target: controls.target,
+            aim: Number(down("ArrowUp")) - Number(down("ArrowDown")),
+            fire: controls.shot || down("Space"),
+          },
+          previous ? (now - previous) / 1000 : 1 / 60,
+        )
+        controls.shot = false
       }
-
-      // Ball physics for each ball
-      gameState.balls.forEach((ball, index) => {
-        if (!ball.active || ball === gameState.caughtBall) return
-
-        // Wall collisions
-        if (ball.x + ball.dx > CANVAS_WIDTH - BALL_RADIUS || ball.x + ball.dx < BALL_RADIUS) {
-          ball.dx = -ball.dx
+      previous = now
+      if (g.phase !== oldPhase) {
+        if (["cleared", "won", "over"].includes(g.phase) && !g.practice) {
+          const p = progress.current
+          p.currentLevel = g.level
+          p.highScores[g.level] = Math.max(p.highScores[g.level] || 0, g.score - stageStartScore.current)
+          if (g.phase === "cleared" && !p.unlockedLevels.includes(g.level + 1)) p.unlockedLevels.push(g.level + 1)
+          if (g.phase === "won" || g.phase === "over") {
+            p.gamesPlayed++
+            p.totalScore += g.score
+          }
+          saveGameProgress("brickbreaker", p)
+          setBest((value) => {
+            const nextBest = Math.max(value, g.score)
+            writeGameStorage("brickbreaker_circuit_best", String(nextBest))
+            return nextBest
+          })
         }
-        if (ball.y + ball.dy < BALL_RADIUS) {
-          ball.dy = -ball.dy
-        } else if (ball.y + ball.dy > CANVAS_HEIGHT - BALL_RADIUS - 8) {
-          // Paddle collision
-          if (ball.x > gameState.paddleX && ball.x < gameState.paddleX + currentPaddleWidth) {
-            const hitPoint = (ball.x - gameState.paddleX) / currentPaddleWidth
-            const angle = (hitPoint - 0.5) * Math.PI * 0.6 // Increased angle range for steeper bounces
-            const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy)
-            ball.dx = speed * Math.sin(angle)
-            ball.dy = -speed * Math.cos(angle)
-
-            if (gameState.activePowerups.has("catch") && !gameState.caughtBall) {
-              gameState.caughtBall = ball
-              ball.heldSpeed = Math.hypot(ball.dx, ball.dy)
-              ball.dy = 0
-              ball.dx = 0
-            }
-
-            comboRef.current = 0
-            setCombo(0) // Reset combo on paddle hit
-            gameState.paddleHits++
-          } else {
-            // Ball lost
-            ball.active = false
-            const remainingBalls = gameState.balls.filter((b) => b.active).length
-
-            if (remainingBalls === 0) {
-              livesRef.current = Math.max(0, livesRef.current - 1)
-              setLives(livesRef.current)
-              if (livesRef.current <= 0) {
-                handleGameOver()
-                return
-              }
-              // Reset ball
-              gameState.balls = [
-                {
-                  x: CANVAS_WIDTH / 2,
-                  y: CANVAS_HEIGHT - 60,
-                  dx: baseSpeed * (Math.random() > 0.5 ? 1 : -1),
-                  dy: -baseSpeed,
-                  active: true,
-                },
-              ]
-              gameState.paddleX = (CANVAS_WIDTH - currentPaddleWidth) / 2
-              comboRef.current = 0
-              setCombo(0)
-            }
+        oldPhase = g.phase
+        publish()
+      }
+      if (lastEvent !== g.event) {
+        lastEvent = g.event
+        const ac = audio.current
+        if (soundOn.current && activeRef.current && ac?.state === "running") {
+          const oscillator = ac.createOscillator(),
+            gain = ac.createGain()
+          oscillator.type = "triangle"
+          const frequency = { brick: 440, paddle: 180, pickup: 720, loss: 100, clear: 880, fire: 320 }[g.sound]
+          oscillator.frequency.setValueAtTime(frequency, ac.currentTime)
+          oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.65, ac.currentTime + 0.08)
+          gain.gain.setValueAtTime(0.035, ac.currentTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.09)
+          oscillator.connect(gain)
+          gain.connect(ac.destination)
+          oscillator.start()
+          oscillator.stop(ac.currentTime + 0.1)
+          oscillator.onended = () => {
+            oscillator.disconnect()
+            gain.disconnect()
           }
         }
-
-        if (ball.active && ball !== gameState.caughtBall) {
-          ball.x += ball.dx
-          ball.y += ball.dy
-        }
-      })
-
-      // UI Display
-      ctx.fillStyle = "#FFFFFF"
-      ctx.font = `${Math.floor(CANVAS_WIDTH * 0.04)}px monospace`
-      ctx.textAlign = "left"
-      ctx.fillText(`SCORE: ${score}`, 8, 25)
-      ctx.fillText(`LIVES: ${lives}`, 8, 45)
-      ctx.textAlign = "right"
-      ctx.fillText(`LEVEL ${level}`, CANVAS_WIDTH - 8, 25)
-      if (combo > 1) {
-        ctx.fillStyle = "#FFFF00"
-        ctx.fillText(`COMBO x${combo}`, CANVAS_WIDTH - 8, 45)
       }
-
-      if (gameView === "playing") {
-        gameState.animationId = requestAnimationFrame(draw)
+      if (now - lastHud > 100) {
+        publish()
+        lastHud = now
       }
+      if (activeRef.current) drawBrickbreaker(ctx, g, motion.matches)
+      frame = requestAnimationFrame(animate)
     }
-
-    window.addEventListener("keydown", handleKeyDown)
-    window.addEventListener("keyup", handleKeyUp)
-    canvas.addEventListener("mousemove", handleMouseMove)
-    canvas.addEventListener("touchmove", handleTouchMove, { passive: false })
-
-    draw()
-
+    frame = requestAnimationFrame(animate)
     return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-      window.removeEventListener("keyup", handleKeyUp)
-      canvas.removeEventListener("mousemove", handleMouseMove)
-      canvas.removeEventListener("touchmove", handleTouchMove)
-      if (gameState.animationId) cancelAnimationFrame(gameState.animationId)
+      cancelAnimationFrame(frame)
+      observer.disconnect()
     }
-  }, [
-    gameView,
-    level,
-    lives,
-    score,
-    combo,
-    CANVAS_WIDTH,
-    CANVAS_HEIGHT,
-    PADDLE_WIDTH,
-    BRICK_HEIGHT,
-    handleLevelComplete,
-    handleGameOver,
-    active,
-    releaseBall,
-    addScore,
-  ])
-
-  return (
-    <HandheldConsole
-      title="Brick Breaker"
-      horizontalOnly
-      paused={gameView === "paused"}
-      onStart={() => {
-        if (gameView === "playing") setGameView("paused")
-        else if (gameView === "paused") setGameView("playing")
-        else startGame(1)
-      }}
-      onDirection={(direction, held) => {
-        if (direction === "LEFT" || direction === "RIGHT")
-          gameStateRef.current.keys[direction === "LEFT" ? "ArrowLeft" : "ArrowRight"] = held
-      }}
-      onAction={() => {
-        if (gameView !== "playing") {
-          if (gameView === "paused") setGameView("playing")
-          else startGame(1)
-          return
+  }, [publish])
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      if (
+        !activeRef.current ||
+        screenRef.current !== "game" ||
+        (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName))
+      )
+        return
+      if (["Escape", "KeyP"].includes(event.code)) {
+        event.preventDefault()
+        event.stopPropagation()
+        if (event.repeat) return
+        const g = game.current
+        if (["playing", "serve"].includes(g.phase)) {
+          pauseBrickbreaker(g, !g.paused)
+          clearInput()
+          publish()
         }
-        const state = gameStateRef.current
-        releaseBall()
-        if (state.activePowerups.has("laser"))
-          state.laserShots.push({
-            x: state.paddleX + (state.activePowerups.has("long") ? PADDLE_WIDTH * 1.5 : PADDLE_WIDTH) / 2,
-            y: CANVAS_HEIGHT - 20,
-          })
-      }}
-    >
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          background: "#101711",
-          padding: 4,
-        }}
-      >
-        <div className="relative w-full max-w-md">
+        return
+      }
+      if (!["playing", "serve"].includes(game.current.phase) || game.current.paused) return
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "Space"].includes(event.code)) {
+        if (event.code === "Space" && event.target instanceof HTMLButtonElement) return
+        event.preventDefault()
+        input.current.keys.add(event.code)
+        if (event.code !== "Space") input.current.target = undefined
+      }
+    }
+    const up = (event: KeyboardEvent) => input.current.keys.delete(event.code)
+    const hidden = () => {
+      if (document.hidden) pause()
+    }
+    window.addEventListener("keydown", down)
+    window.addEventListener("keyup", up)
+    window.addEventListener("blur", pause)
+    document.addEventListener("visibilitychange", hidden)
+    return () => {
+      window.removeEventListener("keydown", down)
+      window.removeEventListener("keyup", up)
+      window.removeEventListener("blur", pause)
+      document.removeEventListener("visibilitychange", hidden)
+    }
+  }, [pause, clearInput, publish])
+  const playable = screen === "game" && !hud.paused && ["playing", "serve"].includes(hud.phase)
+  const steer = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (!playable || (event.pointerType !== "mouse" && !event.buttons)) return
+    const box = event.currentTarget.getBoundingClientRect()
+    input.current.target = ((event.clientX - box.left) / box.width) * FIELD.width
+  }
+  const heldButton = (code: string) => ({
+    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
+      if (!playable) return
+      event.preventDefault()
+      event.currentTarget.setPointerCapture(event.pointerId)
+      input.current.touches.add(code)
+      input.current.target = undefined
+      if (code === "Space") input.current.shot = true
+    },
+    onPointerUp: () => input.current.touches.delete(code),
+    onPointerCancel: () => input.current.touches.delete(code),
+    onLostPointerCapture: () => input.current.touches.delete(code),
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (event.detail === 0 && playable) {
+        if (code === "Space") input.current.shot = true
+        else input.current.target = game.current.paddle + (code === "ArrowLeft" ? -24 : 24)
+      }
+    },
+  })
+  const powerText = (Object.entries(hud.powers) as [keyof typeof hud.powers, number][])
+    .filter(([, value]) => value > 0)
+    .map(([key, value]) => `${PICKUPS[key].label} ${Math.ceil(value)}s`)
+    .join(" · ")
+  const ended = hud.phase === "over" || hud.phase === "won"
+  const overlay = screen !== "game" || hud.phase === "ready" || hud.paused || ended || hud.phase === "cleared"
+  return (
+    <section className="bb-cabinet" aria-label="Brickbreaker arcade">
+      <header className="bb-heading">
+        <div>
+          <h2>BRICKBREAKER</h2>
+          <span>BlackBerry-inspired · 34 original circuits</span>
+        </div>
+        <div style={{ display: "flex", gap: 5 }}>
+          <button
+            type="button"
+            style={button}
+            onClick={toggleSound}
+            aria-label={soundEnabled ? "Mute game sounds" : "Enable game sounds"}
+            aria-pressed={soundEnabled}
+          >
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+          <button
+            type="button"
+            style={button}
+            disabled={!["serve", "playing"].includes(hud.phase)}
+            onClick={hud.paused ? resume : pause}
+            aria-label={hud.paused ? "Resume Brickbreaker" : "Pause Brickbreaker"}
+            aria-keyshortcuts="P Escape"
+          >
+            {hud.paused ? <Play size={16} /> : <Pause size={16} />}
+          </button>
+        </div>
+      </header>
+      <div className="bb-console">
+        <div className="bb-instruments" aria-label="Game status">
+          <div>
+            <span>Score</span>
+            <strong data-bb-score>{hud.score.toLocaleString()}</strong>
+            <small>Best {best.toLocaleString()}</small>
+          </div>
+          <div>
+            <span>Lives / rockets</span>
+            <strong>
+              <span style={{ color: "#9bbcff" }}>{hud.lives}</span>
+              <span style={{ fontSize: 14, color: "#acb7c5", margin: "0 10px" }}>/</span>
+              <span style={{ color: "#e5c185" }}>{hud.rockets}</span>
+            </strong>
+            <small>
+              Level {hud.level} / {BRICK_LEVELS.length}
+            </small>
+          </div>
+        </div>
+        <div className="bb-field-frame">
           <canvas
-            ref={canvasRef}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
-            className="mx-auto block touch-none rounded-lg border-4 border-gray-700 shadow-2xl"
-            style={{
-              width: "100%",
-              maxWidth: `${CANVAS_WIDTH}px`,
-              height: "auto",
-              aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}`,
-              imageRendering: "pixelated",
+            ref={canvas}
+            tabIndex={0}
+            aria-label="Brickbreaker playfield. Arrows or A and D move. Space launches or fires. P pauses."
+            onPointerDown={(event) => {
+              if (!playable) return
+              event.preventDefault()
+              event.currentTarget.focus()
+              event.currentTarget.setPointerCapture(event.pointerId)
+              const box = event.currentTarget.getBoundingClientRect()
+              input.current.target = ((event.clientX - box.left) / box.width) * FIELD.width
+            }}
+            onPointerMove={steer}
+            onPointerCancel={() => {
+              input.current.target = undefined
             }}
           />
-        </div>
-
-        {/* Game Controls (visible during play) */}
-        {(gameView === "playing" || gameView === "paused") && (
-          <GameControls
-            isPaused={gameView === "paused"}
-            onPause={() => setGameView("paused")}
-            onResume={() => setGameView("playing")}
-            onRestart={() => startGame(level)}
-            onQuit={() => setGameView("menu")}
-            score={score}
-            level={level}
-            lives={lives}
-            timeElapsed={timeElapsed}
-            showLevelSelect={() => setGameView("levelselect")}
-          />
-        )}
-
-        {/* Overlay screens */}
-        {gameView === "menu" && (
-          <div
-            className="bg-black/85 rounded-lg"
-            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
-          >
-            <div className="text-center space-y-4 p-4">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">Brickbreaker</h2>
-              <p className="text-gray-400 text-sm">Break all bricks to advance!</p>
-              <div className="space-y-2">
-                <button
-                  className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-400 font-bold min-h-[48px]"
-                  onClick={() => startGame(1)}
-                >
-                  ▶ Start Game
-                </button>
-                <button
-                  className="w-full px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-400 font-bold min-h-[48px]"
-                  onClick={() => setGameView("levelselect")}
-                >
-                  📋 Select Level
-                </button>
-                <button
-                  className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-400 font-bold min-h-[48px]"
-                  onClick={() => setGameView("leaderboard")}
-                >
-                  🏆 Leaderboard
-                </button>
-              </div>
-              <p className="text-gray-500 text-xs">Use mouse/touch or arrow keys to move paddle</p>
-            </div>
-          </div>
-        )}
-
-        {gameView === "paused" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-lg">
-            <div className="text-center space-y-4 p-4">
-              <h2 className="text-2xl font-bold text-white">PAUSED</h2>
-              <p className="text-gray-400">Press ESC or Resume to continue</p>
-              <button
-                type="button"
-                onClick={() => setGameView("playing")}
-                className="rounded bg-green-600 px-5 py-3 font-bold text-white hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-              >
-                Resume
-              </button>
-            </div>
-          </div>
-        )}
-
-        {gameView === "levelcomplete" && (
-          <div
-            className="bg-black/85 rounded-lg"
-            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
-          >
-            <div className="text-center space-y-4 p-4">
-              <h2 className="text-2xl font-bold text-green-400">Level {level} Complete!</h2>
-              <div className="text-white space-y-1">
-                <p>
-                  Score: <span className="text-yellow-400 font-bold">{score.toLocaleString()}</span>
-                </p>
-                <p>
-                  Max Combo: <span className="text-purple-400 font-bold">{maxCombo}x</span>
-                </p>
-              </div>
-              <div className="space-y-2">
-                {level < BRICKBREAKER_LEVELS.length ? (
-                  <button
-                    className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-400 font-bold"
-                    onClick={nextLevel}
-                  >
-                    Next Level →
+          {overlay && (
+            <div className="bb-overlay" role="region" aria-label="Brickbreaker menu">
+              {screen === "scores" ? (
+                <Leaderboard gameName="brickbreaker" onClose={() => setScreen("game")} />
+              ) : screen === "help" ? (
+                <>
+                  <h3>Make the angle.</h3>
+                  <p>
+                    The paddle’s edges send the ball sideways. The center sends it higher. Silver blocks stay; clear
+                    every red brick.
+                  </p>
+                  <p>
+                    Move with ← → / A D, point on the field, or drag the strip below it. ↑ ↓ adjusts your launch angle.
+                    Space / Fire launches the ball and fires weapons. P / Esc pauses.
+                  </p>
+                  <div className="bb-pickup-guide">
+                    {Object.entries(PICKUPS).map(([key, value]) => (
+                      <div key={key}>
+                        <b style={{ background: value.color }}>{value.glyph}</b>
+                        <span>
+                          <strong>{value.label}</strong>
+                          <br />
+                          {value.help}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <button style={primary} onClick={() => setScreen("game")}>
+                    Back to game
                   </button>
-                ) : (
-                  <div className="text-yellow-400 font-bold text-lg">🎉 You beat all levels! 🎉</div>
-                )}
-                <button
-                  className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 font-bold"
-                  onClick={() => setGameView("menu")}
-                >
-                  Back to Menu
-                </button>
-              </div>
+                </>
+              ) : screen === "levels" ? (
+                <>
+                  <h3>Practice a circuit</h3>
+                  <p>
+                    Campaign clears unlock boards. Practice starts with three lives and has no public score submission.
+                  </p>
+                  <div className="bb-levels">
+                    {BRICK_LEVELS.map(([name], i) => (
+                      <button
+                        key={name}
+                        style={button}
+                        disabled={!progress.current.unlockedLevels.includes(i + 1)}
+                        aria-label={`Practice level ${i + 1}: ${name}`}
+                        onClick={() => start(i + 1, true)}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <button style={button} onClick={() => setScreen("game")}>
+                    Back
+                  </button>
+                </>
+              ) : hud.phase === "ready" ? (
+                <>
+                  <span className="bb-model">HANDHELD CLASSIC / REBUILT</span>
+                  <h3>One more board.</h3>
+                  <p>
+                    Steel, red bricks, a blue paddle.
+                    <br />
+                    Find the angle. Catch the capsules.
+                  </p>
+                  <button style={{ ...primary, width: "100%" }} onClick={() => start()}>
+                    <Play size={16} /> Start campaign
+                  </button>
+                  <div className="bb-menu-row">
+                    <button style={button} onClick={() => openScreen("levels")}>
+                      Practice
+                    </button>
+                    <button style={button} onClick={() => openScreen("scores")}>
+                      High scores
+                    </button>
+                    <button style={button} onClick={() => openScreen("help")}>
+                      How to play
+                    </button>
+                  </div>
+                  <small>Arrows / mouse / touch · Space to launch</small>
+                </>
+              ) : ended ? (
+                <>
+                  <h3>{hud.phase === "won" ? "All 34. Nicely done." : "Out of paddles."}</h3>
+                  <p>
+                    {hud.score.toLocaleString()} points · Level {hud.level}
+                  </p>
+                  {hud.practice ? (
+                    <p>Practice run · scores stay off the public board.</p>
+                  ) : (
+                    <ScoreEntry key={runId.current} gameName="brickbreaker" score={hud.score} level={hud.level} />
+                  )}
+                  <div className="bb-menu-row">
+                    <button style={primary} onClick={() => start(hud.practice ? hud.level : 1, hud.practice)}>
+                      <RotateCcw size={14} /> Play again
+                    </button>
+                    <button style={button} onClick={menu}>
+                      Menu
+                    </button>
+                  </div>
+                </>
+              ) : hud.phase === "cleared" ? (
+                <>
+                  <h3>Circuit {hud.level} cleared.</h3>
+                  <p>
+                    {BRICK_LEVELS[hud.level - 1][0]}
+                    <br />
+                    {hud.score.toLocaleString()} points · {hud.lives} lives left
+                  </p>
+                  <button style={primary} onClick={next}>
+                    Next circuit →
+                  </button>
+                  <button style={button} onClick={menu}>
+                    Back to menu
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3>Paused.</h3>
+                  <p>Your ball, power-ups and score are held right here.</p>
+                  <button style={primary} onClick={resume}>
+                    <Play size={15} /> Resume
+                  </button>
+                  <div className="bb-menu-row">
+                    <button style={button} onClick={() => start(hud.practice ? hud.level : 1, hud.practice)}>
+                      <RotateCcw size={14} /> Restart run
+                    </button>
+                    <button style={button} onClick={() => setScreen("help")}>
+                      Controls
+                    </button>
+                    <button style={button} onClick={menu}>
+                      <X size={14} /> Menu
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
+          )}
+        </div>
+        <div className="bb-deck">
+          <div className="bb-stage-label">
+            {hud.practice ? "PRACTICE · " : ""}
+            {String(hud.level).padStart(2, "0")} / {BRICK_LEVELS[hud.level - 1][0]}
           </div>
-        )}
-
-        {gameView === "gameover" && (
           <div
-            className="rounded-lg"
-            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+            className="bb-touch-strip"
+            role="slider"
+            aria-label="Paddle position"
+            aria-valuemin={0}
+            aria-valuemax={360}
+            aria-valuenow={Math.round(game.current.paddle)}
+            tabIndex={playable ? 0 : -1}
+            onKeyDown={(event) => {
+              if (["ArrowLeft", "ArrowRight"].includes(event.key) && playable) {
+                event.preventDefault()
+                event.stopPropagation()
+                input.current.target = game.current.paddle + (event.key === "ArrowLeft" ? -20 : 20)
+              }
+            }}
+            onPointerDown={(event) => {
+              if (!playable) return
+              event.preventDefault()
+              event.currentTarget.setPointerCapture(event.pointerId)
+              drag.current = { id: event.pointerId, x: event.clientX, paddle: game.current.paddle }
+            }}
+            onPointerMove={(event) => {
+              if (!playable || drag.current?.id !== event.pointerId) return
+              const width = event.currentTarget.getBoundingClientRect().width
+              input.current.target = drag.current.paddle + ((event.clientX - drag.current.x) * FIELD.width) / width
+            }}
+            onPointerUp={() => {
+              drag.current = null
+            }}
+            onPointerCancel={() => {
+              drag.current = null
+            }}
+            onLostPointerCapture={() => {
+              drag.current = null
+            }}
           >
-            <GameOverScreen
-              score={score}
-              level={level}
-              isHighScore={isNewHighScore}
-              gameName="brickbreaker"
-              onRestart={() => startGame(level)}
-              onQuit={() => setGameView("menu")}
-              onViewLeaderboard={() => setGameView("leaderboard")}
-              stats={{ timeElapsed, maxCombo }}
-            />
+            <span>‹</span>
+            <span>Slide to steer</span>
+            <span>›</span>
           </div>
-        )}
-
-        {gameView === "leaderboard" && (
-          <div
-            className="rounded-lg"
-            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
-          >
-            <Leaderboard
-              gameName="brickbreaker"
-              currentScore={score > 0 ? score : undefined}
-              onClose={() => setGameView("menu")}
-            />
+          <div className="bb-play-controls">
+            <button
+              style={button}
+              disabled={!playable}
+              aria-label="Move paddle left"
+              aria-keyshortcuts="ArrowLeft A"
+              {...heldButton("ArrowLeft")}
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <button
+              style={primary}
+              disabled={!playable}
+              aria-label="Launch or fire"
+              aria-keyshortcuts="Space"
+              {...heldButton("Space")}
+            >
+              {hud.held ? "Launch" : "Fire"} <kbd>Space</kbd>
+            </button>
+            <button
+              style={button}
+              disabled={!playable}
+              aria-label="Move paddle right"
+              aria-keyshortcuts="ArrowRight D"
+              {...heldButton("ArrowRight")}
+            >
+              <ArrowRight size={18} />
+            </button>
           </div>
-        )}
-
-        {gameView === "levelselect" && (
-          <div
-            className="rounded-lg"
-            style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain" }}
-          >
-            <LevelSelector
-              gameName="brickbreaker"
-              levels={BRICKBREAKER_LEVELS}
-              onSelectLevel={(lvl) => startGame(lvl)}
-              onClose={() => setGameView("menu")}
-            />
+          {hud.held && playable && (
+            <label className="bb-aim">
+              Aim{" "}
+              <input
+                aria-label="Launch angle"
+                type="range"
+                min={-100}
+                max={100}
+                value={Math.round(hud.aim * 100)}
+                onChange={(event) => {
+                  game.current.aim = Number(event.target.value) / 100
+                }}
+              />
+              <span>↑ ↓</span>
+            </label>
+          )}
+          <div className="bb-status" role="status" aria-live="polite">
+            {hud.message ||
+              (hud.paused
+                ? "Paused · P to resume"
+                : hud.phase === "serve"
+                  ? "Aim first. Space / Launch when ready."
+                  : "Catch capsules. Keep the ball alive.")}
           </div>
-        )}
+          {powerText && <div className="bb-powers">{powerText}</div>}
+        </div>
       </div>
-    </HandheldConsole>
+    </section>
   )
 }
