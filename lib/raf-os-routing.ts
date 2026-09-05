@@ -10,17 +10,17 @@ export type ProviderConfig = { provider: Provider; model: string; apiKey: string
 /** Server configuration is the only source of provider endpoints, credentials, and models. */
 export function configuredProviders(env: Environment = process.env): ProviderConfig[] {
   const providers: ProviderConfig[] = []
-  if (env.GEMINI_API_KEY?.trim())
-    providers.push({
-      provider: "gemini",
-      model: env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
-      apiKey: env.GEMINI_API_KEY.trim(),
-    })
   if (env.OPENAI_API_KEY?.trim())
     providers.push({
       provider: "openai",
       model: env.OPENAI_MODEL?.trim() || DEFAULT_RAF_MODEL,
       apiKey: env.OPENAI_API_KEY.trim(),
+    })
+  if (env.GEMINI_API_KEY?.trim())
+    providers.push({
+      provider: "gemini",
+      model: env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
+      apiKey: env.GEMINI_API_KEY.trim(),
     })
   if (providers.some((item) => !/^[A-Za-z0-9._:-]{1,100}$/.test(item.model)))
     throw new RafHttpError("The model configuration is unavailable.", 503)

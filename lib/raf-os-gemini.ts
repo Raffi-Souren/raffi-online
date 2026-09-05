@@ -1,6 +1,6 @@
 import { z } from "zod/v3"
 import { validateCritique, type Source } from "./raf-os"
-import { RAF_LIMITS, RafHttpError, type buildModelRequest } from "./raf-os-server"
+import { RAF_LIMITS, RafHttpError, reviewValidationFailure, type buildModelRequest } from "./raf-os-server"
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.7-flash"
 const pdfPrefix = "data:application/pdf;base64,"
@@ -107,8 +107,8 @@ export function parseGeminiResponse(value: unknown, sources: Source[], comparing
       result: validateCritique(JSON.parse(parts.map((part) => part.text).join("")), sources, comparing),
       model: modelVersion,
     }
-  } catch {
-    throw new RafHttpError("The review did not pass its source and evidence checks. Please try again.", 502)
+  } catch (error) {
+    throw reviewValidationFailure(error)
   }
 }
 
@@ -147,13 +147,60 @@ async function readProviderJson(body: ReadableStream<Uint8Array> | null, limit: 
 const failureSchema = z.object({
   error: z.object({
     status: z.string().optional(),
+    message: z.string().optional(),
     details: z
-      .array(z.object({ fieldViolations: z.array(z.object({ field: z.string().optional() })).optional() }))
+      .array(
+        z.object({
+          reason: z.string().optional(),
+          fieldViolations: z.array(z.object({ field: z.string().optional() })).optional(),
+        }),
+      )
       .optional(),
   }),
 })
 const safeDiagnostic = (value: string | undefined) =>
   value && /^[A-Za-z0-9_.\[\]-]{1,100}$/.test(value) ? value : "unknown"
+
+/** Match fixed provider phrases; no portion of its potentially sensitive message is returned. */
+function messageDiagnostic(message: string | undefined) {
+  const normalized = message?.toLowerCase() ?? ""
+  const categories = [
+    {
+      code: "SCHEMA_TOO_COMPLEX",
+      phrases: [
+        "schema is too complex",
+        "schema is too large",
+        "schema has too many states",
+        "constraint that has too many states",
+        "exceeds the maximum allowed nesting depth",
+      ],
+    },
+    {
+      code: "API_KEY_INVALID",
+      phrases: ["api key not valid", "api key is invalid", "api key not found", "api key expired"],
+    },
+    {
+      code: "BILLING_REQUIRED",
+      phrases: [
+        "please enable billing",
+        "billing is not enabled",
+        "billing must be enabled",
+        "billing account is disabled",
+      ],
+    },
+    {
+      code: "THINKING_CONFIG_INVALID",
+      phrases: [
+        "thinking level is not supported",
+        "thinking_level is not supported",
+        "thinking level minimal is not supported",
+        "thinking budget is not supported",
+        "thinking_budget is not supported",
+      ],
+    },
+  ]
+  return categories.find((category) => category.phrases.some((phrase) => normalized.includes(phrase)))?.code
+}
 
 export async function requestGemini(
   request: ReturnType<typeof buildGeminiRequest>,
@@ -190,7 +237,11 @@ export async function requestGemini(
       try {
         const parsed = failureSchema.safeParse(await readProviderJson(response.body, 16_000, controller.signal))
         if (parsed.success) {
-          providerCode = safeDiagnostic(parsed.data.error.status)
+          const reason = parsed.data.error.details
+            ?.map((detail) => detail.reason)
+            .find((value): value is string => typeof value === "string" && /^[A-Z][A-Z_]{0,99}$/.test(value))
+          providerCode =
+            reason ?? messageDiagnostic(parsed.data.error.message) ?? safeDiagnostic(parsed.data.error.status)
           providerParameter = safeDiagnostic(
             parsed.data.error.details?.flatMap((detail) => detail.fieldViolations ?? [])[0]?.field,
           )

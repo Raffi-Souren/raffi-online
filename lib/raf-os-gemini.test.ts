@@ -162,7 +162,7 @@ test(
       assert.equal(options?.redirect, "error")
       assert.equal(options?.cache, "no-store")
       assert.ok(options?.signal instanceof AbortSignal)
-      return Response.json(responseEnvelope())
+      return new Response(JSON.stringify(responseEnvelope()))
     }
     try {
       assert.deepEqual(
@@ -186,6 +186,57 @@ test(
     const originalFetch = globalThis.fetch
     const request = buildGeminiRequest(await modelRequest())
     const cases = [
+      {
+        status: 400,
+        body: {
+          error: {
+            status: "INVALID_ARGUMENT",
+            message: "The schema is too complex. " + fakeKey,
+            details: [{ reason: "API_KEY_INVALID", metadata: { secret: fakeKey } }],
+          },
+        },
+        code: "API_KEY_INVALID",
+        parameter: "unknown",
+      },
+      {
+        status: 400,
+        body: {
+          error: {
+            status: "INVALID_ARGUMENT",
+            message: "API key not valid. Please pass a valid API key. " + fakeKey,
+            details: [{ reason: "invalid\n" + fakeKey }],
+          },
+        },
+        code: "API_KEY_INVALID",
+        parameter: "unknown",
+      },
+      ...[
+        {
+          message: "The specified schema produces a constraint that has too many states for serving.",
+          code: "SCHEMA_TOO_COMPLEX",
+        },
+        {
+          message: "A schema in GenerationConfig exceeds the maximum allowed nesting depth.",
+          code: "SCHEMA_TOO_COMPLEX",
+        },
+        {
+          message: "Gemini API free tier is not available in your country. Please enable billing on your project.",
+          code: "BILLING_REQUIRED",
+        },
+        { message: "Thinking level MINIMAL is not supported for this model.", code: "THINKING_CONFIG_INVALID" },
+        { message: "Unexpected generic error involving schema, billing, and thinking.", code: "INVALID_ARGUMENT" },
+      ].map((entry) => ({
+        status: 400,
+        body: { error: { status: "INVALID_ARGUMENT", message: entry.message + " " + fakeKey } },
+        code: entry.code,
+        parameter: "unknown",
+      })),
+      ...["api_key_invalid", "API_KEY_INVALID\nPRIVATE", "API_KEY_INVALID<script>", "A".repeat(101)].map((reason) => ({
+        status: 400,
+        body: { error: { status: "INVALID_ARGUMENT", message: fakeKey, details: [{ reason }] } },
+        code: "INVALID_ARGUMENT",
+        parameter: "unknown",
+      })),
       {
         status: 400,
         body: {
@@ -314,10 +365,11 @@ test(
       { fetch: async () => new Response(new Uint8Array([0xff, 0xfe])), status: 502 },
       { fetch: async () => new Response("invalid JSON " + fakeKey), status: 502 },
       {
-        fetch: async () => Response.json({ ...responseEnvelope(), candidates: [{ finishReason: "MAX_TOKENS" }] }),
+        fetch: async () =>
+          new Response(JSON.stringify({ ...responseEnvelope(), candidates: [{ finishReason: "MAX_TOKENS" }] })),
         status: 502,
       },
-      { fetch: async () => Response.json({ promptFeedback: { blockReason: "SAFETY" } }), status: 422 },
+      { fetch: async () => new Response(JSON.stringify({ promptFeedback: { blockReason: "SAFETY" } })), status: 422 },
     ]
     try {
       for (const scenario of scenarios) {

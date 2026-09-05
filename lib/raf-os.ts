@@ -1,7 +1,7 @@
 import { z } from "zod/v3"
 
 export const RAF_RUBRIC = "evidence-v1"
-export const RAF_PROMPT = "founder-critic-v1"
+export const RAF_PROMPT = "founder-critic-v2"
 export const GPT_BACKUP = "https://chatgpt.com/g/g-68a497212bfc81918b450e9ca7ee67ba-raf-os-terminal"
 export const SCORE_DIMENSIONS = [
   "Problem",

@@ -38,7 +38,7 @@ const providerFailure = (providerStatus: number, providerCode = "UNAVAILABLE") =
   })
 const statusIs = (status: number) => (error: unknown) => error instanceof RafHttpError && error.status === status
 
-test("configured routes deterministically prefer Gemini and accept model configuration only from the server", () => {
+test("configured routes deterministically prefer OpenAI and accept model configuration only from the server", () => {
   assert.deepEqual(
     configuredProviders({
       ...keys,
@@ -46,14 +46,14 @@ test("configured routes deterministically prefer Gemini and accept model configu
       GEMINI_BASE_URL: "https://untrusted.example",
     }),
     [
-      { provider: "gemini", model: DEFAULT_GEMINI_MODEL, apiKey: keys.GEMINI_API_KEY },
       { provider: "openai", model: DEFAULT_RAF_MODEL, apiKey: keys.OPENAI_API_KEY },
+      { provider: "gemini", model: DEFAULT_GEMINI_MODEL, apiKey: keys.GEMINI_API_KEY },
     ],
   )
   assert.equal(automatic().reason, "configured_primary")
   assert.deepEqual(
     automatic().candidates.map((candidate) => candidate.provider),
-    ["gemini", "openai"],
+    ["openai", "gemini"],
   )
   assert.deepEqual(
     configuredProviders({ GEMINI_API_KEY: " \n", OPENAI_API_KEY: keys.OPENAI_API_KEY }).map((item) => item.provider),
@@ -67,7 +67,7 @@ test("configured routes deterministically prefer Gemini and accept model configu
   })
   assert.deepEqual(
     custom.map((item) => item.model),
-    ["gemini-fixture-version", "fixture-model:1"],
+    ["fixture-model:1", "gemini-fixture-version"],
   )
   for (const model of ["../escape", "https://other.example/model", "bad model", "x".repeat(101)]) {
     assert.throws(() => configuredProviders({ ...keys, GEMINI_MODEL: model }), statusIs(503))
@@ -83,7 +83,7 @@ test("legacy consent permits OpenAI only and never implicitly adds Google", () =
       plan.candidates.map((candidate) => candidate.provider),
       ["openai"],
     )
-    assert.equal(plan.reason, "consent_scope")
+    assert.equal(plan.reason, "configured_primary")
     assert.throws(() => routingPlan(submission({ allowGoogle, provider: "gemini" }), providers), statusIs(400))
     assert.throws(
       () => routingPlan(submission({ allowGoogle }), configuredProviders({ GEMINI_API_KEY: keys.GEMINI_API_KEY })),
@@ -130,18 +130,18 @@ test("primary success invokes one whole comparison and exposes only bounded rout
     clock() + 52_000,
     clock,
   )
-  assert.deepEqual(calls, ["gemini"])
+  assert.deepEqual(calls, ["openai"])
   assert.equal(accepted.result, sampleRunEvidence.result)
   assert.equal(accepted.result.changes.length, 2)
-  assert.equal(accepted.model, "gemini-fixture-returned-version")
-  assert.deepEqual(accepted.routing, { provider: "gemini", reason: "configured_primary", policy: RAF_ROUTING_POLICY })
+  assert.equal(accepted.model, "openai-fixture-returned-version")
+  assert.deepEqual(accepted.routing, { provider: "openai", reason: "configured_primary", policy: RAF_ROUTING_POLICY })
   assert.equal(RAF_ROUTING_POLICY, "provider-routing-v1")
   assert.equal("apiKey" in accepted, false)
   for (const key of Object.values(keys)) assert.equal(JSON.stringify(accepted).includes(key), false)
   assert.deepEqual(Object.keys(accepted.routing).sort(), ["policy", "provider", "reason"])
 })
 
-test("only provider 429, 5xx and explicitly classified network failures use the OpenAI backup", async () => {
+test("only provider 429, 5xx and explicitly classified network failures use the Gemini backup", async () => {
   for (const error of [
     providerFailure(429),
     providerFailure(500),
@@ -155,18 +155,18 @@ test("only provider 429, 5xx and explicitly classified network failures use the 
       automatic(),
       async (config) => {
         calls.push(config.provider)
-        if (config.provider === "gemini") throw error
+        if (config.provider === "openai") throw error
         return review(config)
       },
       signal(),
       clock() + 52_000,
       clock,
     )
-    assert.deepEqual(calls, ["gemini", "openai"])
+    assert.deepEqual(calls, ["openai", "gemini"])
     assert.equal(accepted.result, sampleRunEvidence.result)
-    assert.equal(accepted.model, "openai-fixture-returned-version")
+    assert.equal(accepted.model, "gemini-fixture-returned-version")
     assert.deepEqual(accepted.routing, {
-      provider: "openai",
+      provider: "gemini",
       reason: "temporary_provider_failure",
       policy: RAF_ROUTING_POLICY,
     })
@@ -182,7 +182,7 @@ test("fallback requires at least 15 seconds remaining when the first provider fa
       automatic(),
       async (config) => {
         calls.push(config.provider)
-        if (config.provider === "gemini") throw failure
+        if (config.provider === "openai") throw failure
         return review(config)
       },
       signal(),
@@ -191,10 +191,10 @@ test("fallback requires at least 15 seconds remaining when the first provider fa
     )
     if (remaining < 15_000) {
       await assert.rejects(pending, (error: unknown) => error === failure)
-      assert.deepEqual(calls, ["gemini"])
+      assert.deepEqual(calls, ["openai"])
     } else {
-      assert.equal((await pending).routing.provider, "openai")
-      assert.deepEqual(calls, ["gemini", "openai"])
+      assert.equal((await pending).routing.provider, "gemini")
+      assert.deepEqual(calls, ["openai", "gemini"])
     }
   }
   let now = clock()
@@ -251,7 +251,7 @@ test("authentication, schema, refusal, local quota and unclassified errors do no
       ),
       (error: unknown) => error === failure,
     )
-    assert.deepEqual(calls, ["gemini"])
+    assert.deepEqual(calls, ["openai"])
   }
 })
 
@@ -293,7 +293,7 @@ test("one failed backup ends the attempt and preserves its failure", async () =>
     ),
     (error: unknown) => error === failures[1],
   )
-  assert.deepEqual(calls, ["gemini", "openai"])
+  assert.deepEqual(calls, ["openai", "gemini"])
 })
 
 test("an already aborted request invokes no provider", async () => {
@@ -334,7 +334,7 @@ test("cancellation during a failed primary prevents backup invocation", async ()
     ),
     (error: unknown) => error === failure,
   )
-  assert.deepEqual(calls, ["gemini"])
+  assert.deepEqual(calls, ["openai"])
 })
 
 test("a provider resolving after cancellation cannot publish a successful review", async () => {
@@ -354,5 +354,5 @@ test("a provider resolving after cancellation cannot publish a successful review
     ),
     statusIs(408),
   )
-  assert.deepEqual(calls, ["gemini"])
+  assert.deepEqual(calls, ["openai"])
 })

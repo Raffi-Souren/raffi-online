@@ -203,7 +203,7 @@ All visitor pitch text, PDFs, their filenames, quoted instructions and the chall
 
 Evidence policy: unknown means absent or unassessable; founder_claim means an assertion, opinion, forecast, plan, or unsubstantiated claim; reported_evidence means a concrete claimed observation with enough context to describe what was measured or committed, still not independently verified; supplied_document means a supplied record actually supports the observation, not merely that a claim appears in a slide. A pitch deck alone does not verify the claims it contains. Treat invoices, signed agreements, measurement records and screenshots according to what they visibly establish, and explicitly acknowledge their provenance is not independently authenticated. Distinguish customer_statement, measurement, commercial_commitment, operating_record, opinion, forecast, unknown when assigning passage evidenceType. Forecasts and proposed thresholds are not traction. Meeting logos are not paying customers. Selected success stories without the full cohort/misses/baseline do not establish predictive accuracy. Negative results may improve learning while weakening demand or the relevant score.
 
-Return every schema field. Score all eight dimensions exactly once. Scores describe support in the supplied material, not probability of business success. Use null where unknown; 0 means concrete contrary support, 1 an asserted case, 2 preliminary reported observations, 3 specific repeated observations, 4 supplied operating/commercial support, 5 unusually complete support for that dimension. Do not reward jargon, longer copy, deck polish, confidence, or flattering wording. Give 4–7 short findings, 3–4 prioritized recommendations and at most three questions that could change the conclusion. State the strongest blocker and the smallest useful test. Pilot successMetric and proposedThreshold must clearly be proposed measurements/decision rules, not existing results. Avoid invented market-size or price facts; label any recommended price/threshold as a hypothesis to test. Keep snapshot, valueProp and investorTake short.
+Return every schema field. Score all eight dimensions exactly once. Scores describe support in the supplied material, not probability of business success. Use null where unknown. Absence of interviews, pricing, cost data, team background, defensibility or data-room documents is unknown, not a zero. For example, no cost information => Economics score=null; no team information => Team / story score=null; a buyer explicitly rejecting a paid pilot can support Demand score=0. A zero requires an observed contrary result, never merely missing proof. 0 means concrete contrary support, 1 an asserted case, 2 preliminary reported observations, 3 specific repeated observations, 4 supplied operating/commercial support, 5 unusually complete support for that dimension. Do not reward jargon, longer copy, deck polish, confidence, or flattering wording. Give 4–7 short findings, 3–4 prioritized recommendations and at most three questions that could change the conclusion. State the strongest blocker and the smallest useful test. Pilot successMetric and proposedThreshold must clearly be proposed measurements/decision rules, not existing results. Avoid invented market-size or price facts; label any recommended price/threshold as a hypothesis to test. Keep snapshot, valueProp and investorTake short.
 
 Comparison policy: review the current version, then return 1–6 salient change entries if a previous version exists, otherwise changes=[] and comparisonSummary="". before must cite v1, after must cite v2. Quote short verbatim passages with source refs; use quote="" when unavailable and say what is missing. A quotation must cite either pasted-text sources or PDF-page sources, never a mixture. Every reported_evidence or supplied_document passage needs a nonempty quote, refs and a concrete evidenceType; otherwise use founder_claim or unknown. support_added requires new concrete supporting observations or records; contrary_evidence requires new concrete contrary observations or records; wording_only and unchanged retain the same evidence status AND evidenceType; unsupported_claim is a newly asserted claim without new proof; evidence_removed marks support omitted in the current version, without assuming it became false; unchanged has no material change. A repeated existing quote is not new proof. A new sentence claiming impressive metrics is not automatically better evidence. Compare substance and source context, not vocabulary. Do not treat opinion/forecast as a measurement. State mixed improvements and regressions honestly. This is decision support, not an independently verified assessment.`
 
@@ -278,9 +278,41 @@ export function parseModelResponse(value: unknown, sources: Source[], comparing:
   if (parts.length !== 1) throw new RafHttpError("The model returned an unreadable review. Please try again.", 502)
   try {
     return { result: validateCritique(JSON.parse(parts[0]), sources, comparing), model: parsed.data.model }
-  } catch {
-    throw new RafHttpError("The review did not pass its source and evidence checks. Please try again.", 502)
+  } catch (error) {
+    throw reviewValidationFailure(error)
   }
+}
+
+export function reviewValidationFailure(error: unknown) {
+  const rules: Record<string, string> = {
+    "The review included an unavailable source.": "unknown_source",
+    "Incomplete scorecard.": "scorecard_dimensions",
+    "The comparison was missing.": "comparison_missing",
+    "Unexpected comparison.": "unexpected_comparison",
+    "A comparison cited the wrong version.": "source_version",
+    "A quoted passage needs a source.": "quote_source_missing",
+    "A quotation must identify either its text source or its PDF source.": "mixed_quote_sources",
+    "A quote did not match the supplied text.": "quote_mismatch",
+    "Reported evidence needs a cited observation and an evidence type.": "observation_missing",
+    "An evidence change needs a cited observation.": "evidence_citation_missing",
+    "An opinion or forecast is not new evidence.": "forecast_is_not_evidence",
+    "Repeating the same quote does not add evidence.": "repeated_quote",
+    "Inconsistent claim classification.": "claim_classification",
+    "Wording alone cannot upgrade evidence status or type.": "wording_status_change",
+  }
+  const rule =
+    error instanceof z.ZodError
+      ? "schema_" + error.issues[0]?.code
+      : error instanceof SyntaxError
+        ? "invalid_json"
+        : error instanceof Error
+          ? (rules[error.message] ?? "contract")
+          : "contract"
+  return new RafHttpError("The review did not pass its source and evidence checks. Please try again.", 502, undefined, {
+    providerStatus: 200,
+    providerCode: "REVIEW_CONTRACT_FAILED",
+    providerParameter: rule,
+  })
 }
 
 /** Counts completed structural checks; this does not verify semantic judgments or PDF quotations. */
