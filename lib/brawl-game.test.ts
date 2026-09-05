@@ -7,7 +7,7 @@ function advance(game: ReturnType<typeof createBrawl>, input: BrawlInput, second
   for (let i = 0; i < seconds * 60; i++) stepBrawl(game, input, 1 / 60)
 }
 
-test("all three blocks and the boss can be beaten using normal combat inputs", () => {
+test("all five blocks and both bosses can be beaten using normal combat inputs", () => {
   const game = createBrawl()
   game.status = "playing"
   for (let i = 0; i < 60 * 180 && game.status === "playing"; i++) {
@@ -27,7 +27,7 @@ test("all three blocks and the boss can be beaten using normal combat inputs", (
     )
   }
   assert.equal(game.status, "won")
-  assert.equal(game.wave, 2)
+  assert.equal(game.wave, 4)
   assert.equal(game.enemies.length, 0)
   assert.ok(game.player.health > 0)
   assert.ok(game.player.x >= ARENA_END - 90)
@@ -105,4 +105,24 @@ test("defeat is reachable, freezes the game, and a fresh run resets all state", 
   assert.equal(fresh.player.health, 100)
   assert.equal(fresh.score, 0)
   assert.equal(fresh.wave, 0)
+})
+
+test("record crates require an in-range punch and reward discovery only once", () => {
+  const game = createBrawl()
+  game.status = "playing"
+  game.enemies = []
+  const secret = game.secrets[0]
+  Object.assign(game.player, { x: secret.x - 30, y: secret.y, health: 40 })
+  stepBrawl(game, idle, 1 / 60)
+  assert.equal(secret.found, false)
+  stepBrawl(game, { ...idle, attack: true }, 1 / 60)
+  assert.equal(secret.found, true)
+  assert.equal(game.player.health, 65)
+  assert.equal(game.score, 300)
+  advance(game, { ...idle, attack: true }, 2)
+  assert.equal(game.score, 300)
+  assert.equal(
+    createBrawl().secrets.some((item) => item.found),
+    false,
+  )
 })

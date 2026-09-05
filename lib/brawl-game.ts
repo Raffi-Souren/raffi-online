@@ -15,6 +15,7 @@ export interface Fighter {
 }
 export interface Brawler extends Fighter {
   id: number
+  maxHealth: number
   boss: boolean
   windup: number
   cooldown: number
@@ -38,22 +39,25 @@ export interface BrawlState {
   enemies: Brawler[]
   hits: { x: number; y: number; time: number; text: string }[]
   healthDrops: { x: number; y: number }[]
+  secrets: { x: number; y: number; found: boolean; name: string }[]
   camera: number
 }
 
-export const BRAWL_WAVES = ["Subway steps", "Record row", "Rooftop soundcheck"]
-export const ARENA_END = 2650
+export const BRAWL_WAVES = ["Subway steps", "Record row", "Warehouse showdown", "Night market", "Rooftop soundcheck"]
+export const ARENA_END = 4410
+export const BRAWL_GATES = [920, 1800, 2680, 3560, ARENA_END]
 
 function spawnWave(wave: number): Brawler[] {
-  const base = [420, 1200, 2110][wave]
-  return Array.from({ length: wave === 2 ? 3 : 3 + wave }, (_, i) => ({
+  const base = 420 + wave * 880
+  return Array.from({ length: [3, 4, 4, 6, 5][wave] }, (_, i) => ({
     id: wave * 10 + i,
     x: base + i * 85,
     y: 330 + (i % 3) * 36,
-    health: wave === 2 && i === 0 ? 210 : 52 + wave * 7,
+    health: (wave === 2 || wave === 4) && i === 0 ? 180 + wave * 25 : 52 + wave * 10,
+    maxHealth: (wave === 2 || wave === 4) && i === 0 ? 180 + wave * 25 : 52 + wave * 10,
     facing: -1,
     hurt: 0,
-    boss: wave === 2 && i === 0,
+    boss: (wave === 2 || wave === 4) && i === 0,
     windup: 0,
     cooldown: 0.7 + i * 0.3,
     attacking: 0,
@@ -79,12 +83,17 @@ export function createBrawl(): BrawlState {
     enemies: spawnWave(0),
     hits: [],
     healthDrops: [],
+    secrets: [
+      { x: 290, y: 312, found: false, name: "Bodega B-side" },
+      { x: 1970, y: 312, found: false, name: "Warehouse white label" },
+      { x: 3800, y: 312, found: false, name: "Rooftop bootleg" },
+    ],
     camera: 0,
   }
 }
 
 export function stepBrawl(game: BrawlState, input: BrawlInput, delta: number) {
-  if (game.status !== "playing") return
+  if (game.status !== "playing" || !Number.isFinite(delta) || delta <= 0) return
   const dt = Math.max(0, Math.min(delta, 0.05))
   const player = game.player
   game.elapsed += dt
@@ -115,13 +124,22 @@ export function stepBrawl(game: BrawlState, input: BrawlInput, delta: number) {
   const moveX = game.dodge > 0 ? player.facing : Math.max(-1, Math.min(1, input.x))
   player.x = Math.max(35, Math.min(ARENA_END, player.x + moveX * movement * dt))
   player.y = Math.max(308, Math.min(435, player.y + Math.max(-1, Math.min(1, input.y)) * 125 * dt))
-  const waveGate = [920, 1800, ARENA_END][game.wave]
+  const waveGate = BRAWL_GATES[game.wave]
   if (game.enemies.length > 0) player.x = Math.min(waveGate, player.x)
   game.camera += (Math.max(0, Math.min(ARENA_END - 880, player.x - 320)) - game.camera) * Math.min(1, dt * 7)
 
   if (input.attack && game.attackCooldown === 0 && game.dodge === 0) {
     game.attack = 0.18
     game.attackCooldown = 0.3
+    for (const secret of game.secrets) {
+      const dx = secret.x - player.x
+      if (!secret.found && Math.abs(dx) < 84 && dx * player.facing > -12 && Math.abs(secret.y - player.y) < 30) {
+        secret.found = true
+        game.score += 300
+        player.health = Math.min(100, player.health + 25)
+        game.hits.push({ x: secret.x, y: secret.y - 40, time: 2, text: `${secret.name} +300` })
+      }
+    }
     const jumping = game.jumpHeight > 18
     let landed = false
     for (const enemy of game.enemies) {
@@ -159,7 +177,7 @@ export function stepBrawl(game: BrawlState, input: BrawlInput, delta: number) {
       enemy.windup = Math.max(0, enemy.windup - dt)
       if (enemy.windup === 0) {
         enemy.attacking = 0.2
-        enemy.cooldown = enemy.boss ? 1.5 : 1.1
+        enemy.cooldown = (enemy.boss ? 1.5 : 1.1) - game.wave * 0.08
         const range = enemy.boss ? 135 : 62
         if (
           Math.abs(player.x - enemy.x) < range &&
@@ -168,7 +186,7 @@ export function stepBrawl(game: BrawlState, input: BrawlInput, delta: number) {
           game.dodge === 0 &&
           player.hurt === 0
         ) {
-          player.health = Math.max(0, player.health - (enemy.boss ? 19 : 9))
+          player.health = Math.max(0, player.health - (enemy.boss ? 19 + game.wave : 9 + game.wave * 2))
           player.hurt = 0.7
           player.x = Math.max(35, Math.min(ARENA_END, player.x + enemy.facing * 25))
           game.combo = 0
@@ -178,11 +196,11 @@ export function stepBrawl(game: BrawlState, input: BrawlInput, delta: number) {
       const dx = player.x - enemy.x
       const dy = player.y - enemy.y
       if (Math.abs(dx) < (enemy.boss ? 108 : 51) && Math.abs(dy) < 26 && enemy.cooldown === 0) {
-        enemy.windup = enemy.boss ? 0.95 : 0.65
+        enemy.windup = (enemy.boss ? 0.95 : 0.65) - game.wave * 0.045
       } else if (Math.abs(dx) > (enemy.boss ? 85 : 44)) {
-        enemy.x += Math.sign(dx) * (enemy.boss ? 61 : 78 + game.wave * 5) * dt
+        enemy.x += Math.sign(dx) * (enemy.boss ? 70 : 78 + game.wave * 12) * dt
       }
-      if (Math.abs(dy) > 10) enemy.y += Math.sign(dy) * 54 * dt
+      if (Math.abs(dy) > 10) enemy.y += Math.sign(dy) * (54 + game.wave * 9) * dt
     }
   }
   for (const defeated of game.enemies.filter((enemy) => enemy.health <= 0)) {
@@ -204,11 +222,11 @@ export function stepBrawl(game: BrawlState, input: BrawlInput, delta: number) {
     return
   }
   if (game.enemies.length === 0) {
-    if (game.wave === 2) {
+    if (game.wave === BRAWL_WAVES.length - 1) {
       if (player.x >= ARENA_END - 90) game.status = "won"
     } else {
       game.transition += dt
-      if (game.transition > 1.2 && player.x > [730, 1630][game.wave]) {
+      if (game.transition > 1.2 && player.x > BRAWL_GATES[game.wave] - 190) {
         game.wave++
         game.transition = 0
         game.enemies = spawnWave(game.wave)

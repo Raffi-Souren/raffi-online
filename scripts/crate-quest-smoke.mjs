@@ -172,6 +172,11 @@ try {
       await quest.getByRole("button", { name: "Pause hunt", exact: true }).click()
       await quest.getByRole("button", { name: "Start over", exact: true }).click()
       await quest.getByRole("button", { name: "Start digging", exact: true }).waitFor()
+      // The React intro can appear before the next canvas animation frame.
+      await page.waitForFunction(
+        (el) => Number(el.dataset.playerX) === 14.5 && Number(el.dataset.playerY) === 16.5,
+        await canvas.elementHandle(),
+      )
       assert.deepEqual(await position(), { x: 14.5, y: 16.5 })
       await quest.getByRole("button", { name: "Leave hunt", exact: true }).click()
       await quest.waitFor({ state: "detached" })

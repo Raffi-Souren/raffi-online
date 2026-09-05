@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react"
 import { Crosshair, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react"
-import { createSignalState, startSignal, stepSignal, type SignalInput, type SignalState } from "@/lib/signal-lost"
+import {
+  SIGNAL_LEVELS,
+  SIGNAL_WAVES,
+  createSignalState,
+  startSignal,
+  stepSignal,
+  type SignalInput,
+  type SignalState,
+} from "@/lib/signal-lost"
 import { createSignalArt, renderSignal } from "@/lib/signal-lost-render"
 import ScoreEntry from "./ScoreEntry"
 
@@ -30,6 +38,7 @@ function readHud(s: SignalState) {
     wave: s.wave,
     enemies: s.enemies.filter((e) => e.hp > 0).length,
     kills: s.kills,
+    secrets: s.secrets.filter((secret) => secret.found).length,
     time: Math.floor(s.time),
     message: s.messageTime > 0 ? s.message : "",
   }
@@ -359,9 +368,9 @@ export default function SignalLostGame() {
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2 }}>SIGNAL LOST</div>
         <div style={{ marginTop: 6, fontSize: 11, color: "#d4c8ae" }}>
           {hud.wave
-            ? hud.wave === 3 && !hud.enemies
+            ? hud.wave === SIGNAL_WAVES && !hud.enemies
               ? "Reach the green exit on your map"
-              : `Sector ${hud.wave} / 3 · ${hud.enemies} signals remaining`
+              : `${hud.wave}/${SIGNAL_WAVES} · ${SIGNAL_LEVELS[hud.wave - 1]} · ${hud.enemies} signals`
             : "Brooklyn / Substation 04"}
         </div>
       </div>
@@ -535,7 +544,7 @@ export default function SignalLostGame() {
               }}
             >
               {hud.phase === "ready"
-                ? "The sound system has gone rogue. Clear three sectors of speaker drones, then find the green exit. Amber cones mean an incoming shot: strafe out of the way."
+                ? "The sound system has gone rogue. Clear five sectors of speaker drones, then find the green exit. Amber cones mean an incoming shot: strafe out of the way."
                 : hud.phase === "paused"
                   ? "Line up the crosshair. Fire in short bursts. Service packs restore integrity and cool your blaster."
                   : hud.phase === "won"
@@ -546,7 +555,9 @@ export default function SignalLostGame() {
               <ScoreEntry
                 key={`signal-lost-${runId}`}
                 gameName="signal-lost"
-                score={hud.kills * 100 + (hud.phase === "won" ? 1000 + Math.max(0, 300 - hud.time) : 0)}
+                score={
+                  hud.kills * 100 + hud.secrets * 300 + (hud.phase === "won" ? 1000 + Math.max(0, 300 - hud.time) : 0)
+                }
                 level={hud.wave}
               />
             )}

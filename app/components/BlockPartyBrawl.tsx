@@ -367,7 +367,9 @@ export default function BlockPartyBrawl() {
           <div
             style={{ textAlign: "right", padding: "8px 10px", borderRadius: 6, background: "#383348dc", fontSize: 11 }}
           >
-            <strong style={{ fontSize: 13 }}>{BRAWL_WAVES[hud.wave]}</strong>
+            <strong style={{ fontSize: 13 }}>
+              {hud.wave + 1}/{BRAWL_WAVES.length} · {BRAWL_WAVES[hud.wave]}
+            </strong>
             <div>
               {hud.enemies} speakers left · {hud.score.toLocaleString()} pts
             </div>
@@ -427,11 +429,11 @@ export default function BlockPartyBrawl() {
               </h2>
               <p style={{ fontSize: 13, margin: "0 0 15px", lineHeight: 1.5 }}>
                 {status === "ready"
-                  ? "Rogue speakers stole the sound system. Clear three blocks and bring the music home."
+                  ? "Rogue speakers stole the sound system. Clear five blocks and bring the music home."
                   : status === "paused"
                     ? "The neighborhood can wait a minute."
                     : status === "won"
-                      ? `All three blocks cleared. ${hud.score.toLocaleString()} points. The party is back.`
+                      ? `All five blocks cleared. ${hud.score.toLocaleString()} points. The party is back.`
                       : `${hud.score.toLocaleString()} points. Watch for the warning rings, then jump or dodge.`}
               </p>
               {status === "ready" && (
@@ -511,7 +513,7 @@ export default function BlockPartyBrawl() {
       </div>
       <span role="status" className="sr-only">
         {status === "won"
-          ? "All three blocks cleared. You win."
+          ? "All five blocks cleared. You win."
           : status === "lost"
             ? "Out of health. Game over."
             : status === "paused"

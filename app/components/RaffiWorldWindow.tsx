@@ -45,6 +45,14 @@ export default function RaffiWorldWindow({ isOpen, onClose }: RaffiWorldWindowPr
   const questRef = useRef<HTMLDivElement>(null)
   const { active } = useWindowActivity()
 
+  const syncWorldActivity = useCallback(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "raffi-world:activity", active: isOpen && active },
+      window.location.origin,
+    )
+  }, [isOpen, active])
+  useEffect(syncWorldActivity, [syncWorldActivity])
+
   useEffect(() => {
     const receive = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== iframeRef.current?.contentWindow) return
@@ -91,6 +99,7 @@ export default function RaffiWorldWindow({ isOpen, onClose }: RaffiWorldWindowPr
       <iframe
         ref={iframeRef}
         src={src}
+        onLoad={syncWorldActivity}
         title="RAFFI WORLD"
         tabIndex={questOpen ? -1 : 0}
         aria-hidden={questOpen ? "true" : undefined}

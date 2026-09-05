@@ -211,11 +211,24 @@ export function makeVehicle(vehData, archetypeId, seed, material, atlas, lightin
   })
   const cabin = rangeWithShade(builder, cabinRaw, paintB)
 
-  addBox(builder, {
+  const glass = addBox(builder, {
     x: 0, y: bodyY + hullH - 0.1 + cabinH / 2 + cabinH * 0.12, z: cabinZ,
     w: cabinW + 0.02, h: cabinH * 0.52, d: cabinLen * 0.92,
     color: shared.glass.color, rect: atlas.uv('glasspane'),
   })
+
+  // Sloped windshield and narrowed roof distinguish the cabin from a stack of boxes.
+  for (const range of [cabinRaw, glass]) {
+    for (let i = range.start; i < range.end; i++) {
+      const offset = i * 3
+      const relativeHeight = (builder.pos[offset + 1] - (bodyY + hullH - 0.1)) / cabinH
+      if (relativeHeight > 0.4) {
+        const taper = Math.min(1, relativeHeight) * (S.cabin.taper || 0.12)
+        builder.pos[offset] *= 1 - taper * 0.45
+        builder.pos[offset + 2] = cabinZ + (builder.pos[offset + 2] - cabinZ) * (1 - taper * 0.65)
+      }
+    }
+  }
 
   if (S.boxBody) {
     addBox(builder, {
@@ -321,19 +334,18 @@ export function makeVehicle(vehData, archetypeId, seed, material, atlas, lightin
       const start = builder.vertCount
       const px = (sx * S.trackWidth) / 2
       const pz = (sz * S.wheelbase) / 2
-      addBox(builder, {
-        x: px, y: wr, z: pz,
-        w: S.wheelWidth, h: wr * 2, d: wr * 2,
-        color: shared.wheel.color, rect: white,
-      })
-      addBox(builder, {
-        x: px + sx * (S.wheelWidth / 2 + 0.012), y: wr, z: pz,
-        w: 0.03,
-        h: wr * 2 * shared.wheel.hubFraction,
-        d: wr * 2 * shared.wheel.hubFraction,
-        color: shared.wheel.hubColor,
-        rect: white,
-      })
+      for (let segment = 0; segment < 6; segment++) {
+        const a = segment * Math.PI / 3, b = (segment + 1) * Math.PI / 3
+        const point = (side, angle, radius = wr) => ({ x: px + side * S.wheelWidth / 2, y: wr + Math.cos(angle) * radius, z: pz + Math.sin(angle) * radius })
+        builder.quad([point(-1,a),point(1,a),point(1,b),point(-1,b)],shared.wheel.color,white)
+        // The inner cap is occluded by the chassis. Only submit the visible outer face.
+        const side = sx, p0=point(side,a), p1=point(side,b), centre={x:px+side*S.wheelWidth/2,y:wr,z:pz}
+        builder._tri(centre, side === 1 ? p0 : p1, side === 1 ? p1 : p0, shared.wheel.color, white, builder.shade(side,0,0))
+        const h0=point(side,a,wr*shared.wheel.hubFraction),h1=point(side,b,wr*shared.wheel.hubFraction)
+        h0.x += side*0.012; h1.x += side*0.012
+        const hubCentre={...centre,x:centre.x+side*0.012}
+        builder._tri(hubCentre, side === 1 ? h0 : h1, side === 1 ? h1 : h0, shared.wheel.hubColor, white, builder.shade(side,0,0))
+      }
       wheels.push({
         start,
         end: builder.vertCount,
@@ -414,4 +426,13 @@ export function repaint(veh, vehData, seed) {
   color.needsUpdate = true
   veh.userData.paint = [a, b]
   veh.userData.damage = 0
+}
+
+/** Garage finishes reuse the existing body ranges; glass and wheels keep their materials. */
+export function paintVehicle(veh, body, roof) {
+  const colors = veh.geometry.getAttribute('color')
+  paintRange(colors, veh.userData.paintRanges.hull, body)
+  paintRange(colors, veh.userData.paintRanges.cabin, roof)
+  colors.needsUpdate = true
+  veh.userData.paint = [body, roof]
 }

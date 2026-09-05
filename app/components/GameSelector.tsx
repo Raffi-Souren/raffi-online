@@ -49,15 +49,6 @@ const GAMES: Game[] = [
     color: "#bdcedd",
   },
   {
-    id: "overtime",
-    name: "Overtime",
-    device: "Rooftop car soccer",
-    category: "Originals",
-    description: "Rocket League-inspired car soccer. Boost, jump, and score on a Brooklyn rooftop.",
-    icon: "⚽",
-    color: "#a7d6df",
-  },
-  {
     id: "borough-gp",
     name: "Borough Grand Prix",
     device: "Raffi Racing",

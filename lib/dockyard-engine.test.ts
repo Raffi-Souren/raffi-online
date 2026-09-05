@@ -166,3 +166,30 @@ test("the opening economy can fund a winning assault without bonus resources", (
   }
   assert.equal(state.phase, "won")
 })
+
+for (const level of [2, 3])
+  test(`mission ${level} can be won through gathering and squad commands`, () => {
+    const state = createDockyard(level)
+    state.phase = "playing"
+    const resource = state.resources[0]
+    orderDockyard(
+      state,
+      state.units.filter((unit) => unit.kind === "worker").map((unit) => unit.id),
+      resource,
+      resource.id,
+    )
+    buildDockyard(state, "workshop", { x: 315, y: 345 })
+    const rivalHq = state.buildings.find((building) => building.team === "rival")!
+    for (let second = 0; second < 500 && String(state.phase) === "playing"; second++) {
+      if (state.scrap >= DOCKYARD_COSTS.guard && state.units.filter((unit) => unit.kind === "guard").length < 14)
+        trainDockyard(state, "guard")
+      if (state.units.filter((unit) => unit.kind === "guard").length >= 10)
+        orderDockyard(
+          state,
+          state.units.filter((unit) => unit.kind === "guard").map((unit) => unit.id),
+          rivalHq,
+        )
+      run(state, 1)
+    }
+    assert.equal(state.phase, "won")
+  })

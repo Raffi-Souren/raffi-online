@@ -28,6 +28,9 @@ export const player = {
   blockedTime: 0,
   /** Active board trick, if any: { name, t, duration, boost }. */
   trick: null,
+  trickScore: 0,
+  trickChain: 0,
+  lastLanding: -10,
   /**
    * Last committed turn direction (-1 | 0 | 1). Gives U-turns a stable spin:
    * at ~180° the shortest-arc sign is arbitrary, so we keep turning the way
@@ -196,7 +199,7 @@ export function tryKickflip() {
     Math.abs(v.speed) + KICKFLIP.boost * 0.35,
     (v.handling?.topSpeed || 12) * 1.15
   )
-  bus.emit('toast', 'KICKFLIP!')
+  bus.emit('toast', 'KICKFLIP…')
   return true
 }
 
@@ -445,6 +448,12 @@ function updateDriving(dt, input, world, beatPhase = 0) {
     hop = Math.sin(u * Math.PI) * (player.trick.hop || 0.9)
     flip = u * Math.PI * 2
     if (u >= 1) {
+      if (Math.abs(v.speed) > 1.2) {
+        player.trickChain = state.time - player.lastLanding < 3 ? Math.min(5, player.trickChain + 1) : 1
+        player.lastLanding = state.time
+        player.trickScore += 100 * player.trickChain
+        bus.emit('toast', `KICKFLIP LANDED · +${100 * player.trickChain} · CHAIN ${player.trickChain} · ${player.trickScore} PTS`)
+      } else { player.trickChain = 0; bus.emit('toast', 'ROUGH LANDING · GET SOME SPEED') }
       player.trick = null
       hop = 0
       flip = 0

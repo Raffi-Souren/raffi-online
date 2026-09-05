@@ -1,5 +1,31 @@
 export const DOCKYARD_WIDTH = 840
 export const DOCKYARD_HEIGHT = 500
+export const DOCKYARD_MISSIONS = [
+  {
+    name: "North Pier",
+    brief: "Establish a foothold. Build a workshop and take the rival HQ.",
+    hp: 550,
+    firstWave: 45,
+    interval: 35,
+    raiders: 0,
+  },
+  {
+    name: "Foundry Row",
+    brief: "Two rival sentries cover the foundry. Build a larger squad before pushing east.",
+    hp: 700,
+    firstWave: 40,
+    interval: 30,
+    raiders: 1,
+  },
+  {
+    name: "Last Ferry",
+    brief: "A fortified terminal and faster reinforcements. Defend home while your strike crew advances.",
+    hp: 850,
+    firstWave: 35,
+    interval: 26,
+    raiders: 2,
+  },
+] as const
 export const DOCKYARD_COSTS = { worker: 35, guard: 50, workshop: 80, sentry: 70 } as const
 export type DockyardPhase = "briefing" | "playing" | "paused" | "won" | "lost"
 export type DockyardPoint = { x: number; y: number }
@@ -30,6 +56,7 @@ export type DockyardEffect = DockyardPoint & {
   team: "crew" | "rival"
 }
 export type DockyardState = {
+  level: number
   phase: DockyardPhase
   time: number
   scrap: number
@@ -67,20 +94,23 @@ function makeUnit(state: DockyardState, kind: DockyardUnit["kind"], x: number, y
   }
 }
 
-export function createDockyard(): DockyardState {
+export function createDockyard(level = 1): DockyardState {
+  level = Number.isInteger(level) ? Math.max(1, Math.min(DOCKYARD_MISSIONS.length, level)) : 1
+  const mission = DOCKYARD_MISSIONS[level - 1]
   const state: DockyardState = {
+    level,
     phase: "briefing",
     time: 0,
     scrap: 110,
     wave: 0,
-    nextWave: 45,
+    nextWave: mission.firstWave,
     nextId: 10,
     units: [],
     effects: [],
     message: "Select your workers, then send them to a salvage pile.",
     buildings: [
       { id: 1, kind: "hq", team: "crew", x: 125, y: 335, hp: 650, maxHp: 650, cooldown: 0 },
-      { id: 2, kind: "hq", team: "rival", x: 712, y: 120, hp: 550, maxHp: 550, cooldown: 0 },
+      { id: 2, kind: "hq", team: "rival", x: 712, y: 120, hp: mission.hp, maxHp: mission.hp, cooldown: 0 },
     ],
     resources: [
       { id: 3, x: 235, y: 300, amount: 300 },
@@ -95,6 +125,25 @@ export function createDockyard(): DockyardState {
     makeUnit(state, "worker", 155, 273),
     makeUnit(state, "guard", 198, 375),
   )
+  if (level > 1) {
+    for (const [x, y] of [
+      [620, 105],
+      [735, 210],
+    ])
+      state.buildings.push({
+        id: state.nextId++,
+        kind: "sentry",
+        team: "rival",
+        x,
+        y,
+        hp: 160 + level * 20,
+        maxHp: 160 + level * 20,
+        cooldown: 0,
+      })
+    state.resources.forEach((resource) => {
+      resource.amount += level * 100
+    })
+  }
   return state
 }
 
@@ -228,8 +277,8 @@ export function tickDockyard(state: DockyardState, delta: number) {
   })
   if (state.time >= state.nextWave) {
     state.wave += 1
-    state.nextWave += 35
-    const count = Math.min(2 + Math.floor(state.wave / 2), 7)
+    state.nextWave += DOCKYARD_MISSIONS[state.level - 1].interval
+    const count = Math.min(2 + Math.floor(state.wave / 2) + DOCKYARD_MISSIONS[state.level - 1].raiders, 9)
     for (let i = 0; i < count; i++)
       state.units.push(makeUnit(state, "raider", 650 + (i % 3) * 27, 185 + Math.floor(i / 3) * 27))
     state.message = `Rival wave ${state.wave} approaching. Guards and sentries protect your HQ.`

@@ -308,8 +308,8 @@ export default function WindowShell({
             <h2
               style={{
                 fontWeight: "bold",
-                fontSize: terminalChrome ? "12px" : "1rem",
-                fontFamily: terminalChrome ? '"SFMono-Regular", Consolas, monospace' : "Tahoma, Verdana, sans-serif",
+                fontSize: terminalChrome ? "14px" : "1rem",
+                fontFamily: terminalChrome ? '"IBM Plex Mono", Menlo, Consolas, monospace' : "Tahoma, Verdana, sans-serif",
                 textAlign: "center",
                 overflow: "hidden",
                 textOverflow: "ellipsis",

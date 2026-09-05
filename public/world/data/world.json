@@ -246,6 +246,15 @@
   "spawn": { "x": -450, "z": -151, "yaw": 0, "district": "heights" },
   "greeterSpawn": { "x": -450, "z": -148.5, "yaw": 3.14159 },
 
+  "sideActivities": {
+    "garage": { "x": -472, "z": -146, "radius": 24 },
+    "paints": [["Midnight", "#252C46", "#121725"], ["Miami", "#35B9B1", "#E8B5CB"], ["Champagne", "#D2B87B", "#534739"], ["Cherry", "#B83553", "#3B2438"]],
+    "sprint": { "seconds": 90, "start": { "x": -555, "z": -250 }, "route": [
+      { "x": -400, "z": -250 }, { "x": -260, "z": -250 }, { "x": -260, "z": -120 },
+      { "x": -400, "z": -120 }, { "x": -560, "z": -120 }, { "x": -560, "z": -250 }
+    ] }
+  },
+
   "camera": {
     "$comment": "Fixed 3/4 iso. Pitch and yaw are law — see WORLD-BIBLE §4. Yaw snaps in 90° steps only.",
     "pitchDeg": 55,
