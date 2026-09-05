@@ -628,7 +628,7 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
                 </select>
               </div>
               <p id="raf-provider-help" style={{ color: muted, fontSize: 11, lineHeight: 1.6, margin: "8px 0 0" }}>
-                Auto uses Gemini when configured, otherwise OpenAI, with one backup attempt during a temporary provider
+                Auto uses OpenAI when configured, otherwise Gemini, with one backup attempt during a temporary provider
                 outage. A manual choice stays on that provider.
               </p>
               <label
