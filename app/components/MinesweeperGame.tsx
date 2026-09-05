@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
+import ScoreEntry from "./ScoreEntry"
 
 const GRID_SIZE = 10
 const NUM_MINES = 15
@@ -19,6 +20,9 @@ export default function MinesweeperGame() {
   const [gameOver, setGameOver] = useState(false)
   const [gameWon, setGameWon] = useState(false)
   const [firstClick, setFirstClick] = useState(true)
+  const [elapsedMs, setElapsedMs] = useState(0)
+  const [runId, setRunId] = useState(0)
+  const startedAt = useRef<number | null>(null)
   const touchStart = useRef<number | null>(null)
   const flagsLeft = NUM_MINES - grid.flat().filter((cell) => cell.state === "flagged").length
 
@@ -77,11 +81,22 @@ export default function MinesweeperGame() {
     setGameOver(false)
     setGameWon(false)
     setFirstClick(true)
+    startedAt.current = null
+    setElapsedMs(0)
+    setRunId((id) => id + 1)
   }, [initializeGrid])
 
   useEffect(() => {
     resetGame()
   }, [resetGame])
+
+  useEffect(() => {
+    if (firstClick || gameOver || gameWon) return
+    const timer = window.setInterval(() => {
+      if (startedAt.current !== null) setElapsedMs(Math.round(performance.now() - startedAt.current))
+    }, 100)
+    return () => window.clearInterval(timer)
+  }, [firstClick, gameOver, gameWon])
 
   const revealCell = useCallback((grid: Cell[][], x: number, y: number) => {
     const cell = grid[x][y]
@@ -110,6 +125,7 @@ export default function MinesweeperGame() {
       let newGrid = grid.map((row) => row.map((cell) => ({ ...cell })))
 
       if (firstClick) {
+        startedAt.current = performance.now()
         // Regenerate grid to avoid mine on first click
         newGrid = initializeGrid(x, y)
         grid.forEach((row, rowIndex) =>
@@ -130,6 +146,7 @@ export default function MinesweeperGame() {
           }
         }
         setGameOver(true)
+        setElapsedMs(Math.round(performance.now() - (startedAt.current ?? performance.now())))
       } else {
         revealCell(newGrid, x, y)
 
@@ -143,6 +160,7 @@ export default function MinesweeperGame() {
           }
         }
         if (hiddenCells === 0) {
+          setElapsedMs(Math.round(performance.now() - (startedAt.current ?? performance.now())))
           setGameWon(true)
         }
       }
@@ -227,11 +245,14 @@ export default function MinesweeperGame() {
   }
 
   return (
-    <div className="p-4 max-w-full overflow-auto">
+    <div className="p-4 max-w-full" style={{ maxHeight: "100%", overflow: "auto" }}>
       <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
         <div className="text-sm">
           <span className="mr-4">🚩 {flagsLeft}</span>
-          <span>💣 {NUM_MINES}</span>
+          <span className="mr-4">💣 {NUM_MINES}</span>
+          <span aria-label={`Elapsed time ${(elapsedMs / 1000).toFixed(1)} seconds`}>
+            ⏱ {(elapsedMs / 1000).toFixed(1)}s
+          </span>
         </div>
         <button
           onClick={resetGame}
@@ -296,6 +317,7 @@ export default function MinesweeperGame() {
         <div className="mt-4 text-center">
           <div className="text-green-500 font-bold text-lg">🎉 You Won!</div>
           <div className="text-sm text-gray-600">All mines found!</div>
+          <ScoreEntry key={`minesweeper-${runId}`} gameName="minesweeper" score={elapsedMs} level={1} />
         </div>
       )}
 

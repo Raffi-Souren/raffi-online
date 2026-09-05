@@ -5,6 +5,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Flag, Pause, Play, RotateCcw
 import { useWindowActivity } from "../../components/ui/WindowShell"
 import { createRace, currentLap, formatRaceTime, racePosition, stepRace, type RaceStatus } from "../../lib/kart-race"
 import { createKartScene, trackBend } from "../../lib/kart-scene"
+import ScoreEntry from "./ScoreEntry"
 
 type Control = "left" | "right" | "throttle" | "brake" | "drift"
 const KEY_CONTROLS: Record<string, Control> = {
@@ -38,6 +39,7 @@ export default function KartGame() {
   const { active } = useWindowActivity()
   const hostRef = useRef<HTMLDivElement>(null)
   const raceRef = useRef(createRace())
+  const runId = useRef(0)
   const keysRef = useRef(new Set<string>())
   const touchRef = useRef(new Set<Control>())
   const activeRef = useRef(active)
@@ -75,6 +77,7 @@ export default function KartGame() {
 
   const start = useCallback(() => {
     clearControls()
+    runId.current++
     raceRef.current = createRace()
     raceRef.current.status = "countdown"
     setStatus("countdown")
@@ -182,7 +185,8 @@ export default function KartGame() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (
         !activeRef.current ||
-        (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName))
+        (event.target instanceof HTMLElement &&
+          (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName) || event.target.isContentEditable))
       )
         return
       const key = event.key.toLowerCase()
@@ -486,18 +490,19 @@ export default function KartGame() {
             style={{
               position: "absolute",
               inset: 0,
-              display: "flex",
+              display: status === "finished" ? "block" : "flex",
               alignItems: "center",
               justifyContent: "center",
               padding: 14,
               background: "#24435740",
               overflowY: "auto",
+              overscrollBehavior: "contain",
             }}
           >
             <div
               style={{
                 width: "min(100%, 390px)",
-                margin: "auto",
+                margin: status === "finished" ? "0 auto" : "auto",
                 padding: "clamp(14px, 3vw, 26px)",
                 background: "#faf5e6",
                 border: "3px solid #f1b859",
@@ -586,6 +591,16 @@ export default function KartGame() {
                 <p style={{ fontSize: 11, margin: "12px 0 0", color: "#5d6e76" }}>
                   Your best race: {formatRaceTime(best)}
                 </p>
+              )}
+              {status === "finished" && (
+                <div style={{ marginTop: 16 }}>
+                  <ScoreEntry
+                    key={`borough-gp-${runId.current}`}
+                    gameName="borough-gp"
+                    score={Math.round(raceRef.current.elapsed * 1000)}
+                    level={1}
+                  />
+                </div>
               )}
             </div>
           </div>

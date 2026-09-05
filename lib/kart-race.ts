@@ -19,6 +19,9 @@ export interface Rival {
   distance: number
   lane: number
   pace: number
+  speed: number
+  boost: number
+  pickups: number
 }
 
 export interface RaceState {
@@ -59,12 +62,12 @@ export function createRace(): RaceState {
     pickups: 0,
     collected: new Set(),
     rivals: [
-      { name: "Disco", color: 0xffbc44, distance: 8, lane: -4.2, pace: 38 },
-      { name: "Juno", color: 0xba86eb, distance: 15, lane: 3.8, pace: 39.5 },
-      { name: "Bodega", color: 0xf36d57, distance: 22, lane: -3.8, pace: 41 },
-      { name: "Metro", color: 0x49ba8f, distance: 29, lane: 3.8, pace: 42 },
-      { name: "Frankie", color: 0xf18bb8, distance: 36, lane: 0, pace: 43 },
-    ],
+      { name: "Disco", color: 0xffbc44, distance: 8, lane: -4.5, pace: 44.4 },
+      { name: "Juno", color: 0xba86eb, distance: 15, lane: 4.5, pace: 44.9 },
+      { name: "Bodega", color: 0xf36d57, distance: 22, lane: -4.5, pace: 45.3 },
+      { name: "Metro", color: 0x49ba8f, distance: 29, lane: 4.5, pace: 45.7 },
+      { name: "Frankie", color: 0xf18bb8, distance: 36, lane: 0, pace: TOP_SPEED },
+    ].map((rival) => ({ ...rival, speed: 0, boost: 0, pickups: 0 })),
   }
 }
 
@@ -139,12 +142,54 @@ export function stepRace(race: RaceState, input: KartInput, delta: number): void
     }
   }
 
+  const traffic = [race, ...race.rivals]
   for (let i = 0; i < race.rivals.length; i++) {
     const rival = race.rivals[i]
-    rival.distance += Math.min(rival.pace, race.elapsed * 20) * dt
-    rival.lane = Math.sin(rival.distance / 65 + i * 1.8) * 4.8
+    const before = rival.distance
+    const rivalLap = Math.floor(before / CIRCUIT_LENGTH)
+    const lapDistance = before % CIRCUIT_LENGTH
+    const nextRow =
+      PICKUPS.find((pickup) => pickup.distance > lapDistance)?.distance ?? PICKUPS[0].distance + CIRCUIT_LENGTH
+    const approach = nextRow - lapDistance
+    const baseLane = i === 4 ? 0 : i % 2 === 0 ? -4.5 : 4.5
+    // Hold a clean line through record rows. The less experienced drivers
+    // occasionally run wide; every boost still requires crossing a pickup.
+    const missedRow = i < 2 && (Math.floor(nextRow / 310) + rivalLap + i) % 4 === 0
+    let targetLane = baseLane + Math.sin(before / 105 + i) * 0.35
+    if (missedRow && approach < 70) targetLane = Math.sign(baseLane) * 7
+
+    const ahead = traffic.find(
+      (other) =>
+        other !== rival &&
+        other.distance > before &&
+        other.distance - before < 15 &&
+        Math.abs(other.lane - targetLane) < 2.2,
+    )
+    if (ahead && approach > 32) {
+      targetLane = ahead.lane > 0 ? ahead.lane - 2.8 : ahead.lane + 2.8
+    }
+    targetLane = Math.max(-7, Math.min(7, targetLane))
+    rival.lane += Math.max(-5.2 * dt, Math.min(5.2 * dt, targetLane - rival.lane))
+
+    rival.boost = Math.max(0, rival.boost - dt)
+    const rivalLimit = rival.boost > 0 ? 63 : rival.pace
+    // Shared acceleration and boost ceiling make passes earnable. Pace never
+    // depends on the gap to the player, and distance only advances by speed.
+    rival.speed =
+      rival.speed > rivalLimit
+        ? Math.max(rivalLimit, rival.speed - 17 * dt)
+        : Math.min(rivalLimit, rival.speed + 24 * dt)
+    rival.distance += rival.speed * dt
+    for (const pickup of PICKUPS) {
+      const absoluteDistance = rivalLap * CIRCUIT_LENGTH + pickup.distance
+      if (before < absoluteDistance && rival.distance >= absoluteDistance && Math.abs(rival.lane - pickup.lane) < 2) {
+        rival.boost = Math.max(rival.boost, 1.65)
+        rival.pickups++
+      }
+    }
     if (Math.abs(rival.distance - race.distance) < 2.6 && Math.abs(rival.lane - race.lane) < 1.8) {
       race.speed = Math.max(0, race.speed - 14 * dt)
+      rival.speed = Math.max(0, rival.speed - 14 * dt)
       race.lane += (race.lane > rival.lane ? 1 : -1) * dt * 2
     }
   }

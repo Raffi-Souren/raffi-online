@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import dynamic from "next/dynamic"
-import { ArrowLeft, Gamepad2, Search } from "lucide-react"
+import { ArrowLeft, Gamepad2, Search, Trophy } from "lucide-react"
 import WindowShell from "../../components/ui/WindowShell"
+import Leaderboard from "./Leaderboard"
 
 const GAME_COMPONENTS = {
   "borough-gp": dynamic(() => import("./KartGame")),
@@ -119,8 +120,56 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All games")
   const [activeGame, setActiveGame] = useState<GameId | null>(null)
+  const [leaderboardGame, setLeaderboardGame] = useState<GameId | null>(null)
 
   if (!isOpen) return null
+
+  if (leaderboardGame) {
+    return (
+      <WindowShell key="game-scores" title="High scores" onClose={() => setLeaderboardGame(null)} maxWidth="560px">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 14 }}>
+          <button
+            type="button"
+            onClick={() => setLeaderboardGame(null)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              minHeight: 40,
+              padding: "6px 8px",
+              color: "#294b67",
+              fontSize: 13,
+            }}
+            className="hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+          >
+            <ArrowLeft size={15} /> Game shelf
+          </button>
+          <select
+            aria-label="Leaderboard game"
+            value={leaderboardGame}
+            onChange={(event) => setLeaderboardGame(event.target.value as GameId)}
+            style={{
+              flex: "1 1 180px",
+              minWidth: 0,
+              minHeight: 40,
+              padding: "6px 9px",
+              color: "#253c50",
+              background: "#fff",
+              border: "1px solid #a0b0b9",
+              borderRadius: 4,
+            }}
+          >
+            {GAMES.map((game) => (
+              <option key={game.id} value={game.id}>
+                {game.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Leaderboard key={leaderboardGame} gameName={leaderboardGame} />
+      </WindowShell>
+    )
+  }
 
   if (activeGame) {
     const game = GAMES.find((candidate) => candidate.id === activeGame)!
@@ -273,6 +322,28 @@ export default function GameSelector({ isOpen, onClose }: GameSelectorProps) {
             </p>
           </div>
         </header>
+
+        <button
+          type="button"
+          onClick={() => setLeaderboardGame("snake")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            minHeight: 40,
+            marginBottom: 14,
+            padding: "8px 12px",
+            border: "1px solid #b6a26d",
+            borderRadius: 4,
+            background: "#f3e7bd",
+            color: "#574725",
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+          className="hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+        >
+          <Trophy size={17} /> High scores
+        </button>
 
         <div
           style={{

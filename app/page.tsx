@@ -65,7 +65,6 @@ export default function Home() {
   // Once launched, keep RAFFI WORLD mounted so minimizing it preserves the
   // WebGL context, audio graph, and the player's current run.
   const [worldLaunched, setWorldLaunched] = useState(false)
-  const [crateCatch, setCrateCatch] = useState<number | null>(null)
   // Oldest to newest. WindowShell consumes the derived layer through context;
   // taskbar, quick-launch, Start-menu, and desktop launches all use this path.
   const [windowOrder, setWindowOrder] = useState<string[]>([])
@@ -86,7 +85,6 @@ export default function Home() {
   }
 
   const openWindow = (windowName: string) => {
-    if (windowName === "crates") setCrateCatch(null)
     if (windowName === "world") setWorldLaunched(true)
     setOpenWindows((prev) => ({ ...prev, [windowName]: true }))
     bringToFront(windowName)
@@ -118,7 +116,7 @@ export default function Home() {
       case "games":
         return <GameSelector isOpen={openWindows.games} onClose={() => closeWindow("games")} />
       case "crates":
-        return <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} catchNumber={crateCatch} />
+        return <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />
       case "blogroll":
         return <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />
       case "notes":
@@ -169,9 +167,8 @@ export default function Home() {
     }
   }
 
-  const handleEasterEggClick = (catchNumber: number) => {
+  const handleEasterEggClick = () => {
     openWindow("crates")
-    setCrateCatch(catchNumber)
   }
 
   const handleStartMenuToggle = () => {
@@ -187,7 +184,10 @@ export default function Home() {
       }}
     >
       {/* Background - behind everything */}
-      <div data-desktop-bg="true" style={{ position: "fixed", inset: 0, zIndex: -10, height: "100dvh", width: "100vw" }}>
+      <div
+        data-desktop-bg="true"
+        style={{ position: "fixed", inset: 0, zIndex: -10, height: "100dvh", width: "100vw" }}
+      >
         <Image
           src="/windows-bg.jpg"
           alt="Windows XP Background"
@@ -205,11 +205,7 @@ export default function Home() {
       <div data-desktop-icons="true" className="desktop-shortcuts">
         {DESKTOP_SHORTCUTS.map((shortcut) => (
           <div key={shortcut.action} className={`desktop-shortcut desktop-shortcut-${shortcut.action}`}>
-            <DesktopIcon
-              label={shortcut.label}
-              icon={shortcut.icon}
-              onClick={() => handleIconClick(shortcut.action)}
-            />
+            <DesktopIcon label={shortcut.label} icon={shortcut.icon} onClick={() => handleIconClick(shortcut.action)} />
           </div>
         ))}
       </div>

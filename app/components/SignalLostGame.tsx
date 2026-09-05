@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { Crosshair, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react"
 import { createSignalState, startSignal, stepSignal, type SignalInput, type SignalState } from "@/lib/signal-lost"
 import { createSignalArt, renderSignal } from "@/lib/signal-lost-render"
+import ScoreEntry from "./ScoreEntry"
 
 const EMPTY_INPUT: SignalInput = { forward: 0, strafe: 0, turn: 0, sprint: false, fire: false }
 const panel: CSSProperties = { background: "rgba(18,31,41,.9)", border: "1px solid #63736f", color: "#ecdfbd" }
@@ -49,6 +50,7 @@ export default function SignalLostGame() {
     [sound, setSound] = useState(true),
     [touch, setTouch] = useState(false),
     [compact, setCompact] = useState(false)
+  const [runId, setRunId] = useState(0)
 
   const tone = useCallback((frequency: number, duration: number, type: OscillatorType = "triangle") => {
     if (!audio.current || muted.current || audio.current.state !== "running") return
@@ -90,6 +92,7 @@ export default function SignalLostGame() {
     if (restart || state.current.phase === "ready" || state.current.phase === "won" || state.current.phase === "lost") {
       state.current = createSignalState()
       startSignal(state.current)
+      setRunId((id) => id + 1)
     } else state.current.phase = "playing"
     releaseInput()
     sync()
@@ -123,6 +126,11 @@ export default function SignalLostGame() {
     observer.observe(el)
     resize()
     const keyDown = (event: KeyboardEvent) => {
+      if (
+        event.target instanceof HTMLElement &&
+        (event.target.isContentEditable || event.target.closest("input, textarea, select"))
+      )
+        return
       if (!root.current?.contains(document.activeElement) && document.pointerLockElement !== el) return
       if (["Escape", "KeyP"].includes(event.code)) {
         event.preventDefault()
@@ -484,7 +492,7 @@ export default function SignalLostGame() {
             overflowY: "auto",
           }}
         >
-          <div style={{ maxWidth: 410, width: "100%", margin: "auto 0" }}>
+          <div style={{ maxWidth: 410, width: "100%", maxHeight: "100%", overflowY: "auto", margin: "auto 0" }}>
             <div style={{ color: "#cba36f", fontSize: 12, marginBottom: 10 }}>
               {hud.phase === "ready"
                 ? "After hours at Substation 04"
@@ -534,6 +542,14 @@ export default function SignalLostGame() {
                     ? "The substation is quiet. Brooklyn has its signal back."
                     : "Keep moving when a speaker glows amber. Use corners for cover, and let the coil cool between bursts."}
             </p>
+            {(hud.phase === "won" || hud.phase === "lost") && (
+              <ScoreEntry
+                key={`signal-lost-${runId}`}
+                gameName="signal-lost"
+                score={hud.kills * 100 + (hud.phase === "won" ? 1000 + Math.max(0, 300 - hud.time) : 0)}
+                level={hud.wave}
+              />
+            )}
             <button
               type="button"
               onClick={() => play()}

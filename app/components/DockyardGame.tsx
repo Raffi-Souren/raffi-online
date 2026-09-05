@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react"
 import { Flag, Hammer, HardHat, Pause, Play, RotateCcw, Shield, Warehouse } from "lucide-react"
+import ScoreEntry from "./ScoreEntry"
 import {
   buildDockyard,
   createDockyard,
@@ -296,6 +297,7 @@ export default function DockyardGame() {
     workshop: false,
   })
   const [placement, setPlacement] = useState<"workshop" | "sentry" | null>(null)
+  const [runId, setRunId] = useState(0)
 
   const refreshHud = () => {
     const state = stateRef.current
@@ -426,6 +428,7 @@ export default function DockyardGame() {
   const restart = () => {
     stateRef.current = createDockyard()
     stateRef.current.phase = "playing"
+    setRunId((id) => id + 1)
     selectedRef.current = []
     placementRef.current = null
     setPlacement(null)
@@ -477,6 +480,11 @@ export default function DockyardGame() {
     refreshHud()
   }
   const handleKeys = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.target instanceof HTMLElement &&
+      (event.target.isContentEditable || event.target.closest("input, textarea, select"))
+    )
+      return
     if (event.altKey || event.ctrlKey || event.metaKey) return
     const key = event.key.toLowerCase()
     if (key === "escape") {
@@ -650,6 +658,14 @@ export default function DockyardGame() {
                       ? `You reclaimed the pier in ${clock(hud.time)}${hud.wave ? ` after ${hud.wave} rival waves.` : ", before the first rival wave arrived."}`
                       : "Keep workers gathering and build sentries near home before sending your guards across the pier."}
               </p>
+              {hud.phase === "won" && (
+                <ScoreEntry
+                  key={`dockyard-${runId}`}
+                  gameName="dockyard"
+                  score={Math.round(hud.time * 1000)}
+                  level={1}
+                />
+              )}
               {hud.phase === "briefing" && (
                 <p style={{ marginTop: 10, fontSize: 11, lineHeight: 1.5 }}>
                   Tap crew to select; tap the map to give orders. W selects workers, F selects guards, G
