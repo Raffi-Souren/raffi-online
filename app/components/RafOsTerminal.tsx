@@ -114,6 +114,9 @@ export default function RafOsTerminal({ isOpen, isMinimized, onClose, onMinimize
   useEffect(() => {
     outputArea.current?.scrollTo({ top: 0 })
   }, [view, selectedId])
+  useEffect(() => {
+    if (error) outputArea.current?.scrollTo({ top: 0 })
+  }, [error])
 
   useEffect(() => {
     const controller = new AbortController()

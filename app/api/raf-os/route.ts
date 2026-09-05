@@ -110,7 +110,7 @@ export async function POST(request: Request) {
         : new RafHttpError("RAF OS could not complete this review. Please try again later.", 503)
     return attachSession(
       NextResponse.json(
-        { error: failure.message },
+        { error: failure.message, ...(failure.diagnostic ? { diagnostic: failure.diagnostic } : {}) },
         {
           status: failure.status,
           headers: { ...headers, ...(failure.retryAfter ? { "Retry-After": String(failure.retryAfter) } : {}) },

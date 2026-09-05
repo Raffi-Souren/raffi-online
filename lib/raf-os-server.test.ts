@@ -19,6 +19,7 @@ import {
   RafHttpError,
   readBoundedJson,
   readSession,
+  requestModel,
   usageIdentity,
 } from "./raf-os-server"
 
@@ -446,3 +447,119 @@ test("audit request commitments bind actual model settings and instructions with
   }
   assert.equal(auditRun(body, sampleRunEvidence.result, sampleRunEvidence.sources).modelRequestSha256, undefined)
 })
+
+test(
+  "provider failures expose bounded diagnostics without leaking messages or credentials",
+  { concurrency: false },
+  async () => {
+    const originalFetch = globalThis.fetch
+    const controller = new AbortController()
+    const body = request()
+    const prepared = [await prepareSubmission(body.current, "v1")]
+    const payload = buildModelRequest(body, prepared)
+    const privateMessage = "PRIVATE PROVIDER DETAIL: incorrect credential " + fakeKey
+    const failureBody = (code: unknown, param: unknown) =>
+      JSON.stringify({ error: { message: privateMessage, code, param } })
+    const cases = [
+      {
+        name: "authentication failure",
+        status: 401,
+        response: failureBody("invalid_api_key", null),
+        diagnostic: { providerStatus: 401, providerCode: "invalid_api_key", providerParameter: "unknown" },
+      },
+      {
+        name: "schema parameter failure",
+        status: 400,
+        response: failureBody("invalid_value", "text.format.schema"),
+        diagnostic: { providerStatus: 400, providerCode: "invalid_value", providerParameter: "text.format.schema" },
+      },
+      {
+        name: "indexed PDF parameter failure",
+        status: 400,
+        response: failureBody("unsupported_parameter", "input[0].content[1].detail"),
+        diagnostic: {
+          providerStatus: 400,
+          providerCode: "unsupported_parameter",
+          providerParameter: "input[0].content[1].detail",
+        },
+      },
+      {
+        name: "unsafe parameter rejected independently of a safe code",
+        status: 400,
+        response: failureBody("invalid_value", "input[0].text\n" + fakeKey),
+        diagnostic: { providerStatus: 400, providerCode: "invalid_value", providerParameter: "unknown" },
+      },
+      {
+        name: "unsafe code rejected independently of a safe parameter",
+        status: 400,
+        response: failureBody("<script>" + privateMessage + "</script>", "model"),
+        diagnostic: { providerStatus: 400, providerCode: "unknown", providerParameter: "model" },
+      },
+      {
+        name: "overlong diagnostic tokens",
+        status: 400,
+        response: failureBody("a".repeat(101), "b".repeat(101)),
+        diagnostic: { providerStatus: 400, providerCode: "unknown", providerParameter: "unknown" },
+      },
+      {
+        name: "wrong provider error shape",
+        status: 502,
+        response: failureBody({ secret: fakeKey }, ["model"]),
+        diagnostic: { providerStatus: 502, providerCode: "unknown", providerParameter: "unknown" },
+      },
+      {
+        name: "malformed upstream body",
+        status: 502,
+        response: "<html>" + privateMessage + "</html>",
+        diagnostic: { providerStatus: 502, providerCode: "unknown", providerParameter: "unknown" },
+      },
+      {
+        name: "oversized upstream body",
+        status: 400,
+        response: JSON.stringify({
+          error: { message: privateMessage + "a".repeat(16_000), code: "invalid_value", param: "model" },
+        }),
+        diagnostic: { providerStatus: 400, providerCode: "unknown", providerParameter: "unknown" },
+      },
+      {
+        name: "provider rate limit",
+        status: 429,
+        response: failureBody("rate_limit_exceeded", "model"),
+        diagnostic: undefined,
+      },
+    ]
+
+    try {
+      for (const example of cases) {
+        let calls = 0
+        globalThis.fetch = async (input, init) => {
+          calls++
+          assert.equal(input, "https://api.openai.com/v1/responses")
+          assert.equal(init?.method, "POST")
+          assert.equal(init?.redirect, "error")
+          assert.equal(init?.signal, controller.signal)
+          assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer " + fakeKey)
+          assert.deepEqual(JSON.parse(String(init?.body)), payload)
+          return new Response(example.response, { status: example.status })
+        }
+        await assert.rejects(
+          requestModel(payload, fakeKey, prepared[0].sources, false, controller.signal),
+          (error: unknown) => {
+            assert.ok(error instanceof RafHttpError, example.name)
+            assert.equal(error.status, example.status === 429 ? 429 : 503, example.name)
+            assert.equal(error.retryAfter, example.status === 429 ? 60 : undefined, example.name)
+            assert.deepEqual(error.diagnostic, example.diagnostic, example.name)
+            const publicError = JSON.stringify({ error: error.message, diagnostic: error.diagnostic })
+            assert.ok(!publicError.includes(fakeKey), example.name + " leaked a credential")
+            assert.ok(!publicError.includes("PRIVATE PROVIDER DETAIL"), example.name + " leaked provider text")
+            assert.ok(!publicError.includes("<script>"), example.name + " leaked markup")
+            return true
+          },
+        )
+        assert.equal(calls, 1, example.name + " must not automatically retry")
+      }
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  },
+)
