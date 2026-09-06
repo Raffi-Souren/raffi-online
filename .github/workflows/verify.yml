@@ -70,6 +70,10 @@ jobs:
           mkdir -p /tmp/raffi-world-smoke /tmp/raffi-world-collisions /tmp/raffi-world-minimap /tmp/raffi-signal-smoke /tmp/raffi-camera-budget /tmp/raffi-replay-smoke
           export RAFFI_WORLD_URL=http://127.0.0.1:3100/world/index.html
           export RAFFI_APP_URL=http://127.0.0.1:3100
+          export RAFFI_QA_OUTPUT_DIR=/tmp/raffi-window-qa
+          pnpm run test:windows:browser
+          export RAFFI_QA_OUTPUT_DIR=/tmp/raffi-raf-os-flow
+          pnpm run test:raf-os:browser
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-smoke
           pnpm run test:world:browser
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-collisions
@@ -96,4 +100,6 @@ jobs:
             /tmp/raffi-signal-smoke
             /tmp/raffi-camera-budget
             /tmp/raffi-replay-smoke
+            /tmp/raffi-window-qa
+            /tmp/raffi-raf-os-flow
           if-no-files-found: ignore

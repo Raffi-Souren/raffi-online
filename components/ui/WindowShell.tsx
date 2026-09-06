@@ -1,12 +1,15 @@
 "use client"
 
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, type RefObject, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { Maximize2, Minimize2, Minus, X } from "lucide-react"
 
 interface WindowActivityContextValue {
   active: boolean
   layer: number
+  minimized?: boolean
+  windowId?: string
   onActivate?: () => void
+  onMinimize?: () => void
 }
 
 const WindowActivityContext = createContext<WindowActivityContextValue>({
@@ -22,7 +25,10 @@ export function useWindowActivity() {
 interface WindowActivityProviderProps {
   active: boolean
   layer: number
+  minimized?: boolean
+  windowId?: string
   onActivate?: () => void
+  onMinimize?: () => void
   children: ReactNode
 }
 
@@ -32,8 +38,11 @@ interface WindowActivityProviderProps {
  * stable DOM slot is especially important for iframe apps: moving an iframe to
  * bring it forward can reload its browsing context and destroy its state.
  */
-export function WindowActivityProvider({ active, layer, onActivate, children }: WindowActivityProviderProps) {
-  const value = useMemo(() => ({ active, layer, onActivate }), [active, layer, onActivate])
+export function WindowActivityProvider({ active, layer, minimized, windowId, onActivate, onMinimize, children }: WindowActivityProviderProps) {
+  const value = useMemo(
+    () => ({ active, layer, minimized, windowId, onActivate, onMinimize }),
+    [active, layer, minimized, windowId, onActivate, onMinimize],
+  )
   return <WindowActivityContext.Provider value={value}>{children}</WindowActivityContext.Provider>
 }
 
@@ -42,8 +51,10 @@ interface WindowShellProps {
   onClose: () => void
   /** Offer a separate minimize action alongside the existing close button. */
   onMinimize?: () => void
+  /** Focus a useful starting field on desktop without opening a phone keyboard. */
+  initialFocusRef?: RefObject<HTMLElement>
   /** Terminal apps can opt into dark chrome without changing the XP desktop. */
-  appearance?: "xp" | "terminal"
+  appearance?: "xp" | "terminal" | "crate"
   children: ReactNode
   className?: string
   id?: string
@@ -110,12 +121,13 @@ export default function WindowShell({
   title,
   onClose,
   onMinimize,
+  initialFocusRef,
   appearance = "xp",
   children,
   className = "",
   id,
   fill = false,
-  hidden = false,
+  hidden: hiddenProp = false,
   fullBleed = false,
   maxWidth = "1024px",
   compact = false,
@@ -128,9 +140,12 @@ export default function WindowShell({
   const activity = useContext(WindowActivityContext)
   const [maximized, setMaximized] = useState(false)
   const terminalChrome = appearance === "terminal"
+  const crateChrome = appearance === "crate"
+  const hidden = hiddenProp || Boolean(activity.minimized)
   const isActive = active ?? activity.active
   const shellLayer = layer ?? activity.layer
   const activate = onActivate ?? activity.onActivate
+  const minimize = onMinimize ?? activity.onMinimize
   const edgeInset = compact ? "0px" : "8px"
   const windowRef = useRef<HTMLDivElement>(null)
 
@@ -157,12 +172,14 @@ export default function WindowShell({
     const frame = window.requestAnimationFrame(() => {
       const dialog = windowRef.current
       if (!dialog || dialog.contains(document.activeElement)) return
-      const first = getFocusableElements(dialog)[0]
-      const focusTarget = first ?? dialog
+      const initial = initialFocusRef?.current
+      const focusTarget = initial && window.matchMedia("(pointer: fine)").matches && getFocusableElements(dialog).includes(initial)
+        ? initial
+        : dialog
       focusTarget.focus({ preventScroll: true })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [hidden, isActive])
+  }, [hidden, isActive, initialFocusRef])
 
   // Focus trap
   const handleKeyDown = useCallback(
@@ -207,19 +224,16 @@ export default function WindowShell({
       action: onClose,
       minimize: dismissAction === "minimize",
     },
-    ...(onMinimize ? [{ key: "minimize", label: `Minimize ${title}`, action: onMinimize, minimize: true }] : []),
-    ...(terminalChrome
-      ? [
-          {
-            key: "maximize",
-            label: maximized ? "Restore window" : "Maximize window",
-            action: () => setMaximized((previous) => !previous),
-            minimize: false,
-          },
-        ]
+    ...(minimize && dismissAction !== "minimize"
+      ? [{ key: "minimize", label: `Minimize ${title}`, action: minimize, minimize: true }]
       : []),
+    {
+      key: "maximize",
+      label: maximized ? "Restore window" : "Maximize window",
+      action: () => setMaximized((previous) => !previous),
+      minimize: false,
+    },
   ]
-  const titleSideInset = Math.max(44, windowActions.length * 34 + 4)
 
   return (
     <>
@@ -236,7 +250,7 @@ export default function WindowShell({
           backgroundColor: "rgba(0, 0, 0, 0.5)",
           display: hidden ? "none" : undefined,
         }}
-        onClick={onClose}
+        onClick={minimize ?? onClose}
         aria-hidden="true"
       />
 
@@ -260,6 +274,10 @@ export default function WindowShell({
       >
         <div
           ref={windowRef}
+          id={id}
+          className={className}
+          data-window-id={activity.windowId}
+          data-maximized={maximized}
           onKeyDown={handleKeyDown}
           onPointerDownCapture={activate}
           role="dialog"
@@ -270,29 +288,33 @@ export default function WindowShell({
             backgroundColor: "#ffffff",
             color: "#111827",
             borderRadius: "10px",
-            border: terminalChrome ? "1px solid #34433a" : "1px solid #6495da",
+            border: terminalChrome ? "1px solid #34433a" : crateChrome ? "1px solid #c59621" : "1px solid #6495da",
             boxShadow: terminalChrome ? "0 24px 80px rgba(0, 0, 0, 0.55)" : "0 24px 72px rgba(12, 32, 64, 0.38)",
             display: "flex",
             flexDirection: "column",
             width: "100%",
-            maxWidth: terminalChrome && maximized ? "100%" : maxWidth,
+            maxWidth: maximized ? "100%" : maxWidth,
             // A definite height is what lets `height: 100%` resolve further
             // down. Without it the dialog sizes to content and every nested
             // percentage height silently collapses to auto.
-            height: fill || (terminalChrome && maximized) ? "100%" : undefined,
+            height: fill || maximized ? "100%" : undefined,
             maxHeight: "100%",
             pointerEvents: "auto",
             overflow: "hidden",
+            outline: "none",
           }}
         >
           {/* App chrome stays reachable while the content scrolls. */}
           <div
+            onDoubleClick={(event) => {
+              if (!(event.target as HTMLElement).closest("button")) setMaximized((previous) => !previous)
+            }}
             style={{
-              background: terminalChrome ? "#151b18" : "linear-gradient(180deg, #3b82f6 0%, #2464dd 45%, #1c55c5 100%)",
-              color: terminalChrome ? "#a2b5a7" : "white",
-              padding: terminalChrome ? "0 10px" : "0 12px",
-              minHeight: terminalChrome || compact ? "42px" : "52px",
-              borderBottom: terminalChrome ? "1px solid #34433a" : "1px solid #17449f",
+              background: terminalChrome ? "#151b18" : crateChrome ? "linear-gradient(to right, #FBBF24, #F59E0B)" : "linear-gradient(180deg, #3b82f6 0%, #2464dd 45%, #1c55c5 100%)",
+              color: terminalChrome ? "#a2b5a7" : crateChrome ? "#332500" : "white",
+              padding: "0 6px",
+              minHeight: terminalChrome || compact ? "44px" : "52px",
+              borderBottom: terminalChrome ? "1px solid #34433a" : crateChrome ? "1px solid #c59621" : "1px solid #17449f",
               boxShadow: terminalChrome ? undefined : "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
               display: "flex",
               alignItems: "center",
@@ -305,29 +327,13 @@ export default function WindowShell({
               zIndex: 10,
             }}
           >
-            <h2
-              style={{
-                fontWeight: "bold",
-                fontSize: terminalChrome ? "14px" : "1rem",
-                fontFamily: terminalChrome ? '"IBM Plex Mono", Menlo, Consolas, monospace' : "Tahoma, Verdana, sans-serif",
-                textAlign: "center",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                padding: `0 ${titleSideInset}px`,
-                width: "100%",
-                margin: 0,
-              }}
-            >
-              {title}
-            </h2>
             <div
+              role="group"
+              aria-label="Window controls"
               style={{
                 display: "flex",
                 gap: 0,
                 flexShrink: 0,
-                position: "absolute",
-                left: "6px",
               }}
             >
               {windowActions.map((action) => (
@@ -336,6 +342,7 @@ export default function WindowShell({
                   type="button"
                   onClick={action.action}
                   aria-label={action.label}
+                  aria-pressed={action.key === "maximize" ? maximized : undefined}
                   title={action.label}
                   className={`group focus-visible:outline focus-visible:outline-2 ${
                     terminalChrome
@@ -346,8 +353,8 @@ export default function WindowShell({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: 34,
-                    height: terminalChrome || compact ? 40 : 44,
+                    width: 44,
+                    height: 44,
                     padding: 0,
                     border: 0,
                     borderRadius: 5,
@@ -371,7 +378,7 @@ export default function WindowShell({
                     }}
                   >
                     <span
-                      className="opacity-0 group-hover:opacity-80 group-focus-visible:opacity-80"
+                      className="opacity-70 sm:opacity-0 group-hover:opacity-80 group-focus-visible:opacity-80"
                       aria-hidden="true"
                     >
                       {action.key === "maximize" ? (
@@ -390,6 +397,29 @@ export default function WindowShell({
                 </button>
               ))}
             </div>
+            <h2
+              title={title}
+              style={{
+                fontWeight: "bold",
+                fontSize: terminalChrome ? "14px" : "1rem",
+                fontFamily: terminalChrome ? '"IBM Plex Mono", Menlo, Consolas, monospace' : "Tahoma, Verdana, sans-serif",
+                textAlign: "center",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                padding: "0 8px",
+                flex: "1 1 auto",
+                minWidth: 0,
+                margin: 0,
+              }}
+            >
+              {title}
+            </h2>
+            <span
+              aria-hidden="true"
+              className="hidden min-[640px]:block"
+              style={{ width: windowActions.length * 44, flexShrink: 0 }}
+            />
           </div>
 
           {/* Content area */}
@@ -404,7 +434,7 @@ export default function WindowShell({
               position: "relative",
               // Games own their whole frame; padding would letterbox them in
               // white and the scrollbar would sit on top of the canvas.
-              padding: fullBleed || fill ? 0 : "1rem",
+              padding: fullBleed || fill || crateChrome ? 0 : "1rem",
               display: fill ? "flex" : undefined,
               flexDirection: fill ? "column" : undefined,
               backgroundColor: fullBleed ? "#000000" : "#ffffff",

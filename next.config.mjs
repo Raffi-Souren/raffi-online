@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    outputFileTracingIncludes: {
+      '/api/raf-os': ['./lib/raf-os-pdf-worker.cjs', './node_modules/pdf-lib/dist/pdf-lib.min.js'],
+    },
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
   },

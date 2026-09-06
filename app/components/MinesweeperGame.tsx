@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import ScoreEntry from "./ScoreEntry"
+import { useWindowActivity } from "../../components/ui/WindowShell"
 
 const GRID_SIZE = 10
 const NUM_MINES = 15
@@ -16,6 +17,7 @@ interface Cell {
 }
 
 export default function MinesweeperGame() {
+  const { active } = useWindowActivity()
   const [grid, setGrid] = useState<Cell[][]>([])
   const [gameOver, setGameOver] = useState(false)
   const [gameWon, setGameWon] = useState(false)
@@ -23,6 +25,7 @@ export default function MinesweeperGame() {
   const [elapsedMs, setElapsedMs] = useState(0)
   const [runId, setRunId] = useState(0)
   const startedAt = useRef<number | null>(null)
+  const pausedAt = useRef<number | null>(null)
   const touchStart = useRef<number | null>(null)
   const flagsLeft = NUM_MINES - grid.flat().filter((cell) => cell.state === "flagged").length
 
@@ -82,6 +85,7 @@ export default function MinesweeperGame() {
     setGameWon(false)
     setFirstClick(true)
     startedAt.current = null
+    pausedAt.current = null
     setElapsedMs(0)
     setRunId((id) => id + 1)
   }, [initializeGrid])
@@ -91,12 +95,26 @@ export default function MinesweeperGame() {
   }, [resetGame])
 
   useEffect(() => {
-    if (firstClick || gameOver || gameWon) return
+    if (!active) {
+      touchStart.current = null
+      if (startedAt.current !== null && pausedAt.current === null) {
+        pausedAt.current = performance.now()
+        if (!gameOver && !gameWon) setElapsedMs(Math.round(pausedAt.current - startedAt.current))
+      }
+    } else if (pausedAt.current !== null) {
+      // Exclude the entire hidden interval, including time after the last timer tick.
+      if (startedAt.current !== null) startedAt.current += performance.now() - pausedAt.current
+      pausedAt.current = null
+    }
+  }, [active, gameOver, gameWon])
+
+  useEffect(() => {
+    if (!active || firstClick || gameOver || gameWon) return
     const timer = window.setInterval(() => {
       if (startedAt.current !== null) setElapsedMs(Math.round(performance.now() - startedAt.current))
     }, 100)
     return () => window.clearInterval(timer)
-  }, [firstClick, gameOver, gameWon])
+  }, [active, firstClick, gameOver, gameWon])
 
   const revealCell = useCallback((grid: Cell[][], x: number, y: number) => {
     const cell = grid[x][y]
@@ -120,7 +138,7 @@ export default function MinesweeperGame() {
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
-      if (gameOver || gameWon || grid[x][y].state !== "hidden") return
+      if (!active || gameOver || gameWon || grid[x][y].state !== "hidden") return
 
       let newGrid = grid.map((row) => row.map((cell) => ({ ...cell })))
 
@@ -167,12 +185,12 @@ export default function MinesweeperGame() {
 
       setGrid(newGrid)
     },
-    [grid, gameOver, gameWon, firstClick, initializeGrid, revealCell],
+    [active, grid, gameOver, gameWon, firstClick, initializeGrid, revealCell],
   )
 
   const toggleFlag = useCallback(
     (x: number, y: number) => {
-      if (gameOver || gameWon) return
+      if (!active || gameOver || gameWon) return
 
       const newGrid = grid.map((row) => row.map((cell) => ({ ...cell })))
       const cell = newGrid[x][y]
@@ -185,7 +203,7 @@ export default function MinesweeperGame() {
 
       setGrid(newGrid)
     },
-    [grid, gameOver, gameWon, flagsLeft],
+    [active, grid, gameOver, gameWon, flagsLeft],
   )
 
   const handleCellTouch = useCallback(
