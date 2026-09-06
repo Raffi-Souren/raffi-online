@@ -15,6 +15,7 @@ import { createOvertimeScene } from "../../lib/overtime-scene"
 import ScoreEntry from "./ScoreEntry"
 
 type Control = "left" | "right" | "forward" | "reverse" | "boost" | "jump"
+const STEER_CRUISE = 0.7
 const KEY_MAP: Record<string, Control> = {
   a: "left",
   arrowleft: "left",
@@ -127,11 +128,15 @@ export default function OvertimeGame() {
         Array.from(keyboard.current).some((key) => KEY_MAP[key] === control) ||
         Array.from(touches.current.values()).includes(control)
       if (activeRef.current) {
+        const steer = Number(pressed("right")) - Number(pressed("left"))
+        const throttle = Number(pressed("forward")) - Number(pressed("reverse"))
+        // Turn rate scales with speed, so a parked car barely pivots. Steering
+        // alone rolls forward at cruise so one thumb can carry you to the ball.
         stepMatch(
           match,
           {
-            steer: Number(pressed("right")) - Number(pressed("left")),
-            throttle: Number(pressed("forward")) - Number(pressed("reverse")),
+            steer,
+            throttle: throttle === 0 && steer !== 0 ? STEER_CRUISE : throttle,
             boost: pressed("boost"),
             jump: pressed("jump"),
           },
@@ -218,9 +223,13 @@ export default function OvertimeGame() {
       onPointerDown={(event) => {
         if (phase !== "playing" && phase !== "kickoff") return
         event.preventDefault()
-        event.currentTarget.setPointerCapture(event.pointerId)
         touches.current.set(event.pointerId, control)
         setHeld(Array.from(touches.current.values()))
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId)
+        } catch {
+          /* A finger that already lifted still releases through pointerup. */
+        }
       }}
       onPointerUp={(event) => {
         touches.current.delete(event.pointerId)
@@ -476,7 +485,7 @@ export default function OvertimeGame() {
                       <strong style={{ color: "#eef5ee" }}>Shift</strong> boost ·{" "}
                       <strong style={{ color: "#eef5ee" }}>Space</strong> jump
                     </div>
-                    <div>Gold pads refill boost. Touch controls work below.</div>
+                    <div>Gold pads refill boost. Steering alone rolls you forward.</div>
                   </div>
                 )}
                 {finished && (
