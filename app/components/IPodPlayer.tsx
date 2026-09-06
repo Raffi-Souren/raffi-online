@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { useAudio, type Track } from "../context/AudioContext"
 import { BADCOMPANY_MIXES, FEATURED_RAFS_CRATE } from "@/data/audio-library"
+import IPodGame, { IPOD_GAMES, type IPodGameHandle, type IPodGameId } from "./IPodGames"
 
 interface Video {
   id: string
@@ -144,6 +145,9 @@ const PODCASTS: Podcast[] = [
 
 type MenuScreen =
   | "main"
+  | "extras"
+  | "games"
+  | "game"
   | "music"
   | "playlists"
   | "badcompany"
@@ -229,6 +233,8 @@ export default function IPodPlayer() {
   const [videoStatus, setVideoStatus] = useState<VideoStatus>("ready")
   const [expandedVideo, setExpandedVideo] = useState(false)
   const [currentPodcast, setCurrentPodcast] = useState<Podcast | null>(null)
+  const [activeGame, setActiveGame] = useState<IPodGameId>("brick")
+  const gameRef = useRef<IPodGameHandle>(null)
   const [playbackControl, setPlaybackControl] = useState<"volume" | "seek">("volume")
   // Like the real iPod, the volume bar only replaces the progress bar while
   // the wheel is being turned, then the screen settles back to the track.
@@ -300,10 +306,21 @@ export default function IPodPlayer() {
           { label: "Music", submenu: "music" },
           { label: "Videos", submenu: "videos" },
           { label: "Podcasts / Talks", submenu: "podcasts" },
+          { label: "Extras", submenu: "extras" },
           { label: "Now Playing", submenu: "nowPlaying" },
           { label: "Settings", submenu: "settings" },
           { label: "About Raffi", submenu: "about" },
         ]
+      case "extras":
+        return [{ label: "Games", submenu: "games" }]
+      case "games":
+        return IPOD_GAMES.map((game, index) => ({
+          label: game.name,
+          action: () => {
+            setActiveGame(game.id)
+            navigate("game", index)
+          },
+        }))
       case "music":
         return [{ label: "Playlists", submenu: "playlists" }]
       case "playlists":
@@ -361,8 +378,16 @@ export default function IPodPlayer() {
 
   const hasSelectableRows = menuItems.length > 0
   const hasScrollableCopy = currentScreen === "podcastDetail" || currentScreen === "about"
+  const gameActive = currentScreen === "game"
   const wheelCanRotate =
-    hasSelectableRows || hasScrollableCopy || currentScreen === "nowPlaying" || currentScreen === "videoPlayer"
+    hasSelectableRows ||
+    hasScrollableCopy ||
+    gameActive ||
+    currentScreen === "nowPlaying" ||
+    currentScreen === "videoPlayer"
+  // Paddle games want a finer wheel than menus so a full spin sweeps the
+  // screen; Snake keeps menu detents so one nudge is exactly one turn.
+  const wheelDetentDegrees = gameActive && activeGame !== "snake" ? 12 : WHEEL_DETENT_DEGREES
 
   const handleVideoPlayPause = useCallback(() => {
     const player = videoPlayerRef.current?.getInternalPlayer()
@@ -377,7 +402,8 @@ export default function IPodPlayer() {
   }, [pauseTrack, videoStatus])
 
   const handlePlayPause = () => {
-    if (currentScreen === "videoPlayer") handleVideoPlayPause()
+    if (gameActive) gameRef.current?.playPause()
+    else if (currentScreen === "videoPlayer") handleVideoPlayPause()
     else if (isPlaying) pauseTrack()
     else if (currentTrack) resumeTrack()
     else playMusic(BADCOMPANY_MIXES, 0)
@@ -395,7 +421,8 @@ export default function IPodPlayer() {
   }
 
   const handleSelect = () => {
-    if (currentScreen === "nowPlaying") {
+    if (gameActive) gameRef.current?.select()
+    else if (currentScreen === "nowPlaying") {
       const next = playbackControl === "volume" ? "seek" : "volume"
       setPlaybackControl(next)
       flashWheelOverlay(next)
@@ -446,7 +473,9 @@ export default function IPodPlayer() {
   const navigateByWheel = useCallback(
     (steps: number) => {
       if (!steps) return
-      if (hasSelectableRows) setSelectedIndex((index) => Math.max(0, Math.min(menuItems.length - 1, index + steps)))
+      if (gameActive) gameRef.current?.wheel(steps)
+      else if (hasSelectableRows)
+        setSelectedIndex((index) => Math.max(0, Math.min(menuItems.length - 1, index + steps)))
       else if (hasScrollableCopy) screenScrollRef.current?.scrollBy({ top: steps * 28, behavior: "auto" })
       else if (currentScreen === "nowPlaying" && playbackControl === "seek") {
         seekTo(currentTime + steps * 5)
@@ -460,6 +489,7 @@ export default function IPodPlayer() {
       currentScreen,
       currentTime,
       flashWheelOverlay,
+      gameActive,
       hasScrollableCopy,
       hasSelectableRows,
       menuItems.length,
@@ -494,12 +524,12 @@ export default function IPodPlayer() {
       accumulatedRotationRef.current += delta
       sweptRotationRef.current += Math.abs(delta)
       if (sweptRotationRef.current >= WHEEL_GESTURE_CONFIRM_DEGREES) wheelDidRotateRef.current = true
-      const steps = Math.trunc(accumulatedRotationRef.current / WHEEL_DETENT_DEGREES)
+      const steps = Math.trunc(accumulatedRotationRef.current / wheelDetentDegrees)
       if (!steps) return
-      accumulatedRotationRef.current -= steps * WHEEL_DETENT_DEGREES
+      accumulatedRotationRef.current -= steps * wheelDetentDegrees
       navigateByWheel(steps)
     },
-    [navigateByWheel, readWheelBearing],
+    [navigateByWheel, readWheelBearing, wheelDetentDegrees],
   )
 
   const handleJogWheelScroll = useCallback(
@@ -597,8 +627,13 @@ export default function IPodPlayer() {
     if (event.cancelable) event.preventDefault()
     trackWheelRotation(event.clientX, event.clientY)
     // Capture only confirmed spins so an ordinary press still clicks its button.
-    if (wheelDidRotateRef.current && !event.currentTarget.hasPointerCapture(event.pointerId))
-      event.currentTarget.setPointerCapture(event.pointerId)
+    if (wheelDidRotateRef.current && !event.currentTarget.hasPointerCapture(event.pointerId)) {
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId)
+      } catch {
+        /* The finger already lifted; pointerup still resets the spin. */
+      }
+    }
   }
 
   const handleWheelPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -622,6 +657,8 @@ export default function IPodPlayer() {
     if (event.altKey || event.ctrlKey || event.metaKey || event.target instanceof HTMLInputElement) return
     if (event.key === "ArrowDown") navigateByWheel(1)
     else if (event.key === "ArrowUp") navigateByWheel(-1)
+    else if (gameActive && event.key === "ArrowLeft") navigateByWheel(-1)
+    else if (gameActive && event.key === "ArrowRight") navigateByWheel(1)
     else if (event.key === "ArrowLeft" || event.key === "Backspace") handleBack()
     else if (event.key === "ArrowRight") handleSelect()
     else if (event.key === "Home" && hasSelectableRows) setSelectedIndex(0)
@@ -640,6 +677,9 @@ export default function IPodPlayer() {
 
   const titles: Record<MenuScreen, string> = {
     main: "Raffi’s iPod",
+    extras: "Extras",
+    games: "Games",
+    game: IPOD_GAMES.find((game) => game.id === activeGame)?.name ?? "Game",
     music: "Music",
     playlists: "Playlists",
     badcompany: "BadCompany",
@@ -889,6 +929,8 @@ export default function IPodPlayer() {
                       </button>
                     </div>
                   </div>
+                ) : gameActive ? (
+                  <IPodGame ref={gameRef} game={activeGame} />
                 ) : currentScreen === "podcastDetail" && currentPodcast ? (
                   <div ref={screenScrollRef} style={{ height: "100%", overflowY: "auto", padding: 9, fontSize: 11 }}>
                     <p style={{ fontWeight: 700, lineHeight: 1.25 }}>{currentPodcast.title}</p>
@@ -1218,7 +1260,9 @@ export default function IPodPlayer() {
               data-wheel-center
               type="button"
               aria-label={
-                videoActive
+                gameActive
+                  ? "Start, launch, or pause game"
+                  : videoActive
                   ? "Play or pause video"
                   : currentScreen === "nowPlaying"
                     ? "Switch between volume and seek"
@@ -1260,25 +1304,25 @@ export default function IPodPlayer() {
             </button>
             <button
               type="button"
-              aria-label={videoActive ? "Previous video" : "Previous track"}
+              aria-label={gameActive ? "Move left" : videoActive ? "Previous video" : "Previous track"}
               className={`${focusClass} hover:opacity-70`}
-              onClick={videoActive ? () => changeVideo(-1) : previousTrack}
+              onClick={gameActive ? () => navigateByWheel(-3) : videoActive ? () => changeVideo(-1) : previousTrack}
               style={{ ...wheelButtonStyle, top: 55, left: 0, width: 49, height: 60 }}
             >
               <SkipBack size={20} fill="currentColor" strokeWidth={1} />
             </button>
             <button
               type="button"
-              aria-label={videoActive ? "Next video" : "Next track"}
+              aria-label={gameActive ? "Move right" : videoActive ? "Next video" : "Next track"}
               className={`${focusClass} hover:opacity-70`}
-              onClick={videoActive ? () => changeVideo(1) : nextTrack}
+              onClick={gameActive ? () => navigateByWheel(3) : videoActive ? () => changeVideo(1) : nextTrack}
               style={{ ...wheelButtonStyle, top: 55, right: 0, width: 49, height: 60 }}
             >
               <SkipForward size={20} fill="currentColor" strokeWidth={1} />
             </button>
             <button
               type="button"
-              aria-label={videoActive ? "Play or pause video" : "Play or pause track"}
+              aria-label={gameActive ? "Pause or resume game" : videoActive ? "Play or pause video" : "Play or pause track"}
               className={`${focusClass} hover:opacity-70`}
               onClick={handlePlayPause}
               style={{ ...wheelButtonStyle, bottom: 0, left: 45, width: 80, height: 49, gap: 3 }}
