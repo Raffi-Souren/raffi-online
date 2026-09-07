@@ -50,15 +50,6 @@ const GAMES: Game[] = [
     color: "#bdcedd",
   },
   {
-    id: "overtime",
-    name: "Overtime",
-    device: "Car soccer",
-    category: "Originals",
-    description: "Drive, boost, and jump to score. One rival, 90 seconds, and golden goal to break a tie.",
-    icon: "⚽",
-    color: "#bddad2",
-  },
-  {
     id: "borough-gp",
     name: "Borough Grand Prix",
     device: "Raffi Racing",
