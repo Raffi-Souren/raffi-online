@@ -1,0 +1,28 @@
+{
+  "threeVersion": "0.183.2",
+  "source": "https://github.com/mrdoob/three/tree/r183/examples/jsm",
+  "license": "MIT",
+  "files": [
+    {
+      "file": "vendor/loaders/GLTFLoader.js",
+      "sha256": "e4e692923224a10bbc00be04365d6356b5e8c48b2bbd1f22a7fe929591646fb8"
+    },
+    {
+      "file": "vendor/utils/BufferGeometryUtils.js",
+      "sha256": "fda7e946b8e0b5ab39b779206589e7a1079a22eb24efb89d7223e03fdfb1f751"
+    },
+    {
+      "file": "vendor/utils/SkeletonUtils.js",
+      "sha256": "0761b1e003917b215d25dd81439d854b36034b5a57ce84c2cfe3b02428d7b253"
+    },
+    {
+      "file": "vendor/utils/meshopt_decoder.module.js",
+      "sha256": "97901fb3d2d296eeea2a57348a734ef0a17e35f2d4aea5a65223635d3f0e1709"
+    }
+  ],
+  "notices": [
+    "vendor/LICENSE-three.txt",
+    "vendor/LICENSE-meshoptimizer.txt"
+  ],
+  "decoder": "The locally vendored Three r183 meshopt decoder embeds its WebAssembly; it has no remote or .wasm fetch requirement."
+}

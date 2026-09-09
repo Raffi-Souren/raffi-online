@@ -8,7 +8,8 @@
 import * as THREE from 'three'
 import { state, data, bus, clamp } from '../engine/state.js'
 import { setWaypoint, setObjective, setCompliance, setRadio, toast } from './hud.js'
-import { queueDialogue } from './dialogue.js'
+import { queueDialogue, dismissDialogue } from './dialogue.js'
+import { campaignUnlocks } from './save-core.js'
 import { makePropObject } from '../gen/props.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { enterInterior, exitInterior, interiorById } from './interiors.js'
@@ -420,7 +421,7 @@ function failMission(line) {
   teardownRun()
   setMarker(mission.marker)
   setWaypoint(mission.marker, mission.name)
-  setObjective('RETRY · ' + mission.name)
+  setObjective('TRY AGAIN · ' + mission.name)
   offered = mission
   queueDialogue(line || mission.objectives.find((item) => item.failLine)?.failLine, { blocking: true })
 }
@@ -444,9 +445,11 @@ function completeMission() {
     onComplete: () => {
       offered = nextSupportedMission()
       if (offered) focusFirstMission()
-      else setObjective('FREE ROAM · PORT VANTAGE IS YOURS')
+      else setObjective('FREE ROAM · NEW YORK IS YOURS')
     },
   })
+  bus.emit('mission-complete', { id: mission.id })
+  bus.emit('mission-checkpoint', { id: mission.id })
 }
 
 function teardownRun() {
@@ -559,6 +562,7 @@ function spawnHeckler(max) {
     deps.atlas,
     data.blocks.vertexLighting,
   )
+  mesh.userData.npcId = 'mission:set-time:heckler:' + hecklers.length
   const ang = Math.random() * Math.PI * 2
   mesh.position.set(state.player.x + Math.cos(ang) * 6, 0, state.player.z + Math.sin(ang) * 6)
   deps.scene.add(mesh)
@@ -595,6 +599,7 @@ function spawnEscortPassenger(current) {
     deps.atlas,
     data.blocks.vertexLighting,
   )
+  mesh.userData.npcId = 'mission:' + current.id + ':escort-passenger'
   mesh.position.set(current.escort.from.x, 0, current.escort.from.z)
   deps.scene.add(mesh)
   passenger = { mesh, boarded: false }
@@ -630,6 +635,7 @@ function spawnShootoutActors(current) {
     deps.atlas,
     data.blocks.vertexLighting,
   )
+  keeper.userData.npcId = 'mission:penalty-shootout:keeper'
   keeper.position.set(0, 0, -28)
   deps.scene.add(keeper)
   ball = new THREE.Mesh(
@@ -793,5 +799,44 @@ export function completeCrateQuest() {
   completed.add('crate-quest')
   toast('CRATE QUEST COMPLETE · VINYL SET ASSEMBLED', 5)
   if (!run) setObjective('CRATE QUEST COMPLETE · KEEP EXPLORING')
+  bus.emit('mission-checkpoint', { id: 'crate-quest' })
+  return true
+}
+
+/**
+ * Restore durable campaign progress. Mid-job saves resume the authored briefing
+ * rather than resurrecting expired timers, hidden sensors, or stale actors.
+ */
+export function restoreMissionProgress(saved, { restart = true } = {}) {
+  dismissDialogue()
+  teardownRun()
+  for (const vehicle of loaners.values()) {
+    if (player.vehicle === vehicle) teleportPlayer(state.player.x, state.player.z, state.player.yaw)
+    vehicle.mesh.removeFromParent()
+    vehicle.mesh.geometry.dispose()
+    const index = deps.vehicles.indexOf(vehicle)
+    if (index >= 0) deps.vehicles.splice(index, 1)
+  }
+  loaners.clear()
+  completed.clear()
+  unlocked.clear()
+  const ids = new Set([...data.missions.missions.map((mission) => mission.id), 'crate-quest'])
+  for (const id of saved.completed || []) if (ids.has(id)) completed.add(id)
+  for (const id of campaignUnlocks([...completed], data.missions.missions)) unlocked.add(id)
+  state.mission.elapsed = 0
+  state.mission.objectiveIndex = 0
+  document.getElementById('end-card')?.classList.remove('show')
+  document.getElementById('end-card')?.classList.add('hidden')
+  offered = nextSupportedMission()
+  if (restart && saved.activeMission) {
+    const mission = availableMissions().find((item) => item.id === saved.activeMission)
+    if (mission) return startMission(mission)
+  }
+  if (offered) focusFirstMission()
+  else {
+    setMarker(null)
+    setWaypoint(null)
+    setObjective('FREE ROAM · NEW YORK IS YOURS')
+  }
   return true
 }

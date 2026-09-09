@@ -23,7 +23,8 @@ export function isExteriorEntity(object) {
     name.startsWith('ped:') ||
     name.startsWith('npc') ||
     name.startsWith('vehicle:') ||
-    name.startsWith('pursuer-')
+    name.startsWith('pursuer-') ||
+    name.startsWith('last-crate:')
 }
 
 function belongsTo(object, root) {

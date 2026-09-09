@@ -2,8 +2,8 @@
  * RAFFI WORLD — fog-depth cull for OPAQUE city chunks only.
  *
  * Chunks whose entire bounding sphere sits beyond fog.far in camera-space
- * depth cannot contribute visible colour, so we skip the draw. Emissive,
- * alpha, actors, water, and no-fog interiors are never touched here.
+ * depth cannot contribute visible colour, so we skip the draw. Opaque emission
+ * shares these bounds; alpha, actors, water and no-fog interiors are untouched.
  */
 
 import { gfx } from './render.js'
@@ -53,6 +53,7 @@ export function updateOpaqueFogCull(camera, root) {
     const depth = dx * fx + dy * fy + dz * fz
     const radial = Math.hypot(dx, dy, dz)
     const r = sphere.radius
-    obj.visible = (depth - r < far - 8) && (radial - r < far + 12)
+    const detailVisible = !obj.userData.opaqueDetail || radial - r < (obj.visible ? 120 : 110)
+    obj.visible = detailVisible && (depth - r < far - 8) && (radial - r < far + 12)
   })
 }

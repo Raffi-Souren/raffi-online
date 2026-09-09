@@ -2,7 +2,7 @@
  * RAFFI WORLD — camera rig with selectable modes.
  *
  * Modes (cycle with CAM / C / V) — first C jumps into real 3D:
- *   classic — fixed 3/4 orthographic iso (default)
+ *   classic — optional fixed 3/4 orthographic iso
  *   chase   — third-person perspective behind the player (GTA / Spidey vibe)
  *   free    — free-look third person; Q/X orbit yaw
  *   birds   — high bird's-eye ortho
@@ -12,6 +12,7 @@
 
 import * as THREE from 'three'
 import { data, state, damp, clamp, lerp } from './state.js'
+import { cameraBoomFraction } from './camera-obstruction.js'
 
 const DEG = Math.PI / 180
 
@@ -19,7 +20,7 @@ const DEG = Math.PI / 180
 export const CAMERA_MODES = [
   { id: 'classic', label: 'CLASSIC ISO', kind: 'ortho' },
   { id: 'chase', label: 'CHASE 3D', kind: 'persp' },
-  { id: 'free', label: 'FREE 3D', kind: 'persp' },
+  { id: 'free', label: 'STREET 3D', kind: 'persp' },
   { id: 'birds', label: "BIRD'S EYE", kind: 'ortho' },
 ]
 
@@ -37,22 +38,37 @@ export const cam = {
   desiredPitch: 0.42,
   pinch: 1,
   distance: 320,
-  chaseDistance: 18,
+  chaseDistance: 10,
+  boomDistance: 10,
+  orbitHold: 0,
   shake: 0,
   modeIndex: 0,
   modeId: 'classic',
+  drivingView: 'chase',
+  reducedMotion: false,
 }
 
 export function initCamera(aspect) {
   const c = data.world.camera
   cam.ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, c.near, c.far)
-  cam.persp = new THREE.PerspectiveCamera(48, aspect, 0.6, 1400)
+  cam.persp = new THREE.PerspectiveCamera(58, aspect, 0.12, 1400)
+  cam.modeIndex = 0
+  cam.modeId = 'classic'
+  cam.boomDistance = 10
+  cam.orbitHold = 0
+  cam.pinch = 1
+  cam.reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  try {
+    cam.drivingView = localStorage.getItem('raffi-world-driving-view') === 'hood' ? 'hood' : 'chase'
+    const reduced = localStorage.getItem('raffi-world-reduced-motion')
+    if (reduced !== null) cam.reducedMotion = reduced === '1'
+  } catch {}
   cam.camera = cam.ortho
   cam.desiredYaw = c.yawDeg * DEG
   cam.currentYaw = cam.desiredYaw
   cam.pitch = (c.pitchDeg || 55) * DEG * 0.55
   cam.desiredPitch = cam.pitch
-  cam.target.set(state.player.x, 0, state.player.z)
+  cam.target.set(state.player.x, (state.player.y || 0) + (c.footFocusHeight ?? 1.45), state.player.z)
   state.camera.orthoHeight = c.orthoHeightFoot
   state.camera.mode = cam.modeId
   updateProjection(aspect)
@@ -61,6 +77,19 @@ export function initCamera(aspect) {
 
 export function getCameraMode() {
   return CAMERA_MODES[cam.modeIndex] || CAMERA_MODES[0]
+}
+
+export function getDrivingView() { return cam.drivingView }
+export function setDrivingView(view) {
+  cam.drivingView = view === 'hood' ? 'hood' : 'chase'
+  try { localStorage.setItem('raffi-world-driving-view', cam.drivingView) } catch {}
+  return cam.drivingView
+}
+export function setReducedMotion(reduced) {
+  cam.reducedMotion = !!reduced
+  if (cam.reducedMotion) cam.shake = 0
+  try { localStorage.setItem('raffi-world-reduced-motion', cam.reducedMotion ? '1' : '0') } catch {}
+  return cam.reducedMotion
 }
 
 /** Cycle classic → chase 3D → free 3D → birds → classic. Returns mode descriptor. */
@@ -89,11 +118,12 @@ export function cycleCameraMode(dir = 1) {
     cam.currentYaw = cam.desiredYaw
     const mounted = state.mode === 'vehicle'
     cam.desiredPitch = mounted
-      ? (mode.id === 'free' ? 0.48 : 0.52)
-      : (mode.id === 'free' ? 0.42 : 0.38)
+      ? (mode.id === 'free' ? 0.34 : 0.38)
+      : (mode.id === 'free' ? 0.24 : data.world.camera.footPitch ?? 0.24)
     cam.pitch = cam.desiredPitch
     // Street-level chase pullback; rides need more room than foot.
-    cam.chaseDistance = mounted ? 20 : 16
+    cam.chaseDistance = mounted ? 13 : data.world.camera.footDistance ?? 6.2
+    cam.boomDistance = cam.chaseDistance
   }
   return mode
 }
@@ -109,7 +139,7 @@ export function updateProjection(aspect) {
   const mode = getCameraMode()
   if (mode.kind === 'persp') {
     cam.persp.aspect = Math.max(aspect, 0.01)
-    cam.persp.fov = mode.id === 'free' ? 52 : 48
+    cam.persp.fov = (aspect < 0.8 ? 68 : 58) + (state.mode === 'vehicle' ? Math.min(6, Math.abs(state.player.speed || 0) * 0.12) : 0)
     cam.persp.updateProjectionMatrix()
     cam.camera = cam.persp
     return
@@ -139,6 +169,7 @@ export function rotateView(dir = 1) {
     cam.desiredYaw += dir * (data.world.camera.yawSnapDeg || 90) * DEG
   } else {
     cam.desiredYaw += dir * 0.55
+    cam.orbitHold = 2.5
   }
 }
 
@@ -146,10 +177,18 @@ export function rotateView(dir = 1) {
 export function setPinch(v) {
   const c = data.world.camera
   cam.pinch = clamp(v, c.pinchMin, c.pinchMax)
-  cam.chaseDistance = lerp(12, 34, (cam.pinch - c.pinchMin) / Math.max(0.01, c.pinchMax - c.pinchMin))
+  // The camera eases toward this zoom in updateCamera; it does not jump.
+}
+
+export function orbitView(dx, dy) {
+  if (getCameraMode().kind !== 'persp') return
+  cam.desiredYaw -= dx * 0.005
+  cam.desiredPitch = clamp(cam.desiredPitch + dy * 0.0035, 0.06, 1.12)
+  cam.orbitHold = 3
 }
 
 export function addShake(amount) {
+  if (cam.reducedMotion) return
   cam.shake = Math.min(cam.shake + amount, 1.2)
 }
 
@@ -159,11 +198,16 @@ export function addShake(amount) {
  * @param velocity  {x, z} for look-ahead
  * @param aspect    viewport aspect
  */
-export function updateCamera(dt, focus, velocity, aspect) {
+export function updateCamera(dt, focus, velocity, aspect, collisionWorld = null) {
+  // A first RAF timestamp can predate the end of a long shader/loading task.
+  // Negative elapsed time makes exponential damping explode away from its target.
+  dt = Number.isFinite(dt) ? Math.max(0, Math.min(0.1, dt)) : 0
   const c = data.world.camera
   const mode = getCameraMode()
   const mounted = state.mode === 'vehicle'
   const persp = mode.kind === 'persp'
+  cam.orbitHold = Math.max(0, cam.orbitHold - dt)
+  cam.chaseDistance = damp(cam.chaseDistance, (mounted ? 13 + Math.min(4, Math.abs(state.player.speed || 0) * 0.12) : c.footDistance ?? 6.2) * cam.pinch, 4, dt)
 
   // Ortho zoom target (foot vs vehicle).
   const wantHeight = mounted
@@ -174,21 +218,21 @@ export function updateCamera(dt, focus, velocity, aspect) {
   // Chase/free: almost no look-ahead — big look-ahead shoved the focus past the
   // car and parked the ride under the bottom of the frame ("behind the screen").
   let laScale = mounted ? c.lookAheadVehicle : c.lookAheadFoot
-  if (persp) laScale = mounted ? 0.12 : 0.18
+  if (persp) laScale = mounted ? 0.07 : 0.12
   const ax = clamp(velocity.x * laScale, -c.lookAheadMax, c.lookAheadMax)
   const az = clamp(velocity.z * laScale, -c.lookAheadMax, c.lookAheadMax)
 
   // Chase: stay behind the actor, snappy enough that W always matches "forward
   // on screen". Free: leave yaw to Q/X orbit only.
-  if (mode.id === 'chase') {
+  if (mode.id === 'chase' && cam.orbitHold === 0) {
     if (mounted) {
       // Driving: snap hard behind the vehicle so W always reads as "forward".
       const behind = (state.player.yaw || 0) + Math.PI
       let dy = behind - cam.desiredYaw
       while (dy > Math.PI) dy -= Math.PI * 2
       while (dy < -Math.PI) dy += Math.PI * 2
-      cam.desiredYaw += dy * Math.min(1, dt * 11)
-      cam.desiredPitch = 0.52
+      cam.desiredYaw += dy * (1 - Math.exp(-8 * dt))
+      cam.desiredPitch = 0.38
     } else {
       // On foot: only glide behind the walker when they are (near) stopped.
       // While moving we freeze the rig yaw so the screen-relative stick keeps a
@@ -200,18 +244,17 @@ export function updateCamera(dt, focus, velocity, aspect) {
         let dy = behind - cam.desiredYaw
         while (dy > Math.PI) dy -= Math.PI * 2
         while (dy < -Math.PI) dy += Math.PI * 2
-        cam.desiredYaw += dy * Math.min(1, dt * 4)
+        cam.desiredYaw += dy * (1 - Math.exp(-4 * dt))
       }
-      cam.desiredPitch = 0.38
+      cam.desiredPitch = c.footPitch ?? 0.24
     }
   } else if (mode.id === 'free') {
     // Keep free cam from going flat on the road when riding.
-    const minP = mounted ? 0.28 : 0.16
+    const minP = 0.06
     cam.desiredPitch = clamp(cam.desiredPitch, minP, 1.15)
-    if (mounted && cam.desiredPitch < 0.4) cam.desiredPitch = 0.44
   } else if (mode.id === 'birds') {
     cam.desiredPitch = (c.birdsPitchDeg || 72) * DEG
-  } else {
+  } else if (!persp) {
     cam.desiredPitch = (c.pitchDeg || 55) * DEG
   }
 
@@ -227,7 +270,7 @@ export function updateCamera(dt, focus, velocity, aspect) {
     ? Math.max(c.followLerp, mounted ? 16 : 12)
     : (persp ? Math.max(c.followLerp, 10) : c.followLerp)
   // Aim the follow point slightly *above* the deck/roof so look-at isn't floor-level.
-  const aimLift = persp ? (mounted ? 1.35 : 1.1) : 0
+  const aimLift = persp ? (mounted ? 1.4 : c.footFocusHeight ?? 1.45) : 0
   cam.target.x = damp(cam.target.x, focus.x + ax, follow, dt)
   cam.target.z = damp(cam.target.z, focus.z + az, follow, dt)
   cam.target.y = damp(cam.target.y, focusY + aimLift, follow, dt)
@@ -242,7 +285,7 @@ export function updateCamera(dt, focus, velocity, aspect) {
   }
 
   if (persp) {
-    updatePerspRig(mode, sx, sy, focus)
+    updatePerspRig(dt, sx, sy, focus, collisionWorld)
   } else {
     updateOrthoRig(mode, c, sx, sy)
   }
@@ -272,43 +315,55 @@ function updateOrthoRig(mode, c, sx, sy) {
   cam.camera = cam.ortho
 }
 
-function updatePerspRig(mode, sx, sy, focus = null) {
+const boomOrigin = new THREE.Vector3()
+const boomEnd = new THREE.Vector3()
+const boomCandidates = []
+
+function updatePerspRig(dt, sx, sy, focus, collisionWorld) {
   const mounted = state.mode === 'vehicle'
-  // Pull back + up on rides so the body never sits under the bottom edge
-  // or slips "behind" the near plane while accelerating.
-  const distMul = mounted ? (mode.id === 'free' ? 2.15 : 2.35) : 1.12
-  const dist = Math.max(mounted ? 22 : 14, cam.chaseDistance * distMul)
-  const pitch = cam.pitch
-  const yaw = cam.currentYaw
-  // Camera sits on the orbit ring and looks at the actor (GTA III / VC style).
-  const horiz = Math.cos(pitch)
-  const ox = Math.sin(yaw) * horiz * dist
-  const oy = Math.sin(pitch) * dist + (mounted ? 3.4 : 1.15)
-  const oz = Math.cos(yaw) * horiz * dist
-
-  // Anchor orbit on the actor when we have a fresh focus (not a lagging aim).
-  const ax = focus ? focus.x : cam.target.x
-  const az = focus ? focus.z : cam.target.z
-  const ay = focus ? (focus.y || 0) : cam.target.y
-
-  const camX = ax + ox + sx * 0.12
-  const camY = Math.max(mounted ? 4.2 : 2.0, ay + oy + sy * 0.12)
-  const camZ = az + oz
-
-  cam.persp.position.set(camX, camY, camZ)
-
-  // Look slightly above the ride and a touch toward the lens so the vehicle
-  // lands in the lower-middle of the frame, never off the bottom.
-  const lookY = ay + (mounted ? 1.15 : 1.35)
-  const toCamX = camX - ax
-  const toCamZ = camZ - az
-  const back = 0.12 // bias look back toward camera
-  const look = new THREE.Vector3(
-    ax + toCamX * back,
-    lookY,
-    az + toCamZ * back
+  // Hood is a deliberate preference for car chase mode, never a speed trigger.
+  // Boards/scooters retain their readable third-person rider view.
+  if (mounted && cam.modeId === 'chase' && cam.drivingView === 'hood' && !['skateboard', 'scooter'].includes(state.player.vehicle)) {
+    const yaw = focus.yaw ?? state.player.yaw ?? 0
+    const fx = Math.sin(yaw), fz = Math.cos(yaw)
+    boomOrigin.set(focus.x, (focus.y || 0) + 1.65, focus.z)
+    boomEnd.set(focus.x + fx * 1.05, (focus.y || 0) + 1.32, focus.z + fz * 1.05)
+    let fraction = 1
+    if (collisionWorld) {
+      collisionWorld.query(focus.x, focus.z, 4, boomCandidates)
+      fraction = cameraBoomFraction(boomOrigin, boomEnd, boomCandidates)
+    }
+    cam.persp.position.copy(boomOrigin).lerp(boomEnd, fraction)
+    cam.persp.lookAt(cam.persp.position.x + fx * 30, cam.persp.position.y - 0.65, cam.persp.position.z + fz * 30)
+    cam.camera = cam.persp
+    return
+  }
+  const distance = cam.chaseDistance
+  // Shoulder-height focus makes the street and horizon visible. The collision
+  // sweep pulls the lens in before a wall can cover the player.
+  boomOrigin.set(focus.x, (focus.y || 0) + (mounted ? 1.7 : 1.5), focus.z)
+  const horizontal = Math.cos(cam.pitch) * distance
+  boomEnd.set(
+    cam.target.x + Math.sin(cam.currentYaw) * horizontal + (mounted ? 0 : Math.cos(cam.currentYaw) * 0.5),
+    cam.target.y + Math.sin(cam.pitch) * distance,
+    cam.target.z + Math.cos(cam.currentYaw) * horizontal - (mounted ? 0 : Math.sin(cam.currentYaw) * 0.5),
   )
-  cam.persp.lookAt(look)
+  let fraction = 1
+  if (collisionWorld) {
+    collisionWorld.query((boomOrigin.x + boomEnd.x) / 2, (boomOrigin.z + boomEnd.z) / 2, distance / 2 + 2, boomCandidates)
+    fraction = cameraBoomFraction(boomOrigin, boomEnd, boomCandidates)
+  }
+  const safeDistance = Math.max(0.2, distance * fraction - (fraction < 1 ? 0.12 : 0))
+  // Snap inward for safety, ease outward to avoid pumping along doorways.
+  cam.boomDistance = safeDistance < cam.boomDistance ? safeDistance : damp(cam.boomDistance, safeDistance, 5, dt)
+  cam.persp.position.copy(boomOrigin).lerp(boomEnd, cam.boomDistance / distance)
+  cam.persp.position.x += sx * 0.06
+  cam.persp.position.y += sy * 0.06
+  cam.persp.lookAt(
+    cam.target.x + (mounted ? 0 : Math.cos(cam.currentYaw) * 0.5),
+    cam.target.y + 0.2,
+    cam.target.z - (mounted ? 0 : Math.sin(cam.currentYaw) * 0.5),
+  )
   cam.camera = cam.persp
 }
 

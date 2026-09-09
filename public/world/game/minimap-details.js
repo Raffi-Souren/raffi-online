@@ -18,6 +18,9 @@ export function mapPlaces(world) {
   for (const shop of world?.repaintShops || []) {
     if (shop.at) places.push({ ...shop.at, kind: "paint", label: world.repaint?.label || "REPAINT" })
   }
+  for (const activity of world?.activityPlaces || []) {
+    if (activity.at) places.push({ ...activity.at, kind: activity.kind, label: activity.name })
+  }
   return places.filter((place) => Number.isFinite(place.x) && Number.isFinite(place.z))
 }
 
@@ -107,6 +110,14 @@ export function drawMapDetails(ctx, places, view) {
       ctx.lineTo(x + 6, y - 4)
       ctx.moveTo(x + 1, y + 4)
       ctx.ellipse(x - 2, y + 4, 3, 2, -0.3, 0, Math.PI * 2)
+    } else if (place.kind === "sports") {
+      ctx.rect(x - 6, y - 6, 12, 12)
+      ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y)
+      ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6)
+    } else if (place.kind === "print") {
+      ctx.rect(x - 5, y - 6, 10, 12)
+      ctx.moveTo(x - 3, y - 2); ctx.lineTo(x + 3, y - 2)
+      ctx.moveTo(x - 3, y + 2); ctx.lineTo(x + 2, y + 2)
     } else {
       ctx.font = "bold 15px sans-serif"
       ctx.textAlign = "center"

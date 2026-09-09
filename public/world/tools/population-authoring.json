@@ -1,0 +1,262 @@
+{
+  "ari": {
+    "skin": "young_asian_female.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit05.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes05.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "bob01.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "noah": {
+    "skin": "young_african_male.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit04.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes06.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "short03.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "inez": {
+    "skin": "middleage_asian_female.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "female_elegantsuit01.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes03.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "bob02.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "dev": {
+    "skin": "middleage_asian_male.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit03.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes01.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "short01.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "june": {
+    "skin": "old_caucasian_female.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit05.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes04.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "short02.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "malik": {
+    "skin": "young_african_male.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit06.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes06.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "afro01.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "owen": {
+    "skin": "old_caucasian_male.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit02.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes04.mhclo",
+        "Clothes"
+      ]
+    ]
+  },
+  "sam": {
+    "skin": "young_african_male.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit02.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes05.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "cortu_short_messy_hair.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "rosa": {
+    "skin": "middleage_african_female.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_worksuit01.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes02.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "elvs_reverse_french_braid_bun.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "kai": {
+    "skin": "middleage_asian_male.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_elegantsuit01.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes01.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "long01.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "tess": {
+    "skin": "middleage_asian_female.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "toigo_halter_dress_midi.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes03.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "ponytail01.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "mae": {
+    "skin": "young_african_female.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "female_casualsuit01.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "toigo_tiered_skirt.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes05.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "short04.mhclo",
+        "Hair"
+      ]
+    ]
+  },
+  "player": {
+    "skin": "middleage_asian_male.mhmat",
+    "assets": [
+      [
+        "clothes",
+        "male_casualsuit06.mhclo",
+        "Clothes"
+      ],
+      [
+        "clothes",
+        "shoes06.mhclo",
+        "Clothes"
+      ],
+      [
+        "hair",
+        "short01.mhclo",
+        "Hair"
+      ]
+    ]
+  }
+}

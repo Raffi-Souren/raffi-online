@@ -1,0 +1,10 @@
+{
+  "host": { "id": "park:jules", "name": "Jules", "at": { "x": -310, "z": -408 }, "radius": 4 },
+  "title": "WATERFRONT PICKUP",
+  "offer": "I’m Jules. We’ve got a court, a pickup field and friendly sparring. Say tennis, soccer or boxing. You can ask how a game works, watch, practice, or leave whenever you want.",
+  "sports": {
+    "tennis": { "label": "Tennis", "description": "First to 3 points. Move with WASD or the stick, then time Space / SWING as the ball reaches you. Hold left or right while swinging to place the shot. Q / LOB gives it more height." },
+    "soccer": { "label": "Pickup soccer", "description": "A small pickup game with teammates and opponents. Move into space, pass and shoot. The briefing shows the controls before kickoff." },
+    "boxing": { "label": "Friendly boxing", "description": "A scored sparring session. Use distance, readable punches, guard and dodges. This is friendly practice; leaving never costs anything." }
+  }
+}

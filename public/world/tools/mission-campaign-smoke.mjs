@@ -7,7 +7,10 @@ import fs from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const BASE = process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3000/world/index.html'
+const OUT = process.env.RAFFI_SMOKE_OUT || '/tmp/raffi-mission-campaign'
+const MOBILE = process.env.RAFFI_CAMPAIGN_MOBILE === '1'
 const missions = JSON.parse(await fs.readFile(new URL('../data/missions.json', import.meta.url), 'utf8'))
+await fs.mkdir(OUT, { recursive: true })
 
 const executableCandidates = [
   process.env.RAFFI_AUDIT_CHROME,
@@ -25,22 +28,40 @@ const browser = await chromium.launch({
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
 })
 const errors = []
+const report = { platform: MOBILE ? 'phone' : 'desktop', missions: [], checks: [], errors }
+let page
 
 async function readyPage() {
-  const page = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage()
+  const page = await (await browser.newContext(MOBILE
+    ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 }
+    : { viewport: { width: 1280, height: 720 } })).newPage()
   page.on('pageerror', (error) => errors.push('page: ' + error.message))
   page.on('console', (message) => { if (message.type() === 'error') errors.push('console: ' + message.text()) })
-  await page.goto(BASE + '?debug=1&auto=1&seed=FIXED', { waitUntil: 'domcontentloaded', timeout: 120_000 })
+  const url = new URL(BASE)
+  url.searchParams.set('debug', '1')
+  url.searchParams.set('auto', '1')
+  url.searchParams.set('seed', 'FIXED')
+  await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 120_000 })
   await page.waitForFunction(() => window.RAFFI_WORLD?.ready && window.RAFFI_WORLD.stats().drawCalls > 0, null, { timeout: 120_000 })
-  await page.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
+  await page.evaluate(async () => {
+    window.RAFFI_WORLD.dismissDialogue()
+    window.__CAMPAIGN_STATE__ = (await import('/world/engine/state.js')).state
+    window.__CAMPAIGN_DIALOGUE__ = await import('/world/game/dialogue.js')
+  })
   return page
 }
 
-async function pressKey(page, key, holdMs = 70) {
-  await page.keyboard.down(key)
-  await page.waitForTimeout(holdMs)
-  await page.keyboard.up(key)
-  await page.waitForTimeout(40)
+async function frames(page, count = 2) {
+  const target = await page.evaluate((n) => window.__CAMPAIGN_STATE__.frame + n, count)
+  await page.waitForFunction((n) => window.__CAMPAIGN_STATE__.frame >= n, target, { timeout: 15_000 })
+}
+
+async function pressKey(page, key) {
+  if (MOBILE && key === 'e') {
+    const mounted = await page.evaluate(() => Boolean(window.RAFFI_WORLD.getState().player.vehicle))
+    await page.locator(mounted ? '#btn-exit' : '#btn-action').tap()
+  } else await page.keyboard.press(key)
+  await frames(page)
 }
 
 async function finishDialogue(page) {
@@ -51,17 +72,38 @@ async function finishDialogue(page) {
       advanceDialogue()
     }
   })
-  await page.waitForTimeout(80)
+  await frames(page)
+}
+
+/** The mission-passed call is a real player interaction, never a debug dismiss. */
+async function finishRewardDialogue(page) {
+  for (let i = 0; i < 180; i++) {
+    const current = await page.evaluate(() => ({
+      active: window.__CAMPAIGN_DIALOGUE__.isDialogueActive(),
+      blocking: window.__CAMPAIGN_DIALOGUE__.isDialogueBlocking(),
+      time: window.__CAMPAIGN_STATE__.time,
+    }))
+    if (!current.active) return
+    if (current.blocking) {
+      if (MOBILE) await page.locator('#btn-action').tap()
+      else await page.keyboard.press('e')
+      await frames(page)
+    } else {
+      await page.waitForFunction((time) => window.__CAMPAIGN_STATE__.time >= time, current.time + 0.3, { timeout: 15_000 })
+    }
+  }
+  assert.fail('The mission-complete dialogue never released control through normal E/touch input')
 }
 
 async function startOfferedAndAccept(page, id) {
   const spec = missions.missions.find((mission) => mission.id === id)
+  if (await page.evaluate(() => Boolean(window.RAFFI_WORLD.getState().player.vehicle))) await pressKey(page, 'e')
   const before = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(before.offered, id, 'normal campaign offered ' + before.offered + ' instead of ' + id)
   assert.ok(before.available.includes(id), id + ' was offered but unavailable: ' + JSON.stringify(before))
 
   await page.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x, z), spec.marker)
-  await page.waitForTimeout(100)
+  await frames(page)
   await pressKey(page, 'e')
   await page.waitForFunction(
     (missionId) => {
@@ -85,6 +127,16 @@ async function startOfferedAndAccept(page, id) {
   )
   const snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.status, 'active', id + ' stayed in briefing: ' + JSON.stringify(snap))
+  // Every driving mission must offer and mount its real generated loaner. The
+  // route checks below move that vehicle; they never fabricate a physics stub.
+  if (spec.startVehicle) {
+    await page.evaluate(({ x, z }) => window.RAFFI_WORLD.teleport(x - 2.2, z), spec.startVehicle.at)
+    await frames(page)
+    await pressKey(page, 'e')
+    assert.equal((await page.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, spec.startVehicle.archetype, id + ' loaner could not be mounted')
+  }
+  report.missions.push({ id, ...snap, stats: await page.evaluate(() => window.RAFFI_WORLD.stats()) })
+  await page.screenshot({ path: `${OUT}/${id}-active.png` })
   return snap
 }
 
@@ -97,29 +149,17 @@ async function driveTo(page, point) {
     state.mode = 'vehicle'
     state.player.x = x
     state.player.z = z
-    if (!player.vehicle || !player.vehicle.handling) {
-      player.vehicle = {
-        x, z, yaw: 0, speed: 6, kind: 'car',
-        handling: { accel: 0, brake: 0, topSpeed: 20, turn: 0 },
-        mesh: { position: { set() {} } },
-      }
-    } else {
-      player.vehicle.x = x
-      player.vehicle.z = z
-      player.vehicle.speed = 6
-    }
+    if (!player.vehicle?.archetypeId) throw new Error('A generated loaner must be mounted before a route check')
+    player.vehicle.x = x
+    player.vehicle.z = z
+    player.vehicle.speed = 6
+    player.vehicle.mesh.position.set(x, 0, z)
     updateMissions(0.2)
-    // Do not leave a stub vehicle for the live drive loop to animate.
-    if (player.vehicle && !player.vehicle.archetypeId) {
-      player.vehicle = null
-      state.mode = 'foot'
-      state.player.vehicle = null
-    }
   }, point)
 }
 
 try {
-  const page = await readyPage()
+  page = await readyPage()
   const boot = await page.evaluate(() => ({
     interiors: window.RAFFI_WORLD.interiorSnapshot(),
     mission: window.RAFFI_WORLD.missionSnapshot(),
@@ -134,10 +174,19 @@ try {
   for (const point of dealClock.objectives.find((item) => item.kind === 'goto-vehicle').points) {
     await driveTo(page, point)
   }
-  await finishDialogue(page)
+  await page.screenshot({ path: `${OUT}/deal-clock-complete-call.png` })
+  await finishRewardDialogue(page)
   let snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.ok(snap.completed.includes('deal-clock'), 'deal-clock: ' + JSON.stringify(snap))
   assert.equal(snap.offered, 'crate-dig', 'deal-clock did not advance the normal campaign')
+  const beforeResumeDrive = await page.evaluate(() => ({ ...window.__CAMPAIGN_STATE__.player, time: window.__CAMPAIGN_STATE__.time }))
+  await page.keyboard.down('w')
+  try {
+    await page.waitForFunction((time) => window.__CAMPAIGN_STATE__.time >= time, beforeResumeDrive.time + 0.5, { timeout: 15_000 })
+  } finally { await page.keyboard.up('w') }
+  const afterResumeDrive = await page.evaluate(() => window.__CAMPAIGN_STATE__.player)
+  assert.ok(Math.hypot(afterResumeDrive.x - beforeResumeDrive.x, afterResumeDrive.z - beforeResumeDrive.z) > 0.1, 'DEAL CLOCK complete left driving frozen after the reward call')
+  report.checks.push('DEAL CLOCK fourth stop completes; reward call accepts normal E/touch; CRATE DIG unlocks and the mounted car drives again')
 
   // CRATE DIG
   await startOfferedAndAccept(page, 'crate-dig')
@@ -179,7 +228,11 @@ try {
     const spec = data.missions.missions.find((item) => item.id === 'set-time').objectives[0]
     const interval = 60 / 124
     for (let i = 0; i < spec.bars * 4; i++) {
-      updateMissions(interval - 0.02)
+      const live = window.RAFFI_WORLD.missionSnapshot()
+      if (live.status !== 'active') break
+      const nextIndex = live.rhythmHits + live.rhythmMisses
+      const until = (nextIndex + 1) * interval - live.elapsed
+      updateMissions(Math.max(0, until - 0.02))
       window.RAFFI_WORLD.noteMissionPulse()
       updateMissions(0.02)
     }
@@ -288,10 +341,18 @@ try {
   snap = await page.evaluate(() => window.RAFFI_WORLD.missionSnapshot())
   assert.equal(snap.offered, null)
   assert.deepEqual(snap.available, [])
+  report.completed = snap.completed
+  await page.screenshot({ path: `${OUT}/campaign-complete.png` })
 
   const realErrors = errors.filter((item) => !item.includes('favicon'))
   assert.equal(realErrors.length, 0, 'browser errors: ' + realErrors.join(' | '))
   console.info('mission campaign smoke passed')
+} catch (error) {
+  report.failure = error.stack || error.message
+  report.lastMission = await page?.evaluate(() => window.RAFFI_WORLD?.missionSnapshot()).catch(() => null)
+  await page?.screenshot({ path: `${OUT}/failure.png`, timeout: 5_000 }).catch(() => {})
+  throw error
 } finally {
+  await fs.writeFile(`${OUT}/campaign-report.json`, JSON.stringify(report, null, 2))
   await browser.close()
 }

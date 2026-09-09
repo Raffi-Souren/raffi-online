@@ -12,6 +12,7 @@
 import { makeRng } from '../engine/state.js'
 import { isOnRoad } from './roads.js'
 import { makeBuilderSet, meshesFrom } from './builder.js'
+import { emitBranch, emitLeafCluster } from './foliage.js'
 
 /** Rotate a local offset into world space around Y. */
 function rot(px, pz, ry) {
@@ -47,7 +48,36 @@ export function emitProp(set, atlas, propsData, name, x, y, z, ry = 0, rng = nul
     const target = emissive ? set.emissive : alpha ? set.alpha : set.opaque
     const color = tint || (part.paletteRole ? roleColors[part.paletteRole] : null) || part.color || '#ffffff'
     const rect = part.tile ? atlas.uv(part.tile) : white
-    const seg = part.seg || propsData.defaults.seg || 6
+    if (part.lightSource && emissive && atlas.lightSources) {
+      const type = name.includes('strip') || name.includes('neon') ? 'neon' : 'street'
+      atlas.lightSources.push({ x: px, y: py - 0.12, z: pz, color, power: name.includes('floodlight') ? 320 : type === 'neon' ? 85 : 150,
+        distance: name.includes('floodlight') ? 42 : type === 'neon' ? 18 : 26, type })
+    }
+    const seg = Math.max(part.shape === 'cyl' ? 8 : 4, part.seg || propsData.defaults.seg || 6)
+    const start = target.vertCount
+
+    // Instanced leaf sprays leave gaps around a visible branching structure.
+    // This stream never consumes the street-placement RNG.
+    if (part.shape === 'cone' && (name.startsWith('broadleaf') || name === 'planter-tree' || name === 'scrub')) {
+      const foliageRng = makeRng(`crown:${name}:${x}:${z}`)
+      const canopyBottom = py - part.h * 0.5
+      const lobes = name === 'scrub' ? 3 : 5
+      for (let i = 0; i < lobes; i++) {
+        const angle = i / lobes * Math.PI * 2 + ry
+        const radial = i === 0 ? 0 : part.r * 0.42
+        const cluster = {
+          x: px + Math.cos(angle) * radial,
+          y: canopyBottom + part.h * (i === 0 ? 0.63 : foliageRng.range(0.4, 0.6)),
+          z: pz + Math.sin(angle) * radial,
+          r: part.r * (i === 0 ? 0.74 : foliageRng.range(0.51, 0.65)),
+          sy: part.h / (part.r * 2) * (i === 0 ? 1.12 : 0.9),
+          color, seed: name,
+        }
+        emitBranch(target, atlas, {x:px,y:canopyBottom,z:pz}, {x:cluster.x,y:cluster.y,z:cluster.z}, name === 'scrub' ? 0.025 : 0.065)
+        emitLeafCluster(atlas, cluster)
+      }
+      continue
+    }
 
     switch (part.shape) {
       case 'box':
@@ -67,7 +97,7 @@ export function emitProp(set, atlas, propsData, name, x, y, z, ry = 0, rng = nul
         target.cone({ x: px, y: py, z: pz, r: part.r, h: part.h, seg, ry: pry, color, rect, emissive, flipY: !!part.flipY })
         break
       case 'sphere':
-        target.sphere({ x: px, y: py, z: pz, r: part.r, seg, color, rect, emissive })
+        target.sphere({ x: px, y: py, z: pz, r: part.r, seg: Math.max(8, seg), color, rect, emissive })
         break
       case 'plane':
         target.plane({ x: px, y: py, z: pz, w: part.w, d: part.d, ry: pry, color, rect, emissive })
@@ -77,6 +107,26 @@ export function emitProp(set, atlas, propsData, name, x, y, z, ry = 0, rng = nul
         break
       default:
         break
+    }
+    // Recipe tilts (pipes, benches and vents) affect both geometry and normals.
+    // Convert out of the prop yaw before tilting, then restore its world axes.
+    if (part.rx || part.rz) {
+      const cx = Math.cos(part.rx || 0), sx = Math.sin(part.rx || 0)
+      const cz = Math.cos(part.rz || 0), sz = Math.sin(part.rz || 0)
+      const c = Math.cos(ry), s = Math.sin(ry)
+      const tilt = (vx, vy, vz) => {
+        const lx = vx * c + vz * s, lz = -vx * s + vz * c
+        const ty = vy * cx - lz * sx, tz = vy * sx + lz * cx
+        const tx = lx * cz - ty * sz, yy = lx * sz + ty * cz
+        return [tx * c - tz * s, yy, tx * s + tz * c]
+      }
+      for (let i = start; i < target.vertCount; i++) {
+        const o = i * 3
+        const p = tilt(target.pos[o] - px, target.pos[o + 1] - py, target.pos[o + 2] - pz)
+        target.pos[o] = px + p[0]; target.pos[o + 1] = py + p[1]; target.pos[o + 2] = pz + p[2]
+        const n = tilt(target.normals[o], target.normals[o + 1], target.normals[o + 2])
+        target.normals[o] = n[0]; target.normals[o + 1] = n[1]; target.normals[o + 2] = n[2]
+      }
     }
   }
 

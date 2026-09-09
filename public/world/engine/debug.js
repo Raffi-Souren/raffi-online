@@ -48,6 +48,7 @@ export function initDebug(elements, collisionWorld) {
   })
 
   window.addEventListener('keydown', (e) => {
+    if (state.paused || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return
     if (e.code === 'KeyF') toggle('fly')
     else if (e.code === 'KeyG') toggle('wire')
     else if (e.code === 'KeyB') toggle('collide')
@@ -165,18 +166,8 @@ export function updateDebugCamera(dt, input) {
   return true
 }
 
-let fpsAccum = 0
-let fpsFrames = 0
-
 export function updateDebugReadout(dt) {
   if (!state.debug.on || !els.readout) return
-  fpsAccum += dt
-  fpsFrames++
-  if (fpsAccum >= 0.5) {
-    state.stats.fps = Math.round(fpsFrames / fpsAccum)
-    fpsAccum = 0
-    fpsFrames = 0
-  }
   if (state.frame % 6 !== 0) return
 
   const p = state.player
@@ -195,7 +186,8 @@ export function updateDebugReadout(dt) {
     `radio  ${state.radio.on ? data.radio.stations[state.radio.stationIndex].id : 'off'} ${state.radio.bpm}bpm beat=${state.radio.beat}\n` +
     `compl  tier ${state.compliance.tier}\n` +
     `draws  ${state.stats.drawCalls}/${budget.drawCalls}${over(state.stats.drawCalls, budget.drawCalls)}\n` +
-    `tris   ${state.stats.triangles}/${budget.triangles}${over(state.stats.triangles, budget.triangles)}\n` +
+    `visible ${state.stats.visibleTriangles || 0}/${budget.triangles}${over(state.stats.visibleTriangles || 0, budget.triangles)}\n` +
+    `passes ${state.stats.shadowDrawCalls || 0} shadow · ${state.stats.postDrawCalls || 0} post\n` +
     `fps    ${state.stats.fps}   internal ${gfx.internal.w}x${gfx.internal.h}\n` +
     `fly    ${debugState.fly ? `on  y=${debugState.flyY.toFixed(0)}` : 'off'}`
 }

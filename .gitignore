@@ -2,7 +2,9 @@
 
 # dependencies
 /node_modules
+/scripts/world-asset-tools/node_modules/
 package-lock.json
+!/scripts/world-asset-tools/package-lock.json
 
 # next.js
 /.next/
@@ -32,3 +34,6 @@ next-env.d.ts
 
 # generated RAFFI WORLD screenshot audits
 /public/world/audit/
+/artifacts/
+**/__pycache__/
+*.pyc

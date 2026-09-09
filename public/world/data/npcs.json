@@ -2,6 +2,275 @@
   "$schema": "npcs",
   "$comment": "Pedestrian archetypes. Bodies are capsule-and-box rigs generated from `body`; animation is procedural (no clips). Every NPC runs a policy over the six tools — walk, enter, talk, buy, flee, idle — and every decision is written to the replay ring buffer. Archetypes only: no real named individuals, ever.",
 
+  "neighborhoodActivities": [
+    {
+      "id": "willow-deliveries",
+      "archetype": "commuter",
+      "points": [
+        {
+          "x": -418,
+          "z": -152,
+          "pause": 4,
+          "verb": "buy",
+          "yaw": 3.14159
+        },
+        {
+          "x": -431,
+          "z": -152,
+          "pause": 3,
+          "verb": "enter",
+          "yaw": 3.14159
+        },
+        {
+          "x": -447,
+          "z": -152,
+          "pause": 4,
+          "verb": "enter",
+          "yaw": 3.14159
+        }
+      ],
+      "role": "doorstep-delivery",
+      "locomotion": "purposeful",
+      "carriedItem": "parcel",
+      "walkSpeed": 1.45
+    },
+    {
+      "id": "willow-coffee-errand",
+      "archetype": "digger",
+      "points": [
+        {
+          "x": -441,
+          "z": -152,
+          "pause": 4,
+          "verb": "idle"
+        },
+        {
+          "x": -411,
+          "z": -152
+        },
+        {
+          "x": -411,
+          "z": -150
+        },
+        {
+          "x": -411,
+          "z": -140,
+          "crossing": true
+        },
+        {
+          "x": -411,
+          "z": -139.4
+        },
+        {
+          "x": -431,
+          "z": -139.4,
+          "pause": 5,
+          "verb": "idle",
+          "yaw": 0
+        },
+        {
+          "x": -434,
+          "z": -139.05,
+          "pause": 8,
+          "verb": "enter",
+          "inside": true,
+          "yaw": 0
+        },
+        {
+          "x": -411,
+          "z": -139.4
+        },
+        {
+          "x": -411,
+          "z": -140
+        },
+        {
+          "x": -411,
+          "z": -150,
+          "crossing": true
+        },
+        {
+          "x": -411,
+          "z": -152
+        }
+      ],
+      "role": "cafe-menu",
+      "locomotion": "relaxed",
+      "walkSpeed": 1.15
+    },
+    {
+      "id": "willow-groceries",
+      "archetype": "commuter",
+      "role": "grocery-resident",
+      "locomotion": "carrying",
+      "carriedItem": "groceries",
+      "walkSpeed": 1.05,
+      "points": [
+        {
+          "x": -439,
+          "z": -152,
+          "pause": 4,
+          "verb": "idle"
+        },
+        {
+          "x": -411,
+          "z": -152
+        },
+        {
+          "x": -411,
+          "z": -150
+        },
+        {
+          "x": -411,
+          "z": -140,
+          "crossing": true
+        },
+        {
+          "x": -427.2,
+          "z": -139.4,
+          "pause": 7,
+          "verb": "buy",
+          "yaw": 0
+        },
+        {
+          "x": -411,
+          "z": -140
+        },
+        {
+          "x": -411,
+          "z": -150,
+          "crossing": true
+        },
+        {
+          "x": -435,
+          "z": -152,
+          "pause": 5,
+          "verb": "enter",
+          "yaw": 3.14159
+        }
+      ]
+    },
+    {
+      "id": "waterfront-jog",
+      "archetype": "jogger",
+      "role": "waterfront-jogger",
+      "locomotion": "jog",
+      "walkSpeed": 3.1,
+      "points": [
+        {
+          "x": -470,
+          "z": -416,
+          "pause": 3,
+          "verb": "idle"
+        },
+        {
+          "x": -360,
+          "z": -416
+        },
+        {
+          "x": -362,
+          "z": -430
+        },
+        {
+          "x": -470,
+          "z": -426
+        },
+        {
+          "x": -482,
+          "z": -416
+        }
+      ]
+    },
+    {
+      "id": "venue-record-tote",
+      "archetype": "digger",
+      "role": "record-tote-to-venue",
+      "locomotion": "carrying",
+      "carriedItem": "records",
+      "walkSpeed": 1.25,
+      "points": [
+        {
+          "x": 118,
+          "z": 136,
+          "pause": 5,
+          "verb": "buy"
+        },
+        {
+          "x": 133,
+          "z": 136
+        },
+        {
+          "x": 140,
+          "z": 136,
+          "pause": 1,
+          "verb": "idle"
+        },
+        {
+          "x": 143,
+          "z": 140.1,
+          "pause": 7,
+          "verb": "enter",
+          "inside": true,
+          "yaw": 0
+        },
+        {
+          "x": 133,
+          "z": 136
+        }
+      ]
+    },
+    {
+      "id": "record-friends-a",
+      "archetype": "digger",
+      "role": "record-shop-friend",
+      "locomotion": "relaxed",
+      "walkSpeed": 0.95,
+      "social": true,
+      "peer": "npc-6",
+      "points": [
+        {
+          "x": -79,
+          "z": 111,
+          "pause": 3,
+          "verb": "idle",
+          "yaw": 1.5708
+        },
+        {
+          "x": -79,
+          "z": 111,
+          "pause": 15,
+          "verb": "talk",
+          "yaw": 1.5708
+        }
+      ]
+    },
+    {
+      "id": "record-friends-b",
+      "archetype": "commuter",
+      "role": "record-shop-friend",
+      "locomotion": "relaxed",
+      "walkSpeed": 1.1,
+      "social": true,
+      "peer": "npc-5",
+      "points": [
+        {
+          "x": -77.65,
+          "z": 111,
+          "pause": 4,
+          "verb": "idle",
+          "yaw": -1.5708
+        },
+        {
+          "x": -77.65,
+          "z": 111,
+          "pause": 19,
+          "verb": "talk",
+          "yaw": -1.5708
+        }
+      ]
+    }
+  ],
+
   "tools": {
     "$comment": "The complete verb set. game/replay.js compares decision streams over exactly these; adding a seventh verb means updating the agreement metric.",
     "walk": { "duration": [2.5, 9.0], "needsTarget": true },
@@ -217,7 +486,7 @@
   "pursuers": {
     "notification-drone": {
       "tier": 1,
-      "label": "Slack message",
+      "label": "Eyes on you",
       "kind": "drone",
       "speed": 4.2,
       "hoverY": 5.5,
@@ -227,7 +496,7 @@
     },
     "coordinator": {
       "tier": 2,
-      "label": "Calendar hold",
+      "label": "Being followed",
       "kind": "foot",
       "archetype": "suit",
       "speed": 3.5,
@@ -237,7 +506,7 @@
     },
     "skip-level": {
       "tier": 3,
-      "label": "Skip level",
+      "label": "On your tail",
       "kind": "vehicle",
       "vehicle": "compliance-sedan",
       "count": 1,
@@ -247,7 +516,7 @@
     },
     "steering-committee": {
       "tier": 4,
-      "label": "Steering committee",
+      "label": "Closing in",
       "kind": "vehicle",
       "vehicle": "compliance-sedan",
       "count": 3,
@@ -257,7 +526,7 @@
     },
     "legal-review": {
       "tier": 5,
-      "label": "Legal review",
+      "label": "Citywide search",
       "kind": "mixed",
       "vehicle": "compliance-sedan",
       "count": 4,
@@ -269,7 +538,7 @@
   },
 
   "compliance": {
-    "$comment": "Tuning for game/compliance.js. Caught = accepted calendar invite + fade, never a death screen.",
+    "$comment": "Tuning for game/compliance.js. Caught = brief fade and recovery, never a death screen.",
     "decaySecondsPerTier": 28,
     "decayRequiresNoContact": 9,
     "escalateOn": { "speedingNearPursuer": 0.4, "collisionWithPursuer": 1, "missionTrigger": 1 },

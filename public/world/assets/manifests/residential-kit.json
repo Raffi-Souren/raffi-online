@@ -1,0 +1,161 @@
+{
+  "name": "Original Brooklyn residential architecture kit",
+  "version": 1,
+  "author": "Raffi World project",
+  "provenance": "Original locally authored parametric geometry and original atlas window/trim artwork; no downloaded building models or branded architecture. Existing flat brick texture channels retain their separately recorded urban-surface provenance.",
+  "license": "Project-owned source distributed under repository terms; not represented as third-party CC0 geometry.",
+  "sources": [
+    {
+      "path": "gen/residential.js",
+      "bytes": 8579,
+      "sha256": "ef0737e1fa72e2f247eaf6bdc3c8fb811ce8bff6b22fadb0e678099553649fa6"
+    },
+    {
+      "path": "gen/brooklyn.js",
+      "bytes": 23068,
+      "sha256": "778fdd2ecf915b00b305e7f92837544cd4c90b0ed0c8ba7d0a9af8b59c2dbe46"
+    },
+    {
+      "path": "gen/atlas.js",
+      "bytes": 28012,
+      "sha256": "b4f4b3d518f674f787fef109ff9c04eeb72b920ac4e3b0f0c17971419bdc20fb"
+    },
+    {
+      "path": "data/world.json",
+      "bytes": 29172,
+      "sha256": "e280b46f0ee046684428c946f792a4b4ca78a92de8bdcc6c82df37e691e67ad7"
+    },
+    {
+      "path": "data/blocks.json",
+      "bytes": 14233,
+      "sha256": "373835d3e15f36055c84862bc92d48417302b8ae1c5d08af90a41c9b130bd5b5"
+    }
+  ],
+  "buildings": [
+    {
+      "lotId": "downtown-1",
+      "at": {
+        "x": -141.69376363031566,
+        "z": -287.2850103213638
+      },
+      "existingFootprint": {
+        "w": 26.60155230946839,
+        "d": 34.42000955808908,
+        "yaw": 0
+      },
+      "name": "Atlantic House",
+      "floors": 16,
+      "facade": "brick-grey",
+      "trim": "#b4b3a5",
+      "balcony": true,
+      "setback": 4,
+      "lods": [
+        {
+          "detail": true,
+          "triangles": 36264,
+          "vertices": 72582,
+          "bounds": {
+            "min": [
+              -13.300776481628418,
+              0,
+              -17.210004806518555
+            ],
+            "max": [
+              13.300776481628418,
+              57.220001220703125,
+              17.210004806518555
+            ]
+          },
+          "geometrySha256": "47ec8565400b6e788986be50ee4d63de1928ead4e19fc6d143152259dc42be19"
+        },
+        {
+          "detail": false,
+          "triangles": 4880,
+          "vertices": 9790,
+          "bounds": {
+            "min": [
+              -13.300776481628418,
+              0,
+              -17.210004806518555
+            ],
+            "max": [
+              13.300776481628418,
+              57.220001220703125,
+              17.210004806518555
+            ]
+          },
+          "geometrySha256": "dca7b43f67269d9e58262689f14bb338b2b53fc012e66a2107c273420852246a"
+        }
+      ]
+    },
+    {
+      "lotId": "downtown-3",
+      "at": {
+        "x": -148.97592169091106,
+        "z": -156.5799401511997
+      },
+      "existingFootprint": {
+        "w": 24.477943021804094,
+        "d": 15.229771117214113,
+        "yaw": 0
+      },
+      "name": "Court Street Apartments",
+      "floors": 8,
+      "facade": "brick-brown",
+      "trim": "#a99f88",
+      "balcony": false,
+      "lods": [
+        {
+          "detail": true,
+          "triangles": 13946,
+          "vertices": 27892,
+          "bounds": {
+            "min": [
+              -12.238971710205078,
+              0,
+              -7.614885330200195
+            ],
+            "max": [
+              12.238971710205078,
+              30.8700008392334,
+              7.614885330200195
+            ]
+          },
+          "geometrySha256": "675f702ca49e9dd1c56f514f903782a26f98e5632c850caf9ada69a9b851f12e"
+        },
+        {
+          "detail": false,
+          "triangles": 1834,
+          "vertices": 3668,
+          "bounds": {
+            "min": [
+              -12.238971710205078,
+              0,
+              -7.614885330200195
+            ],
+            "max": [
+              12.238971710205078,
+              30.8700008392334,
+              7.614885330200195
+            ]
+          },
+          "geometrySha256": "45b4782841f2fc2e5283ce73f14f1f0f987f276d36638b7097ab38196b2db211"
+        }
+      ]
+    }
+  ],
+  "runtime": {
+    "materialSlotsPerLOD": 1,
+    "extraNetworkAssetBytes": 0,
+    "lodDistanceMetres": 90,
+    "lodHysteresis": 0.12,
+    "collision": "Existing generated lot extents retained. No new sidewalk obstacle footprints.",
+    "nearDetail": "Punched masonry openings and glass behind reveals; selected curtains and AC; sheltered residential doors; bounded balcony railings; tower setback and rooftop water tank.",
+    "farDetail": "Same silhouette and window rhythm, flattened window/trim geometry, no small fittings."
+  },
+  "reproducibility": {
+    "inventory": "node public/world/tools/audit-residential-kit.mjs --write",
+    "verify": "node --test public/world/tools/residential-kit.test.mjs",
+    "fingerprint": "Neutral atlas UV rectangles; runtime atlas coordinates differ."
+  }
+}

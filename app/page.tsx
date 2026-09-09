@@ -65,6 +65,7 @@ export default function Home() {
   // Keep World and terminal sessions in stable slots, including after closing.
   // A close removes their taskbar entry; a minimize keeps it available to restore.
   const [worldLaunched, setWorldLaunched] = useState(false)
+  const [worldCheatRequest, setWorldCheatRequest] = useState<{ id: number; code: string | null } | null>(null)
   // Closing the terminal ends its request, while its mounted session survives.
   // Minimizing only hides the shell, so a running request can still finish.
   const [terminalLaunched, setTerminalLaunched] = useState(false)
@@ -199,7 +200,10 @@ export default function Home() {
           />
         )
       case "crates":
-        return <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} />
+        return <DiggingInTheCrates isOpen={openWindows.crates} onClose={() => closeWindow("crates")} onWorldCheat={(code) => {
+          setWorldCheatRequest((previous) => ({ id: (previous?.id ?? 0) + 1, code }))
+          openWindow("world")
+        }} />
       case "blogroll":
         return <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />
       case "notes":
@@ -210,6 +214,7 @@ export default function Home() {
         return (
           <RaffiWorldWindow
             isOpen={openWindows.world}
+            cheatRequest={worldCheatRequest}
             onClose={() => closeWindow("world")}
             onOpenShelf={() => {
               minimizeWindow("world")

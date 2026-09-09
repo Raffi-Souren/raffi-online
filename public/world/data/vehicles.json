@@ -1,10 +1,18 @@
 {
   "$schema": "vehicles",
-  "$comment": "Parametric vehicle silhouettes. gen/vehicles.js extrudes a body from these numbers and bolts on four wheels — no models. `jitter` is the ± fraction each dimension may vary per instance so no two cars on a street are identical. Handling is arcade: grip, drift on handbrake, soft speed cap, cosmetic damage only.",
-
+  "$comment": "Parametric vehicle silhouettes. gen/vehicles.js extrudes a body from these numbers and bolts on four wheels \u2014 no models. `jitter` is the \u00b1 fraction each dimension may vary per instance so no two cars on a street are identical. Handling is arcade: grip, drift on handbrake, soft speed cap, cosmetic damage only.",
   "shared": {
-    "wheel": { "segments": 8, "color": "#1A1A1E", "hubColor": "#8A8E92", "hubFraction": 0.45 },
-    "glass": { "color": "#7FA8C4", "alpha": 0.55, "emissiveNight": 0.05 },
+    "wheel": {
+      "segments": 8,
+      "color": "#1A1A1E",
+      "hubColor": "#8A8E92",
+      "hubFraction": 0.45
+    },
+    "glass": {
+      "color": "#7FA8C4",
+      "alpha": 0.55,
+      "emissiveNight": 0.05
+    },
     "lights": {
       "headColor": "#FFF6DA",
       "tailColor": "#FF3A2E",
@@ -12,137 +20,642 @@
       "reverseColor": "#FFF0E0",
       "indicatorColor": "#FFA824"
     },
-    "blobShadow": { "scale": 1.15, "opacity": 0.38 },
-    "damage": { "mode": "cosmetic", "maxDentDepth": 0.12, "paintScuffAt": 0.6 }
+    "blobShadow": {
+      "scale": 1.15,
+      "opacity": 0.38
+    },
+    "damage": {
+      "mode": "cosmetic",
+      "maxDentDepth": 0.12,
+      "paintScuffAt": 0.6
+    }
   },
-
   "archetypes": {
     "sedan": {
       "label": "Four-door",
       "weight": 10,
       "silhouette": {
-        "length": 4.5, "width": 1.82, "rideHeight": 0.26,
-        "hood": { "length": 1.15, "height": 0.72 },
-        "cabin": { "length": 2.0, "height": 0.66, "insetFront": 0.12, "insetSide": 0.09, "taper": 0.14 },
-        "trunk": { "length": 1.05, "height": 0.74 },
-        "wheelbase": 2.72, "trackWidth": 1.56, "wheelRadius": 0.33, "wheelWidth": 0.22,
-        "bumper": { "depth": 0.16, "height": 0.3 }
+        "length": 4.5,
+        "width": 1.82,
+        "rideHeight": 0.26,
+        "hood": {
+          "length": 1.15,
+          "height": 0.72
+        },
+        "cabin": {
+          "length": 2.0,
+          "height": 0.66,
+          "insetFront": 0.12,
+          "insetSide": 0.09,
+          "taper": 0.14
+        },
+        "trunk": {
+          "length": 1.05,
+          "height": 0.74
+        },
+        "wheelbase": 2.72,
+        "trackWidth": 1.56,
+        "wheelRadius": 0.33,
+        "wheelWidth": 0.22,
+        "bumper": {
+          "depth": 0.16,
+          "height": 0.3
+        }
       },
-      "jitter": { "length": 0.06, "width": 0.04, "cabinHeight": 0.08 },
-      "handling": { "accel": 6.4, "topSpeed": 31, "reverse": 9, "grip": 9.2, "handbrakeGrip": 2.6, "steerRate": 2.5, "steerFalloff": 0.55, "brake": 13, "mass": 1400, "drag": 0.42 },
-      "colors": [["#B4B8BC", "#8E9296"], ["#2E4A6E", "#22374F"], ["#7A2E2E", "#5C2323"], ["#D8D2C4", "#B0AB9E"], ["#3A3E42", "#2A2E32"], ["#4A6E5A", "#3A5646"]]
+      "jitter": {
+        "length": 0.06,
+        "width": 0.04,
+        "cabinHeight": 0.08
+      },
+      "handling": {
+        "accel": 6.4,
+        "topSpeed": 31,
+        "reverse": 9,
+        "grip": 9.2,
+        "handbrakeGrip": 2.6,
+        "steerRate": 2.5,
+        "steerFalloff": 0.55,
+        "brake": 13,
+        "mass": 1400,
+        "drag": 0.42
+      },
+      "colors": [
+        [
+          "#B4B8BC",
+          "#8E9296"
+        ],
+        [
+          "#2E4A6E",
+          "#22374F"
+        ],
+        [
+          "#7A2E2E",
+          "#5C2323"
+        ],
+        [
+          "#D8D2C4",
+          "#B0AB9E"
+        ],
+        [
+          "#3A3E42",
+          "#2A2E32"
+        ],
+        [
+          "#4A6E5A",
+          "#3A5646"
+        ]
+      ],
+      "sound": {
+        "idleHz": 36,
+        "speedHz": 3.5,
+        "throttleHz": 8,
+        "cutoff": 280,
+        "gain": 0.038,
+        "wave": "sawtooth"
+      }
     },
     "compact": {
       "label": "Hatchback",
       "weight": 9,
       "silhouette": {
-        "length": 3.75, "width": 1.7, "rideHeight": 0.24,
-        "hood": { "length": 0.85, "height": 0.7 },
-        "cabin": { "length": 1.85, "height": 0.72, "insetFront": 0.1, "insetSide": 0.08, "taper": 0.1 },
-        "trunk": { "length": 0.5, "height": 0.78 },
-        "wheelbase": 2.4, "trackWidth": 1.45, "wheelRadius": 0.3, "wheelWidth": 0.2,
-        "bumper": { "depth": 0.14, "height": 0.28 }
+        "length": 3.75,
+        "width": 1.7,
+        "rideHeight": 0.24,
+        "hood": {
+          "length": 0.85,
+          "height": 0.7
+        },
+        "cabin": {
+          "length": 1.85,
+          "height": 0.72,
+          "insetFront": 0.1,
+          "insetSide": 0.08,
+          "taper": 0.1
+        },
+        "trunk": {
+          "length": 0.5,
+          "height": 0.78
+        },
+        "wheelbase": 2.4,
+        "trackWidth": 1.45,
+        "wheelRadius": 0.3,
+        "wheelWidth": 0.2,
+        "bumper": {
+          "depth": 0.14,
+          "height": 0.28
+        }
       },
-      "jitter": { "length": 0.05, "width": 0.04, "cabinHeight": 0.07 },
-      "handling": { "accel": 7.2, "topSpeed": 28, "reverse": 10, "grip": 10.2, "handbrakeGrip": 2.9, "steerRate": 3.5, "steerFalloff": 0.38, "steerSpeed": 2.2, "minSteerAuthority": 0.65, "brake": 14, "mass": 1100, "drag": 0.38, "coastFriction": 2.6, "reversePower": 0.95, "escapeBoost": 3.2 },
-      "colors": [["#C4462E", "#9E3724"], ["#3E7A9E", "#2F5E7A"], ["#E0DCC8", "#BAB6A4"], ["#7A6E9E", "#5E547A"], ["#4A4E52", "#3A3E42"]]
+      "jitter": {
+        "length": 0.05,
+        "width": 0.04,
+        "cabinHeight": 0.07
+      },
+      "handling": {
+        "accel": 7.2,
+        "topSpeed": 28,
+        "reverse": 10,
+        "grip": 10.2,
+        "handbrakeGrip": 2.9,
+        "steerRate": 3.5,
+        "steerFalloff": 0.38,
+        "steerSpeed": 2.2,
+        "minSteerAuthority": 0.65,
+        "brake": 14,
+        "mass": 1100,
+        "drag": 0.38,
+        "coastFriction": 2.6,
+        "reversePower": 0.95,
+        "escapeBoost": 3.2
+      },
+      "colors": [
+        [
+          "#C4462E",
+          "#9E3724"
+        ],
+        [
+          "#3E7A9E",
+          "#2F5E7A"
+        ],
+        [
+          "#E0DCC8",
+          "#BAB6A4"
+        ],
+        [
+          "#7A6E9E",
+          "#5E547A"
+        ],
+        [
+          "#4A4E52",
+          "#3A3E42"
+        ]
+      ]
     },
     "coupe-sport": {
-      "label": "Two-door",
-      "weight": 5,
+      "label": "Low sports coupe",
+      "weight": 4,
       "silhouette": {
-        "length": 4.35, "width": 1.88, "rideHeight": 0.18,
-        "hood": { "length": 1.4, "height": 0.6 },
-        "cabin": { "length": 1.6, "height": 0.56, "insetFront": 0.2, "insetSide": 0.11, "taper": 0.3 },
-        "trunk": { "length": 1.05, "height": 0.66 },
-        "wheelbase": 2.6, "trackWidth": 1.64, "wheelRadius": 0.34, "wheelWidth": 0.26,
-        "bumper": { "depth": 0.2, "height": 0.24 },
-        "spoiler": { "chance": 0.5, "height": 0.16, "depth": 0.3 }
+        "length": 4.35,
+        "width": 1.88,
+        "rideHeight": 0.18,
+        "hood": {
+          "length": 1.4,
+          "height": 0.6
+        },
+        "cabin": {
+          "length": 1.6,
+          "height": 0.56,
+          "insetFront": 0.2,
+          "insetSide": 0.11,
+          "taper": 0.3
+        },
+        "trunk": {
+          "length": 1.05,
+          "height": 0.66
+        },
+        "wheelbase": 2.6,
+        "trackWidth": 1.64,
+        "wheelRadius": 0.34,
+        "wheelWidth": 0.26,
+        "bumper": {
+          "depth": 0.2,
+          "height": 0.24
+        },
+        "spoiler": {
+          "chance": 0.5,
+          "height": 0.16,
+          "depth": 0.3
+        }
       },
-      "jitter": { "length": 0.05, "width": 0.03, "cabinHeight": 0.06 },
-      "handling": { "accel": 9.4, "topSpeed": 41, "reverse": 10, "grip": 11.5, "handbrakeGrip": 2.2, "steerRate": 2.7, "steerFalloff": 0.62, "brake": 16, "mass": 1300, "drag": 0.36 },
-      "colors": [["#D8C24A", "#B09E3A"], ["#8E2E4A", "#6E2338"], ["#2A2E32", "#1E2226"], ["#E4E0D4", "#BEBAAE"], ["#2E6E7A", "#23545E"]]
+      "jitter": {
+        "length": 0.05,
+        "width": 0.03,
+        "cabinHeight": 0.06
+      },
+      "handling": {
+        "accel": 9.4,
+        "topSpeed": 41,
+        "reverse": 10,
+        "grip": 11.5,
+        "handbrakeGrip": 2.2,
+        "steerRate": 2.7,
+        "steerFalloff": 0.62,
+        "brake": 16,
+        "mass": 1300,
+        "drag": 0.36
+      },
+      "colors": [
+        [
+          "#D8C24A",
+          "#B09E3A"
+        ],
+        [
+          "#8E2E4A",
+          "#6E2338"
+        ],
+        [
+          "#2A2E32",
+          "#1E2226"
+        ],
+        [
+          "#E4E0D4",
+          "#BEBAAE"
+        ],
+        [
+          "#2E6E7A",
+          "#23545E"
+        ]
+      ],
+      "appearance": {
+        "bodyStyle": "sport"
+      },
+      "sound": {
+        "idleHz": 52,
+        "speedHz": 5.4,
+        "throttleHz": 18,
+        "cutoff": 650,
+        "gain": 0.047,
+        "wave": "sawtooth"
+      }
     },
     "wagon": {
       "label": "Estate",
       "weight": 6,
       "silhouette": {
-        "length": 4.75, "width": 1.84, "rideHeight": 0.28,
-        "hood": { "length": 1.1, "height": 0.74 },
-        "cabin": { "length": 2.6, "height": 0.74, "insetFront": 0.12, "insetSide": 0.08, "taper": 0.05 },
-        "trunk": { "length": 0.5, "height": 0.8 },
-        "wheelbase": 2.8, "trackWidth": 1.58, "wheelRadius": 0.33, "wheelWidth": 0.22,
-        "bumper": { "depth": 0.16, "height": 0.3 },
-        "roofRack": { "chance": 0.55, "height": 0.1 }
+        "length": 4.75,
+        "width": 1.84,
+        "rideHeight": 0.28,
+        "hood": {
+          "length": 1.1,
+          "height": 0.74
+        },
+        "cabin": {
+          "length": 2.6,
+          "height": 0.74,
+          "insetFront": 0.12,
+          "insetSide": 0.08,
+          "taper": 0.05
+        },
+        "trunk": {
+          "length": 0.5,
+          "height": 0.8
+        },
+        "wheelbase": 2.8,
+        "trackWidth": 1.58,
+        "wheelRadius": 0.33,
+        "wheelWidth": 0.22,
+        "bumper": {
+          "depth": 0.16,
+          "height": 0.3
+        },
+        "roofRack": {
+          "chance": 0.55,
+          "height": 0.1
+        }
       },
-      "jitter": { "length": 0.06, "width": 0.04, "cabinHeight": 0.06 },
-      "handling": { "accel": 5.8, "topSpeed": 29, "reverse": 8, "grip": 9.0, "handbrakeGrip": 2.8, "steerRate": 2.3, "steerFalloff": 0.55, "brake": 12, "mass": 1550, "drag": 0.46 },
-      "colors": [["#5E6E4A", "#48563A"], ["#8A8378", "#6E6A60"], ["#2E4A6E", "#22374F"], ["#7A4A2E", "#5E3823"]]
+      "jitter": {
+        "length": 0.06,
+        "width": 0.04,
+        "cabinHeight": 0.06
+      },
+      "handling": {
+        "accel": 5.8,
+        "topSpeed": 29,
+        "reverse": 8,
+        "grip": 9.0,
+        "handbrakeGrip": 2.8,
+        "steerRate": 2.3,
+        "steerFalloff": 0.55,
+        "brake": 12,
+        "mass": 1550,
+        "drag": 0.46
+      },
+      "colors": [
+        [
+          "#5E6E4A",
+          "#48563A"
+        ],
+        [
+          "#8A8378",
+          "#6E6A60"
+        ],
+        [
+          "#2E4A6E",
+          "#22374F"
+        ],
+        [
+          "#7A4A2E",
+          "#5E3823"
+        ]
+      ]
     },
     "van": {
       "label": "Panel van",
       "weight": 5,
       "silhouette": {
-        "length": 5.3, "width": 2.0, "rideHeight": 0.34,
-        "hood": { "length": 0.7, "height": 0.9 },
-        "cabin": { "length": 3.9, "height": 1.35, "insetFront": 0.05, "insetSide": 0.03, "taper": 0.02 },
-        "trunk": { "length": 0.3, "height": 1.35 },
-        "wheelbase": 3.2, "trackWidth": 1.7, "wheelRadius": 0.36, "wheelWidth": 0.24,
-        "bumper": { "depth": 0.16, "height": 0.36 }
+        "length": 5.3,
+        "width": 2.0,
+        "rideHeight": 0.34,
+        "hood": {
+          "length": 0.7,
+          "height": 0.9
+        },
+        "cabin": {
+          "length": 3.9,
+          "height": 1.35,
+          "insetFront": 0.05,
+          "insetSide": 0.03,
+          "taper": 0.02
+        },
+        "trunk": {
+          "length": 0.3,
+          "height": 1.35
+        },
+        "wheelbase": 3.2,
+        "trackWidth": 1.7,
+        "wheelRadius": 0.36,
+        "wheelWidth": 0.24,
+        "bumper": {
+          "depth": 0.16,
+          "height": 0.36
+        }
       },
-      "jitter": { "length": 0.07, "width": 0.03, "cabinHeight": 0.05 },
-      "handling": { "accel": 4.6, "topSpeed": 25, "reverse": 7, "grip": 7.6, "handbrakeGrip": 3.1, "steerRate": 2.0, "steerFalloff": 0.5, "brake": 11, "mass": 2100, "drag": 0.55 },
-      "colors": [["#D8D4C8", "#B4B0A4"], ["#3E5E8A", "#2F486A"], ["#8A8378", "#6E6A60"], ["#4A6E4A", "#3A563A"]],
-      "signage": { "chance": 0.6, "tiles": ["sign-van-a", "sign-van-b", "sign-van-c"] }
+      "jitter": {
+        "length": 0.07,
+        "width": 0.03,
+        "cabinHeight": 0.05
+      },
+      "handling": {
+        "accel": 4.6,
+        "topSpeed": 25,
+        "reverse": 7,
+        "grip": 7.6,
+        "handbrakeGrip": 3.1,
+        "steerRate": 2.0,
+        "steerFalloff": 0.5,
+        "brake": 11,
+        "mass": 2100,
+        "drag": 0.55
+      },
+      "colors": [
+        [
+          "#D8D4C8",
+          "#B4B0A4"
+        ],
+        [
+          "#3E5E8A",
+          "#2F486A"
+        ],
+        [
+          "#8A8378",
+          "#6E6A60"
+        ],
+        [
+          "#4A6E4A",
+          "#3A563A"
+        ]
+      ],
+      "signage": {
+        "chance": 0.6,
+        "tiles": [
+          "sign-van-a",
+          "sign-van-b",
+          "sign-van-c"
+        ]
+      },
+      "sound": {
+        "idleHz": 32,
+        "speedHz": 3.0,
+        "throttleHz": 7,
+        "cutoff": 260,
+        "gain": 0.046,
+        "wave": "sawtooth"
+      }
     },
     "pickup": {
       "label": "Pickup",
       "weight": 6,
       "silhouette": {
-        "length": 5.2, "width": 1.98, "rideHeight": 0.42,
-        "hood": { "length": 1.3, "height": 0.86 },
-        "cabin": { "length": 1.6, "height": 0.8, "insetFront": 0.1, "insetSide": 0.06, "taper": 0.08 },
-        "bed": { "length": 2.0, "wallHeight": 0.48 },
-        "trunk": { "length": 0, "height": 0 },
-        "wheelbase": 3.1, "trackWidth": 1.68, "wheelRadius": 0.4, "wheelWidth": 0.27,
-        "bumper": { "depth": 0.2, "height": 0.36 }
+        "length": 5.2,
+        "width": 1.98,
+        "rideHeight": 0.42,
+        "hood": {
+          "length": 1.3,
+          "height": 0.86
+        },
+        "cabin": {
+          "length": 1.6,
+          "height": 0.8,
+          "insetFront": 0.1,
+          "insetSide": 0.06,
+          "taper": 0.08
+        },
+        "bed": {
+          "length": 2.0,
+          "wallHeight": 0.48
+        },
+        "trunk": {
+          "length": 0,
+          "height": 0
+        },
+        "wheelbase": 3.1,
+        "trackWidth": 1.68,
+        "wheelRadius": 0.4,
+        "wheelWidth": 0.27,
+        "bumper": {
+          "depth": 0.2,
+          "height": 0.36
+        }
       },
-      "jitter": { "length": 0.06, "width": 0.04, "cabinHeight": 0.06 },
-      "handling": { "accel": 5.6, "topSpeed": 29, "reverse": 8, "grip": 8.0, "handbrakeGrip": 3.0, "steerRate": 2.1, "steerFalloff": 0.52, "brake": 12, "mass": 1900, "drag": 0.52 },
-      "colors": [["#7A2E2E", "#5C2323"], ["#2E4A3E", "#233A30"], ["#B4B8BC", "#8E9296"], ["#8A6A2E", "#6E5423"]]
+      "jitter": {
+        "length": 0.06,
+        "width": 0.04,
+        "cabinHeight": 0.06
+      },
+      "handling": {
+        "accel": 5.6,
+        "topSpeed": 29,
+        "reverse": 8,
+        "grip": 8.0,
+        "handbrakeGrip": 3.0,
+        "steerRate": 2.1,
+        "steerFalloff": 0.52,
+        "brake": 12,
+        "mass": 1900,
+        "drag": 0.52
+      },
+      "colors": [
+        [
+          "#7A2E2E",
+          "#5C2323"
+        ],
+        [
+          "#2E4A3E",
+          "#233A30"
+        ],
+        [
+          "#B4B8BC",
+          "#8E9296"
+        ],
+        [
+          "#8A6A2E",
+          "#6E5423"
+        ]
+      ],
+      "sound": {
+        "idleHz": 29,
+        "speedHz": 2.8,
+        "throttleHz": 6,
+        "cutoff": 240,
+        "gain": 0.052,
+        "wave": "sawtooth"
+      }
     },
     "box-truck": {
       "label": "Box truck",
       "weight": 3,
       "silhouette": {
-        "length": 7.2, "width": 2.3, "rideHeight": 0.5,
-        "hood": { "length": 0.9, "height": 1.05 },
-        "cabin": { "length": 1.7, "height": 1.0, "insetFront": 0.06, "insetSide": 0.04, "taper": 0.04 },
-        "boxBody": { "length": 4.4, "height": 2.5, "overhang": 0.1 },
-        "trunk": { "length": 0, "height": 0 },
-        "wheelbase": 4.2, "trackWidth": 1.94, "wheelRadius": 0.46, "wheelWidth": 0.3,
-        "bumper": { "depth": 0.2, "height": 0.44 }
+        "length": 7.2,
+        "width": 2.3,
+        "rideHeight": 0.5,
+        "hood": {
+          "length": 0.9,
+          "height": 1.05
+        },
+        "cabin": {
+          "length": 1.7,
+          "height": 1.0,
+          "insetFront": 0.06,
+          "insetSide": 0.04,
+          "taper": 0.04
+        },
+        "boxBody": {
+          "length": 4.4,
+          "height": 2.5,
+          "overhang": 0.1
+        },
+        "trunk": {
+          "length": 0,
+          "height": 0
+        },
+        "wheelbase": 4.2,
+        "trackWidth": 1.94,
+        "wheelRadius": 0.46,
+        "wheelWidth": 0.3,
+        "bumper": {
+          "depth": 0.2,
+          "height": 0.44
+        }
       },
-      "jitter": { "length": 0.08, "width": 0.03, "cabinHeight": 0.04 },
-      "handling": { "accel": 3.4, "topSpeed": 21, "reverse": 6, "grip": 6.4, "handbrakeGrip": 3.4, "steerRate": 1.6, "steerFalloff": 0.44, "brake": 9, "mass": 3400, "drag": 0.68 },
-      "colors": [["#E0DCD0", "#BAB6AA"], ["#3E5E8A", "#2F486A"], ["#8A5236", "#6E412B"]],
-      "signage": { "chance": 0.85, "tiles": ["sign-van-a", "sign-van-b", "sign-van-c"] }
+      "jitter": {
+        "length": 0.08,
+        "width": 0.03,
+        "cabinHeight": 0.04
+      },
+      "handling": {
+        "accel": 3.4,
+        "topSpeed": 21,
+        "reverse": 6,
+        "grip": 6.4,
+        "handbrakeGrip": 3.4,
+        "steerRate": 1.6,
+        "steerFalloff": 0.44,
+        "brake": 9,
+        "mass": 3400,
+        "drag": 0.68
+      },
+      "colors": [
+        [
+          "#E0DCD0",
+          "#BAB6AA"
+        ],
+        [
+          "#3E5E8A",
+          "#2F486A"
+        ],
+        [
+          "#8A5236",
+          "#6E412B"
+        ]
+      ],
+      "signage": {
+        "chance": 0.85,
+        "tiles": [
+          "sign-van-a",
+          "sign-van-b",
+          "sign-van-c"
+        ]
+      },
+      "sound": {
+        "idleHz": 22,
+        "speedHz": 2.1,
+        "throttleHz": 4,
+        "cutoff": 175,
+        "gain": 0.063,
+        "wave": "sawtooth"
+      }
     },
     "bus": {
       "label": "City bus",
       "weight": 1,
       "silhouette": {
-        "length": 10.5, "width": 2.5, "rideHeight": 0.36,
-        "hood": { "length": 0.4, "height": 1.3 },
-        "cabin": { "length": 9.4, "height": 1.6, "insetFront": 0.02, "insetSide": 0.02, "taper": 0.02 },
-        "trunk": { "length": 0.4, "height": 1.6 },
-        "wheelbase": 6.0, "trackWidth": 2.1, "wheelRadius": 0.5, "wheelWidth": 0.3,
-        "bumper": { "depth": 0.18, "height": 0.5 }
+        "length": 10.5,
+        "width": 2.5,
+        "rideHeight": 0.36,
+        "hood": {
+          "length": 0.4,
+          "height": 1.3
+        },
+        "cabin": {
+          "length": 9.4,
+          "height": 1.6,
+          "insetFront": 0.02,
+          "insetSide": 0.02,
+          "taper": 0.02
+        },
+        "trunk": {
+          "length": 0.4,
+          "height": 1.6
+        },
+        "wheelbase": 6.0,
+        "trackWidth": 2.1,
+        "wheelRadius": 0.5,
+        "wheelWidth": 0.3,
+        "bumper": {
+          "depth": 0.18,
+          "height": 0.5
+        }
       },
-      "jitter": { "length": 0.04, "width": 0.02, "cabinHeight": 0.03 },
-      "handling": { "accel": 2.8, "topSpeed": 19, "reverse": 5, "grip": 6.0, "handbrakeGrip": 3.6, "steerRate": 1.3, "steerFalloff": 0.4, "brake": 8, "mass": 5200, "drag": 0.8 },
-      "colors": [["#3E6E8A", "#2F5468"], ["#C4B84A", "#9E943A"]],
-      "routeBoard": { "chance": 1.0, "color": "#FFB03A" }
+      "jitter": {
+        "length": 0.04,
+        "width": 0.02,
+        "cabinHeight": 0.03
+      },
+      "handling": {
+        "accel": 2.8,
+        "topSpeed": 19,
+        "reverse": 5,
+        "grip": 6.0,
+        "handbrakeGrip": 3.6,
+        "steerRate": 1.3,
+        "steerFalloff": 0.4,
+        "brake": 8,
+        "mass": 5200,
+        "drag": 0.8
+      },
+      "colors": [
+        [
+          "#3E6E8A",
+          "#2F5468"
+        ],
+        [
+          "#C4B84A",
+          "#9E943A"
+        ]
+      ],
+      "routeBoard": {
+        "chance": 1.0,
+        "color": "#FFB03A"
+      }
     },
     "grand-tourer": {
       "$comment": "The crib car: an original low British-style grand tourer silhouette, with no real badge or copied model.",
@@ -150,19 +663,85 @@
       "weight": 0,
       "spawnable": false,
       "mountLine": "ride-car",
-      "controls": { "enter": "DRIVE", "action": "GAS", "second": "BRAKE", "cam": "DRIFT" },
-      "silhouette": {
-        "length": 4.72, "width": 1.92, "rideHeight": 0.17,
-        "hood": { "length": 1.58, "height": 0.56 },
-        "cabin": { "length": 1.58, "height": 0.54, "insetFront": 0.22, "insetSide": 0.12, "taper": 0.32 },
-        "trunk": { "length": 1.0, "height": 0.62 },
-        "wheelbase": 2.82, "trackWidth": 1.66, "wheelRadius": 0.35, "wheelWidth": 0.27,
-        "bumper": { "depth": 0.18, "height": 0.22 },
-        "grille": { "width": 1.04, "height": 0.3, "color": "#D4D7D8" }
+      "controls": {
+        "enter": "DRIVE",
+        "action": "GAS",
+        "second": "BRAKE",
+        "cam": "DRIFT"
       },
-      "jitter": { "length": 0.01, "width": 0.01, "cabinHeight": 0.015 },
-      "handling": { "accel": 14.0, "topSpeed": 44, "reverse": 12, "grip": 12.0, "handbrakeGrip": 2.4, "steerRate": 4.0, "steerFalloff": 0.32, "steerSpeed": 2.0, "minSteerAuthority": 0.7, "brake": 18, "mass": 1480, "drag": 0.33, "coastFriction": 2.4, "reversePower": 0.95, "escapeBoost": 3.2 },
-      "colors": [["#164E3B", "#0E3228"], ["#CDD0CA", "#777D7C"], ["#182A48", "#0F1C31"], ["#4A1E2C", "#2E121C"]]
+      "silhouette": {
+        "length": 4.72,
+        "width": 1.92,
+        "rideHeight": 0.17,
+        "hood": {
+          "length": 1.58,
+          "height": 0.56
+        },
+        "cabin": {
+          "length": 1.58,
+          "height": 0.54,
+          "insetFront": 0.22,
+          "insetSide": 0.12,
+          "taper": 0.32
+        },
+        "trunk": {
+          "length": 1.0,
+          "height": 0.62
+        },
+        "wheelbase": 2.82,
+        "trackWidth": 1.66,
+        "wheelRadius": 0.35,
+        "wheelWidth": 0.27,
+        "bumper": {
+          "depth": 0.18,
+          "height": 0.22
+        },
+        "grille": {
+          "width": 1.04,
+          "height": 0.3,
+          "color": "#D4D7D8"
+        }
+      },
+      "jitter": {
+        "length": 0.01,
+        "width": 0.01,
+        "cabinHeight": 0.015
+      },
+      "handling": {
+        "accel": 14.0,
+        "topSpeed": 44,
+        "reverse": 12,
+        "grip": 12.0,
+        "handbrakeGrip": 2.4,
+        "steerRate": 4.0,
+        "steerFalloff": 0.32,
+        "steerSpeed": 2.0,
+        "minSteerAuthority": 0.7,
+        "brake": 18,
+        "mass": 1480,
+        "drag": 0.33,
+        "coastFriction": 2.4,
+        "reversePower": 0.95,
+        "escapeBoost": 3.2
+      },
+      "colors": [
+        [
+          "#164E3B",
+          "#0E3228"
+        ],
+        [
+          "#CDD0CA",
+          "#777D7C"
+        ],
+        [
+          "#182A48",
+          "#0F1C31"
+        ],
+        [
+          "#4A1E2C",
+          "#2E121C"
+        ]
+      ]
     },
     "skateboard": {
       "$comment": "Crib mobility option. The rider stays visible and the board uses the same arcade step as cars with a smaller collision circle.",
@@ -176,10 +755,47 @@
       "mapRadius": 125,
       "collisionRadius": 0.62,
       "mountLine": "ride-board",
-      "controls": { "enter": "RIDE", "action": "KICK", "second": "FLIP", "cam": "CARVE" },
-      "silhouette": { "length": 1.78, "width": 0.58, "deckHeight": 0.16, "wheelRadius": 0.09, "wheelbase": 1.18 },
-      "handling": { "accel": 8.4, "topSpeed": 12.5, "reverse": 3.5, "grip": 12.0, "handbrakeGrip": 5.0, "steerRate": 4.4, "steerFalloff": 0.34, "steerSpeed": 1.1, "brake": 11, "mass": 85, "drag": 0.24, "coastFriction": 1.35 },
-      "colors": [["#FF3D8A", "#FFE347"], ["#39E6FF", "#B14BFF"], ["#3DFF9E", "#FF8A3A"]]
+      "controls": {
+        "enter": "RIDE",
+        "action": "KICK",
+        "second": "FLIP",
+        "cam": "CARVE"
+      },
+      "silhouette": {
+        "length": 1.78,
+        "width": 0.58,
+        "deckHeight": 0.16,
+        "wheelRadius": 0.09,
+        "wheelbase": 1.18
+      },
+      "handling": {
+        "accel": 8.4,
+        "topSpeed": 12.5,
+        "reverse": 3.5,
+        "grip": 12.0,
+        "handbrakeGrip": 5.0,
+        "steerRate": 4.4,
+        "steerFalloff": 0.34,
+        "steerSpeed": 1.1,
+        "brake": 11,
+        "mass": 85,
+        "drag": 0.24,
+        "coastFriction": 1.35
+      },
+      "colors": [
+        [
+          "#FF3D8A",
+          "#FFE347"
+        ],
+        [
+          "#39E6FF",
+          "#B14BFF"
+        ],
+        [
+          "#3DFF9E",
+          "#FF8A3A"
+        ]
+      ]
     },
     "scooter": {
       "$comment": "Crib mobility option. A compact stand-up scooter: faster than the board, easier to thread through side streets than a car.",
@@ -193,31 +809,484 @@
       "mapRadius": 155,
       "collisionRadius": 0.78,
       "mountLine": "ride-scooter",
-      "controls": { "enter": "RIDE", "action": "GO", "second": "BRAKE", "cam": "LEAN" },
-      "silhouette": { "length": 1.65, "width": 0.52, "deckHeight": 0.2, "wheelRadius": 0.24, "wheelbase": 1.16, "stemHeight": 1.05, "handleWidth": 0.64 },
-      "handling": { "accel": 9.2, "topSpeed": 16.0, "reverse": 4.5, "grip": 11.2, "handbrakeGrip": 4.2, "steerRate": 3.8, "steerFalloff": 0.4, "steerSpeed": 1.7, "brake": 13, "mass": 125, "drag": 0.3, "coastFriction": 1.8 },
-      "colors": [["#39E6FF", "#FF3D8A"], ["#FFE347", "#3DFF9E"], ["#B14BFF", "#39E6FF"]]
+      "controls": {
+        "enter": "RIDE",
+        "action": "GO",
+        "second": "BRAKE",
+        "cam": "LEAN"
+      },
+      "silhouette": {
+        "length": 1.65,
+        "width": 0.52,
+        "deckHeight": 0.2,
+        "wheelRadius": 0.24,
+        "wheelbase": 1.16,
+        "stemHeight": 1.05,
+        "handleWidth": 0.64
+      },
+      "handling": {
+        "accel": 9.2,
+        "topSpeed": 16.0,
+        "reverse": 4.5,
+        "grip": 11.2,
+        "handbrakeGrip": 4.2,
+        "steerRate": 3.8,
+        "steerFalloff": 0.4,
+        "steerSpeed": 1.7,
+        "brake": 13,
+        "mass": 125,
+        "drag": 0.3,
+        "coastFriction": 1.8
+      },
+      "colors": [
+        [
+          "#39E6FF",
+          "#FF3D8A"
+        ],
+        [
+          "#FFE347",
+          "#3DFF9E"
+        ],
+        [
+          "#B14BFF",
+          "#39E6FF"
+        ]
+      ]
     },
     "compliance-sedan": {
-      "$comment": "Pursuer vehicle. Never spawns as ambient traffic — compliance.js owns it. Amber strobe, not red-blue: these are not police, they are stakeholders.",
+      "$comment": "Pursuer vehicle. Never spawns as ambient traffic \u2014 compliance.js owns it. Amber strobe, not red-blue: these are not police, they are stakeholders.",
       "label": "Fleet sedan",
       "weight": 0,
       "spawnable": false,
       "silhouette": {
-        "length": 4.7, "width": 1.88, "rideHeight": 0.26,
-        "hood": { "length": 1.2, "height": 0.72 },
-        "cabin": { "length": 2.05, "height": 0.66, "insetFront": 0.12, "insetSide": 0.09, "taper": 0.13 },
-        "trunk": { "length": 1.1, "height": 0.74 },
-        "wheelbase": 2.86, "trackWidth": 1.6, "wheelRadius": 0.34, "wheelWidth": 0.23,
-        "bumper": { "depth": 0.16, "height": 0.3 },
-        "strobe": { "color": "#FFB03A", "rate": 5.5, "width": 1.1, "height": 0.12 }
+        "length": 4.7,
+        "width": 1.88,
+        "rideHeight": 0.26,
+        "hood": {
+          "length": 1.2,
+          "height": 0.72
+        },
+        "cabin": {
+          "length": 2.05,
+          "height": 0.66,
+          "insetFront": 0.12,
+          "insetSide": 0.09,
+          "taper": 0.13
+        },
+        "trunk": {
+          "length": 1.1,
+          "height": 0.74
+        },
+        "wheelbase": 2.86,
+        "trackWidth": 1.6,
+        "wheelRadius": 0.34,
+        "wheelWidth": 0.23,
+        "bumper": {
+          "depth": 0.16,
+          "height": 0.3
+        },
+        "strobe": {
+          "color": "#FFB03A",
+          "rate": 5.5,
+          "width": 1.1,
+          "height": 0.12
+        }
       },
-      "jitter": { "length": 0.02, "width": 0.02, "cabinHeight": 0.03 },
-      "handling": { "accel": 7.6, "topSpeed": 35, "reverse": 10, "grip": 10.4, "handbrakeGrip": 2.5, "steerRate": 2.6, "steerFalloff": 0.58, "brake": 15, "mass": 1500, "drag": 0.4 },
-      "colors": [["#26262A", "#1A1A1E"], ["#2E3440", "#22262E"]]
+      "jitter": {
+        "length": 0.02,
+        "width": 0.02,
+        "cabinHeight": 0.03
+      },
+      "handling": {
+        "accel": 7.6,
+        "topSpeed": 35,
+        "reverse": 10,
+        "grip": 10.4,
+        "handbrakeGrip": 2.5,
+        "steerRate": 2.6,
+        "steerFalloff": 0.58,
+        "brake": 15,
+        "mass": 1500,
+        "drag": 0.4
+      },
+      "colors": [
+        [
+          "#26262A",
+          "#1A1A1E"
+        ],
+        [
+          "#2E3440",
+          "#22262E"
+        ]
+      ]
+    },
+    "yellow-cab": {
+      "label": "NYC yellow cab",
+      "weight": 7,
+      "silhouette": {
+        "length": 4.8,
+        "width": 1.82,
+        "rideHeight": 0.26,
+        "hood": {
+          "length": 1.15,
+          "height": 0.72
+        },
+        "cabin": {
+          "length": 2.0,
+          "height": 0.66,
+          "insetFront": 0.12,
+          "insetSide": 0.09,
+          "taper": 0.14
+        },
+        "trunk": {
+          "length": 1.05,
+          "height": 0.74
+        },
+        "wheelbase": 2.85,
+        "trackWidth": 1.56,
+        "wheelRadius": 0.33,
+        "wheelWidth": 0.22,
+        "bumper": {
+          "depth": 0.16,
+          "height": 0.3
+        }
+      },
+      "jitter": {
+        "length": 0.02,
+        "width": 0.015,
+        "cabinHeight": 0.02
+      },
+      "handling": {
+        "accel": 6.7,
+        "topSpeed": 30,
+        "reverse": 9,
+        "grip": 9.6,
+        "handbrakeGrip": 2.6,
+        "steerRate": 2.65,
+        "steerFalloff": 0.52,
+        "brake": 13.6,
+        "mass": 1570,
+        "drag": 0.42
+      },
+      "colors": [
+        [
+          "#eeb528",
+          "#db9c16"
+        ]
+      ],
+      "appearance": {
+        "bodyStyle": "sedan",
+        "taxi": true
+      },
+      "sound": {
+        "idleHz": 39,
+        "speedHz": 3.7,
+        "throttleHz": 11,
+        "cutoff": 340,
+        "gain": 0.04,
+        "wave": "sawtooth"
+      }
+    },
+    "rideshare-sedan": {
+      "label": "Black rideshare sedan",
+      "weight": 7,
+      "silhouette": {
+        "length": 4.9,
+        "width": 1.82,
+        "rideHeight": 0.26,
+        "hood": {
+          "length": 1.15,
+          "height": 0.72
+        },
+        "cabin": {
+          "length": 2.22,
+          "height": 0.66,
+          "insetFront": 0.12,
+          "insetSide": 0.09,
+          "taper": 0.14
+        },
+        "trunk": {
+          "length": 1.05,
+          "height": 0.74
+        },
+        "wheelbase": 2.88,
+        "trackWidth": 1.56,
+        "wheelRadius": 0.33,
+        "wheelWidth": 0.22,
+        "bumper": {
+          "depth": 0.16,
+          "height": 0.3
+        }
+      },
+      "jitter": {
+        "length": 0.02,
+        "width": 0.015,
+        "cabinHeight": 0.02
+      },
+      "handling": {
+        "accel": 5.9,
+        "topSpeed": 33,
+        "reverse": 9,
+        "grip": 10.3,
+        "handbrakeGrip": 2.6,
+        "steerRate": 2.3,
+        "steerFalloff": 0.6,
+        "brake": 14.2,
+        "mass": 1740,
+        "drag": 0.42
+      },
+      "colors": [
+        [
+          "#20262c",
+          "#151d23"
+        ],
+        [
+          "#293036",
+          "#1b2329"
+        ]
+      ],
+      "appearance": {
+        "bodyStyle": "sedan",
+        "rideshare": true
+      },
+      "sound": {
+        "idleHz": 29,
+        "speedHz": 2.9,
+        "throttleHz": 6,
+        "cutoff": 210,
+        "gain": 0.027,
+        "wave": "triangle"
+      }
+    },
+    "rideshare-suv": {
+      "label": "Black rideshare SUV",
+      "weight": 4,
+      "silhouette": {
+        "length": 5.08,
+        "width": 2.0,
+        "rideHeight": 0.28,
+        "hood": {
+          "length": 1.18,
+          "height": 0.74
+        },
+        "cabin": {
+          "length": 2.6,
+          "height": 0.74,
+          "insetFront": 0.12,
+          "insetSide": 0.08,
+          "taper": 0.05
+        },
+        "trunk": {
+          "length": 0.5,
+          "height": 0.8
+        },
+        "wheelbase": 3.03,
+        "trackWidth": 1.7,
+        "wheelRadius": 0.38,
+        "wheelWidth": 0.255,
+        "bumper": {
+          "depth": 0.16,
+          "height": 0.3
+        },
+        "roofRack": {
+          "chance": 0.55,
+          "height": 0.1
+        }
+      },
+      "jitter": {
+        "length": 0.02,
+        "width": 0.015,
+        "cabinHeight": 0.02
+      },
+      "handling": {
+        "accel": 5.4,
+        "topSpeed": 29,
+        "reverse": 8,
+        "grip": 8.9,
+        "handbrakeGrip": 2.8,
+        "steerRate": 2.05,
+        "steerFalloff": 0.61,
+        "brake": 12.8,
+        "mass": 2050,
+        "drag": 0.46
+      },
+      "colors": [
+        [
+          "#232a2e",
+          "#192025"
+        ]
+      ],
+      "appearance": {
+        "bodyStyle": "suv",
+        "rideshare": true
+      },
+      "sound": {
+        "idleHz": 31,
+        "speedHz": 2.8,
+        "throttleHz": 7,
+        "cutoff": 240,
+        "gain": 0.033,
+        "wave": "triangle"
+      }
+    },
+    "track-coupe": {
+      "label": "Weekend track coupe",
+      "weight": 0.35,
+      "silhouette": {
+        "length": 4.35,
+        "width": 1.96,
+        "rideHeight": 0.18,
+        "hood": {
+          "length": 1.4,
+          "height": 0.6
+        },
+        "cabin": {
+          "length": 1.6,
+          "height": 0.56,
+          "insetFront": 0.2,
+          "insetSide": 0.11,
+          "taper": 0.3
+        },
+        "trunk": {
+          "length": 1.05,
+          "height": 0.66
+        },
+        "wheelbase": 2.6,
+        "trackWidth": 1.7,
+        "wheelRadius": 0.34,
+        "wheelWidth": 0.28,
+        "bumper": {
+          "depth": 0.2,
+          "height": 0.24
+        },
+        "spoiler": {
+          "chance": 0.5,
+          "height": 0.16,
+          "depth": 0.3
+        }
+      },
+      "jitter": {
+        "length": 0.02,
+        "width": 0.015,
+        "cabinHeight": 0.02
+      },
+      "handling": {
+        "accel": 9.4,
+        "topSpeed": 43,
+        "reverse": 10,
+        "grip": 12.1,
+        "handbrakeGrip": 2.2,
+        "steerRate": 2.7,
+        "steerFalloff": 0.62,
+        "brake": 16,
+        "mass": 1260,
+        "drag": 0.36
+      },
+      "colors": [
+        [
+          "#d8d5c6",
+          "#cccabb"
+        ]
+      ],
+      "appearance": {
+        "bodyStyle": "sport",
+        "track": true,
+        "stripe": "#234439"
+      },
+      "sound": {
+        "idleHz": 63,
+        "speedHz": 6.2,
+        "throttleHz": 25,
+        "cutoff": 790,
+        "gain": 0.054,
+        "wave": "sawtooth"
+      }
+    },
+    "delivery-truck": {
+      "label": "Local delivery truck",
+      "weight": 3,
+      "silhouette": {
+        "length": 5.8,
+        "width": 2.12,
+        "rideHeight": 0.5,
+        "hood": {
+          "length": 0.9,
+          "height": 1.05
+        },
+        "cabin": {
+          "length": 1.7,
+          "height": 1.0,
+          "insetFront": 0.06,
+          "insetSide": 0.04,
+          "taper": 0.04
+        },
+        "boxBody": {
+          "length": 3.28,
+          "height": 2.25,
+          "overhang": 0.1
+        },
+        "trunk": {
+          "length": 0,
+          "height": 0
+        },
+        "wheelbase": 3.42,
+        "trackWidth": 1.78,
+        "wheelRadius": 0.41,
+        "wheelWidth": 0.28,
+        "bumper": {
+          "depth": 0.2,
+          "height": 0.44
+        }
+      },
+      "jitter": {
+        "length": 0.02,
+        "width": 0.015,
+        "cabinHeight": 0.02
+      },
+      "handling": {
+        "accel": 4.2,
+        "topSpeed": 23,
+        "reverse": 6,
+        "grip": 6.4,
+        "handbrakeGrip": 3.4,
+        "steerRate": 1.6,
+        "steerFalloff": 0.44,
+        "brake": 9,
+        "mass": 2800,
+        "drag": 0.68
+      },
+      "colors": [
+        [
+          "#c7d1c7",
+          "#b2beb7"
+        ],
+        [
+          "#d8d3bf",
+          "#bcbcae"
+        ]
+      ],
+      "signage": {
+        "chance": 0.85,
+        "tiles": [
+          "sign-van-a",
+          "sign-van-b",
+          "sign-van-c"
+        ]
+      },
+      "appearance": {
+        "bodyStyle": "truck",
+        "delivery": true
+      },
+      "sound": {
+        "idleHz": 24,
+        "speedHz": 2.4,
+        "throttleHz": 4,
+        "cutoff": 185,
+        "gain": 0.061,
+        "wave": "sawtooth"
+      }
     }
   },
-
   "$trafficComment": "Ambient traffic budget. Cars are pooled and recycled; none exist outside the streamed districts.",
   "traffic": {
     "maxActive": 18,
@@ -227,17 +1296,63 @@
     "minGap": 14,
     "cruiseSpeedFraction": 0.55,
     "stopAtSignals": true,
-    "districtMultiplier": { "heights": 0.7, "downtown": 1.2, "strip": 1.0, "yards": 0.4, "bowl": 0.5 }
+    "districtMultiplier": {
+      "heights": 0.7,
+      "downtown": 1.2,
+      "strip": 1.0,
+      "yards": 0.4,
+      "bowl": 0.5
+    }
   },
-
   "$parkedComment": "Static parked cars use the same generator with handling disabled, and are baked into one instanced batch per district.",
-  "parked": { "maxPerDistrict": 60, "mobileMaxPerDistrict": 34, "curbOffset": 2.4 },
-
+  "parked": {
+    "maxPerDistrict": 60,
+    "mobileMaxPerDistrict": 34,
+    "curbOffset": 2.4,
+    "curated": {
+      "heights": [
+        "rideshare-sedan",
+        "pickup",
+        "coupe-sport"
+      ],
+      "downtown": [
+        "yellow-cab",
+        "rideshare-suv",
+        "delivery-truck"
+      ],
+      "strip": [
+        "coupe-sport",
+        "yellow-cab",
+        "rideshare-sedan"
+      ],
+      "yards": [
+        "delivery-truck",
+        "pickup",
+        "track-coupe"
+      ],
+      "bowl": [
+        "rideshare-suv",
+        "van",
+        "compact"
+      ]
+    }
+  },
   "player": {
     "enterRadius": 3.0,
     "exitOffset": 1.6,
     "cameraZoom": "vehicle",
-    "engineAudio": { "sawPair": true, "detuneCents": 11, "rpmMin": 0.18, "rpmMax": 1.0, "idleHz": 46, "revHz": 190 },
-    "tireSqueal": { "slipThreshold": 0.42, "noiseQ": 7.5, "baseHz": 1800 }
+    "engineAudio": {
+      "sawPair": true,
+      "detuneCents": 11,
+      "rpmMin": 0.18,
+      "rpmMax": 1.0,
+      "idleHz": 46,
+      "revHz": 190
+    },
+    "tireSqueal": {
+      "slipThreshold": 0.42,
+      "noiseQ": 7.5,
+      "baseHz": 1800
+    }
   }
 }

@@ -146,7 +146,7 @@ export const device = {
 
 // -------------------------------------------------------------- data ---
 
-const DATA_FILES = ['world', 'blocks', 'props', 'vehicles', 'npcs', 'dialogue', 'missions', 'radio']
+const DATA_FILES = ['world', 'blocks', 'props', 'vehicles', 'npcs', 'dialogue', 'missions', 'radio', 'cheats', 'conversations', 'traffic', 'sports']
 
 export const data = {}
 

@@ -1,0 +1,45 @@
+{
+  "count": {
+    "desktop": 14,
+    "mobile": 8
+  },
+  "archetypes": [
+    "yellow-cab",
+    "rideshare-sedan",
+    "compact",
+    "rideshare-suv",
+    "pickup",
+    "coupe-sport",
+    "delivery-truck",
+    "sedan",
+    "yellow-cab",
+    "van",
+    "rideshare-sedan",
+    "wagon",
+    "yellow-cab",
+    "compact"
+  ],
+  "speed": 8.8,
+  "localSpeed": 5.2,
+  "turnSpeed": 4.2,
+  "acceleration": 1.8,
+  "braking": 5.5,
+  "gap": 3,
+  "laneOffset": 1.8,
+  "junctionMargin": 2.5,
+  "greenSeconds": 7,
+  "allRedSeconds": 1.2,
+  "despawnDistance": 380,
+  "stuckSeconds": 25,
+  "opening": {
+    "from": {
+      "x": -489,
+      "z": -145
+    },
+    "to": {
+      "x": -400,
+      "z": -145
+    },
+    "fraction": 0.38
+  }
+}

@@ -224,7 +224,10 @@ function stepRhythm(run, actor, dt, events) {
     events.push({ type: 'failed', line: spec.failLine || 'm-set-time-fail' })
     return
   }
-  if (run.rhythmHits >= total) {
+  // An expired beat advances the song just like a hit. Players who remain
+  // below the authored miss cap finish the set when its last beat passes;
+  // requiring every beat to be a hit stranded any otherwise-passing run.
+  if (run.rhythmNextIndex >= total) {
     markKind(run, 'rhythm')
     events.push({ type: 'rhythm-complete' })
   }

@@ -1,0 +1,1429 @@
+{
+  "name": "Original Brooklyn street-vehicle kit",
+  "version": 2,
+  "author": "Raffi World project",
+  "provenance": "Original parametric vehicle art authored for this project. No third-party vehicle models, badges, trademarks, or downloaded textures.",
+  "license": "Project-owned original source; distributed under the repository terms. Not represented as a third-party CC0 download.",
+  "units": "metres",
+  "axes": "+Y up, +Z forward",
+  "sources": [
+    {
+      "path": "gen/vehicle-kit.js",
+      "bytes": 20766,
+      "sha256": "8f2dab286e0e63c7cfd55c6522f5d348d2ad36a9bbf17d98c813f3024809ad4a"
+    },
+    {
+      "path": "gen/vehicles.js",
+      "bytes": 10121,
+      "sha256": "21396ecc4245bb8cbd2d44bbddc57eddf9237740dd027ae5d1c77a3db95aea1f"
+    },
+    {
+      "path": "gen/atlas.js",
+      "bytes": 28012,
+      "sha256": "b4f4b3d518f674f787fef109ff9c04eeb72b920ac4e3b0f0c17971419bdc20fb"
+    },
+    {
+      "path": "engine/actor-batching.js",
+      "bytes": 15781,
+      "sha256": "644d30d0f00e5c3bb340af42301641e521b0a3e74bd7d23e7d05d079b96d460e"
+    },
+    {
+      "path": "engine/audio-core.js",
+      "bytes": 1790,
+      "sha256": "2d730fa366638059539814b3278208e31e3ad0925ce791b525af47fa782439e0"
+    },
+    {
+      "path": "data/vehicles.json",
+      "bytes": 28794,
+      "sha256": "1985a58367c5a1f182e8d9ca6c092db7c3faf99d16f5d6bb463461f23572a9ac"
+    },
+    {
+      "path": "data/traffic.json",
+      "bytes": 717,
+      "sha256": "f01cb026e3d87cba8dd5696c06a7263bad70629c0e86a8d48194da909b87fceb"
+    }
+  ],
+  "fleet": {
+    "traffic": [
+      "yellow-cab",
+      "rideshare-sedan",
+      "compact",
+      "rideshare-suv",
+      "pickup",
+      "coupe-sport",
+      "delivery-truck",
+      "sedan",
+      "yellow-cab",
+      "van",
+      "rideshare-sedan",
+      "wagon",
+      "yellow-cab",
+      "compact"
+    ],
+    "parkedFirstPass": {
+      "heights": [
+        "rideshare-sedan",
+        "pickup",
+        "coupe-sport"
+      ],
+      "downtown": [
+        "yellow-cab",
+        "rideshare-suv",
+        "delivery-truck"
+      ],
+      "strip": [
+        "coupe-sport",
+        "yellow-cab",
+        "rideshare-sedan"
+      ],
+      "yards": [
+        "delivery-truck",
+        "pickup",
+        "track-coupe"
+      ],
+      "bowl": [
+        "rideshare-suv",
+        "van",
+        "compact"
+      ]
+    },
+    "rareTrackWeight": 0.35
+  },
+  "presentation": [
+    "Curved body panels with open wheel arches",
+    "Separate sloped glazing, pillars and roof",
+    "Recessed grille, lights, door handles and mirrors",
+    "24-segment tires with alloy spokes in the near mesh",
+    "10-segment wheels and omitted small fittings in the far mesh",
+    "Original physical car-paint/glass/rubber/chrome atlas tiles",
+    "Per-instance body/roof palette, GPU wheel spin and steering, independent brake lamps"
+  ],
+  "runtime": {
+    "loader": "Local deterministic generator; no separate fleet-model download",
+    "extraNetworkAssetBytes": 0,
+    "batches": "One InstancedMesh per archetype/detail level/material; shared geometry and atlas channels",
+    "lodSwitchMetres": 36,
+    "hysteresisMetres": 5,
+    "simulation": "Existing handles, dimensions, IDs, ownership, AI and collision remain authoritative"
+  },
+  "reproducibility": {
+    "inventory": "node public/world/tools/audit-street-vehicle-kit.mjs --write",
+    "verify": "node --test public/world/tools/street-vehicle-kit.test.mjs public/world/tools/actor-batching.test.mjs",
+    "fingerprint": "fleet-audit seed, neutral 0..1 atlas UV rectangle; physical runtime atlas coordinates differ"
+  },
+  "archetypes": [
+    {
+      "id": "sedan",
+      "label": "Four-door",
+      "handling": {
+        "accel": 6.4,
+        "topSpeed": 31,
+        "reverse": 9,
+        "grip": 9.2,
+        "handbrakeGrip": 2.6,
+        "steerRate": 2.5,
+        "steerFalloff": 0.55,
+        "brake": 13,
+        "mass": 1400,
+        "drag": 0.42
+      },
+      "sound": {
+        "idleHz": 36,
+        "speedHz": 3.5,
+        "throttleHz": 8,
+        "cutoff": 280,
+        "gain": 0.038,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 4.575857267961838,
+        "width": 1.8491579438794403
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4004,
+          "vertices": 5533,
+          "geometryBytes": 267476,
+          "geometrySha256": "5ca8a52903105a07f1b744f221333dec05444e08ec8f442822c643b478daed1f",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": -1.36
+            },
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": 1.36
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": -1.36
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": 1.36
+            }
+          ],
+          "roofHeight": 1.47
+        },
+        {
+          "level": 1,
+          "triangles": 1144,
+          "vertices": 1829,
+          "geometryBytes": 87340,
+          "geometrySha256": "0f4707ab9feb062e5883815a52198ee8b8437bfc4648b5daba6a4c7c87be0852",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": -1.36
+            },
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": 1.36
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": -1.36
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": 1.36
+            }
+          ],
+          "roofHeight": 1.47
+        }
+      ]
+    },
+    {
+      "id": "compact",
+      "label": "Hatchback",
+      "handling": {
+        "accel": 7.2,
+        "topSpeed": 28,
+        "reverse": 10,
+        "grip": 10.2,
+        "handbrakeGrip": 2.9,
+        "steerRate": 3.5,
+        "steerFalloff": 0.38,
+        "steerSpeed": 2.2,
+        "minSteerAuthority": 0.65,
+        "brake": 14,
+        "mass": 1100,
+        "drag": 0.38,
+        "coastFriction": 2.6,
+        "reversePower": 0.95,
+        "escapeBoost": 3.2
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 3.8869102677272167,
+        "width": 1.68002114613913
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4004,
+          "vertices": 5533,
+          "geometryBytes": 267476,
+          "geometrySha256": "1364968e1b3ea5e62e236db449f47741d813469de168e801afd8c405af181cc0",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.725,
+              "y": 0.3,
+              "z": -1.2
+            },
+            {
+              "x": -0.725,
+              "y": 0.3,
+              "z": 1.2
+            },
+            {
+              "x": 0.725,
+              "y": 0.3,
+              "z": -1.2
+            },
+            {
+              "x": 0.725,
+              "y": 0.3,
+              "z": 1.2
+            }
+          ],
+          "roofHeight": 1.52
+        },
+        {
+          "level": 1,
+          "triangles": 1144,
+          "vertices": 1829,
+          "geometryBytes": 87340,
+          "geometrySha256": "d04c2300d027c1599ed1517c1fbe374395ad52cbf6d9dac12512488c0fe575a1",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.725,
+              "y": 0.3,
+              "z": -1.2
+            },
+            {
+              "x": -0.725,
+              "y": 0.3,
+              "z": 1.2
+            },
+            {
+              "x": 0.725,
+              "y": 0.3,
+              "z": -1.2
+            },
+            {
+              "x": 0.725,
+              "y": 0.3,
+              "z": 1.2
+            }
+          ],
+          "roofHeight": 1.52
+        }
+      ]
+    },
+    {
+      "id": "coupe-sport",
+      "label": "Low sports coupe",
+      "appearance": {
+        "bodyStyle": "sport"
+      },
+      "handling": {
+        "accel": 9.4,
+        "topSpeed": 41,
+        "reverse": 10,
+        "grip": 11.5,
+        "handbrakeGrip": 2.2,
+        "steerRate": 2.7,
+        "steerFalloff": 0.62,
+        "brake": 16,
+        "mass": 1300,
+        "drag": 0.36
+      },
+      "sound": {
+        "idleHz": 52,
+        "speedHz": 5.4,
+        "throttleHz": 18,
+        "cutoff": 650,
+        "gain": 0.047,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 4.560201257272856,
+        "width": 1.8498256378995253
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 3956,
+          "vertices": 5437,
+          "geometryBytes": 262964,
+          "geometrySha256": "90ec4f85c554590a8c71377c62479635fb96eb7c20eaa2cc78cafa12e9a4c01b",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.82,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": -0.82,
+              "y": 0.34,
+              "z": 1.3
+            },
+            {
+              "x": 0.82,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": 0.82,
+              "y": 0.34,
+              "z": 1.3
+            }
+          ],
+          "roofHeight": 1.31
+        },
+        {
+          "level": 1,
+          "triangles": 1144,
+          "vertices": 1829,
+          "geometryBytes": 87340,
+          "geometrySha256": "cfbc906634c4987b83b6a15e000213703fe04d3986d236747f8e391a0795deb7",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.82,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": -0.82,
+              "y": 0.34,
+              "z": 1.3
+            },
+            {
+              "x": 0.82,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": 0.82,
+              "y": 0.34,
+              "z": 1.3
+            }
+          ],
+          "roofHeight": 1.31
+        }
+      ]
+    },
+    {
+      "id": "wagon",
+      "label": "Estate",
+      "handling": {
+        "accel": 5.8,
+        "topSpeed": 29,
+        "reverse": 8,
+        "grip": 9,
+        "handbrakeGrip": 2.8,
+        "steerRate": 2.3,
+        "steerFalloff": 0.55,
+        "brake": 12,
+        "mass": 1550,
+        "drag": 0.46
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 4.476910329475068,
+        "width": 1.8589640353843568
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4052,
+          "vertices": 5653,
+          "geometryBytes": 273044,
+          "geometrySha256": "b77b4ee1d870fdbcb271e9a7e400ee24f88c813ac4b19c77ff641d9d814933ba",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.79,
+              "y": 0.33,
+              "z": -1.4
+            },
+            {
+              "x": -0.79,
+              "y": 0.33,
+              "z": 1.4
+            },
+            {
+              "x": 0.79,
+              "y": 0.33,
+              "z": -1.4
+            },
+            {
+              "x": 0.79,
+              "y": 0.33,
+              "z": 1.4
+            }
+          ],
+          "roofHeight": 1.55
+        },
+        {
+          "level": 1,
+          "triangles": 1144,
+          "vertices": 1829,
+          "geometryBytes": 87340,
+          "geometrySha256": "318567c2f94ceb04093afc4c677135b8e653dd9a3def6e83f2706fbf7342356e",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.79,
+              "y": 0.33,
+              "z": -1.4
+            },
+            {
+              "x": -0.79,
+              "y": 0.33,
+              "z": 1.4
+            },
+            {
+              "x": 0.79,
+              "y": 0.33,
+              "z": -1.4
+            },
+            {
+              "x": 0.79,
+              "y": 0.33,
+              "z": 1.4
+            }
+          ],
+          "roofHeight": 1.55
+        }
+      ]
+    },
+    {
+      "id": "van",
+      "label": "Panel van",
+      "handling": {
+        "accel": 4.6,
+        "topSpeed": 25,
+        "reverse": 7,
+        "grip": 7.6,
+        "handbrakeGrip": 3.1,
+        "steerRate": 2,
+        "steerFalloff": 0.5,
+        "brake": 11,
+        "mass": 2100,
+        "drag": 0.55
+      },
+      "sound": {
+        "idleHz": 32,
+        "speedHz": 3,
+        "throttleHz": 7,
+        "cutoff": 260,
+        "gain": 0.046,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 5.248693810984958,
+        "width": 2.053187199132517
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 3978,
+          "vertices": 5457,
+          "geometryBytes": 263976,
+          "geometrySha256": "bf0465285e1913c2bca1c4904ff1e2a7f1501999dad5f5289e14560bf8ff2f09",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.85,
+              "y": 0.36,
+              "z": -1.6
+            },
+            {
+              "x": -0.85,
+              "y": 0.36,
+              "z": 1.6
+            },
+            {
+              "x": 0.85,
+              "y": 0.36,
+              "z": -1.6
+            },
+            {
+              "x": 0.85,
+              "y": 0.36,
+              "z": 1.6
+            }
+          ],
+          "roofHeight": 2.3
+        },
+        {
+          "level": 1,
+          "triangles": 1094,
+          "vertices": 1705,
+          "geometryBytes": 81584,
+          "geometrySha256": "aaa1e417c76064f82a78076efb010dd0655932e26e95f02315fac93d22c32b28",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.85,
+              "y": 0.36,
+              "z": -1.6
+            },
+            {
+              "x": -0.85,
+              "y": 0.36,
+              "z": 1.6
+            },
+            {
+              "x": 0.85,
+              "y": 0.36,
+              "z": -1.6
+            },
+            {
+              "x": 0.85,
+              "y": 0.36,
+              "z": 1.6
+            }
+          ],
+          "roofHeight": 2.3
+        }
+      ]
+    },
+    {
+      "id": "pickup",
+      "label": "Pickup",
+      "handling": {
+        "accel": 5.6,
+        "topSpeed": 29,
+        "reverse": 8,
+        "grip": 8,
+        "handbrakeGrip": 3,
+        "steerRate": 2.1,
+        "steerFalloff": 0.52,
+        "brake": 12,
+        "mass": 1900,
+        "drag": 0.52
+      },
+      "sound": {
+        "idleHz": 29,
+        "speedHz": 2.8,
+        "throttleHz": 6,
+        "cutoff": 240,
+        "gain": 0.052,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 5.017878015812486,
+        "width": 1.9477051090221853
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4126,
+          "vertices": 5589,
+          "geometryBytes": 270672,
+          "geometrySha256": "cf4e13b99000a17fbef6a461a301dee837c8af60213ad8c96ad248c5ea769a60",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.84,
+              "y": 0.4,
+              "z": -1.55
+            },
+            {
+              "x": -0.84,
+              "y": 0.4,
+              "z": 1.55
+            },
+            {
+              "x": 0.84,
+              "y": 0.4,
+              "z": -1.55
+            },
+            {
+              "x": 0.84,
+              "y": 0.4,
+              "z": 1.55
+            }
+          ],
+          "roofHeight": 1.88
+        },
+        {
+          "level": 1,
+          "triangles": 1086,
+          "vertices": 1780,
+          "geometryBytes": 84836,
+          "geometrySha256": "3a961321ac0c8c4ca4df527e8145c0aaeae1609410ccb846839488e9e99e866d",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.84,
+              "y": 0.4,
+              "z": -1.55
+            },
+            {
+              "x": -0.84,
+              "y": 0.4,
+              "z": 1.55
+            },
+            {
+              "x": 0.84,
+              "y": 0.4,
+              "z": -1.55
+            },
+            {
+              "x": 0.84,
+              "y": 0.4,
+              "z": 1.55
+            }
+          ],
+          "roofHeight": 1.88
+        }
+      ]
+    },
+    {
+      "id": "box-truck",
+      "label": "Box truck",
+      "handling": {
+        "accel": 3.4,
+        "topSpeed": 21,
+        "reverse": 6,
+        "grip": 6.4,
+        "handbrakeGrip": 3.4,
+        "steerRate": 1.6,
+        "steerFalloff": 0.44,
+        "brake": 9,
+        "mass": 3400,
+        "drag": 0.68
+      },
+      "sound": {
+        "idleHz": 22,
+        "speedHz": 2.1,
+        "throttleHz": 4,
+        "cutoff": 175,
+        "gain": 0.063,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": false,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 7.508916624695062,
+        "width": 2.310462584399618
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4142,
+          "vertices": 5665,
+          "geometryBytes": 274112,
+          "geometrySha256": "c2d6ae5c8b477897ccef23277ee9184cbbead6bd1b179d591da5708e94679899",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.97,
+              "y": 0.46,
+              "z": -2.1
+            },
+            {
+              "x": -0.97,
+              "y": 0.46,
+              "z": 2.1
+            },
+            {
+              "x": 0.97,
+              "y": 0.46,
+              "z": -2.1
+            },
+            {
+              "x": 0.97,
+              "y": 0.46,
+              "z": 2.1
+            }
+          ],
+          "roofHeight": 2.35
+        },
+        {
+          "level": 1,
+          "triangles": 1126,
+          "vertices": 1769,
+          "geometryBytes": 84592,
+          "geometrySha256": "727ca12370499c6e89577c7f1ad4d876ce31246ee362f15571696937a7b090c3",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.97,
+              "y": 0.46,
+              "z": -2.1
+            },
+            {
+              "x": -0.97,
+              "y": 0.46,
+              "z": 2.1
+            },
+            {
+              "x": 0.97,
+              "y": 0.46,
+              "z": -2.1
+            },
+            {
+              "x": 0.97,
+              "y": 0.46,
+              "z": 2.1
+            }
+          ],
+          "roofHeight": 2.35
+        }
+      ]
+    },
+    {
+      "id": "bus",
+      "label": "City bus",
+      "handling": {
+        "accel": 2.8,
+        "topSpeed": 19,
+        "reverse": 5,
+        "grip": 6,
+        "handbrakeGrip": 3.6,
+        "steerRate": 1.3,
+        "steerFalloff": 0.4,
+        "brake": 8,
+        "mass": 5200,
+        "drag": 0.8
+      },
+      "ambientTraffic": false,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 10.297675376264378,
+        "width": 2.5269306764239445
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4024,
+          "vertices": 5573,
+          "geometryBytes": 269356,
+          "geometrySha256": "b02bd5bafd23b6c733d460e8f341624bfc1b6f539fde805f619508a60047d501",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -1.05,
+              "y": 0.5,
+              "z": -3
+            },
+            {
+              "x": -1.05,
+              "y": 0.5,
+              "z": 3
+            },
+            {
+              "x": 1.05,
+              "y": 0.5,
+              "z": -3
+            },
+            {
+              "x": 1.05,
+              "y": 0.5,
+              "z": 3
+            }
+          ],
+          "roofHeight": 2.9
+        },
+        {
+          "level": 1,
+          "triangles": 1116,
+          "vertices": 1749,
+          "geometryBytes": 83652,
+          "geometrySha256": "1227b339f7fc46aeddc897886bc4fe489b815574c93360032bc19cb7b7c0fb92",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -1.05,
+              "y": 0.5,
+              "z": -3
+            },
+            {
+              "x": -1.05,
+              "y": 0.5,
+              "z": 3
+            },
+            {
+              "x": 1.05,
+              "y": 0.5,
+              "z": -3
+            },
+            {
+              "x": 1.05,
+              "y": 0.5,
+              "z": 3
+            }
+          ],
+          "roofHeight": 2.9
+        }
+      ]
+    },
+    {
+      "id": "compliance-sedan",
+      "label": "Fleet sedan",
+      "handling": {
+        "accel": 7.6,
+        "topSpeed": 35,
+        "reverse": 10,
+        "grip": 10.4,
+        "handbrakeGrip": 2.5,
+        "steerRate": 2.6,
+        "steerFalloff": 0.58,
+        "brake": 15,
+        "mass": 1500,
+        "drag": 0.4
+      },
+      "ambientTraffic": false,
+      "parked": false,
+      "collisionFootprint": {
+        "length": 4.691784364230931,
+        "width": 1.8848958099998532
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4112,
+          "vertices": 5629,
+          "geometryBytes": 272348,
+          "geometrySha256": "6b4ffb4b2e2e1af5226a5d28977fc6c32dd7d54b38ef6fa6303b1aff841444e6",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.8,
+              "y": 0.34,
+              "z": -1.43
+            },
+            {
+              "x": -0.8,
+              "y": 0.34,
+              "z": 1.43
+            },
+            {
+              "x": 0.8,
+              "y": 0.34,
+              "z": -1.43
+            },
+            {
+              "x": 0.8,
+              "y": 0.34,
+              "z": 1.43
+            }
+          ],
+          "roofHeight": 1.47
+        },
+        {
+          "level": 1,
+          "triangles": 1156,
+          "vertices": 1853,
+          "geometryBytes": 88468,
+          "geometrySha256": "3dd7eb6eb9ccf25efcf4fac2f9a490c8f9dc3fe8a9871b7697f881a716fedcbc",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.8,
+              "y": 0.34,
+              "z": -1.43
+            },
+            {
+              "x": -0.8,
+              "y": 0.34,
+              "z": 1.43
+            },
+            {
+              "x": 0.8,
+              "y": 0.34,
+              "z": -1.43
+            },
+            {
+              "x": 0.8,
+              "y": 0.34,
+              "z": 1.43
+            }
+          ],
+          "roofHeight": 1.47
+        }
+      ]
+    },
+    {
+      "id": "yellow-cab",
+      "label": "NYC yellow cab",
+      "appearance": {
+        "bodyStyle": "sedan",
+        "taxi": true
+      },
+      "handling": {
+        "accel": 6.7,
+        "topSpeed": 30,
+        "reverse": 9,
+        "grip": 9.6,
+        "handbrakeGrip": 2.6,
+        "steerRate": 2.65,
+        "steerFalloff": 0.52,
+        "brake": 13.6,
+        "mass": 1570,
+        "drag": 0.42
+      },
+      "sound": {
+        "idleHz": 39,
+        "speedHz": 3.7,
+        "throttleHz": 11,
+        "cutoff": 340,
+        "gain": 0.04,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 4.8135066264420745,
+        "width": 1.824054075492127
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4276,
+          "vertices": 6077,
+          "geometryBytes": 293044,
+          "geometrySha256": "a839f5c7a15582605358377297d2288366a7877671e3a88c528f457f79d665b5",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": -1.425
+            },
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": 1.425
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": -1.425
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": 1.425
+            }
+          ],
+          "roofHeight": 1.47
+        },
+        {
+          "level": 1,
+          "triangles": 1176,
+          "vertices": 1893,
+          "geometryBytes": 90348,
+          "geometrySha256": "e0d285affe08bf506abc62d812000e5b2d60f082af5a951359a3493b633b02fd",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": -1.425
+            },
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": 1.425
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": -1.425
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": 1.425
+            }
+          ],
+          "roofHeight": 1.47
+        }
+      ]
+    },
+    {
+      "id": "rideshare-sedan",
+      "label": "Black rideshare sedan",
+      "appearance": {
+        "bodyStyle": "sedan",
+        "rideshare": true
+      },
+      "handling": {
+        "accel": 5.9,
+        "topSpeed": 33,
+        "reverse": 9,
+        "grip": 10.3,
+        "handbrakeGrip": 2.6,
+        "steerRate": 2.3,
+        "steerFalloff": 0.6,
+        "brake": 14.2,
+        "mass": 1740,
+        "drag": 0.42
+      },
+      "sound": {
+        "idleHz": 29,
+        "speedHz": 2.9,
+        "throttleHz": 6,
+        "cutoff": 210,
+        "gain": 0.027,
+        "wave": "triangle"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 4.90928774908185,
+        "width": 1.8384008340163158
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4030,
+          "vertices": 5585,
+          "geometryBytes": 269920,
+          "geometrySha256": "4e14176b71581652cc06a626a5c0888c45be94a63270863a5ac259a951ffe4c7",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": -1.44
+            },
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": 1.44
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": -1.44
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": 1.44
+            }
+          ],
+          "roofHeight": 1.47
+        },
+        {
+          "level": 1,
+          "triangles": 1144,
+          "vertices": 1829,
+          "geometryBytes": 87340,
+          "geometrySha256": "7feaf1ee3052f8f7242305df91d5123ad766870a14cd0e0787e3fc4ef5941799",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": -1.44
+            },
+            {
+              "x": -0.78,
+              "y": 0.33,
+              "z": 1.44
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": -1.44
+            },
+            {
+              "x": 0.78,
+              "y": 0.33,
+              "z": 1.44
+            }
+          ],
+          "roofHeight": 1.47
+        }
+      ]
+    },
+    {
+      "id": "rideshare-suv",
+      "label": "Black rideshare SUV",
+      "appearance": {
+        "bodyStyle": "suv",
+        "rideshare": true
+      },
+      "handling": {
+        "accel": 5.4,
+        "topSpeed": 29,
+        "reverse": 8,
+        "grip": 8.9,
+        "handbrakeGrip": 2.8,
+        "steerRate": 2.05,
+        "steerFalloff": 0.61,
+        "brake": 12.8,
+        "mass": 2050,
+        "drag": 0.46
+      },
+      "sound": {
+        "idleHz": 31,
+        "speedHz": 2.8,
+        "throttleHz": 7,
+        "cutoff": 240,
+        "gain": 0.033,
+        "wave": "triangle"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 4.97926224689968,
+        "width": 1.981840708409436
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4078,
+          "vertices": 5705,
+          "geometryBytes": 275488,
+          "geometrySha256": "f11057797733143a8d3d858408c97c9db8dbe1901bb285ae5956dbf082ee79ba",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.85,
+              "y": 0.38,
+              "z": -1.515
+            },
+            {
+              "x": -0.85,
+              "y": 0.38,
+              "z": 1.515
+            },
+            {
+              "x": 0.85,
+              "y": 0.38,
+              "z": -1.515
+            },
+            {
+              "x": 0.85,
+              "y": 0.38,
+              "z": 1.515
+            }
+          ],
+          "roofHeight": 1.86
+        },
+        {
+          "level": 1,
+          "triangles": 1144,
+          "vertices": 1829,
+          "geometryBytes": 87340,
+          "geometrySha256": "ca4d1de3012c9663116dc1726209add22ac6f3f124fb74db7bc241d2fa10b2b8",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.85,
+              "y": 0.38,
+              "z": -1.515
+            },
+            {
+              "x": -0.85,
+              "y": 0.38,
+              "z": 1.515
+            },
+            {
+              "x": 0.85,
+              "y": 0.38,
+              "z": -1.515
+            },
+            {
+              "x": 0.85,
+              "y": 0.38,
+              "z": 1.515
+            }
+          ],
+          "roofHeight": 1.86
+        }
+      ]
+    },
+    {
+      "id": "track-coupe",
+      "label": "Weekend track coupe",
+      "appearance": {
+        "bodyStyle": "sport",
+        "track": true,
+        "stripe": "#234439"
+      },
+      "handling": {
+        "accel": 9.4,
+        "topSpeed": 43,
+        "reverse": 10,
+        "grip": 12.1,
+        "handbrakeGrip": 2.2,
+        "steerRate": 2.7,
+        "steerFalloff": 0.62,
+        "brake": 16,
+        "mass": 1260,
+        "drag": 0.36
+      },
+      "sound": {
+        "idleHz": 63,
+        "speedHz": 6.2,
+        "throttleHz": 25,
+        "cutoff": 790,
+        "gain": 0.054,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": false,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 4.400240190432407,
+        "width": 1.9878349775920623
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4084,
+          "vertices": 5693,
+          "geometryBytes": 274996,
+          "geometrySha256": "e7b38164f8287b7ea45c80637fa6015fe3c71f2afe1d58277d3c1bcc6771172a",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.85,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": -0.85,
+              "y": 0.34,
+              "z": 1.3
+            },
+            {
+              "x": 0.85,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": 0.85,
+              "y": 0.34,
+              "z": 1.3
+            }
+          ],
+          "roofHeight": 1.31
+        },
+        {
+          "level": 1,
+          "triangles": 1200,
+          "vertices": 1941,
+          "geometryBytes": 92604,
+          "geometrySha256": "7a089ac0180f3ea22d87cbe6debb0cbbbcdcf44ac3c27332f4b57d7fb66362dd",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.85,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": -0.85,
+              "y": 0.34,
+              "z": 1.3
+            },
+            {
+              "x": 0.85,
+              "y": 0.34,
+              "z": -1.3
+            },
+            {
+              "x": 0.85,
+              "y": 0.34,
+              "z": 1.3
+            }
+          ],
+          "roofHeight": 1.31
+        }
+      ]
+    },
+    {
+      "id": "delivery-truck",
+      "label": "Local delivery truck",
+      "appearance": {
+        "bodyStyle": "truck",
+        "delivery": true
+      },
+      "handling": {
+        "accel": 4.2,
+        "topSpeed": 23,
+        "reverse": 6,
+        "grip": 6.4,
+        "handbrakeGrip": 3.4,
+        "steerRate": 1.6,
+        "steerFalloff": 0.44,
+        "brake": 9,
+        "mass": 2800,
+        "drag": 0.68
+      },
+      "sound": {
+        "idleHz": 24,
+        "speedHz": 2.4,
+        "throttleHz": 4,
+        "cutoff": 185,
+        "gain": 0.061,
+        "wave": "sawtooth"
+      },
+      "ambientTraffic": true,
+      "parked": true,
+      "collisionFootprint": {
+        "length": 5.719744239227846,
+        "width": 2.150440491566807
+      },
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4170,
+          "vertices": 5721,
+          "geometryBytes": 276744,
+          "geometrySha256": "281655ca727751183437a1b6ef823b138a4153ce140cf710a82cbf5b6074eeef",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.89,
+              "y": 0.41,
+              "z": -1.71
+            },
+            {
+              "x": -0.89,
+              "y": 0.41,
+              "z": 1.71
+            },
+            {
+              "x": 0.89,
+              "y": 0.41,
+              "z": -1.71
+            },
+            {
+              "x": 0.89,
+              "y": 0.41,
+              "z": 1.71
+            }
+          ],
+          "roofHeight": 2.35
+        },
+        {
+          "level": 1,
+          "triangles": 1154,
+          "vertices": 1825,
+          "geometryBytes": 87224,
+          "geometrySha256": "bb3aa280baa459e6806ec22a80d09603d109e7ea4e22e000da7424bce99c8a9b",
+          "materialSlots": 1,
+          "wheelPivots": [
+            {
+              "x": -0.89,
+              "y": 0.41,
+              "z": -1.71
+            },
+            {
+              "x": -0.89,
+              "y": 0.41,
+              "z": 1.71
+            },
+            {
+              "x": 0.89,
+              "y": 0.41,
+              "z": -1.71
+            },
+            {
+              "x": 0.89,
+              "y": 0.41,
+              "z": 1.71
+            }
+          ],
+          "roofHeight": 2.35
+        }
+      ]
+    }
+  ]
+}

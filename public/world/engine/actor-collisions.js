@@ -4,6 +4,7 @@ export function actorCollisionBodies(objects, x, z, ignored = null, reach = 12, 
   for (const object of objects || []) {
     if (object === ignored || !object.visible) continue
     const info = object.userData || {}
+    if (info.authoredCharacter || info.replayGhost || object.name === 'replay-ghosts') continue
     const pedestrian = info.rig === 'biped' || info.rig === 'quadruped'
     const vehicle = Number.isFinite(info.width) && Number.isFinite(info.length)
     if (!pedestrian && !vehicle) continue

@@ -8,7 +8,9 @@
 
 import * as THREE from 'three'
 import { hexToRgb, makeRng } from '../engine/state.js'
+import { attachHeroVehicle, updateHeroVehicle } from '../engine/hero-vehicle.js'
 import { MeshBuilder } from './builder.js'
+import { buildStreetVehicle } from './vehicle-kit.js'
 
 function addBox(builder, options) {
   const start = builder.vertCount
@@ -38,6 +40,7 @@ function rangeWithShade(builder, range, baseHex) {
 
 function paintRange(attribute, range, hex, strength = 1) {
   if (!range) return
+  if (Array.isArray(range)) { range.forEach(part => paintRange(attribute, part, hex, strength)); return }
   const rgb = hexToRgb(hex)
   for (let i = range.start; i < range.end; i++) {
     const shade = range.shade ? range.shade[i - range.start] : 1
@@ -45,7 +48,7 @@ function paintRange(attribute, range, hex, strength = 1) {
   }
 }
 
-function deformWheel(attribute, base, wheel, spin, steer) {
+function deformWheel(attribute, base, wheel, spin, steer, normals, baseNormals) {
   const { x: px, y: py, z: pz } = wheel.pivot
   const cosX = Math.cos(spin)
   const sinX = Math.sin(spin)
@@ -69,6 +72,11 @@ function deformWheel(attribute, base, wheel, spin, steer) {
     z = steeredZ
 
     attribute.setXYZ(i, px + x, py + y, pz + z)
+    if (normals && baseNormals) {
+      const nx = baseNormals[o], ny = baseNormals[o + 1], nz = baseNormals[o + 2]
+      const sy = ny * cosX - nz * sinX, sz = ny * sinX + nz * cosX
+      normals.setXYZ(i, nx * cosY + sz * sinY, sy, -nx * sinY + sz * cosY)
+    }
   }
 }
 
@@ -84,7 +92,7 @@ function makeMicroVehicle(vehData, archetypeId, arch, seed, material, atlas, lig
   const deckRaw = addBox(builder, {
     x: 0, y: deckY, z: 0,
     w: S.width, h: 0.12, d: S.length,
-    color: paintA, rect: white,
+    color: paintA, rect: atlas.uv('car-paint'),
   })
   const deck = rangeWithShade(builder, deckRaw, paintA)
 
@@ -93,7 +101,7 @@ function makeMicroVehicle(vehData, archetypeId, arch, seed, material, atlas, lig
     addBox(builder, {
       x: 0, y: deckY + 0.08, z,
       w: S.width * 0.92, h: 0.08, d: 0.18,
-      color: paintB, rect: white, emissive: true,
+      color: paintB, rect: atlas.uv('car-paint'), emissive: true,
     })
   }
 
@@ -102,12 +110,12 @@ function makeMicroVehicle(vehData, archetypeId, arch, seed, material, atlas, lig
     addBox(builder, {
       x: 0, y: deckY + S.stemHeight / 2, z: frontZ - 0.04,
       w: 0.11, h: S.stemHeight, d: 0.11,
-      color: paintB, rect: white,
+      color: paintB, rect: atlas.uv('car-paint'),
     })
     addBox(builder, {
       x: 0, y: deckY + S.stemHeight, z: frontZ - 0.04,
       w: S.handleWidth, h: 0.1, d: 0.1,
-      color: paintA, rect: white,
+      color: paintA, rect: atlas.uv('car-paint'),
     })
   } else {
     for (const z of [-S.wheelbase * 0.36, S.wheelbase * 0.36]) {
@@ -149,6 +157,7 @@ function makeMicroVehicle(vehData, archetypeId, arch, seed, material, atlas, lig
   })
 
   const geometry = builder.build()
+  geometry.computeVertexNormals()
   const mesh = new THREE.Mesh(geometry, material)
   mesh.name = 'vehicle:' + archetypeId
   mesh.frustumCulled = true
@@ -167,6 +176,7 @@ function makeMicroVehicle(vehData, archetypeId, arch, seed, material, atlas, lig
     strobe: null,
     strobeOn: false,
     basePositions: new Float32Array(geometry.getAttribute('position').array),
+    baseNormals: new Float32Array(geometry.getAttribute('normal').array),
   }
   return mesh
 }
@@ -181,211 +191,40 @@ export function makeVehicle(vehData, archetypeId, seed, material, atlas, lightin
   const rng = makeRng('veh:' + archetypeId + ':' + seed)
   const S = arch.silhouette
   const J = arch.jitter || {}
-  const shared = vehData.shared
-  const white = atlas.uv('white')
-  const builder = new MeshBuilder(lighting, atlas)
-
-  const jit = (v, amount) => v * (1 + rng.range(-(amount || 0), amount || 0))
+  // A model has one stable body shape so the pooled fleet can share geometry.
+  // Paint still varies per spawn; consuming the old draws keeps that palette
+  // selection and every later seeded choice stable.
+  const shapeRng = makeRng('vehicle-shape:' + archetypeId)
+  const jit = (v, amount) => {
+    rng.next()
+    return v * (1 + shapeRng.range(-(amount || 0), amount || 0))
+  }
   const length = jit(S.length, J.length)
   const width = jit(S.width, J.width)
   const [paintA, paintB] = rng.pick(arch.colors)
-  const wr = S.wheelRadius
-  const bodyY = wr + S.rideHeight
-  const hullH = Math.max(S.hood.height, 0.5)
-  const cabinLen = S.cabin.length
-  const cabinH = jit(S.cabin.height, J.cabinHeight)
-  const cabinW = width * (1 - S.cabin.insetSide * 2)
-  const cabinZ = length / 2 - S.hood.length - cabinLen / 2
-
-  const hullRaw = addBox(builder, {
-    x: 0, y: bodyY + hullH / 2 - 0.1, z: 0,
-    w: width, h: hullH, d: length,
-    color: paintA, rect: white,
+  // Visual dimensions are modernized independently from the authored collision
+  // footprint, handling and seeded paint choices.
+  jit(S.cabin.height, J.cabinHeight)
+  const args = { archetype: archetypeId, appearance: arch.appearance, silhouette: S, length, width, paint: [paintA, paintB], atlas, lighting }
+  const near = buildStreetVehicle({ ...args, detail: true })
+  const far = buildStreetVehicle({ ...args, detail: false })
+  let farDisposed = false
+  near.geometry.addEventListener('dispose', () => {
+    if (!farDisposed) { farDisposed = true; far.geometry.dispose() }
   })
-  const hull = rangeWithShade(builder, hullRaw, paintA)
-
-  const cabinRaw = addBox(builder, {
-    x: 0, y: bodyY + hullH - 0.1 + cabinH / 2, z: cabinZ,
-    w: cabinW, h: cabinH, d: cabinLen,
-    color: paintB, rect: white,
-  })
-  const cabin = rangeWithShade(builder, cabinRaw, paintB)
-
-  const glass = addBox(builder, {
-    x: 0, y: bodyY + hullH - 0.1 + cabinH / 2 + cabinH * 0.12, z: cabinZ,
-    w: cabinW + 0.02, h: cabinH * 0.52, d: cabinLen * 0.92,
-    color: shared.glass.color, rect: atlas.uv('glasspane'),
-  })
-
-  // Sloped windshield and narrowed roof distinguish the cabin from a stack of boxes.
-  for (const range of [cabinRaw, glass]) {
-    for (let i = range.start; i < range.end; i++) {
-      const offset = i * 3
-      const relativeHeight = (builder.pos[offset + 1] - (bodyY + hullH - 0.1)) / cabinH
-      if (relativeHeight > 0.4) {
-        const taper = Math.min(1, relativeHeight) * (S.cabin.taper || 0.12)
-        builder.pos[offset] *= 1 - taper * 0.45
-        builder.pos[offset + 2] = cabinZ + (builder.pos[offset + 2] - cabinZ) * (1 - taper * 0.65)
-      }
-    }
-  }
-
-  if (S.boxBody) {
-    addBox(builder, {
-      x: 0,
-      y: bodyY + S.boxBody.height / 2,
-      z: -length / 2 + S.boxBody.length / 2 + 0.2,
-      w: width * 1.02,
-      h: S.boxBody.height,
-      d: S.boxBody.length,
-      color: '#e0dcd0',
-      rect: white,
-    })
-  } else if (S.bed) {
-    const wallH = S.bed.wallHeight
-    const bedZ = -length / 2 + S.bed.length / 2 + 0.1
-    for (const sx of [-1, 1]) {
-      addBox(builder, {
-        x: (sx * width) / 2 - sx * 0.06,
-        y: bodyY + hullH - 0.1 + wallH / 2,
-        z: bedZ,
-        w: 0.12, h: wallH, d: S.bed.length,
-        color: paintA, rect: white,
-      })
-    }
-    addBox(builder, {
-      x: 0,
-      y: bodyY + hullH - 0.1 + wallH / 2,
-      z: bedZ - S.bed.length / 2,
-      w: width, h: wallH, d: 0.12,
-      color: paintA, rect: white,
-    })
-  }
-
-  for (const sz of [1, -1]) {
-    addBox(builder, {
-      x: 0,
-      y: bodyY + S.bumper.height / 2 - 0.12,
-      z: (sz * length) / 2,
-      w: width * 0.98, h: S.bumper.height, d: S.bumper.depth,
-      color: '#3a3e42', rect: white,
-    })
-  }
-
-  if (S.grille) {
-    const grilleY = bodyY + hullH * 0.45
-    addBox(builder, {
-      x: 0, y: grilleY, z: length / 2 + 0.085,
-      w: S.grille.width, h: S.grille.height, d: 0.07,
-      color: S.grille.color || '#c8ccce', rect: white,
-    })
-    addBox(builder, {
-      x: 0, y: grilleY, z: length / 2 + 0.13,
-      w: S.grille.width * 0.82, h: S.grille.height * 0.66, d: 0.025,
-      color: '#20252b', rect: white,
-    })
-    for (const sx of [-1, 0, 1]) {
-      addBox(builder, {
-        x: sx * S.grille.width * 0.21,
-        y: grilleY,
-        z: length / 2 + 0.148,
-        w: 0.025,
-        h: S.grille.height * 0.58,
-        d: 0.018,
-        color: S.grille.color || '#c8ccce',
-        rect: white,
-      })
-    }
-  }
-
-  const headRanges = []
-  const tailRanges = []
-  for (const sx of [-1, 1]) {
-    headRanges.push(addBox(builder, {
-      x: sx * width * 0.34,
-      y: bodyY + hullH * 0.55,
-      z: length / 2 + 0.02,
-      w: 0.28, h: 0.16, d: 0.08,
-      color: shared.lights.headColor, rect: white, emissive: true,
-    }))
-    tailRanges.push(addBox(builder, {
-      x: sx * width * 0.34,
-      y: bodyY + hullH * 0.55,
-      z: -length / 2 - 0.02,
-      w: 0.26, h: 0.14, d: 0.08,
-      color: shared.lights.tailColor, rect: white, emissive: true,
-    }))
-  }
-
-  let strobe = null
-  if (S.strobe) {
-    strobe = addBox(builder, {
-      x: 0,
-      y: bodyY + hullH - 0.1 + cabinH + 0.1,
-      z: cabinZ,
-      w: S.strobe.width, h: S.strobe.height, d: 0.3,
-      color: S.strobe.color, rect: white, emissive: true,
-    })
-  }
-
-  const wheels = []
-  for (const sx of [-1, 1]) {
-    for (const sz of [1, -1]) {
-      const start = builder.vertCount
-      const px = (sx * S.trackWidth) / 2
-      const pz = (sz * S.wheelbase) / 2
-      for (let segment = 0; segment < 6; segment++) {
-        const a = segment * Math.PI / 3, b = (segment + 1) * Math.PI / 3
-        const point = (side, angle, radius = wr) => ({ x: px + side * S.wheelWidth / 2, y: wr + Math.cos(angle) * radius, z: pz + Math.sin(angle) * radius })
-        builder.quad([point(-1,a),point(1,a),point(1,b),point(-1,b)],shared.wheel.color,white)
-        // The inner cap is occluded by the chassis. Only submit the visible outer face.
-        const side = sx, p0=point(side,a), p1=point(side,b), centre={x:px+side*S.wheelWidth/2,y:wr,z:pz}
-        builder._tri(centre, side === 1 ? p0 : p1, side === 1 ? p1 : p0, shared.wheel.color, white, builder.shade(side,0,0))
-        const h0=point(side,a,wr*shared.wheel.hubFraction),h1=point(side,b,wr*shared.wheel.hubFraction)
-        h0.x += side*0.012; h1.x += side*0.012
-        const hubCentre={...centre,x:centre.x+side*0.012}
-        builder._tri(hubCentre, side === 1 ? h0 : h1, side === 1 ? h1 : h0, shared.wheel.hubColor, white, builder.shade(side,0,0))
-      }
-      wheels.push({
-        start,
-        end: builder.vertCount,
-        front: sz > 0,
-        pivot: { x: px, y: wr, z: pz },
-      })
-    }
-  }
-
-  addPlane(builder, {
-    x: 0,
-    y: 0.05,
-    z: 0,
-    w: width * shared.blobShadow.scale,
-    d: length * shared.blobShadow.scale,
-    color: '#ffffff',
-    rect: atlas.uv('blob'),
-    emissive: true,
-  })
-
-  const geometry = builder.build()
-  const mesh = new THREE.Mesh(geometry, material)
+  const mesh = new THREE.Mesh(near.geometry, material)
   mesh.name = 'vehicle:' + archetypeId
   mesh.frustumCulled = true
-
+  mesh.castShadow = true
+  mesh.receiveShadow = true
   mesh.userData = {
-    archetype: archetypeId,
-    handling: arch.handling,
-    length,
-    width,
-    paint: [paintA, paintB],
-    paintRanges: { hull, cabin },
-    wheels,
-    wheelRadius: wr,
-    wheelSpin: 0,
-    lights: { head: headRanges, tail: tailRanges },
-    strobe,
-    strobeOn: true,
-    basePositions: new Float32Array(geometry.getAttribute('position').array),
+    archetype: archetypeId, handling: arch.handling, length, width,
+    paint: [paintA, paintB], wheelRadius: S.wheelRadius, wheelSpin: 0,
+    ...near, strobeOn: true,
+    vehicleLods: [near, far], vehicleLodDistance: 36, vehicleLodHysteresis: 5,
   }
+  delete mesh.userData.geometry
+  attachHeroVehicle(mesh, atlas)
   return mesh
 }
 
@@ -394,13 +233,22 @@ export function animateVehicle(veh, dt, speed, steer, braking) {
   const ud = veh.userData
   const position = veh.geometry?.getAttribute('position')
   const color = veh.geometry?.getAttribute('color')
+  const normal = veh.geometry?.getAttribute('normal')
   if (!position || !color) return
 
   ud.wheelSpin += (speed / (ud.wheelRadius || 0.34)) * dt
+  ud.instancePose = [ud.wheelSpin, steer * 0.5, braking ? 1 : 0.35,
+    ud.strobe && Math.sin(performance.now() * 0.001 * Math.PI * 2 * 5.5) <= 0 ? 0.02 : 1]
+  if (updateHeroVehicle(veh, dt, speed, steer, braking)) return
+  if (ud.actorBatched) {
+    ud.strobeOn = ud.instancePose[3] === 1
+    return
+  }
   for (const wheel of ud.wheels) {
-    deformWheel(position, ud.basePositions, wheel, ud.wheelSpin, wheel.front ? steer * 0.5 : 0)
+    deformWheel(position, ud.basePositions, wheel, ud.wheelSpin, wheel.front ? steer * 0.5 : 0, normal, ud.baseNormals)
   }
   position.needsUpdate = true
+  if (normal) normal.needsUpdate = true
 
   const tailStrength = braking ? 1 : 0.35
   for (const range of ud.lights.tail) paintRange(color, range, '#ff3a2e', tailStrength)

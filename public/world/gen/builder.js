@@ -1,13 +1,7 @@
 /**
- * RAFFI WORLD — mesh accumulator with baked vertex lighting.
- *
- * Everything in the city is built through this. It takes primitive calls and
- * appends them into flat typed-array buffers, applying the one directional key
- * light and ambient fill from blocks.json at *generation* time. The result is a
- * single BufferGeometry per material per district, which is how a whole city
- * fits inside 120 draw calls.
- *
- * Because lighting is baked here, the runtime scene contains no lights at all.
+ * Shared city mesh accumulator. Geometry stays merged and spatially chunked;
+ * physical lighting runs on its true face normals at render time. Vertex
+ * colours contain linear albedo and conservative contact occlusion only.
  */
 
 import * as THREE from 'three'
@@ -19,8 +13,6 @@ import {
   DEFAULT_SPILL_EXTENT,
 } from './chunk-opaque.js'
 
-const FACE_KEYS = ['east', 'west', 'up', 'down', 'south', 'north']
-
 export class MeshBuilder {
   /**
    * @param lighting  blocks.json `vertexLighting`
@@ -31,6 +23,7 @@ export class MeshBuilder {
     this.atlas = atlas
     this.pos = []
     this.uvs = []
+    this.normals = []
     this.col = []
     this.idx = []
     this.vertCount = 0
@@ -46,23 +39,9 @@ export class MeshBuilder {
     this.key = { x: d.x / len, y: d.y / len, z: d.z / len }
   }
 
-  /** Baked shade for a face normal, 0..~1.3. */
+  /** Directional light belongs to the renderer; only enclosed undersides occlude. */
   shade(nx, ny, nz) {
-    const L = this.lighting
-    const ndotl = Math.max(0, -(nx * this.key.x + ny * this.key.y + nz * this.key.z))
-    let s = L.fillStrength + L.keyStrength * ndotl
-
-    // Directional AO — cheap, and it is what gives flat-lit boxes their form.
-    const ax = Math.abs(nx)
-    const ay = Math.abs(ny)
-    const az = Math.abs(nz)
-    let faceKey
-    if (ay >= ax && ay >= az) faceKey = ny > 0 ? 'up' : 'down'
-    else if (ax >= az) faceKey = nx > 0 ? 'east' : 'west'
-    else faceKey = nz > 0 ? 'south' : 'north'
-    s *= L.faceAO[faceKey] ?? 1
-
-    return s
+    return ny < -0.5 ? 0.78 : 1
   }
 
   /** Darkens geometry near the ground so buildings sit instead of float. */
@@ -70,7 +49,7 @@ export class MeshBuilder {
     const gc = this.lighting.groundContact
     if (!gc || y >= gc.height) return 1
     const t = Math.max(0, y) / gc.height
-    return gc.darken + (1 - gc.darken) * t
+    return 0.9 + 0.1 * t
   }
 
   /**
@@ -82,8 +61,8 @@ export class MeshBuilder {
     if (!ha) return 1
     const span = Math.max(0.001, (ha.maxY ?? 80) - (ha.minY ?? 0))
     const t = Math.max(0, Math.min(1, (y - (ha.minY ?? 0)) / span))
-    const bottom = ha.bottom ?? 0.9
-    const top = ha.top ?? 1.12
+    const bottom = 0.97
+    const top = 1
     return bottom + (top - bottom) * t
   }
 
@@ -109,7 +88,7 @@ export class MeshBuilder {
     nx /= nl; ny /= nl; nz /= nl
 
     const rgb = typeof color === 'string' ? hexToRgb(color) : color
-    const baseShade = opts.emissive ? 1 : (opts.shadeOverride ?? this.shade(nx, ny, nz))
+    const baseShade = opts.emissive ? 1 : this.shade(nx, ny, nz)
 
     // Corner UVs are plain 0/1; `uvAt` scales them into the cell sub-rect.
     const uvA = opts.flipU ? [[1, 0], [0, 0], [0, 1], [1, 1]] : [[0, 0], [1, 0], [1, 1], [0, 1]]
@@ -118,6 +97,8 @@ export class MeshBuilder {
     for (let i = 0; i < 4; i++) {
       const v = verts[i]
       this.pos.push(v.x, v.y, v.z)
+      const normal = opts.normals?.[i] || { x: nx, y: ny, z: nz }
+      this.normals.push(normal.x, normal.y, normal.z)
       const [uu, vv] = this.atlas.uvAt(r, uvA[i][0], uvA[i][1], su, sv)
       this.uvs.push(uu, vv)
       // Contact darkening grounds vertical walls and prop sides. Applying it
@@ -201,7 +182,7 @@ export class MeshBuilder {
   cylinder(o) {
     const {
       x = 0, y = 0, z = 0, r = 0.5, rTop = null, h = 1, seg = 6, ry = 0,
-      color = '#ffffff', rect = null, emissive = false, caps = true,
+      color = '#ffffff', rect = null, emissive = false, caps = true, smooth = true,
     } = o
     const top = rTop === null ? r : rTop
     const y0 = y - h / 2
@@ -215,12 +196,16 @@ export class MeshBuilder {
       const c1 = Math.cos(a1), s1 = Math.sin(a1)
       this.quad(
         [
-          { x: x + c0 * r, y: y0, z: z + s0 * r },
           { x: x + c1 * r, y: y0, z: z + s1 * r },
-          { x: x + c1 * top, y: y1, z: z + s1 * top },
+          { x: x + c0 * r, y: y0, z: z + s0 * r },
           { x: x + c0 * top, y: y1, z: z + s0 * top },
+          { x: x + c1 * top, y: y1, z: z + s1 * top },
         ],
-        color, rect2, 1, 1, { emissive }
+        color, rect2, 1, 1, { emissive, normals: smooth ? [c1, c0, c0, c1].map((c, j) => {
+          const sy = (r - top) / Math.max(h, 0.001)
+          const len = Math.hypot(1, sy)
+          return { x: c / len, y: sy / len, z: [s1, s0, s0, s1][j] / len }
+        }) : null }
       )
     }
 
@@ -234,8 +219,19 @@ export class MeshBuilder {
           centre,
           { x: x + Math.cos(a1) * top, y: y1, z: z + Math.sin(a1) * top },
           { x: x + Math.cos(a0) * top, y: y1, z: z + Math.sin(a0) * top },
-          color, rect2, shade
+          color, rect2, shade, emissive
         )
+      }
+    }
+    if (caps && r > 0.001) {
+      const centre = { x, y: y0, z }
+      for (let i = 0; i < seg; i++) {
+        const a0 = ry + i / seg * Math.PI * 2
+        const a1 = ry + (i + 1) / seg * Math.PI * 2
+        this._tri(centre,
+          { x: x + Math.cos(a0) * r, y: y0, z: z + Math.sin(a0) * r },
+          { x: x + Math.cos(a1) * r, y: y0, z: z + Math.sin(a1) * r },
+          color, rect2, 0.78, emissive)
       }
     }
   }
@@ -254,30 +250,63 @@ export class MeshBuilder {
       const nx = (p0.x + p1.x) / 2 - x
       const nz = (p0.z + p1.z) / 2 - z
       const shade = emissive ? 1 : this.shade(nx, 0.4, nz)
-      this._tri(flipY ? p1 : p0, flipY ? p0 : p1, tip, color, rect2, shade)
+      this._tri(flipY ? p0 : p1, flipY ? p1 : p0, tip, color, rect2, shade, emissive)
     }
   }
 
-  /** Faceted low-poly sphere. `seg` of 5 is the PS2-correct amount of ugly. */
+  /** Smooth ellipsoid; analytic normals survive merging and district partition. */
   sphere(o) {
-    const { x = 0, y = 0, z = 0, r = 1, seg = 5, color = '#ffffff', rect = null, emissive = false } = o
-    const rings = Math.max(2, Math.floor(seg * 0.7))
+    const {
+      x = 0, y = 0, z = 0, r = 1, seg = 10, rings = Math.max(3, Math.floor(seg * 0.7)),
+      sx = 1, sy = 1, sz = 1, ry = 0, smooth = true,
+      color = '#ffffff', rect = null, emissive = false,
+    } = o
     const rect2 = rect || this.atlas.uv('white')
+    const co = Math.cos(ry), si = Math.sin(ry)
+    const point = (u, v) => {
+      const nx = Math.sin(v) * Math.cos(u), ny = Math.cos(v), nz = Math.sin(v) * Math.sin(u)
+      const lx = r * nx * sx, lz = r * nz * sz
+      const ax = nx / sx, ay = ny / sy, az = nz / sz
+      const len = Math.hypot(ax, ay, az) || 1
+      return {
+        p: { x: x + lx * co - lz * si, y: y + r * ny * sy, z: z + lx * si + lz * co },
+        n: { x: (ax * co - az * si) / len, y: ay / len, z: (ax * si + az * co) / len },
+      }
+    }
+    if (smooth) {
+      const offset = this.vertCount
+      const rgb = typeof color === 'string' ? hexToRgb(color) : color
+      // Share latitude-ring vertices inside each rounded primitive. Besides
+      // reducing buffers this keeps CPU-animated people inexpensive to deform.
+      for (let iy = 0; iy <= rings; iy++) {
+        for (let ix = 0; ix <= seg; ix++) {
+          const { p, n } = point(ix / seg * Math.PI * 2, iy / rings * Math.PI)
+          this.pos.push(p.x, p.y, p.z)
+          this.normals.push(n.x, n.y, n.z)
+          this.uvs.push(...this.atlas.uvAt(rect2, ix / seg, 1 - iy / rings))
+          const shade = emissive ? 1 : this.contact(p.y) * this.heightAmb(p.y)
+          this.col.push(rgb.r * shade, rgb.g * shade, rgb.b * shade)
+          this.vertCount++
+        }
+      }
+      for (let iy = 0; iy < rings; iy++) {
+        for (let ix = 0; ix < seg; ix++) {
+          const a = offset + iy * (seg + 1) + ix, b = a + 1
+          const d = a + seg + 1, c = d + 1
+          if (iy > 0) this.idx.push(a, b, c)
+          if (iy < rings - 1) this.idx.push(a, c, d)
+        }
+      }
+      return
+    }
     for (let iy = 0; iy < rings; iy++) {
-      const v0 = (iy / rings) * Math.PI
-      const v1 = ((iy + 1) / rings) * Math.PI
       for (let ix = 0; ix < seg; ix++) {
-        const u0 = (ix / seg) * Math.PI * 2
-        const u1 = ((ix + 1) / seg) * Math.PI * 2
-        const p = (u, v) => ({
-          x: x + r * Math.sin(v) * Math.cos(u),
-          y: y + r * Math.cos(v),
-          z: z + r * Math.sin(v) * Math.sin(u),
-        })
-        const a = p(u0, v0), b = p(u1, v0), c = p(u1, v1), d = p(u0, v1)
-        if (iy === 0) this._tri(a, c, d, color, rect2, emissive ? 1 : this.shade(0, 1, 0))
-        else if (iy === rings - 1) this._tri(a, b, c, color, rect2, emissive ? 1 : this.shade(0, -1, 0))
-        else this.quad([a, b, c, d], color, rect2, 1, 1, { emissive })
+        const u0 = ix / seg * Math.PI * 2, u1 = (ix + 1) / seg * Math.PI * 2
+        const v0 = iy / rings * Math.PI, v1 = (iy + 1) / rings * Math.PI
+        const a = point(u0, v0), b = point(u1, v0), c = point(u1, v1), d = point(u0, v1)
+        if (iy === 0) this._tri(a.p, c.p, d.p, color, rect2, 1, emissive, smooth ? [a.n, c.n, d.n] : null)
+        else if (iy === rings - 1) this._tri(a.p, b.p, c.p, color, rect2, 1, emissive, smooth ? [a.n, b.n, c.n] : null)
+        else this.quad([a.p, b.p, c.p, d.p], color, rect2, 1, 1, { emissive, normals: smooth ? [a.n, b.n, c.n, d.n] : null })
       }
     }
   }
@@ -301,16 +330,22 @@ export class MeshBuilder {
     this.quad([P(-hw, y0, -hd), P(hw, y0, -hd), P(hw, y0, hd), P(-hw, y0, hd)], color, rect)
   }
 
-  _tri(a, b, c, color, rect, shade, emissive = false) {
+  _tri(a, b, c, color, rect, shade, emissive = false, normals = null) {
+    const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z
+    const vx = c.x - a.x, vy = c.y - a.y, vz = c.z - a.z
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx
+    const nl = Math.hypot(nx, ny, nz) || 1
     const rgb = typeof color === 'string' ? hexToRgb(color) : color
     const pts = [a, b, c]
     const uvsLocal = [[0, 0], [1, 0], [0.5, 1]]
     for (let i = 0; i < 3; i++) {
       const v = pts[i]
       this.pos.push(v.x, v.y, v.z)
+      const normal = normals?.[i] || { x: nx / nl, y: ny / nl, z: nz / nl }
+      this.normals.push(normal.x, normal.y, normal.z)
       const [uu, vv] = this.atlas.uvAt(rect, uvsLocal[i][0], uvsLocal[i][1])
       this.uvs.push(uu, vv)
-      const s = shade * (emissive ? 1 : this.contact(v.y))
+      const s = emissive ? 1 : Math.min(1, shade) * this.contact(v.y)
       this.col.push(rgb.r * s, rgb.g * s, rgb.b * s)
     }
     const o = this.vertCount
@@ -328,20 +363,22 @@ export class MeshBuilder {
     g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uvs, 2))
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3))
     g.setIndex(this.idx)
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(this.normals, 3))
     g.computeBoundingSphere()
     g.computeBoundingBox()
     return g
   }
 }
 
-/** Three builders — one per material — travelling together. */
+/** Shared material streams, plus independently bounded fine opaque detail. */
 export function makeBuilderSet(lighting, atlas) {
   return {
     opaque: new MeshBuilder(lighting, atlas),
+    detail: new MeshBuilder(lighting, atlas),
     emissive: new MeshBuilder(lighting, atlas),
     alpha: new MeshBuilder(lighting, atlas),
     get triangleCount() {
-      return this.opaque.triangleCount + this.emissive.triangleCount + this.alpha.triangleCount
+      return this.opaque.triangleCount + this.detail.triangleCount + this.emissive.triangleCount + this.alpha.triangleCount
     },
   }
 }
@@ -349,10 +386,8 @@ export function makeBuilderSet(lighting, atlas) {
 /**
  * Turns a builder set into meshes on a shared Group.
  *
- * OPAQUE is spatially chunked (district buildings) so frustum + fog can drop
- * off-screen city mass under FREE / high-yaw cameras. EMISSIVE and ALPHA stay
- * exactly one mesh each with legacy names (`name:emissive`, `name:alpha`) and
- * the original material objects — splitting alpha would change transparent sort.
+ * Solid city surfaces, including opaque emission, use spatial bounds. Alpha
+ * stays one mesh per district because splitting it changes transparent sort.
  */
 export function meshesFrom(set, materials, name = 'chunk') {
   const group = new THREE.Group()
@@ -376,8 +411,22 @@ export function meshesFrom(set, materials, name = 'chunk') {
     }
   }
 
-  // --- emissive + alpha: always single legacy meshes ---
+  // Fine trim keeps its exact near geometry, but has independent bounds so
+  // distant streets do not submit subpixel rails and window hardware.
+  if (set.detail && !set.detail.isEmpty) {
+    for (const mesh of buildChunkedOpaque(set.detail, materials.opaque, `${name}:detail`)) {
+      mesh.userData.opaqueDetail = true
+      group.add(mesh)
+    }
+  }
+
+  // Emission writes depth like masonry, so it benefits from the same exact
+  // spatial partition. A distant lamp must not submit every city sign.
   for (const key of ['emissive', 'alpha']) {
+    if (key === 'emissive' && !set[key].isEmpty && isOpaqueChunkingEnabled()) {
+      for (const mesh of buildChunkedOpaque(set[key], materials[key], name, key)) group.add(mesh)
+      continue
+    }
     const geo = set[key].build()
     if (!geo) continue
     const mesh = new THREE.Mesh(geo, materials[key])
@@ -395,7 +444,7 @@ export function meshesFrom(set, materials, name = 'chunk') {
  * Build compact opaque chunk meshes from a MeshBuilder's buffers without
  * going through a single giant geometry first when possible.
  */
-function buildChunkedOpaque(builder, material, name) {
+function buildChunkedOpaque(builder, material, name, kind = 'opaque') {
   const pos = builder.pos
   const uvs = builder.uvs
   const col = builder.col
@@ -403,6 +452,7 @@ function buildChunkedOpaque(builder, material, name) {
   const parts = partitionOpaqueGeometry(pos, uvs, col, idx, {
     cellSize: DEFAULT_CELL,
     spillExtent: DEFAULT_SPILL_EXTENT,
+    normals: builder.normals,
   })
 
   const meshes = []
@@ -414,8 +464,8 @@ function buildChunkedOpaque(builder, material, name) {
     if (!geo) continue
     const mesh = new THREE.Mesh(geo, material)
     mesh.name = part.key === 'spill'
-      ? `${name}:opaque:spill`
-      : `${name}:opaque:${part.key}`
+      ? `${name}:${kind}:spill`
+      : `${name}:${kind}:${part.key}`
     mesh.frustumCulled = true
     mesh.matrixAutoUpdate = false
     mesh.updateMatrix()
@@ -439,6 +489,8 @@ function geometryFromChunk(part) {
       ? new THREE.Uint32BufferAttribute(part.indices, 1)
       : new THREE.Uint16BufferAttribute(part.indices, 1)
   )
+  if (part.normals?.length) g.setAttribute('normal', new THREE.Float32BufferAttribute(part.normals, 3))
+  else g.computeVertexNormals()
   // Tight bounds — the whole reason chunking reduces visible tris under FREE.
   g.computeBoundingBox()
   g.computeBoundingSphere()

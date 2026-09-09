@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type CSSProperties } from "react"
+import GhostDeckStation from "./GhostDeckStation"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Play, RotateCcw, X } from "lucide-react"
 import {
   createCrateQuest,
@@ -197,10 +198,11 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
   const completed = useRef(false)
   const [snapshot, setSnapshot] = useState(() => ({ ...game.current }))
   const [paused, setPaused] = useState(false)
+  const [ghostOpen, setGhostOpen] = useState(false)
   const publish = () =>
     setSnapshot({ ...game.current, player: { ...game.current.player }, records: [...game.current.records] })
   const interact = () => {
-    if (active && !paused) {
+    if (active && !paused && !ghostOpen) {
       interactCrateQuest(game.current)
       keys.current.clear()
       publish()
@@ -217,7 +219,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
     const heldKeys = keys.current
     if (!active) keys.current.clear()
     const down = (event: KeyboardEvent) => {
-      if (!active || (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName))) return
+      if (!active || ghostOpen || (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName))) return
       if (["Escape", "KeyP"].includes(event.code)) {
         event.preventDefault()
         event.stopPropagation()
@@ -255,11 +257,11 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
       window.removeEventListener("blur", blur)
       heldKeys.clear()
     }
-  }, [active, paused])
+  }, [active, paused, ghostOpen])
   useEffect(() => {
     const context = canvas.current?.getContext("2d")
     if (!context) return
-    if (!active || paused) {
+    if (!active || paused || ghostOpen) {
       drawQuest(context, game.current)
       return
     }
@@ -269,7 +271,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
     const loop = (now: number) => {
       const dt = last ? Math.min((now - last) / 1000, 0.05) : 0
       last = now
-      if (active && !paused) {
+      if (active && !paused && !ghostOpen) {
         const held = (a: string, b: string) => (keys.current.has(a) || keys.current.has(b) ? 1 : 0)
         tickCrateQuest(
           game.current,
@@ -287,11 +289,11 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
     }
     frame = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(frame)
-  }, [active, paused])
+  }, [active, paused, ghostOpen])
   const target = nearbyQuestEntity(snapshot)
   const collected = snapshot.dialogue?.record && QUEST_RECORDS.find((record) => record.id === snapshot.dialogue?.record)
   const move = (code: string, held: boolean) => {
-    if (held && active && !paused) keys.current.add(code)
+    if (held && active && !paused && !ghostOpen) keys.current.add(code)
     else keys.current.delete(code)
   }
   const panel: CSSProperties = {
@@ -309,6 +311,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
     <div
       className="crate-quest game-touch"
       style={{
+        position: "relative",
         height: "100%",
         minHeight: 0,
         display: "flex",
@@ -318,6 +321,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
         color: ink,
       }}
     >
+      {ghostOpen && <GhostDeckStation active={active && !paused} onBack={() => { setGhostOpen(false); keys.current.clear(); requestAnimationFrame(() => canvas.current?.focus()) }} />}
       <header
         style={{
           background: cream,
@@ -332,6 +336,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           <strong style={{ fontSize: 15, color: plum }}>Crate Quest</strong>
           <div style={{ fontSize: 10 }}>A courtyard set, one record at a time.</div>
         </div>
+        {snapshot.records.length > 0 && <button style={{ ...button, background: plum, color: cream }} onClick={() => { keys.current.clear(); setGhostOpen(true) }}>DJ booth</button>}
         <button
           aria-label={paused ? "Resume hunt" : "Pause hunt"}
           style={{ ...button, padding: 8 }}
@@ -480,6 +485,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                       </li>
                     ))}
                   </ol>
+                  <button style={{ ...button, background: gold, marginBottom: 10, marginRight: 8 }} onClick={() => { keys.current.clear(); setGhostOpen(true) }}>Play a set on Ghost Deck</button>
                   <button
                     style={{ ...button, background: plum, color: cream }}
                     onClick={() => {
@@ -496,30 +502,18 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                 <>
                   <div style={{ color: plum, fontSize: 11, marginBottom: 10 }}>{snapshot.dialogue?.speaker}</div>
                   {collected && (
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        width: 54,
-                        height: 54,
-                        float: "right",
-                        margin: "0 0 10px 10px",
-                        borderRadius: "50%",
-                        background: "#34333a",
-                        border: "8px double #56545d",
-                        boxShadow: "inset 0 0 0 13px #34333a",
-                        color: collected.color,
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 12,
-                          height: 12,
-                          background: collected.color,
-                          borderRadius: "50%",
-                          margin: "13px auto",
-                        }}
-                      />
-                    </div>
+                    <figure style={{ margin: "0 auto 18px", width: "min(240px, 100%)", transform: "rotate(-2deg)", boxShadow: "4px 6px 0 #75645455" }}>
+                      {/* Native SVG preserves the original sleeve typography at any device size. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/world/assets/artwork/${collected.id}-sleeve.svg`} alt={`${collected.title} by ${collected.artist} — record sleeve`} width={600} height={600} style={{ display: "block", width: "100%", height: "auto" }} />
+                    </figure>
+                  )}
+                  {snapshot.dialogue?.speaker === "In the crate" && !collected && snapshot.dialogue?.text.startsWith("Old flyers") && (
+                    <aside style={{ marginBottom: 16, padding: 14, background: "#dec479", border: "1px solid #665d4e" }}>
+                      <strong style={{ display: "block", fontSize: 22, letterSpacing: -1 }}>THE CITY LEFT A PAPER TRAIL.</strong>
+                      <p style={{ fontSize: 12, lineHeight: 1.6 }}>For the real flyers and the nights behind them: No Sleep, by DJ Stretch Armstrong and Evan Auerbach.</p>
+                      <a href="https://powerhousebooks.com/books/no-sleep-nyc-nightlife-flyers-1988-1999/" target="_blank" rel="noopener noreferrer" style={{ color: "#4c3450", fontSize: 12 }}>Open the publisher’s flyer archive ↗</a>
+                    </aside>
                   )}
                   <p style={{ fontSize: 13, lineHeight: 1.75, margin: "0 0 14px" }}>{snapshot.dialogue?.text}</p>
                   <button style={button} onClick={interact}>

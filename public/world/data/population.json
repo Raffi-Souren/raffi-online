@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "season": "early autumn, mild daylight",
+  "assignment": "A world-seed permutation assigns the first twelve ambient adult IDs exactly once. Activities and relationships are independent of appearance.",
+  "identities": [
+    {
+      "id": "ari",
+      "label": "Ari",
+      "presentation": "woman",
+      "age": 28,
+      "height": 1.65,
+      "build": "average",
+      "hair": "short-bob",
+      "face": "soft-oval",
+      "skin": "#d1a087",
+      "garment": "short-jacket",
+      "bottom": "straight-jeans",
+      "footwear": "trainers",
+      "colors": [
+        "#ae493e",
+        "#354857",
+        "#e0d9c9"
+      ]
+    },
+    {
+      "id": "noah",
+      "label": "Noah",
+      "presentation": "man",
+      "age": 32,
+      "height": 1.78,
+      "build": "slim",
+      "hair": "close-crop",
+      "face": "long-narrow",
+      "skin": "#8e5b3f",
+      "garment": "loose-tee",
+      "bottom": "wide-chinos",
+      "footwear": "trainers",
+      "colors": [
+        "#2e6870",
+        "#bca17a",
+        "#dad7ca"
+      ]
+    },
+    {
+      "id": "inez",
+      "label": "Inez",
+      "presentation": "woman",
+      "age": 47,
+      "height": 1.6,
+      "build": "full",
+      "hair": "wavy-bob",
+      "face": "round-cheeks",
+      "skin": "#b17d60",
+      "garment": "collared-shirt",
+      "bottom": "midi-skirt",
+      "footwear": "ankle-boots",
+      "colors": [
+        "#6d466b",
+        "#b57857",
+        "#35312e"
+      ]
+    },
+    {
+      "id": "dev",
+      "label": "Dev",
+      "presentation": "man",
+      "age": 54,
+      "height": 1.73,
+      "build": "average",
+      "hair": "short-grey",
+      "facialHair": "trimmed-beard",
+      "face": "broad-nose",
+      "skin": "#a76d4b",
+      "garment": "overshirt",
+      "bottom": "straight-chinos",
+      "footwear": "leather-shoes",
+      "colors": [
+        "#c28c39",
+        "#47565a",
+        "#594332"
+      ]
+    },
+    {
+      "id": "june",
+      "label": "June",
+      "presentation": "woman",
+      "age": 68,
+      "height": 1.56,
+      "build": "average",
+      "hair": "silver-pixie",
+      "face": "angular-mature",
+      "skin": "#ddb8a0",
+      "garment": "hip-length-coat",
+      "bottom": "wide-trousers",
+      "footwear": "walking-shoes",
+      "colors": [
+        "#52795e",
+        "#c3b9a4",
+        "#675d53"
+      ]
+    },
+    {
+      "id": "malik",
+      "label": "Malik",
+      "presentation": "man",
+      "age": 25,
+      "height": 1.89,
+      "build": "lean",
+      "hair": "short-curls",
+      "face": "high-cheekbones",
+      "skin": "#704831",
+      "garment": "sports-polo",
+      "bottom": "track-trousers",
+      "footwear": "running-shoes",
+      "colors": [
+        "#437cb0",
+        "#343c4e",
+        "#d6dfca"
+      ]
+    },
+    {
+      "id": "tess",
+      "label": "Tess",
+      "presentation": "woman",
+      "age": 39,
+      "height": 1.8,
+      "build": "average",
+      "hair": "ponytail",
+      "face": "long-oval",
+      "skin": "#c69776",
+      "garment": "midi-dress",
+      "bottom": "dress",
+      "footwear": "ankle-boots",
+      "colors": [
+        "#ad684f",
+        "#526477",
+        "#514037"
+      ]
+    },
+    {
+      "id": "owen",
+      "label": "Owen",
+      "presentation": "man",
+      "age": 63,
+      "height": 1.7,
+      "build": "stocky",
+      "hair": "bald",
+      "facialHair": "grey-stubble",
+      "face": "broad-mature",
+      "skin": "#cea187",
+      "garment": "relaxed-sweater",
+      "bottom": "straight-trousers",
+      "footwear": "walking-shoes",
+      "colors": [
+        "#9b6243",
+        "#405249",
+        "#5c4936"
+      ]
+    },
+    {
+      "id": "sam",
+      "label": "Sam",
+      "presentation": "androgynous",
+      "foundation": "male",
+      "age": 30,
+      "height": 1.72,
+      "build": "slim",
+      "hair": "medium-curls",
+      "face": "rounded-jaw",
+      "skin": "#986548",
+      "garment": "relaxed-sweater",
+      "bottom": "cargo-trousers",
+      "footwear": "high-top-trainers",
+      "colors": [
+        "#b59b49",
+        "#66735b",
+        "#d2c8b4"
+      ]
+    },
+    {
+      "id": "rosa",
+      "label": "Rosa",
+      "presentation": "woman",
+      "age": 51,
+      "height": 1.68,
+      "build": "strong-average",
+      "hair": "bun",
+      "face": "square-jaw",
+      "skin": "#68412f",
+      "garment": "work-overalls",
+      "bottom": "utility-trousers",
+      "footwear": "work-boots",
+      "colors": [
+        "#5c7f92",
+        "#785d4c",
+        "#70503a"
+      ]
+    },
+    {
+      "id": "kai",
+      "label": "Kai",
+      "presentation": "man",
+      "age": 42,
+      "height": 1.83,
+      "build": "broad-average",
+      "hair": "shoulder-length",
+      "facialHair": "moustache",
+      "face": "wide-cheekbones",
+      "skin": "#b48868",
+      "garment": "casual-blazer",
+      "bottom": "relaxed-trousers",
+      "footwear": "leather-shoes",
+      "colors": [
+        "#6d7390",
+        "#b6aa94",
+        "#443b35"
+      ]
+    },
+    {
+      "id": "mae",
+      "label": "Mae",
+      "presentation": "woman",
+      "age": 23,
+      "height": 1.63,
+      "build": "lean",
+      "hair": "cropped-textured",
+      "face": "heart-shaped",
+      "skin": "#80553d",
+      "garment": "fitted-top",
+      "bottom": "pleated-skirt",
+      "footwear": "trainers",
+      "colors": [
+        "#c77588",
+        "#4c6877",
+        "#e4dece"
+      ]
+    }
+  ],
+  "namedAssignments": {
+    "story:last-crate-owner": "dev",
+    "mission:penalty-shootout:keeper": "malik"
+  },
+  "player": {
+    "id": "player",
+    "label": "Raffi",
+    "presentation": "man",
+    "age": 35,
+    "height": 1.78,
+    "build": "average",
+    "hair": "short-parted",
+    "face": "wide-cheekbones",
+    "skin": "#b98865",
+    "garment": "relaxed-polo",
+    "bottom": "straight-jeans",
+    "footwear": "trainers",
+    "colors": [
+      "#303a43",
+      "#354859",
+      "#e0d9c9"
+    ],
+    "facialHair": "trimmed-beard"
+  }
+}

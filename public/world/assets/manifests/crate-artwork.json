@@ -1,0 +1,30 @@
+{
+  "id": "raffi-crate-sleeves-v1",
+  "author": "Raffi World project",
+  "source": "Original SVG artwork authored in this repository",
+  "license": "Original project artwork; no third-party artwork reproduced",
+  "modifications": "Original typography and vinyl-print motifs for the existing fictional quest records",
+  "artDirectionReference": {
+    "title": "No Sleep: NYC Nightlife Flyers 1988\u20131999",
+    "authors": [
+      "DJ Stretch Armstrong",
+      "Evan Auerbach"
+    ],
+    "url": "https://powerhousebooks.com/books/no-sleep-nyc-nightlife-flyers-1988-1999/",
+    "note": "Visual/cultural reference only. No book pages or historical flyer images are bundled."
+  },
+  "files": [
+    {
+      "file": "artwork/warmup-sleeve.svg",
+      "bytes": 1472
+    },
+    {
+      "file": "artwork/peak-sleeve.svg",
+      "bytes": 1480
+    },
+    {
+      "file": "artwork/closer-sleeve.svg",
+      "bytes": 1478
+    }
+  ]
+}

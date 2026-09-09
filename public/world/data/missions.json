@@ -10,7 +10,7 @@
     "rhythm": "Hit inputs on the radio clock's beat grid.",
     "avoid": "Do not enter tagged trigger volumes.",
     "escort": "Keep a passenger aboard under a constraint.",
-    "evade": "Reduce COMPLIANCE to zero.",
+    "evade": "Lose the tail and let Heat drop to zero.",
     "custom": "Handled by a named handler in game/missions.js."
   },
 
@@ -65,7 +65,7 @@
             { "x": 585, "z": 70, "hint": "The Yards, top of a container stack" },
             { "x": -415, "z": 122, "hint": "The Bowl, base of the ramp spiral" },
             { "x": 64, "z": -246, "hint": "Downtown, campus plaza planter" },
-            { "x": 148, "z": 152, "hint": "The Strip, behind the club" }
+            { "x": 148, "z": 205, "hint": "The Strip, behind the club" }
           ]
         },
         { "kind": "goto", "radius": 5, "points": [{ "x": -60, "z": 112 }] }

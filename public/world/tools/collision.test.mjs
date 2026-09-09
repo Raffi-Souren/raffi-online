@@ -182,18 +182,41 @@ test('ground landmark furniture registers solids while roof details leave the st
   assert.equal(entrance.hit, false, 'the lobby south entrance remains open')
 })
 
-test('new apartment and record-shop planters are solid while the mission approaches remain open', () => {
+test('opening street trees and record-shop planters are solid while player approaches remain open', () => {
   const all = worldData.districts.flatMap((district) => buildLandmarks(noopSet, atlas, props, worldData, district.id))
   const solids = collisionWorld(...all)
-  for (const [x, z] of [[-466, -160], [-434, -160], [-87, 114], [-33, 114]]) {
+  const opening = worldData.landmarks.find((item) => item.id === 'brooklyn-opening-block')
+  const treePoints = (opening?.trees || []).map((tree) => [tree.x, tree.z])
+  for (const [x, z] of [...treePoints, [-87, 114], [-33, 114]]) {
     assert.equal(resolveCircle(solids, x, z, 0.45).hit, true, `planter at ${x},${z}`)
   }
-  const apartment = moveCircle(solids, -450, -154, 0, -8, 0.45)
-  close(apartment.z, -162)
-  assert.equal(apartment.hit, false, 'apartment entrance stays accessible')
+  for (const [x, z] of [[-450, -151], [-450, -148.5], [-447.5, -143], [-460, -147.5]]) assert.equal(resolveCircle(solids, x, z, 0.45).hit, false, `opening approach at ${x},${z}`)
+  const apartment = moveCircle(solids, -450, -154, 0, 6, 0.45)
+  close(apartment.z, -148)
+  assert.equal(apartment.hit, false, 'front sidewalk reaches the local street')
   const records = moveCircle(solids, -60, 105, 0, 7, 0.45)
   close(records.z, 112)
   assert.equal(records.hit, false, 'Crate Quest discovery point stays accessible')
+})
+
+test('campaign pickups and exterior objectives remain reachable outside solid landmark footprints', () => {
+  const all = worldData.districts.flatMap((district) => buildLandmarks(noopSet, atlas, props, worldData, district.id))
+  const solids = collisionWorld(...all)
+  const missions = readData('missions').missions
+  for (const mission of missions) {
+    const objectives = mission.interior ? [] : mission.objectives
+    const targets = [
+      { ...mission.marker, radius: 8, label: 'start marker' },
+      ...objectives.flatMap((objective) => (objective.points || []).map((point) => ({
+        ...point, radius: objective.radius || (objective.kind === 'collect' ? 2.2 : 4), label: objective.kind,
+      }))),
+    ]
+    for (const point of targets) {
+      const resolved = resolveCircle(solids, point.x, point.z, 0.45, 12)
+      assert.ok(Math.hypot(resolved.x - point.x, resolved.z - point.z) <= point.radius,
+        `${mission.id} ${point.label} at ${point.x},${point.z} is trapped inside a solid landmark`)
+    }
+  }
 })
 
 test('interior booth and goal posts are solid, with the goal mouth and spawn routes open', () => {
@@ -246,4 +269,33 @@ test('real player movement stops against a scene pedestrian and resolves its lat
   close(state.player.x, 1.15)
   close(state.player.yaw, Math.PI / 2)
   scene.traverse((object) => object.geometry?.dispose())
+})
+
+
+test('Last Crate owner, pickups, routes and later callbacks can be reached beside authored solid landmarks', () => {
+  const all = worldData.districts.flatMap((district) => buildLandmarks(noopSet, atlas, props, worldData, district.id))
+  const solids = collisionWorld(...all)
+  const story = readData('conversations')
+  const points = [story.owner, ...Object.values(story.branches).flatMap((branch) => [branch.target, ...(branch.pickups || []), branch.followup, branch.sleeve, branch.flyers].filter(Boolean))]
+  for (const point of points) {
+    const resolved = resolveCircle(solids, point.at.x, point.at.z, 0.45, 12)
+    assert.ok(Math.hypot(resolved.x - point.at.x, resolved.z - point.at.z) <= point.radius, `${point.id || 'owner'} trapped in a building`)
+  }
+})
+
+
+test('all authored neighborhood errand paths clear first-block walls, trees and street furniture', () => {
+  const all = worldData.districts.flatMap((district) => buildLandmarks(noopSet, atlas, props, worldData, district.id))
+  const solids = collisionWorld(...all)
+  for (const activity of readData('npcs').neighborhoodActivities) {
+    for (let i = 0; i < activity.points.length; i++) {
+      const a = activity.points[i], b = activity.points[(i + 1) % activity.points.length]
+      const steps = Math.max(1, Math.ceil(Math.hypot(a.x - b.x, a.z - b.z) / 0.25))
+      for (let j = 0; j <= steps; j++) {
+        const x = a.x + (b.x - a.x) * j / steps, z = a.z + (b.z - a.z) * j / steps
+        const contact = resolveCircle(solids, x, z, 0.4, 4)
+        assert.equal(contact.hit, false, `${activity.id} segment ${i} crosses a solid at ${x},${z}`)
+      }
+    }
+  }
 })

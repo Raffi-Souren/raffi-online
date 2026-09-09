@@ -1,4 +1,4 @@
-/* The game uses a scaled 3D buffer; DOM controls remain sharp above it. */
+/* A physically lit city with a quiet, readable navigation layer. */
 
 :root {
   --safe-t: env(safe-area-inset-top, 0px);
@@ -22,7 +22,7 @@ html, body {
   overflow: hidden;
   background: #05070c;
   color: #e8e4d8;
-  font-family: Tahoma, Verdana, sans-serif;
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
@@ -82,6 +82,8 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   line-height: 1.45;
   opacity: 0.95;
 }
+
+#district-name[hidden] + #objective { margin-top: 0; }
 
 .hud-top-right {
   position: absolute;
@@ -293,14 +295,23 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
 }
 
 #subtitle-next {
-  position: absolute;
-  right: 16px;
-  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0 0 auto;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: #162331;
   color: var(--speaker-accent, var(--cyan));
   font-size: 13px;
-  opacity: 0;
+  pointer-events: auto;
+  cursor: pointer;
 }
-#subtitle-next.ready { opacity: 1; animation: dialogue-bob 0.7s steps(2) infinite; }
+#subtitle-next[hidden] { display: none; }
+#subtitle-next kbd { color: #d3dfdf; font-size: 11px; }
+#subtitle-next:hover, #subtitle-next:focus-visible { background: #2b4050; }
 @keyframes dialogue-bob { 50% { transform: translateY(3px); } }
 
 /* ------------------------------------------------------------- touch --- */
@@ -382,7 +393,7 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   top: calc(76px + var(--safe-t));
   right: calc(14px + var(--safe-r));
   width: 68px;
-  height: 34px;
+  height: 44px;
   border-radius: 3px;
   border-color: rgba(255, 194, 58, 0.72);
   color: var(--amber);
@@ -563,7 +574,9 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   background: rgba(4, 6, 12, 0.72);
 }
 .pause-panel {
-  width: min(440px, 90vw);
+  width: min(460px, 90vw);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: 28px;
   background: #172638;
   border-top: 4px solid var(--amber);
@@ -578,6 +591,10 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   color: var(--paper);
 }
 .pause-location { margin: 5px 0 24px; font-size: 12px; color: #abbac6; }
+.sound-volume { display: block; margin: 14px 0; font-size: 13px; color: #d3dee2; }
+.sound-volume span { display: flex; justify-content: space-between; }
+.sound-volume input { display: block; width: 100%; height: 44px; margin: 0; accent-color: var(--amber); cursor: pointer; }
+.sound-volume input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .pause-panel button {
   display: block;
   width: 100%;
@@ -673,14 +690,24 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   z-index: 60;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: clamp(20px, 5vw, 90px);
   padding: calc(30px + var(--safe-t)) calc(40px + var(--safe-r)) calc(30px + var(--safe-b)) calc(40px + var(--safe-l));
   background: #172638;
   overflow-y: auto;
+  transition: background 0.5s;
 }
-.boot-art { width: min(48vw, 600px); flex-shrink: 1; }
-.boot-art svg { display: block; width: 100%; height: auto; }
+#boot.scene-ready { background: linear-gradient(90deg, rgba(12, 25, 36, 0.97), rgba(12, 25, 36, 0.84) 28%, rgba(12, 25, 36, 0.12) 75%); }
+#view { cursor: grab; }
+#view.looking { cursor: grabbing; }
+#view:focus-visible { outline: none; }
+#graphics-error { position: absolute; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(12, 25, 36, 0.96); }
+#graphics-error .pause-panel { border-top-color: var(--cyan); }
+#play-tools { position: absolute; right: calc(20px + var(--safe-r)); bottom: calc(22px + var(--safe-b)); display: flex; gap: 10px; pointer-events: auto; }
+#play-tools button { color: #e8edf2; font: inherit; font-size: 11px; padding: 9px 12px; background: rgba(17, 29, 43, 0.8); border: 1px solid rgba(232, 237, 242, 0.25); border-radius: 4px; }
+#play-tools button:hover { background: #223448; }
+#play-tools kbd { font: inherit; opacity: 0.65; margin-left: 9px; }
+@media (pointer: coarse) { #play-tools { display: none; } }
 #boot-inner { width: min(370px, 42vw); text-align: left; flex-shrink: 0; }
 .boot-title {
   margin: 0;
@@ -691,7 +718,7 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   letter-spacing: -0.04em;
   color: var(--paper);
 }
-.boot-title span { display: inline-block; margin-left: 12px; vertical-align: top; padding-top: 8px; font-family: Tahoma, sans-serif; font-size: 13px; line-height: 1; letter-spacing: 0; color: var(--amber); }
+.boot-title span { display: block; margin-top: 20px; font-family: inherit; font-size: 17px; line-height: 1; letter-spacing: 0.02em; color: var(--amber); }
 .boot-sub { font-size: 14px; color: var(--amber); margin-bottom: 18px; }
 .boot-description { margin: 24px 0 28px; max-width: 260px; font-size: 15px; line-height: 1.6; color: #bac4c9; }
 #boot-bar { height: 3px; background: #35475c; }
@@ -722,8 +749,8 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
 
 @media (max-width: 700px) {
   #boot { flex-direction: column; gap: 0; justify-content: flex-start; padding: calc(16px + var(--safe-t)) 28px calc(28px + var(--safe-b)); }
-  .boot-art { width: min(70vw, 290px); height: min(28vh, 230px); flex-shrink: 0; overflow: hidden; }
-  .boot-art svg { height: 100%; }
+  #boot.scene-ready { background: linear-gradient(0deg, rgba(12, 25, 36, 0.99) 15%, rgba(12, 25, 36, 0.75) 72%, rgba(12, 25, 36, 0.18)); }
+  #boot-inner { margin-top: auto; padding-top: 80px; }
   #boot-inner { width: min(360px, 100%); }
   .boot-title { font-size: clamp(62px, 13vw, 88px); }
   .boot-sub { margin: 10px 0 12px; }
@@ -735,8 +762,6 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
 
 @media (max-height: 540px) and (min-width: 701px) {
   #boot { padding-top: 20px; padding-bottom: 20px; }
-  .boot-art { max-height: 90vh; }
-  .boot-art svg { max-height: 90vh; }
   .boot-title { font-size: 62px; }
   .boot-description { margin: 14px 0; }
 }
@@ -805,3 +830,53 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
 .pocket-console canvas { width: 100%; height: auto; display: block; border: 5px solid #04070c; border-radius: 5px; }
 .pocket-controls { display: flex; justify-content: space-between; gap: 6px; }
 @media (max-width: 600px) { #side-activities { top: 150px; right: 8px; font-size: 10px; } #crib-garage { padding: 14px; } .pocket-console { padding: 10px; } }
+
+/* The pause map uses the same road graph as the playable city. */
+#world-map { position: absolute; inset: 0; z-index: 52; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); background: rgba(7, 18, 27, 0.92); }
+.map-panel { width: min(1100px, 100%); height: min(820px, 100%); display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.map-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.map-heading h2 { margin: 0; font-size: 30px; color: var(--paper); }
+.map-heading p { margin: 6px 0 0; font-size: 12px; color: #bbcbd1; }
+#world-map button { padding: 10px 15px; min-height: 42px; color: #e8e4d8; background: #223a48; border: 1px solid #627b85; border-radius: 4px; font: inherit; font-size: 12px; }
+#world-map button:hover { background: #345161; }
+#world-map-canvas { display: block; width: 100%; min-height: 0; flex: 1; background: #102939; border: 1px solid #42606c; cursor: crosshair; }
+#world-map-places { display: flex; gap: 8px; flex-wrap: wrap; max-height: 130px; overflow-y: auto; flex-shrink: 0; }
+@media (max-width: 700px) { .map-heading h2 { font-size: 23px; } #world-map-places { max-height: 160px; } #world-map { padding: 14px; } }
+
+/* A pocket cheat sheet and browser-local saves share the same quiet overlay. */
+#cheat-menu, #save-menu { position: absolute; inset: 0; z-index: 54; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) 16px; background: #071019c9; }
+.cheat-panel { width: min(680px, 100%); max-height: calc(100dvh - 40px); overflow: auto; padding: 24px; border: 1px solid #4b5e69; border-radius: 14px; background: #111d28; color: #e6e8df; box-shadow: 0 20px 70px #0008; }
+.cheat-panel h2 { font-size: 24px; margin: 0 0 8px; }
+.cheat-panel h3 { font-size: 15px; margin: 18px 0 8px; }
+.cheat-panel p { font-size: 13px; line-height: 1.6; color: #b4c4cc; }
+.cheat-panel button { min-height: 44px; padding: 10px 14px; color: #f3e7c2; background: #233341; border: 1px solid #53636c; border-radius: 7px; font: inherit; font-size: 13px; cursor: pointer; }
+.cheat-panel button:hover, .cheat-panel button:focus-visible { background: #334956; border-color: #eacb83; }
+.cheat-panel button:disabled { opacity: .4; cursor: default; }
+#cheat-result { min-height: 24px; color: #f0ce85; }
+#cheat-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+#cheat-actions button { display: grid; grid-template-columns: 1fr auto; gap: 8px; text-align: left; padding: 16px; }
+#cheat-actions strong { font-size: 15px; color: #f2eee4; }
+#cheat-actions span { grid-column: 1 / -1; color: #becbd0; font-size: 12px; line-height: 1.5; }
+#cheat-actions kbd { color: #f4c75b; font-size: 10px; align-self: center; }
+#cheat-form { margin-top: 22px; }
+#cheat-form label { display: block; margin-bottom: 8px; font-size: 13px; }
+#cheat-form > div { display: flex; gap: 8px; }
+#cheat-code { min-width: 0; flex: 1; background: #09141c; color: #fff; padding: 12px; border: 1px solid #617078; border-radius: 6px; font-size: 16px; }
+#cheat-stations { display: flex; flex-wrap: wrap; gap: 7px; }
+#cheat-stations [aria-pressed="true"] { background: #b5ccbc; color: #12231f; }
+#game-question { position: absolute; right: 18px; top: 104px; width: 44px; height: 44px; pointer-events: auto; background: #edbd42; color: #4b3514; border: 2px solid #fff0a2; border-radius: 8px; font: bold 27px Georgia,serif; box-shadow: 0 3px 0 #705319; cursor: pointer; }
+#save-slots section { padding: 10px 0 18px; border-bottom: 1px solid #35444d; }
+#save-slots section > div { display: flex; gap: 10px; }
+#boot-continue { min-height: 48px; margin: 20px 10px 0 0; padding: 12px 20px; border: 1px solid #ead69e; border-radius: 5px; background: #e6cf94; color: #11232a; font: 600 14px inherit; cursor: pointer; }
+@media (max-width: 520px) {
+  .cheat-panel { padding: 16px; max-height: calc(100dvh - 32px); }
+  #cheat-actions button { padding: 12px; grid-template-columns: 1fr; }
+  #cheat-actions kbd { grid-row: 2; }
+  .cheat-panel .map-heading { align-items: flex-start; }
+  #game-question { top: 93px; right: 12px; }
+}
+/* Touch actions share a row below Heat; neither button covers the other. */
+#hud:has(#touch:not(.hidden)) #game-question {
+  top: calc(76px + var(--safe-t));
+  right: calc(94px + var(--safe-r));
+}

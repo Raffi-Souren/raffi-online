@@ -4,14 +4,16 @@ import { useCallback, useEffect, useRef } from "react"
 import { Shuffle, CheckCircle, Pause, Play } from "lucide-react"
 import { useAudio } from "../context/AudioContext"
 import { SOUNDCLOUD_TRACKS, getRandomTrackIndex } from "@/data/audio-library"
+import worldCheats from "../../public/world/data/cheats.json"
 import WindowShell from "../../components/ui/WindowShell"
 
 interface DiggingInTheCratesProps {
   isOpen: boolean
   onClose?: () => void
+  onWorldCheat?: (code: string | null) => void
 }
 
-export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCratesProps) {
+export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: DiggingInTheCratesProps) {
   const { currentTrack, isPlaying, isLoading, error, playTrack, setPlaylist, togglePlay } = useAudio()
   // Minimize keeps this session mounted, so restoring never reseeds the music.
   const seededRef = useRef(false)
@@ -204,6 +206,21 @@ export default function DiggingInTheCrates({ isOpen, onClose }: DiggingInTheCrat
             OK
           </button>
         </div>
+        {onWorldCheat && (
+          <section aria-label="Raffi World cheat sheet" style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #d7d6cc" }}>
+            <h2 style={{ margin: "0 0 6px", color: "#2f382e", fontSize: 18 }}>A few keys to the city.</h2>
+            <p style={{ margin: "0 0 14px", fontSize: 13, lineHeight: 1.5, color: "#596152" }}>Keep the music. Take a nice ride. Tap a code to use it in Raffi World.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              {worldCheats.codes.filter((item) => ["WHIP", "SPORT", "BOARD", "MIXTAPE"].includes(item.code)).map((item) => (
+                <button key={item.code} onClick={() => onWorldCheat(item.code)} className="hover:brightness-105 focus-visible:outline focus-visible:outline-2" style={{ minHeight: 64, textAlign: "left", padding: "12px", background: "#f3e8bf", color: "#43381d", border: "1px solid #c5ab60", borderRadius: 7, cursor: "pointer" }}>
+                  <strong style={{ display: "block", fontSize: 13 }}>{item.label}</strong>
+                  <kbd style={{ fontSize: 11, color: "#796032" }}>{item.code}</kbd>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => onWorldCheat(null)} style={{ minHeight: 44, marginTop: 10, width: "100%", background: "#263e35", color: "#fff5cf", border: 0, borderRadius: 7, cursor: "pointer", fontSize: 13 }}>Open the full cheat sheet</button>
+          </section>
+        )}
       </div>
     </WindowShell>
   )

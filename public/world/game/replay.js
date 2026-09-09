@@ -83,7 +83,7 @@ export function beginRecordingRun() {
   clearGhosts()
   hideOverlay()
   updateRewindButton()
-  toast('RECORDING CITY DECISIONS', 2.2)
+  if (state.debug.on) toast('RECORDING CITY DECISIONS', 2.2)
 }
 
 /**

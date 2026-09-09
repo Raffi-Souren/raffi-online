@@ -29,6 +29,7 @@ export const input = {
   held: new Set(),
   pinch: 1,
   anyInputYet: false,
+  look: { x: 0, y: 0 },
 }
 
 const keyMap = {
@@ -41,6 +42,8 @@ const keyMap = {
   KeyE: 'action', Enter: 'action',
   KeyF: 'second',
   KeyR: 'radio',
+  KeyM: 'map',
+  Backquote: 'cheats',
   Tab: 'pause', Escape: 'pause',
   KeyQ: 'rotate-left',
   KeyX: 'rotate-right',
@@ -76,6 +79,8 @@ function release(name) {
 // ------------------------------------------------------------ keyboard ---
 
 function onKeyDown(e) {
+  if (e.key !== 'Escape' && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return
+  if (e.key === '?') { e.preventDefault(); press('cheats'); return }
   // Tab opens pause during play, then returns to its native focus-navigation
   // job inside the modal. Escape remains the keyboard close action.
   if (e.code === 'Tab' && state.paused) return
@@ -88,6 +93,7 @@ function onKeyDown(e) {
 }
 
 function onKeyUp(e) {
+  if (e.key === '?') { release('cheats'); return }
   const name = keyMap[e.code]
   if (!name) return
   keys.delete(name)
@@ -109,6 +115,44 @@ let els = {}
 const activePinch = new Map()
 let pinchStartDist = 0
 let pinchStartValue = 1
+let lookPointer = null
+let lookX = 0
+let lookY = 0
+
+function bindLook(canvas) {
+  if (!canvas) return
+  canvas.addEventListener('contextmenu', (event) => event.preventDefault())
+  canvas.addEventListener('pointerdown', (event) => {
+    if (state.paused || !state.ready || lookPointer !== null) return
+    if (event.pointerType === 'touch' && event.clientX < canvas.clientWidth * 0.45) return
+    lookPointer = event.pointerId
+    lookX = event.clientX
+    lookY = event.clientY
+    canvas.setPointerCapture(event.pointerId)
+    canvas.classList.add('looking')
+  })
+  canvas.addEventListener('pointermove', (event) => {
+    if (lookPointer !== event.pointerId || state.paused) return
+    input.look.x += event.clientX - lookX
+    input.look.y += event.clientY - lookY
+    lookX = event.clientX
+    lookY = event.clientY
+  })
+  const end = (event) => {
+    if (lookPointer !== event.pointerId) return
+    lookPointer = null
+    canvas.classList.remove('looking')
+  }
+  canvas.addEventListener('pointerup', end)
+  canvas.addEventListener('pointercancel', end)
+  canvas.addEventListener('lostpointercapture', end)
+  canvas.addEventListener('wheel', (event) => {
+    if (state.paused) return
+    event.preventDefault()
+    input.pinch = Math.max(0.75, Math.min(1.6, input.pinch + event.deltaY * 0.001))
+    bus.emit('pinch', input.pinch)
+  }, { passive: false })
+}
 
 function setStickVisual(on, ox, oy, kx, ky) {
   if (!els.base) return
@@ -215,11 +259,16 @@ export function resetInput() {
   stick.x = 0
   stick.y = 0
   activePinch.clear()
+  lookPointer = null
+  input.look.x = 0
+  input.look.y = 0
+  els.canvas?.classList.remove('looking')
   setStickVisual(false)
 }
 
 export function initInput(elements) {
   els = elements
+  bindLook(els.canvas)
 
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
@@ -302,6 +351,8 @@ export function updateInput(mode, vehicleKind = null) {
 /** Clears one-shot presses. Call at the very end of the frame. */
 export function endInputFrame() {
   input.pressed.clear()
+  input.look.x = 0
+  input.look.y = 0
 }
 
 /** Updates the on-screen label of the context button. */

@@ -298,6 +298,9 @@ export function syncPlayerVisual() {
 
 function syncMarker(x, y, z, scale) {
   if (!player.marker) return
+  // The close camera and real contact shadows identify the actor. Preserve the
+  // locator for distant optional views without a neon ring under every car.
+  player.marker.visible = ['classic', 'birds'].includes(getCameraMode().id)
   player.marker.position.set(x, y + 0.045, z)
   player.marker.scale.setScalar(scale)
 }
@@ -435,7 +438,9 @@ function updateDriving(dt, input, world, beatPhase = 0) {
     handbrake: tricking ? false : input.handbrake,
   }
 
-  stepVehicle(v, v.handling, ctl, dt, world)
+  const bodies = actorCollisionBodies(player.group.parent?.children, v.x, v.z, v.mesh, 18, v.y || 0)
+  stepVehicle(v, v.handling, ctl, dt, world, bodies)
+  const groundHeight = v.y || 0
 
   const bounded = clampToBounds(v.x, v.z, data.world.bounds, 6)
   v.x = bounded.x
@@ -463,8 +468,8 @@ function updateDriving(dt, input, world, beatPhase = 0) {
     }
   }
 
-  v.y = hop
-  v.mesh.position.set(v.x, hop, v.z)
+  v.y = groundHeight + hop
+  v.mesh.position.set(v.x, v.y, v.z)
   v.mesh.rotation.order = 'YXZ'
   v.mesh.rotation.y = v.yaw
   v.mesh.rotation.x = 0
@@ -478,7 +483,7 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   const p = state.player
   p.x = v.x
   p.z = v.z
-  p.y = hop
+  p.y = v.y
   p.yaw = v.yaw
   p.speed = Math.abs(v.speed)
   p.vx = Math.sin(v.yaw) * v.speed
@@ -495,13 +500,13 @@ function updateDriving(dt, input, world, beatPhase = 0) {
       beatPhase
     )
   }
-  syncMarker(v.x, hop, v.z, v.kind === 'car' || !v.kind ? 1.7 : 1.08)
+  syncMarker(v.x, v.y, v.z, v.kind === 'car' || !v.kind ? 1.7 : 1.08)
 }
 
 function syncRiderVisual(v, hop = 0, flip = 0) {
   if (!v?.riderVisible || !player.group) return
   // Rider rides the board: same hop, slight crouch spin feel.
-  player.group.position.set(v.x, (v.riderHeight || 0) + hop, v.z)
+  player.group.position.set(v.x, (v.y || 0) + (v.riderHeight || 0), v.z)
   player.group.rotation.order = 'YXZ'
   player.group.rotation.y = v.yaw
   player.group.rotation.z = flip * 0.15

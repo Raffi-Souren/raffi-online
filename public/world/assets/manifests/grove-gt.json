@@ -1,0 +1,44 @@
+{
+  "id": "grove-gt-v1",
+  "author": "Raffi World project",
+  "source": "Original hand-authored model: public/world/tools/author-grove-gt.mjs",
+  "license": "Original project asset; no third-party model or branding",
+  "file": "vehicles/grove-gt.glb",
+  "bytes": 549672,
+  "units": "metres; +Z forward; +Y up",
+  "dimensions": [
+    2.208,
+    1.44,
+    4.736
+  ],
+  "collision": "existing grand-tourer simple circle simulation, authored4.72×1.92m silhouette",
+  "lods": {
+    "grove-gt-lod0": {
+      "triangles": 11974,
+      "draws": 24
+    },
+    "grove-gt-lod1": {
+      "triangles": 8150,
+      "draws": 20
+    }
+  },
+  "modifications": "Sculpted deck, wheel-arch side panels, sloped glass, structural pillars, mirrors, grille, alloy wheels and separate wheel pivots. Low detail retained.",
+  "reproduce": [
+    "npm ci --prefix scripts/world-asset-tools",
+    "RAFFI_ASSET_TOOLS=\"$PWD/scripts/world-asset-tools/node_modules\" node public/world/tools/author-grove-gt.mjs"
+  ],
+  "toolchain": {
+    "three": "183",
+    "blender": "Not installed; authored and exported reproducibly with Three GLTFExporter.",
+    "gltfValidator": "2.0.0-dev.3.10"
+  },
+  "sha256": "d26430bafb37a7cfa5a6ebcee395dfd01f347bebc6f3f50f33d6aa14597ef70f",
+  "validation": {
+    "numErrors": 0,
+    "numWarnings": 0,
+    "numInfos": 0,
+    "numHints": 0,
+    "messages": [],
+    "truncated": false
+  }
+}

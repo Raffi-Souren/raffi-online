@@ -1,0 +1,184 @@
+{
+  "id": "last-crate",
+  "title": "LAST CRATE",
+  "owner": {
+    "name": "Record shop owner",
+    "at": {
+      "x": -69,
+      "z": 110
+    },
+    "radius": 4.5
+  },
+  "wallet": 40,
+  "offer": "One crate of Lena’s personal records got mixed into tonight’s pickup. She wants them back. The club still needs a set. I could use a hand — but tell me what you’re comfortable doing.",
+  "question": "The records belong to Lena, in the Heights. Return them and I’ll introduce you at her listening night. Cover the club instead and I can get you another slot. Or arrange a courier handoff: leave a $25 refundable sleeve deposit, or owe the venue one flyer run. You can also leave it with me.",
+  "ambiguous": "I don’t want to put words in your mouth. Do you mean return Lena’s records, cover tonight’s gig, or work out a handoff? Asking about a route doesn’t accept it.",
+  "refuse": "Fair enough. I’ll keep the crate here. You can come back if you change your mind.",
+  "activeReply": "No rush to agree to anything else. Your current arrangement is still on the board.",
+  "branches": {
+    "return": {
+      "label": "Return her records",
+      "description": "Take the personal crate to Lena’s stoop. Earn trust and a later listening-night invitation.",
+      "accepted": "Thank you. Lena’s stoop is marked. These are her own records — just hand them over, then come tell me how it went.",
+      "target": {
+        "id": "delivery",
+        "at": {
+          "x": -450,
+          "z": -151
+        },
+        "radius": 4,
+        "title": "Return Lena’s personal records",
+        "action": "Hand over the crate"
+      },
+      "complete": "Lena checks the sleeves, then smiles. ‘I thought these were gone. Tell the shop there’s always room for one more at listening night.’",
+      "callback": "Lena called. You brought back more than a crate. She’s put your name down for listening night — head back to her stoop whenever you like.",
+      "trust": 2,
+      "followup": {
+        "id": "listening",
+        "at": {
+          "x": -450,
+          "z": -151
+        },
+        "radius": 4,
+        "title": "Lena’s listening night",
+        "action": "Join the listening session",
+        "seconds": 18
+      },
+      "callbackAfterFollowup": "Lena said the listening night felt right. Those records are back where they belong, and you are welcome in that room. The shop remembers you."
+    },
+    "cover": {
+      "label": "Cover tonight’s gig",
+      "description": "Find three replacement records, then play a short set at the club. Earn a future opening slot.",
+      "accepted": "Leave the personal crate with me. Three friends set aside replacements; I marked their pickups. Bring them to the club and prove the set works.",
+      "pickups": [
+        {
+          "id": "plaza-dub",
+          "at": {
+            "x": 64,
+            "z": -246
+          },
+          "radius": 2.8,
+          "title": "Plaza dub · replacement 1"
+        },
+        {
+          "id": "lot-breaks",
+          "at": {
+            "x": 205,
+            "z": 235
+          },
+          "radius": 2.8,
+          "title": "Parking-lot breaks · replacement 2"
+        },
+        {
+          "id": "backdoor-soul",
+          "at": {
+            "x": 148,
+            "z": 205
+          },
+          "radius": 2.8,
+          "title": "Backdoor soul · replacement 3"
+        }
+      ],
+      "target": {
+        "id": "gig",
+        "at": {
+          "x": 140,
+          "z": 136
+        },
+        "radius": 5.5,
+        "title": "Play the replacement set",
+        "action": "Step up to the decks"
+      },
+      "challenge": {
+        "bpm": 110,
+        "beats": 16,
+        "windowMs": 150,
+        "missCap": 6
+      },
+      "complete": "The last record lands cleanly. The room stays with you. ‘You covered us,’ the promoter says. ‘Ask the shop about Thursday.’",
+      "callback": "You saved the room without giving away Lena’s records. There’s an opening slot with your name on it. Same club; a little faster this time.",
+      "trust": 1,
+      "followup": {
+        "id": "future-gig",
+        "at": {
+          "x": 140,
+          "z": 136
+        },
+        "radius": 5.5,
+        "title": "Thursday opening slot",
+        "action": "Play your next gig",
+        "bpm": 124,
+        "beats": 24,
+        "windowMs": 140,
+        "missCap": 6
+      },
+      "callbackAfterFollowup": "Two sets, and you kept the room with you. Your name is on our list now. Thanks for showing up when you said you would."
+    },
+    "negotiate": {
+      "label": "Negotiate a handoff",
+      "description": "Meet the courier at the waterfront. Choose a refundable deposit or a later flyer-run favor before committing.",
+      "terms": "The courier can split the crate. Leave $25 for the borrowed protective sleeve, refunded when you bring the sleeve back here. Or keep your cash and promise to put up the venue’s flyers at the stadium. Which works for you?",
+      "deposit": 25,
+      "acceptedDeposit": "$25 held, not spent. Meet the courier at the waterfront gate. Bring the empty sleeve back here afterward and you get every dollar back.",
+      "acceptedFavor": "No deposit. Meet the courier at the waterfront gate; afterward you owe the venue a flyer run at the stadium. I’ll remember that arrangement.",
+      "target": {
+        "id": "handoff",
+        "at": {
+          "x": 360,
+          "z": 40
+        },
+        "radius": 5,
+        "title": "Meet the record courier",
+        "action": "Make the agreed handoff"
+      },
+      "complete": "The courier checks the arrangement and takes the records. The handoff is done. Your part of the agreement is still marked on the map.",
+      "callbackDeposit": "The handoff worked. I’m still holding your $25 until the sleeve comes back — no mystery charges.",
+      "callbackFavor": "The courier says we’re square on the records. The venue is still counting on those stadium flyers. That’s the favor you agreed to.",
+      "sleeve": {
+        "id": "sleeve",
+        "at": {
+          "x": -69,
+          "z": 110
+        },
+        "radius": 4.5,
+        "title": "Return the sleeve · recover $25",
+        "action": "Return the borrowed sleeve"
+      },
+      "flyers": {
+        "id": "flyers",
+        "at": {
+          "x": -260,
+          "z": 120
+        },
+        "radius": 5,
+        "title": "Keep your promise · stadium flyers",
+        "action": "Put up the venue flyers"
+      },
+      "trust": 1,
+      "callbackSettled": "You kept the whole agreement. The records reached their people and your side is settled. Next time there is a careful handoff, I know who to call."
+    }
+  },
+  "listeningRecords": [
+    {
+      "id": "stoop-soul",
+      "title": "Stoop Soul",
+      "artist": "The Friday Neighbors",
+      "station": "WGRD",
+      "color": "#d58956"
+    },
+    {
+      "id": "bridge-dub",
+      "title": "Bridge Dub",
+      "artist": "Night Service",
+      "station": "HABI",
+      "color": "#4f8493"
+    },
+    {
+      "id": "sunday-side",
+      "title": "The Sunday Side",
+      "artist": "Open Windows",
+      "station": "SUNS",
+      "color": "#c2a85e"
+    }
+  ]
+}

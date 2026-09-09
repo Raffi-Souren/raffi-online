@@ -13,6 +13,9 @@ import { buildRoadGraph, buildRoadGeometry, emitSurfaceTiles } from './roads.js'
 import { layoutLots, findOpenSpots } from './blocks.js'
 import { buildDistrictBuildings } from './buildings.js'
 import { emitProp, placeStreetFurniture, placeRoofProps } from './props.js'
+import { buildBrownstoneRow, buildBrooklynBlock, buildMusicVenue } from './brooklyn.js'
+import { buildFoliage } from './foliage.js'
+import { RESIDENTIAL_LOTS, buildResidentialLot } from './residential.js'
 
 /** Big flat water plane plus the harbour cut-ins. */
 function buildWater(scene, world, materials) {
@@ -175,6 +178,10 @@ export function buildLandmarks(set, atlas, propsData, world, districtId) {
 
       case 'storefront':
       case 'club': {
+        if (lm.frontage) {
+          colliders.push(...buildMusicVenue(set, atlas, propsData, lm))
+          break
+        }
         const isClub = lm.type === 'club'
         const w = isClub ? 72 : 62
         const d = isClub ? 58 : 44
@@ -248,57 +255,14 @@ export function buildLandmarks(set, atlas, propsData, world, districtId) {
       }
 
       case 'brownstone-hero': {
-        // The player's apartment. Save point and wardrobe.
-        set.opaque.box({
-          x: lm.at.x, y: 9, z: lm.at.z, w: 26, h: 18, d: 22,
-          color: '#ffffff', rect: atlas.uv('flat/brick-brown'), su: 1, sv: 0.62,
-          faces: ['east', 'west', 'south', 'north'],
-        })
-        emitSurfaceTiles(set.opaque, { x: lm.at.x, y: 18.5, z: lm.at.z, w: 26, d: 22, color: '#ffffff', rect: atlas.uv('roof-tar') })
-        for (const [y, width, depth, height] of [[17.8, 27.2, 23.2, 0.5], [18.3, 28, 24, 0.35]]) {
-          set.opaque.box({ x: lm.at.x, y, z: lm.at.z, w: width, h: height, d: depth, color: '#9f896e', rect: white })
-        }
-        set.opaque.billboard({ x: lm.at.x, y: 3.4, z: lm.at.z + 11.08, w: 3.5, h: 4.4, color: '#304842', rect: white })
-        set.emissive.billboard({ x: lm.at.x, y: 6, z: lm.at.z + 11.1, w: 3.5, h: 0.9, color: '#d6ae73', rect: atlas.uv('litwindow'), emissive: true })
-        // Recessed apartment bays, masonry lintels and warm inhabited rooms.
-        for (const face of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-          const side = Math.abs(Math.sin(face)) > 0.5
-          for (let floor = 0; floor < 4; floor++) {
-            for (const bay of [-1, 0, 1]) {
-              if (!side && face === 0 && floor === 0 && bay === 0) continue
-              const along = bay * (side ? 5.5 : 7.5)
-              const outward = (side ? 13 : 11) + 0.12
-              const x = lm.at.x + along * Math.cos(face) + outward * Math.sin(face)
-              const z = lm.at.z + outward * Math.cos(face) - along * Math.sin(face)
-              const y = 3.4 + floor * 3.6
-              set.opaque.billboard({ x, y, z, w: 2.8, h: 3, ry: -face, color: '#d4c2a2', rect: white })
-              const lit = (floor + bay + (side ? 1 : 0)) % 3 === 0
-              const surface = lit ? set.emissive : set.opaque
-              surface.billboard({
-                x: x + Math.sin(face) * 0.02, y, z: z + Math.cos(face) * 0.02,
-                w: 2.15, h: 2.55, ry: -face, color: lit ? '#e6b674' : '#bbc8cd',
-                rect: atlas.uv(lit ? 'litwindow' : 'window-reflection'), emissive: lit,
-              })
-              set.opaque.box({ x, y: y - 1.6, z, w: 3.05, h: 0.22, d: 0.6, ry: -face, color: '#b7a789', rect: white })
-            }
-          }
-        }
-        for (const side of [-1, 1]) {
-          groundProp('planter-tree', lm.at.x + side * 16, lm.at.z + 15, 0, rng)
-          set.opaque.sphere({ x: lm.at.x + side * 16, y: 4.6, z: lm.at.z + 15, r: 2.6, seg: 6, color: '#64815b', rect: white })
-          groundProp('streetlight-heritage', lm.at.x + side * 5, lm.at.z + 13.8, 0, rng)
-          set.alpha.plane({ x: lm.at.x + side * 5, y: 0.24, z: lm.at.z + 15.5, w: 9, d: 9, color: '#ffffff', rect: atlas.uv('warm-pool'), emissive: true })
-        }
-        emitProp(set, atlas, propsData, 'water-tank', lm.at.x + 6, 18.5, lm.at.z - 4, 0, rng)
-        for (let i = 0; i < 5; i++) {
-          const h = 1.3 * (1 - i / 5)
-          set.opaque.box({
-            x: lm.at.x, y: h / 2, z: lm.at.z + 11 + i * 0.7, w: 5.2, h, d: 0.7,
-            color: '#9a958c', rect: white, faces: ['up', 'south', 'east', 'west'],
-          })
-        }
-        emitProp(set, atlas, propsData, 'stoop-rail', lm.at.x, 1.2, lm.at.z + 12, 0, rng)
-        colliders.push({ type: 'box', x: lm.at.x, z: lm.at.z, hx: 13, hz: 11, tag: 'apartment' })
+        colliders.push(...buildBrownstoneRow(set, atlas, lm.row || {
+          x: lm.at.x, z: lm.at.z, count: 4, depth: 22,
+        }, 'apartment'))
+        break
+      }
+
+      case 'brooklyn-block': {
+        colliders.push(...buildBrooklynBlock(set, atlas, propsData, lm))
         break
       }
 
@@ -398,6 +362,7 @@ export function buildLandmarks(set, atlas, propsData, world, districtId) {
 /** Builds one district into its own group. */
 export function buildDistrict(district, ctx) {
   const { data, atlas, materials } = ctx
+  const foliageStart = atlas.foliageSources?.length || 0
   const dcfg = data.blocks.districts[district.id]
   const set = makeBuilderSet(data.blocks.vertexLighting, atlas)
   const colliders = []
@@ -417,11 +382,13 @@ export function buildDistrict(district, ctx) {
   buildRoadGeometry(set, atlas, ctx.graph, data.world, district)
 
   const lots = layoutLots(district, data.blocks, ctx.graph, data.world)
-  const built = buildDistrictBuildings(set, atlas, lots, data.blocks, {
+  const residential = lots.filter(lot => RESIDENTIAL_LOTS[lot.id]).map(lot => buildResidentialLot(lot, atlas, materials, data.blocks.vertexLighting))
+  const built = buildDistrictBuildings(set, atlas, lots.filter(lot => !RESIDENTIAL_LOTS[lot.id]), data.blocks, {
     grade: ctx.grade,
     shopCount: atlas.shopCount,
   })
   colliders.push(...built.colliders)
+  colliders.push(...residential.map(building => building.collider))
   placeRoofProps(set, atlas, data.props, built.roofProps)
 
   colliders.push(...placeStreetFurniture(set, atlas, data.props, district, ctx.graph, data.blocks, data.world))
@@ -451,7 +418,10 @@ export function buildDistrict(district, ctx) {
 
   const group = meshesFrom(set, materials, 'district:' + district.id)
   group.userData.district = district.id
-  return { group, colliders, lots, triangles: set.triangleCount }
+  const foliage = buildFoliage((atlas.foliageSources || []).slice(foliageStart), materials.foliage)
+  group.add(foliage.group)
+  for (const building of residential) group.add(building.group)
+  return { group, colliders, lots, triangles: set.triangleCount + foliage.triangles + residential.reduce((sum, building) => sum + building.triangles, 0) }
 }
 
 /** Builds the whole world. Returns groups, colliders and stats. */

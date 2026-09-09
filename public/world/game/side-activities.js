@@ -71,7 +71,7 @@ export function initSideActivities(scene, vehicles) {
   garage = document.createElement('dialog')
   garage.id = 'crib-garage'
   garage.setAttribute('aria-labelledby', 'garage-title')
-  garage.innerHTML = `<header><div><small>PORT VANTAGE / CUSTOMS</small><h2 id="garage-title">The Crib Garage</h2></div><button type="button" id="garage-close" aria-label="Return to World">×</button></header>
+  garage.innerHTML = `<header><div><small>BROOKLYN / CUSTOMS</small><h2 id="garage-title">The Crib Garage</h2></div><button type="button" id="garage-close" aria-label="Return to World">×</button></header>
     <p id="garage-car"></p><fieldset><legend>Fresh paint · instant preview on your car</legend><div id="garage-paints"></div></fieldset>
     <button type="button" id="garage-tune">Fit street tires</button><p id="garage-note" role="status">Paint and tuning stay on this car for this visit.</p>
     <section><h3>Harbor Sprint</h3><p>Six checkpoints. 90 seconds. Your customized car moves to the start. Follow the mint rings; brake before corners.</p><button type="button" id="garage-race">Start street time trial</button></section>

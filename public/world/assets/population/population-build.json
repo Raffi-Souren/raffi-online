@@ -1,0 +1,1540 @@
+{
+  "toolchain": {
+    "blender": "4.5.13 LTS",
+    "gltfTransform": "4.5.0",
+    "meshoptimizer": "1.2.0",
+    "sharp": "0.35.4"
+  },
+  "results": [
+    {
+      "id": "ari",
+      "lod": "near",
+      "file": "ari-near.glb",
+      "bytes": 598672,
+      "sha256": "bcb136cdccdcd0c0971e58f3b2a9be43fbcce21277be3d6cf4bba493f46fb37a",
+      "geometrySha256": "1d0dd1272a7754b48e3c1e497ea081eadb12bf98932c317ad54d4c847ae4d60e",
+      "triangles": 5797,
+      "triangleBudget": 6500,
+      "originalTriangles": 33714,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 121900
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 30576
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "ari",
+      "lod": "far",
+      "file": "ari-far.glb",
+      "bytes": 250988,
+      "sha256": "ad43a000319c1e997f71e1b23139999f602c9a9957a230b243bfa6601530e82b",
+      "geometrySha256": "9dc35a6f9b6876b0fd253f2f6158967f37740dabbe9c5266e61ed1ceb5b36894",
+      "triangles": 1447,
+      "triangleBudget": 1600,
+      "originalTriangles": 33714,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 14578
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 12572
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "noah",
+      "lod": "near",
+      "file": "noah-near.glb",
+      "bytes": 571220,
+      "sha256": "5e1a6688128f578db61882d0dc68d9fc4f2b98ee2ee39f33c8c1f5927559002c",
+      "geometrySha256": "e086f78b8b606a68ac7cb2a681e7f6c4e12588647d20fc45ed33d46f15d13cc9",
+      "triangles": 5799,
+      "triangleBudget": 6500,
+      "originalTriangles": 25846,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 20582
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 114048
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "noah",
+      "lod": "far",
+      "file": "noah-far.glb",
+      "bytes": 241768,
+      "sha256": "141012bdba4cb9b5861e85df9fbca0a1d4a44099679fc6fb4bcae5b5b3c1dd8b",
+      "geometrySha256": "92ddfc09e1f989e46f66b6abab48aa4762b5163923e485e8942adc0970d3431b",
+      "triangles": 1446,
+      "triangleBudget": 1600,
+      "originalTriangles": 25846,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 7152
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 12138
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "inez",
+      "lod": "near",
+      "file": "inez-near.glb",
+      "bytes": 592152,
+      "sha256": "a0d5d2e6d43717765cc16ec61e249d340cea892fa4e20b7b2f80ab9a896f3e7b",
+      "geometrySha256": "d589e7e84911c3b2183c661a982ed332ce016b22d284b4378bbf9b9ff470389d",
+      "triangles": 6109,
+      "triangleBudget": 6500,
+      "originalTriangles": 28150,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 37964
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 105094
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "inez",
+      "lod": "far",
+      "file": "inez-far.glb",
+      "bytes": 252736,
+      "sha256": "ca9b0ab23c6d7272b1f037f486f18d16ab49740854e327ba4e0ee1b4c050ae1d",
+      "geometrySha256": "476ba76778ddb7e5ee75558f6dee6b19e1fdedf026a071c45499618d29e32060",
+      "triangles": 1448,
+      "triangleBudget": 1600,
+      "originalTriangles": 28150,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 13556
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 12562
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "dev",
+      "lod": "near",
+      "file": "dev-near.glb",
+      "bytes": 715404,
+      "sha256": "d0682824c4a49d4fd483d0ff4daa74f0cbaf30f7b81ee51c9aec5f4362e39bc4",
+      "geometrySha256": "fe400c9e6e1bec5424c0967da184b75e23bd3bd32f55e41e8586f3af1fe6759b",
+      "triangles": 5798,
+      "triangleBudget": 6500,
+      "originalTriangles": 28802,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 132704
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 3498
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 129974
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "dev",
+      "lod": "far",
+      "file": "dev-far.glb",
+      "bytes": 282516,
+      "sha256": "65e4dc4438083f3247044e7faf343e54143d031d9621b0de82bdf7a9ecac1a91",
+      "geometrySha256": "c791e9d8ca6a0b3fd746a54c01bcd3c2382850f5530293035b268c363c4dff93",
+      "triangles": 1534,
+      "triangleBudget": 1600,
+      "originalTriangles": 28802,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 15894
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 3110
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 36934
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "june",
+      "lod": "near",
+      "file": "june-near.glb",
+      "bytes": 605264,
+      "sha256": "3b21d3dc9bec18801b28b1d661ce408daa3e7045ad04621970b6bd06438d977e",
+      "geometrySha256": "e26d214933b005027defb8d0d04c0fa6b56dfdd90412973a70488ff8335c42f4",
+      "triangles": 5798,
+      "triangleBudget": 6500,
+      "originalTriangles": 28840,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 3910
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 43624
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 116684
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "june",
+      "lod": "far",
+      "file": "june-far.glb",
+      "bytes": 252140,
+      "sha256": "8d250f53c8d3e2f633edd0464082f43cba584d71c92f81f76ae2041696d8d0a5",
+      "geometrySha256": "b6d5a7c4369e9e109ea44ff4ecb46fe158524e5154ff1994724654f4418d7592",
+      "triangles": 1447,
+      "triangleBudget": 1600,
+      "originalTriangles": 28840,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 3426
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 11490
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 14124
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "malik",
+      "lod": "near",
+      "file": "malik-near.glb",
+      "bytes": 691440,
+      "sha256": "f3a2201563883d66e3b9090ab3b768a2a6188c5b45f66b2ee0e16055d22c5957",
+      "geometrySha256": "b098df7fa9575d0d660dfeb69c8a579c40adf4b18d1c6f485da1e3e46d4a6ffd",
+      "triangles": 6431,
+      "triangleBudget": 6500,
+      "originalTriangles": 30044,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 116154
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 117472
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "malik",
+      "lod": "far",
+      "file": "malik-far.glb",
+      "bytes": 268700,
+      "sha256": "d1d00460d85c2b9404d0c52dd5ea7e0f95d6b6a04ae927e281ed064dd97ad273",
+      "geometrySha256": "4352af45ff316cb9fcdabb668898f349de12c5ed89287c93a56e7119494026b4",
+      "triangles": 1448,
+      "triangleBudget": 1600,
+      "originalTriangles": 30044,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 31550
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 12484
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "tess",
+      "lod": "near",
+      "file": "tess-near.glb",
+      "bytes": 612580,
+      "sha256": "d90643bd2b4db789cc706e314882ddcfd8b027a02bd30eb672fddaa896ad9cc4",
+      "geometrySha256": "ad852d490387043102bc1040620d25df979f055f626bacce1e86e1689a6c1030",
+      "triangles": 5799,
+      "triangleBudget": 6500,
+      "originalTriangles": 34300,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 58542
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 108078
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "tess",
+      "lod": "far",
+      "file": "tess-far.glb",
+      "bytes": 258308,
+      "sha256": "7edbf8d7cde3beba54b76d84982f31c4e4d0ad916c90ce030602a9d2fc72188b",
+      "geometrySha256": "223e11a003141124b0ad6b5585104be7565c862dce9dc5ebd08be73643a87599",
+      "triangles": 1448,
+      "triangleBudget": 1600,
+      "originalTriangles": 34300,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 20054
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 13274
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "owen",
+      "lod": "near",
+      "file": "owen-near.glb",
+      "bytes": 540924,
+      "sha256": "2cc8ac855ac50042ab2383afe55fe86187e703574812de2745aa19869a710508",
+      "geometrySha256": "8df93eb05dd89d985186ce940697076448f0a1d1de1914f8c1817f15c447dafc",
+      "triangles": 5798,
+      "triangleBudget": 6500,
+      "originalTriangles": 24464,
+      "geometryCount": 2,
+      "draws": 2,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 107932
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 5679787,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "owen",
+      "lod": "far",
+      "file": "owen-far.glb",
+      "bytes": 229768,
+      "sha256": "8dea7bd621601ec32686082eb34deb18c5c4fff3a4e7a9a31886efef236f58b9",
+      "geometrySha256": "421f762d325248e1c6af6d620e7f87b6935679d9f165a260364566a190011245",
+      "triangles": 1449,
+      "triangleBudget": 1600,
+      "originalTriangles": 24464,
+      "geometryCount": 2,
+      "draws": 2,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 11836
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 436907,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "sam",
+      "lod": "near",
+      "file": "sam-near.glb",
+      "bytes": 609772,
+      "sha256": "a3792a276acf49f276b80955e0dc3187fe5b587a243c81ca63a2fa4086dcc32f",
+      "geometrySha256": "1a0dcdd097445d3b5604763714f9bc57b28caad8fbd4214665f1bfd7958409af",
+      "triangles": 6286,
+      "triangleBudget": 6500,
+      "originalTriangles": 24456,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 69086
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 93842
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "sam",
+      "lod": "far",
+      "file": "sam-far.glb",
+      "bytes": 259376,
+      "sha256": "12f371e8556fb262ae182db578404c8819cb6b0029e959390825c0270fb8e939",
+      "geometrySha256": "63af2d4cf5f2e3315b800c9c0c190f9d8a99359719f0044989c2ff68adfdc775",
+      "triangles": 1447,
+      "triangleBudget": 1600,
+      "originalTriangles": 24456,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 23870
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 10668
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "rosa",
+      "lod": "near",
+      "file": "rosa-near.glb",
+      "bytes": 577988,
+      "sha256": "be77629e02bd655a071da42124c8fb16c4bef4a624beebf5fc90f60db64cec76",
+      "geometrySha256": "0fcdea766e158261e14fe4b52b5c2359a25718c957d97eac561ae814f785b738",
+      "triangles": 5793,
+      "triangleBudget": 6500,
+      "originalTriangles": 34804,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 3076
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 127488
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "rosa",
+      "lod": "far",
+      "file": "rosa-far.glb",
+      "bytes": 243772,
+      "sha256": "febc4298be8af7c387d74538bc3936842a40abf4d47b64a17e9e40ace99b9614",
+      "geometrySha256": "a2b754d47abe499491b8e07623598a9454b2f5a9fd172a6807aa6f5bf1cc9709",
+      "triangles": 1681,
+      "triangleBudget": 1750,
+      "originalTriangles": 34804,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 684
+        },
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 14596
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "kai",
+      "lod": "near",
+      "file": "kai-near.glb",
+      "bytes": 601752,
+      "sha256": "08f33c2b10105f3dfb146020852a94f06f3d7f6685f5d5cfd5988e0a29ab163b",
+      "geometrySha256": "86a136090e0e563c134936e27c21ac7c5f0297ee8bc00f7348b2099e7c52df68",
+      "triangles": 5798,
+      "triangleBudget": 6500,
+      "originalTriangles": 38620,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 22226
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 126146
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "kai",
+      "lod": "far",
+      "file": "kai-far.glb",
+      "bytes": 251960,
+      "sha256": "8b1f6de0b6bc9507269994d79019653e2b8678bfebf844c7b651c4b03c3c77bc",
+      "geometrySha256": "9f015d926fd2f2209071dbfcb870beaac55aad2fac45c86a8288b79a9facb680",
+      "triangles": 1448,
+      "triangleBudget": 1600,
+      "originalTriangles": 38620,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 7608
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 14562
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "mae",
+      "lod": "near",
+      "file": "mae-near.glb",
+      "bytes": 608380,
+      "sha256": "895c2acad9f6785d31443de86df50350ed20561301fc6349684f4d70927e01aa",
+      "geometrySha256": "94291d0590b26e719fcd4e0fd17f4348570aa8d1e1eb9513ea04e966dc89602c",
+      "triangles": 6197,
+      "triangleBudget": 6500,
+      "originalTriangles": 38750,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 45318
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 106940
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "mae",
+      "lod": "far",
+      "file": "mae-far.glb",
+      "bytes": 254668,
+      "sha256": "b128b714dc1d7221cea2b265535efe74240118ba8719e2b74153921b71bf4993",
+      "geometrySha256": "0ecf728843372b818ae01c91a3afd1d416e2707c4b8aa36544ae61d4564ff65f",
+      "triangles": 1449,
+      "triangleBudget": 1600,
+      "originalTriangles": 38750,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "idle",
+        "talk",
+        "run",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 16112
+        },
+        {
+          "width": 256,
+          "height": 256,
+          "bytes": 12892
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 786432,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "player",
+      "lod": "near",
+      "file": "player-near.glb",
+      "bytes": 733420,
+      "sha256": "065c720eaa083d9b3c4e3902a910611a29aea2662c93cccf66b05c7598b662d3",
+      "geometrySha256": "97e2c22c70736a811787864f9cb03da63aa72b27e9a30573548644ae59196580",
+      "triangles": 11997,
+      "triangleBudget": 12500,
+      "originalTriangles": 32282,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2350
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 92778
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "bytes": 120644
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 7077888,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "id": "player",
+      "lod": "far",
+      "file": "player-far.glb",
+      "bytes": 565628,
+      "sha256": "4022ecb2780630b955b36663970715b3f3c3eed53de216cf16686d6f4e39d486",
+      "geometrySha256": "f5bf49ae07474eed0028c0d267006e3ffff23bbc08d8e5e8a90b7532ae8dd33b",
+      "triangles": 5798,
+      "triangleBudget": 6500,
+      "originalTriangles": 32282,
+      "geometryCount": 3,
+      "draws": 3,
+      "skeletonJoints": 53,
+      "clips": [
+        "dance",
+        "drive",
+        "idle",
+        "talk",
+        "interact",
+        "run",
+        "jab",
+        "enter",
+        "exit",
+        "sit",
+        "sprint",
+        "purposeful",
+        "walk"
+      ],
+      "textures": [
+        {
+          "width": 128,
+          "height": 128,
+          "bytes": 2326
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 90574
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "bytes": 31756
+        }
+      ],
+      "decodedTextureRGBA8WithMipsBytes": 2883584,
+      "validation": {
+        "numErrors": 0,
+        "numWarnings": 0,
+        "numInfos": 1,
+        "numHints": 0,
+        "messages": [
+          {
+            "code": "UNSUPPORTED_EXTENSION",
+            "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+            "severity": 2,
+            "pointer": "/extensionsUsed/0"
+          }
+        ],
+        "truncated": false
+      }
+    }
+  ]
+}

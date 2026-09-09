@@ -9,10 +9,10 @@ import {
   state, data, query, device, bus, loadData, initState,
   districtAt, gradeForHour, currentHour, clamp,
 } from './state.js'
-import { initRenderer, initMaterials, applyGrade, resize, renderFrame, gfx } from './render.js'
+import { initRenderer, initMaterials, applyGrade, resize, renderFrame, gfx, getQuality, cycleQuality, setQuality } from './render.js'
 import {
   initCamera, updateCamera, rotateView, setPinch, cam,
-  cycleCameraMode, getCameraMode, setCameraMode,
+  cycleCameraMode, getCameraMode, setCameraMode, orbitView, getDrivingView, setDrivingView, setReducedMotion,
 } from './camera.js'
 import { initInput, updateInput, endInputFrame, input, consume, resetInput, setActionLabel, setSecondLabel, setCamLabel } from './input.js'
 import { CollisionWorld, resolveCircle, clampToBounds } from './physics.js'
@@ -41,6 +41,7 @@ import {
   completeCrateQuest,
 } from '../game/missions.js'
 import { initSideActivities, updateSideActivities, sideActivityOpen } from '../game/side-activities.js'
+import { initTraffic, updateTraffic, trafficSnapshot } from '../game/traffic.js'
 import { CRATE_QUEST_MESSAGE, crateQuestContext, isCrateQuestReturn } from '../game/crate-quest-core.js'
 import {
   initInteriors, enterInterior, exitInterior, interiorDoorContext, interiorSnapshot,
@@ -54,6 +55,24 @@ import {
 } from '../game/pursuit.js'
 import { initDebug, updateDebugCamera, updateDebugReadout, debugState, exposeAuditApi } from './debug.js'
 import { updateOpaqueFogCull } from './cull-opaque.js'
+import { unlockAudio, updateAudio, setAudioActive, audioBeat, audioSnapshot, toggleMute, playSfx, setHostMusicPlaying, requestMusicFocus, resetAudioTransport, getVolume, setVolume } from './audio.js'
+import { initWorldMap, showWorldMap, hideWorldMap, isWorldMapOpen } from '../game/world-map.js'
+import { initCheats, showCheats, hideCheats, cheatsOpen } from '../game/cheats.js'
+import { createPlayerCharacter } from './player-character.js'
+import { createNearCharacters } from './near-characters.js'
+import { prepareHeroVehicle } from './hero-vehicle.js'
+import { prepareUrbanSurfaces, addUrbanProps } from './urban-assets.js'
+import { createActorBatcher } from './actor-batching.js'
+import { createFixedClock, interpolatePlayer } from './fixed-step.js'
+import { createRenderPoses } from './render-poses.js'
+import { initSaves, saveGame, loadGame, saveSlots, updateSaves, saveStatus } from '../game/saves.js'
+import { initStory, storyContext, openStory, closeStory, updateStory, isStoryOpen, isStoryPerforming, storySnapshot, focusStory } from '../game/story.js'
+import { initSports, registerSport, sportsContext, openSports, isSportsOpen, updateSports, sportsSnapshot } from '../game/sports.js'
+import { createTennis } from '../game/sports-tennis.js'
+import { createSoccer } from '../game/sports-soccer.js'
+import { createBoxing } from '../game/sports-boxing.js'
+import { initPrintStudio, printStudioContext, openPrintStudio, isPrintStudioOpen, updatePrintStudio, printStudioSnapshot } from '../game/print-studio.js'
+import { initSaveMenu, showSaveMenu, hideSaveMenu } from '../game/save-menu.js'
 import {
   initReplay, disposeReplay, beginRecordingRun, endRecordingRun,
   startRewindCompare, stopCompare, updateReplay, hasValidRun,
@@ -61,11 +80,36 @@ import {
 } from '../game/replay.js'
 
 let hostActive = true
+let graphicsFailed = false
+let actorBatcher = null
+let playerCharacter = null
+let nearCharacters = null
+let presentationTier = null
+let pausedFrameDirty = true
+let gameStarted = false
+let pendingCheat = null
+let lastCheatRequest = 0
+const simulation = createFixedClock()
+const renderPoses = createRenderPoses()
+let previousPlayer = null
 window.addEventListener('message', (event) => {
+  if (event.origin === location.origin && event.source === window.parent && event.data?.type === 'raffi-world:cheats') {
+    const value = event.data
+    if (Object.keys(value).length !== 4 || value.action !== 'open' || !Number.isSafeInteger(value.requestId) || value.requestId <= lastCheatRequest || (value.code !== null && (typeof value.code !== 'string' || value.code.length > 24))) return
+    lastCheatRequest = value.requestId
+    pendingCheat = { code: value.code }
+    if (state.ready) {
+      if (!gameStarted) startGame()
+      else { openCheatMenu(pendingCheat.code); pendingCheat = null }
+    }
+    return
+  }
   if (event.source !== window.parent || event.origin !== location.origin) return
   const value = event.data
+  if (value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 2 && value.type === 'raffi-world:host-audio' && typeof value.playing === 'boolean') { setHostMusicPlaying(value.playing); return }
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 2 || value.type !== 'raffi-world:activity' || typeof value.active !== 'boolean') return
   hostActive = value.active
+  setAudioActive(hostActive && !document.hidden && (!state.paused || state.storyPlayingMusic || state.sportsPlayingSound))
   if (!hostActive) resetInput()
 })
 
@@ -90,6 +134,7 @@ function recordShopQuest() {
 function openCrateQuest() {
   if (!recordShopQuest() || state.paused) return false
   world.crateQuestActive = true
+  setAudioActive(false)
   state.paused = true
   resetInput()
   setInteractionPrompt(null)
@@ -100,6 +145,7 @@ function openCrateQuest() {
 window.addEventListener('message', (event) => {
   if (!isCrateQuestReturn(event, window.parent, location.origin, world.crateQuestActive)) return
   world.crateQuestActive = false
+  setAudioActive(hostActive && !document.hidden)
   resetInput()
   state.paused = false
   if (event.data.action === 'complete') completeCrateQuest()
@@ -182,7 +228,7 @@ function spawnParkedCars(scene, materials, atlas) {
     for (const spot of spots) {
       if (placed >= perDistrict) break
       const { segment, distance } = nearestRoad(world.graph, spot.x, spot.z)
-      if (!segment || distance > 26) continue
+      if (!segment || segment.local || distance > 26) continue
       // Park against the kerb, nose along the street.
       const offset = segment.halfWidth - data.vehicles.parked.curbOffset
       const side = segment.horizontal
@@ -192,7 +238,11 @@ function spawnParkedCars(scene, materials, atlas) {
       const z = segment.horizontal ? segment.az + side * offset : spot.z
       const yaw = segment.horizontal ? Math.PI / 2 : 0
 
-      const v = spawnVehicle(scene, materials, atlas, rng.weighted(weights), x, z, yaw, rng.int(0, 999999))
+      // Each neighbourhood has a small deliberate first pass; weighted extras
+      // retain seeded variety. The track coupe is curated only in the yards.
+      const weighted = rng.weighted(weights)
+      const archetype = data.vehicles.parked.curated?.[district.id]?.[placed] || weighted
+      const v = spawnVehicle(scene, materials, atlas, archetype, x, z, yaw, rng.int(0, 999999))
       if (v) {
         world.vehicles.push(v)
         placed++
@@ -238,7 +288,7 @@ function updateTransport(dt) {
   state.radio.bpm = bpm
   transport.time += dt
   const beatsPerSecond = bpm / 60
-  const totalBeats = transport.time * beatsPerSecond
+  const totalBeats = audioBeat() ?? transport.time * beatsPerSecond
   transport.beat = Math.floor(totalBeats) % 4
   transport.bar = Math.floor(totalBeats / 4)
   transport.phase = totalBeats % 1
@@ -247,6 +297,7 @@ function updateTransport(dt) {
 }
 
 function cycleStation(dir = 1) {
+  requestMusicFocus()
   const stations = data.radio.stations.filter((s) => s.unlocked)
   if (!stations.length) return
   const current = data.radio.stations[state.radio.stationIndex]
@@ -300,32 +351,170 @@ function cyclePauseGrade() {
 
 function setPaused(paused) {
   state.paused = !!paused
+  simulation.reset()
+  previousPlayer = null
+  renderPoses.reset()
+  pausedFrameDirty = true
+  resetInput()
+  setAudioActive(!state.paused && hostActive && !document.hidden)
   els.pause?.classList.toggle('hidden', !state.paused)
   els.pause?.setAttribute('aria-hidden', String(!state.paused))
+  if (!state.paused) hideWorldMap()
+  if (!state.paused) hideCheats()
+  if (!state.paused) hideSaveMenu()
   if (state.paused) {
     player.blockedTime = 0
+    const sound = els.pause?.querySelector('[data-pause="sound"]')
+    if (sound) sound.textContent = audioSnapshot().muted ? 'Sound: Off' : 'Sound: On'
     setInteractionPrompt(null)
     // Freeze run A when the player opens pause mid-record so REWIND can arm.
     if (getReplayPhase() === 'recording') endRecordingRun()
     els.pause?.querySelector('[data-pause="resume"]')?.focus({ preventScroll: true })
-  } else if (document.activeElement instanceof HTMLElement && els.pause?.contains(document.activeElement)) {
-    document.activeElement.blur()
+  } else {
+    els.canvas?.focus({ preventScroll: true })
   }
 }
 
 function initPauseMenu() {
   syncPauseGradeLabel()
+  const syncCameraPreferences = () => {
+    const view = els.pause.querySelector('[data-pause="driving-view"]')
+    view.textContent = 'Driving view: ' + (getDrivingView() === 'hood' ? 'Hood' : 'Chase')
+    const motion = els.pause.querySelector('[data-pause="motion"]')
+    motion.textContent = 'Camera motion: ' + (cam.reducedMotion ? 'Reduced' : 'Normal')
+  }
+  syncCameraPreferences()
+  const volume = document.getElementById('sound-volume')
+  const volumeValue = document.getElementById('sound-volume-value')
+  const syncVolume = () => { volume.value = String(Math.round(getVolume() * 100)); volumeValue.value = volume.value + '%' }
+  syncVolume()
+  volume.addEventListener('input', () => { setVolume(Number(volume.value) / 100); syncVolume() })
+  const syncQuality = () => {
+    const q = getQuality()
+    const label = q.preset.charAt(0).toUpperCase() + q.preset.slice(1)
+    const button = els.pause?.querySelector('[data-pause="quality"]')
+    if (button) button.textContent = 'Graphics: ' + label
+    const note = document.getElementById('quality-description')
+    if (note) note.textContent = q.preset === 'auto'
+      ? 'Graphics adjust to keep the city responsive.'
+      : q.preset === 'high' ? 'Full detail, soft shadows and richer reflections.'
+        : q.preset === 'balanced' ? 'Detailed streets with a lighter graphics budget.'
+          : 'A lighter scene for smoother play on smaller devices.'
+  }
+  syncQuality()
+  document.getElementById('desktop-pause')?.addEventListener('click', () => setPaused(true))
+  document.getElementById('game-question')?.addEventListener('click', () => openCheatMenu())
+  document.getElementById('desktop-camera')?.addEventListener('click', () => {
+    if (!state.paused) toast(cycleCameraMode().label, 2)
+    els.canvas?.focus({ preventScroll: true })
+  })
+  els.pause?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return
+    const buttons = Array.from(els.pause.querySelectorAll('button:not(:disabled), input:not(:disabled)'))
+    const first = buttons[0], last = buttons.at(-1)
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+  })
   els.pause?.addEventListener('click', (event) => {
     if (!(event.target instanceof Element)) return
     const button = event.target.closest('button[data-pause]')
     if (!button || button.disabled) return
     if (button.dataset.pause === 'resume') setPaused(false)
+    else if (button.dataset.pause === 'map') openWorldMap()
+    else if (button.dataset.pause === 'cheats') openCheatMenu()
+    else if (button.dataset.pause === 'saves') { els.pause.classList.add('hidden'); showSaveMenu() }
     else if (button.dataset.pause === 'grade') cyclePauseGrade()
+    else if (button.dataset.pause === 'quality') { cycleQuality(); syncQuality() }
+    else if (button.dataset.pause === 'driving-view') { setDrivingView(getDrivingView() === 'hood' ? 'chase' : 'hood'); setCameraMode('chase'); syncCameraPreferences() }
+    else if (button.dataset.pause === 'motion') { setReducedMotion(!cam.reducedMotion); syncCameraPreferences() }
+    else if (button.dataset.pause === 'sound') {
+      const muted = toggleMute()
+      button.textContent = muted ? 'Sound: Off' : 'Sound: On'
+    }
     else if (button.dataset.pause === 'rewind') {
       if (!hasValidRun() && getReplayPhase() === 'recording') endRecordingRun()
       if (startRewindCompare()) setPaused(false)
     }
   })
+}
+
+function openWorldMap() {
+  hideSaveMenu()
+  hideCheats()
+  setPaused(true)
+  els.pause?.classList.add('hidden')
+  showWorldMap()
+}
+
+function openCheatMenu(code = null) {
+  hideSaveMenu()
+  if (world.crateQuestActive) return
+  hideWorldMap()
+  setPaused(true)
+  els.pause?.classList.add('hidden')
+  showCheats(code)
+}
+
+const cheatRides = []
+function applyCheat(cheat) {
+  if (cheat.action === 'vehicle') {
+    if (state.interior) return 'Step outside to have your ride delivered.'
+    const road = nearestRoad(world.graph, state.player.x, state.player.z).segment
+    if (!road) return 'Find a street for your delivery.'
+    let position = null
+    for (const offset of [8, -8, 16, -16, 24]) {
+      const x = road.horizontal ? clamp(state.player.x + offset, Math.min(road.ax, road.bx) + 4, Math.max(road.ax, road.bx) - 4) : road.ax + 2.6
+      const z = road.horizontal ? road.az + 2.6 : clamp(state.player.z + offset, Math.min(road.az, road.bz) + 4, Math.max(road.az, road.bz) - 4)
+      const safe = resolveCircle(world.collision, x, z, 2.2, 5)
+      if (Math.hypot(safe.x - x, safe.z - z) < 0.2 && world.vehicles.every((v) => Math.hypot(v.x - x, v.z - z) > 5)) { position = { x, z }; break }
+    }
+    if (!position) return 'The street is busy. Move to an open stretch and try again.'
+    if (player.vehicle) exitVehicle(world.collision)
+    while (cheatRides.length >= 3) {
+      const old = cheatRides.shift()
+      old.mesh.removeFromParent()
+      old.mesh.geometry.dispose()
+      const index = world.vehicles.indexOf(old)
+      if (index >= 0) world.vehicles.splice(index, 1)
+    }
+    const vehicle = spawnVehicle(gfx.scene, gfx.materials, world.atlas, cheat.vehicle, position.x, position.z, road.horizontal ? Math.PI / 2 : 0, 'cheat:' + cheat.code)
+    world.vehicles.push(vehicle)
+    cheatRides.push(vehicle)
+    enterVehicle(vehicle)
+    cam.target.set(vehicle.x, 0, vehicle.z)
+    setCameraMode('chase')
+    playSfx('ui-confirm')
+    return cheat.label + ' delivered. Back to the block to drive.'
+  }
+  if (cheat.action === 'clear') {
+    setComplianceTier(0)
+    onComplianceCleared()
+    return 'Lost them. Take a different street.'
+  }
+  if (cheat.action === 'radio') {
+    for (const station of data.radio.stations) station.unlocked = true
+    state.radio.on = true
+    state.radio.stationIndex = 0
+    setRadio(data.radio.stations[0])
+    return 'All six stations unlocked. Choose a frequency below.'
+  }
+  if (cheat.action === 'grade') {
+    state.grade.forced = cheat.grade
+    state.grade.current = cheat.grade
+    state.grade.target = cheat.grade
+    state.grade.blend = 1
+    applyGrade(cheat.grade)
+    syncPauseGradeLabel()
+    return cheat.label + ' set.'
+  }
+  if (cheat.action === 'home') {
+    if (state.mission.active) return 'Finish this mission before heading home.'
+    if (state.interior) exitInterior()
+    const pose = collisionSafeArrival(data.world.spawn)
+    teleportPlayer(pose.x, pose.z, data.world.spawn.yaw)
+    cam.target.set(pose.x, 0, pose.z)
+    return 'Back at the crib. Your garage is around the corner.'
+  }
 }
 
 // ------------------------------------------------------------ navigation ---
@@ -369,7 +558,10 @@ async function beginFastTravel(transit) {
   if (world.transitBusy) return
   world.transitBusy = true
 
-  if (!state.mission.active) focusFirstMission()
+  if (!state.mission.active && getWaypoint()?.source !== 'map') {
+    if (storySnapshot().branch) focusStory()
+    else focusFirstMission()
+  }
   const destination = getWaypoint()
   if (!destination) {
     toast('NO ACTIVE DESTINATION', 2.4)
@@ -379,7 +571,7 @@ async function beginFastTravel(transit) {
 
   queueDialogue('subway-depart', { duration: 1.4 })
   await delay(420)
-  if (els.travelDestination) els.travelDestination.textContent = 'MISSION EXPRESS · ' + destination.label
+  if (els.travelDestination) els.travelDestination.textContent = 'NEXT STOP · ' + destination.label
   els.travel?.classList.remove('hidden')
   requestAnimationFrame(() => els.travel?.classList.add('show'))
   await delay(720)
@@ -397,11 +589,15 @@ async function beginFastTravel(transit) {
 
 function onRideMounted(vehicle) {
   // Choosing a crib ride begins navigation. Mounting a mission loaner must
-  // preserve the active stop; resetting here points the GPS back to START.
-  if (!state.mission.active) focusFirstMission()
+  // preserve the active stop and an explicit map choice, including park/print pins.
+  const mapPinned = getWaypoint()?.source === 'map'
+  if (!state.mission.active && !mapPinned) {
+    if (storySnapshot().branch) focusStory()
+    else focusFirstMission()
+  }
   const lines = []
   if (vehicle.mountLine) lines.push(vehicle.mountLine)
-  if (!world.managerBriefed && !state.mission.active) {
+  if (!world.managerBriefed && !state.mission.active && !storySnapshot().branch && !mapPinned) {
     world.managerBriefed = true
     lines.push('onboard-manager-call')
   }
@@ -429,13 +625,15 @@ async function boot() {
 
   initState()
   setBoot(0.34, 'starting renderer…')
-  initRenderer(els.canvas)
+  await initRenderer(els.canvas)
 
   setBoot(0.4, 'painting atlas…')
   const atlas = buildAtlas(data.blocks, data.dialogue, state.seed + ':atlas')
-  const materials = initMaterials(atlas.texture)
+  await Promise.all([prepareUrbanSurfaces(atlas), prepareHeroVehicle(atlas)])
+  world.atlas = atlas
+  const materials = initMaterials(atlas.texture, atlas)
 
-  setBoot(0.5, 'compiling Port Vantage…')
+  setBoot(0.5, 'building Brooklyn…')
   await new Promise((r) => setTimeout(r, 0)) // let the boot bar paint
 
   const built = buildWorld({
@@ -453,17 +651,22 @@ async function boot() {
   const collision = new CollisionWorld()
   collision.addAll(built.collision)
   world.collision = collision
+  await addUrbanProps(world.cityRoot, collision)
 
   setBoot(0.85, 'parking cars…')
   const aspect = els.canvas.clientWidth / Math.max(els.canvas.clientHeight, 1)
   initCamera(aspect)
+  setCameraMode('chase')
   initPlayer(gfx.scene, materials, atlas)
+  playerCharacter = await createPlayerCharacter(player, { tier: getQuality().tier, surfaceRoot: world.cityRoot })
   spawnParkedCars(gfx.scene, materials, atlas)
   spawnMobilityHub(gfx.scene, materials, atlas)
   initSideActivities(gfx.scene, world.vehicles)
+  initTraffic({ scene: gfx.scene, materials, atlas, graph: world.graph, collision, vehicles: world.vehicles })
 
   setBoot(0.94, 'wiring input…')
   initInput({
+    canvas: els.canvas,
     zone: els.zone, base: els.base, knob: els.knob,
     action: els.action, second: els.second, radio: els.btnRadio, cam: els.cam,
     exit: els.exit,
@@ -471,6 +674,14 @@ async function boot() {
     touchRoot: els.touchRoot,
   })
   initPauseMenu()
+  initWorldMap(world.graph, () => { hideWorldMap(); setPaused(true) })
+  initCheats({ close: () => setPaused(false), apply: applyCheat, station: (index) => {
+    requestMusicFocus()
+    state.radio.stationIndex = index
+    state.radio.on = true
+    setRadio(data.radio.stations[index])
+    if (!state.grade.forced) requestGrade(data.radio.stations[index].grade)
+  } })
   initHud({
     root: els.hud, district: els.district, objective: els.objective,
     compliance: els.compliance, pips: els.pips, clock: els.clock,
@@ -532,12 +743,49 @@ async function boot() {
       rewindBtn: document.querySelector('[data-pause="rewind"]'),
     },
   })
+  initStory({ scene: gfx.scene, materials, atlas, onOpen: () => {
+    setPaused(true)
+    els.pause?.classList.add('hidden')
+    playerCharacter?.playInteraction()
+  }, onClose: () => setPaused(false) })
+  registerSport('tennis', createTennis)
+  registerSport('soccer', createSoccer)
+  registerSport('boxing', createBoxing)
+  initSports({ scene: world.cityRoot, materials, atlas, collision, onOpen: () => {
+    setPaused(true)
+    els.pause?.classList.add('hidden')
+    playerCharacter?.playInteraction()
+  }, onClose: () => setPaused(false) })
+  initPrintStudio({ scene: world.cityRoot, actorScene: gfx.scene, materials, atlas, collision, saveStatus, onOpen: () => {
+    setPaused(true)
+    els.pause?.classList.add('hidden')
+    playerCharacter?.playInteraction()
+  }, onClose: () => setPaused(false) })
+  playerCharacter?.refreshGroundSurfaces()
+  initSaves({ scene: gfx.scene, materials, atlas, vehicles: world.vehicles, collision, world, onLoad: () => {
+    world.transitBusy = false
+    world.crateQuestActive = false
+    resetAudioTransport()
+    transport.time = 0
+    transport.beat = 0
+    transport.bar = 0
+    syncPauseGradeLabel()
+    setPaused(false)
+  } })
+  initSaveMenu({ close: () => { hideSaveMenu(); setPaused(true) }, start: startGame })
+  presentationTier = getQuality().tier
+  nearCharacters = await createNearCharacters(gfx.scene, { tier: presentationTier, surfaceRoot: world.cityRoot })
+  actorBatcher = createActorBatcher(gfx.scene)
   initDebug({ root: els.debugRoot, readout: els.debugReadout, buttons: els.debugButtons }, collision)
 
   applyGrade(state.grade.current, 1)
   setCompliance(0)
   resize()
-  window.addEventListener('resize', () => resize())
+  updateCamera(0, state.player, { x: 0, z: 0 }, aspect, world.collision)
+  actorBatcher?.update(cam.camera)
+  renderFrame(cam.camera)
+  els.boot?.classList.add('scene-ready')
+  window.addEventListener('resize', () => { resize(); pausedFrameDirty = true })
   bus.on('pinch', (v) => setPinch(v))
 
   exposeAuditApi({
@@ -563,7 +811,25 @@ async function boot() {
     pursuitSnapshot,
     cycleCameraMode,
     getCameraMode,
+    getDrivingView,
     setCameraMode,
+    getQuality,
+    setQuality,
+    audioSnapshot,
+    getVolume,
+    trafficSnapshot,
+    storySnapshot, focusStory, openStory, isStoryOpen, sportsSnapshot, printStudioSnapshot,
+    characterStats: () => playerCharacter?.stats,
+    nearCharacterStats: () => nearCharacters?.stats,
+    saveGame, loadGame, saveSlots, saveStatus,
+    actorBatchStats: () => actorBatcher?.stats,
+    renderAuditView: (camera) => {
+      updateOpaqueFogCull(camera, world.cityRoot)
+      nearCharacters?.update(0, state, camera)
+      actorBatcher?.update(camera)
+      renderFrame(camera)
+      return { ...state.stats }
+    },
     beginRecordingRun,
     endRecordingRun,
     startRewindCompare,
@@ -580,13 +846,14 @@ async function boot() {
 
   setBoot(1, 'ready')
   state.ready = true
+  bus.emit('saves-changed')
 
-  console.info(
+  if (query.debug) console.info(
     `[raffi-world] compiled — ${built.triangles.toLocaleString()} tris generated, ` +
     `${built.collision.length} colliders, ${world.vehicles.length} cars, seed "${state.seed}"`
   )
 
-  if (query.auto) {
+  if (query.auto || pendingCheat) {
     startGame()
   } else {
     els.bootStart?.classList.remove('hidden')
@@ -595,14 +862,18 @@ async function boot() {
 }
 
 function startGame() {
+  if (gameStarted) return
+  gameStarted = true
   els.boot?.classList.add('hidden')
   els.hud?.setAttribute('aria-hidden', 'false')
+  els.canvas?.focus({ preventScroll: true })
   setCameraMode('chase')
+  void unlockAudio()
   bus.emit('start')
   beginRecordingRun()
   const d = districtAt(state.player.x, state.player.z)
   if (d) bus.emit('district', d)
-  if (!query.auto) toast(device.touch ? 'Left thumb to move · Right buttons to interact' : 'WASD move · E interact · C camera (3D)', 4.5)
+  if (!query.auto) toast(device.touch ? 'Left thumb: move · Drag the view: look around' : 'WASD move · Drag to look · E interact', 4.5)
   if (query.to) {
     queueDialogue(['greeter-hello', 'greeter-brief', 'greeter-quest'], {
       substitutions: { name: query.to },
@@ -611,27 +882,38 @@ function startGame() {
   } else {
     queueDialogue('garage-choice', { duration: 5.5 })
   }
+  last = performance.now()
   requestAnimationFrame(loop)
+  if (pendingCheat) { openCheatMenu(pendingCheat.code); pendingCheat = null }
 }
 
 // ------------------------------------------------------------------ loop ---
 
 let last = performance.now()
 let hourCheck = 0
+let frameElapsed = 0
+let frameCount = 0
 
 function loop(now) {
   requestAnimationFrame(loop)
 
-  const dt = Math.min((now - last) / 1000, 0.05)
+  const realDt = Math.max(0, (now - last) / 1000)
+  const dt = Math.min(realDt, 0.05)
   last = now
-  if (!hostActive || document.hidden) return
+  if (!hostActive || graphicsFailed || document.hidden || world.crateQuestActive) { simulation.reset(); previousPlayer = null; renderPoses.reset(); return }
+  state.stats.frameMs = realDt * 1000
+  frameElapsed += realDt
+  frameCount++
+  if (frameElapsed >= 0.5) { state.stats.fps = Math.round(frameCount / frameElapsed); frameElapsed = 0; frameCount = 0 }
   state.dt = dt
-  state.time += dt
   state.frame++
+  let renderAlpha = 1
+  let displayedPlayer = state.player
 
   const aspect = els.canvas.clientWidth / Math.max(els.canvas.clientHeight, 1)
 
   if (sideActivityOpen()) {
+    simulation.reset()
     updateSideActivities(document.hidden ? 0 : dt)
     endInputFrame()
     return
@@ -639,13 +921,28 @@ function loop(now) {
 
   updateInput(state.mode, player.vehicle?.kind || null)
 
+  updateSports()
+  updatePrintStudio(dt)
+  if (isSportsOpen() || isPrintStudioOpen()) {
+    simulation.reset()
+    endInputFrame()
+    return
+  }
+  updateStory(dt)
   if (consume('pause') && !world.crateQuestActive) {
-    setPaused(!state.paused)
+    if (isStoryOpen()) closeStory()
+    else setPaused(!state.paused)
+  }
+  if (consume('map') && !world.crateQuestActive && !isStoryOpen()) {
+    if (isWorldMapOpen()) { hideWorldMap(); setPaused(true) }
+    else openWorldMap()
+  }
+  if (consume('cheats') && !world.crateQuestActive && !isStoryOpen()) {
+    if (cheatsOpen()) setPaused(false)
+    else openCheatMenu()
   }
 
   if (!state.paused) {
-    updateTransport(dt)
-
     if (consume('radio')) cycleStation(1)
     // CAM / C / V: classic → CHASE 3D → FREE 3D → birds → classic.
     // First press leaves iso into real perspective (what players expect from C).
@@ -659,10 +956,11 @@ function loop(now) {
     }
     if (consume('rotate-left')) rotateView(1)
     if (consume('rotate-right')) rotateView(-1)
+    if (input.look.x || input.look.y) orbitView(input.look.x, input.look.y)
 
     // Context priority: dialogue → mission/transit → nearby ride. Touch GAS
     // is a distinct input from keyboard E, so it can never eject the rider.
-    const ctx = contextAction(world.vehicles, [recordShopQuest(), missionContext(), transitAction(), interiorDoorContext()])
+    const ctx = contextAction(world.vehicles, [recordShopQuest(), storyContext(), sportsContext(), printStudioContext(), missionContext(), transitAction(), interiorDoorContext()])
     const controls = player.vehicle?.controls
     const dialogueBlocking = isDialogueBlocking()
     const missionAction = missionActionLabel()
@@ -713,6 +1011,9 @@ function loop(now) {
       } else if ((keyboardAction || touchPrimary || spaceAction) && state.mode !== 'vehicle') {
         if (ctx.kind === 'enter' && enterVehicle(ctx.target)) onRideMounted(ctx.target)
         else if (ctx.kind === 'transit') void beginFastTravel(ctx.target)
+        else if (ctx.kind === 'story') openStory(ctx.target)
+        else if (ctx.kind === 'sports') openSports()
+        else if (ctx.kind === 'print-studio') openPrintStudio()
         else if (ctx.kind === 'mission') startMission(ctx.target)
         else if (ctx.kind === 'crate-quest') openCrateQuest()
         else if (ctx.kind === 'interior-enter') enterInterior(ctx.target)
@@ -721,68 +1022,84 @@ function loop(now) {
     }
 
     // The parent now owns input; do not advance actors or mission clocks on this frame.
-    if (world.crateQuestActive) {
+    if (world.crateQuestActive || isStoryOpen() || isSportsOpen() || isPrintStudioOpen()) {
       endInputFrame()
       return
     }
     const flying = state.debug.on && updateDebugCamera(dt, input)
-    if (!flying && !world.transitBusy && !isDialogueBlocking()) {
-      updatePlayer(dt, input, world.collision, state.radio.beatPhase)
-    }
-
-    if (!world.transitBusy && !isDialogueBlocking()) { updateMissions(dt); updateSideActivities(dt) }
-    if (!world.transitBusy) updateCompliance(dt)
-    if (!world.transitBusy && !state.interior) updatePursuit(dt)
-
-    // Ambient NPCs + replay buffers / ghosts (signature mechanic).
-    updateReplay(dt, {
-      hour: currentHour(),
-      threatNear: (x, z, r) => {
-        // Soft threat from nearby pursuers if any.
-        const snap = pursuitSnapshot()
-        if (!snap?.actors?.length) return false
-        for (const a of snap.actors) {
-          if (Math.hypot((a.x ?? 0) - x, (a.z ?? 0) - z) < r) return true
-        }
-        return false
-      },
-    })
-
-    if (!world.transitBusy) settlePlayerContacts(world.collision)
-
-    // Catch freeze owns locomotion for the invite beat.
-    if (pursuitBlocksControl()) {
-      if (player.vehicle) {
-        player.vehicle.speed = 0
-        player.vehicle.lateral = 0
+    const simulationFrame = simulation.advance(realDt, (dt) => {
+      previousPlayer = { ...state.player }
+      renderPoses.capture(gfx.scene)
+      state.dt = dt
+      state.time += dt
+      updateTransport(dt)
+      if (!world.transitBusy && !state.interior) updateTraffic(dt)
+      if (!flying && !world.transitBusy && !isDialogueBlocking()) {
+        updatePlayer(dt, input, world.collision, state.radio.beatPhase)
       }
-      state.player.vx = 0
-      state.player.vz = 0
-      state.player.speed = 0
-    }
 
+      if (!world.transitBusy && !isDialogueBlocking()) { updateMissions(dt); updateSideActivities(dt) }
+      if (!world.transitBusy) updateCompliance(dt)
+      if (!world.transitBusy && !state.interior) updatePursuit(dt)
+
+      // Ambient NPCs + replay buffers / ghosts (signature mechanic).
+      updateReplay(dt, {
+        hour: currentHour(),
+        threatNear: (x, z, r) => {
+          // Soft threat from nearby pursuers if any.
+          const snap = pursuitSnapshot()
+          if (!snap?.actors?.length) return false
+          for (const a of snap.actors) {
+            if (Math.hypot((a.x ?? 0) - x, (a.z ?? 0) - z) < r) return true
+          }
+          return false
+        },
+      })
+
+      if (!world.transitBusy) settlePlayerContacts(world.collision)
+
+      // Catch freeze owns locomotion for the invite beat.
+      if (pursuitBlocksControl()) {
+        if (player.vehicle) {
+          player.vehicle.speed = 0
+          player.vehicle.lateral = 0
+        }
+        state.player.vx = 0
+        state.player.vz = 0
+        state.player.speed = 0
+      }
+
+      // District entry.
+      const d = districtAt(state.player.x, state.player.z)
+      if (d && d.id !== state.district) {
+        state.district = d.id
+        bus.emit('district', d)
+        if (!state.grade.forced && !state.radio.on) requestGrade(d.defaultGrade)
+      }
+
+      // System clock drives time of day when nothing else has forced a grade.
+      hourCheck += dt
+      if (hourCheck > 10) {
+        hourCheck = 0
+        if (!state.grade.forced && !state.radio.on) requestGrade(gradeForHour(currentHour()))
+      }
+
+      updateSaves(dt)
+      return !state.paused && !world.crateQuestActive && !sideActivityOpen()
+    })
+    renderAlpha = simulationFrame.alpha
+    state.stats.simulation = simulationFrame
+    displayedPlayer = interpolatePlayer(previousPlayer, state.player, renderAlpha)
     const focus = flying
       ? { x: debugState.flyX, y: debugState.flyY, z: debugState.flyZ }
-      : { x: state.player.x, y: state.player.y, z: state.player.z }
+      : displayedPlayer
     const vel = flying ? { x: 0, z: 0 } : { x: state.player.vx, z: state.player.vz }
-    updateCamera(dt, focus, vel, aspect)
-
-    // District entry.
-    const d = districtAt(state.player.x, state.player.z)
-    if (d && d.id !== state.district) {
-      state.district = d.id
-      bus.emit('district', d)
-      if (!state.grade.forced && !state.radio.on) requestGrade(d.defaultGrade)
-    }
-
-    // System clock drives time of day when nothing else has forced a grade.
-    hourCheck += dt
-    if (hourCheck > 10) {
-      hourCheck = 0
-      if (!state.grade.forced && !state.radio.on) requestGrade(gradeForHour(currentHour()))
-    }
-
+    updateCamera(dt, focus, vel, aspect, flying ? null : world.collision)
     updateGrade(dt)
+  } else {
+    simulation.reset()
+    previousPlayer = null
+    renderPoses.reset()
   }
 
   // Fog-depth cull opaque city chunks only (never emissive/alpha/actors).
@@ -791,19 +1108,59 @@ function loop(now) {
     updateOpaqueFogCull(cam.camera, world.cityRoot)
   }
 
-  renderFrame(cam.camera)
+  if (!state.paused || pausedFrameDirty) {
+    const tier = getQuality().tier
+    if (tier !== presentationTier) {
+      presentationTier = tier
+      void nearCharacters?.setQuality(tier).catch(() => toast('Nearby character detail could not load. Street activity continues.', 4))
+      void playerCharacter?.setQuality(tier).catch(() => toast('Character detail could not load. Your current character remains available.', 4))
+    }
+    if (!state.paused) renderPoses.apply(renderAlpha)
+    try {
+      const presentationState = { ...state, player: displayedPlayer }
+      playerCharacter?.update(state.paused ? 0 : dt, presentationState)
+      nearCharacters?.update(state.paused ? 0 : dt, presentationState, cam.camera)
+      actorBatcher?.update(cam.camera)
+      renderFrame(cam.camera)
+    } finally { renderPoses.restore() }
+    pausedFrameDirty = false
+  }
+  setAudioActive(hostActive && !document.hidden && (!state.paused || state.storyPlayingMusic || state.sportsPlayingSound))
+  updateAudio({ dialogue: els.subtitle?.classList.contains('show'), vehicle: player.vehicle })
   updateHud(dt)
-  updateDialogue(dt)
+  if (!state.paused) updateDialogue(dt)
   updateDebugReadout(dt)
   endInputFrame()
 }
 
 // ------------------------------------------------------------------ init ---
 
+function showGraphicsError(message) {
+  graphicsFailed = true
+  resetInput()
+  setAudioActive(false)
+  const panel = document.getElementById('graphics-error')
+  document.getElementById('graphics-error-message').textContent = message
+  panel?.classList.remove('hidden')
+  document.getElementById('graphics-retry')?.focus()
+}
+
+document.getElementById('graphics-retry')?.addEventListener('click', () => location.reload())
+document.addEventListener('visibilitychange', () => setAudioActive(!document.hidden && hostActive && (!state.paused || state.storyPlayingMusic || state.sportsPlayingSound)))
+window.addEventListener('pointerdown', () => { if (state.paused) pausedFrameDirty = true; if (state.ready && !state.paused) void unlockAudio() })
+window.addEventListener('keydown', () => { if (state.ready && !state.paused) void unlockAudio() })
+document.getElementById('graphics-light')?.addEventListener('click', () => {
+  const url = new URL(location.href)
+  url.searchParams.set('lowfi', '1')
+  url.searchParams.set('quality', 'performance')
+  location.assign(url.href)
+})
+document.getElementById('view')?.addEventListener('webglcontextlost', (event) => {
+  event.preventDefault()
+  showGraphicsError('The graphics connection was interrupted. Reload to return to Brooklyn, or try a lighter graphics setting.')
+})
+
 boot().catch((err) => {
   console.error('[raffi-world] boot failed', err)
-  if (els.bootStatus) {
-    els.bootStatus.textContent = 'boot failed: ' + err.message
-    els.bootStatus.style.color = '#ff6b6b'
-  }
+  showGraphicsError('Raffi World could not open. Check your connection and reload. If your browser is struggling with 3D, try performance mode.')
 })

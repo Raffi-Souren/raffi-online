@@ -191,6 +191,25 @@ test('SET TIME scores on-window pulses and fails after the authored miss cap', (
   assert.ok(fail.rhythmMisses >= spec.failAfterMisses)
 })
 
+test('SET TIME finishes its last beat after one to five allowed misses instead of softlocking', () => {
+  const spec = setTime.objectives[0]
+  const interval = 60 / 124
+  const total = rhythmTotalHits(spec)
+  for (let misses = 1; misses < spec.failAfterMisses; misses++) {
+    const run = of(setTime)
+    for (let i = 0; i < total; i++) {
+      // Miss the final notes as well as the first, so completion cannot rely
+      // on receiving another pulse after the authored music has ended.
+      const miss = i < misses - 1 || i === total - 1
+      const dueAt = (i + 1) * interval + (miss ? 0.12 : 0)
+      stepMissionRun(run, { mode: 'foot', x: 0, z: 0, bpm: 124, pulse: !miss }, dueAt - run.elapsed)
+    }
+    assert.equal(run.status, 'complete', `${misses} missed beats left the set unfinished`)
+    assert.equal(run.rhythmMisses, misses)
+    assert.equal(run.rhythmHits, total - misses)
+  }
+})
+
 test('COLD BOOT shuffles a data-driven sensor grid and respawns on a trip', () => {
   const spec = coldBoot.objectives.find((item) => item.kind === 'avoid')
   const cells = buildSensorCells(spec, { x: 0, z: 0 })

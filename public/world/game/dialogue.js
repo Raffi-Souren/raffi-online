@@ -16,6 +16,10 @@ let holdTimer = 0
 
 export function initDialogue(elements) {
   els = elements
+  els.next?.addEventListener('click', (event) => {
+    event.stopPropagation()
+    advanceDialogue()
+  })
   bus.on('dialogue', (payload) => {
     if (typeof payload === 'string') queueDialogue([{ text: payload }])
     else if (payload?.id) queueDialogue(payload.id, payload)
@@ -58,7 +62,7 @@ function buildLine(source, options) {
   const speakerData = data.dialogue.speakers?.[speaker] || null
   return {
     text,
-    label: source.label || speakerData?.label || options.label || 'PORT VANTAGE',
+    label: source.label || speakerData?.label || options.label || 'RAFFI WORLD',
     accent: source.accent || speakerData?.accent || options.accent || '#39E6FF',
     delivery: source.delivery || options.delivery || 'caption',
     blocking: source.blocking,
@@ -83,6 +87,7 @@ function showNext() {
   if (els.speaker) els.speaker.textContent = current.label
   if (els.text) els.text.textContent = ''
   if (els.next) els.next.classList.remove('ready')
+  if (els.next) els.next.hidden = !current.blocking
 }
 
 export function updateDialogue(dt) {

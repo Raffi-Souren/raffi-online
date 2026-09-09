@@ -436,7 +436,7 @@ function beginCatch() {
   const line = lines[catchLineIndex % lines.length]
   catchLineIndex += 1
   queueDialogue(line, { blocking: true, duration: 2.8 })
-  toast('CALENDAR INVITE ACCEPTED', 3.2)
+  toast('CAUGHT · TRY AGAIN', 3.2)
   bus.emit('pursuit', { type: 'caught', tier: currentTier })
 }
 
@@ -454,7 +454,7 @@ function stepCatchSequence(dt) {
   if (phase === 'catching' && phaseT >= 1.6) {
     phase = 'fade-out'
     phaseT = 0
-    showCatchFade(true, 'INVITE ACCEPTED · RECURRING')
+    showCatchFade(true, 'TAKE A BREATH · TRY AGAIN')
   } else if (phase === 'fade-out' && phaseT >= 0.55) {
     // Clear COMPLIANCE, despawn pursuers, stay at collision-resolved location.
     state.compliance.tier = 0

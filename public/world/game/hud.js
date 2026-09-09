@@ -11,6 +11,7 @@ import { mapPlaces, drawMapDetails } from './minimap-details.js'
 
 let els = {}
 let toastTimer = 0
+let arrivalTimer = 0
 let dialogueOpen = false
 const pendingToasts = []
 let lastDistrict = null
@@ -65,8 +66,9 @@ export function showDistrict(district) {
   if (els.district) {
     els.district.textContent = district.name
     els.district.style.color = districtAccent(district.id)
+    els.district.hidden = false
   }
-  toast(district.subtitle ? `${district.name} — ${district.subtitle}` : district.name)
+  arrivalTimer = 3.6
 }
 
 function districtAccent(id) {
@@ -119,7 +121,7 @@ export function setInteractionPrompt(action) {
  * Points the navigator at a world-space destination. Mission code can replace
  * this marker as objectives advance without knowing anything about the HUD.
  */
-export function setWaypoint(point, label = 'WAYPOINT') {
+export function setWaypoint(point, label = 'WAYPOINT', source = null) {
   if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.z)) {
     waypoint = null
     state.navigation.waypoint = null
@@ -130,6 +132,7 @@ export function setWaypoint(point, label = 'WAYPOINT') {
   }
 
   waypoint = { x: point.x, z: point.z, label: String(label || 'WAYPOINT') }
+  if (source === 'map') waypoint.source = 'map'
   state.navigation.waypoint = { ...waypoint }
   routePoints = []
   routeOrigin = { x: Infinity, z: Infinity }
@@ -162,6 +165,10 @@ export function setRadio(station) {
 }
 
 export function updateHud(dt) {
+  if (arrivalTimer > 0) {
+    arrivalTimer -= dt
+    if (arrivalTimer <= 0 && els.district) els.district.hidden = true
+  }
   if (toastTimer > 0) {
     toastTimer -= dt
     if (toastTimer <= 0) els.toast?.classList.remove('show')

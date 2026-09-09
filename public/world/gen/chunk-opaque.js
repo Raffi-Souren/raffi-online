@@ -1,12 +1,12 @@
 /**
- * RAFFI WORLD — spatial partition of district OPAQUE geometry only.
+ * RAFFI WORLD — spatial partition of solid district geometry.
  *
  * Why: each district is one giant opaque mesh. FREE / high-yaw views keep that
  * whole mesh in frustum, so WebGL reports 60k+ visible tris. Chunking preserves
  * every triangle but lets frustum + fog cull drop off-screen city mass.
  *
- * Emissive and alpha stay single meshes (alpha is transparent depthWrite:false;
- * splitting it changes Three's object-level sort).
+ * Opaque emissive surfaces use the same partition. Alpha stays a single mesh
+ * (transparent depthWrite:false; splitting changes Three's object-level sort).
  *
  * Disable with globalThis.__RAFFI_OPAQUE_CHUNK__ = false for mutation tests.
  */
@@ -15,9 +15,10 @@
 
 /**
  * Cell size balances FREE-yaw frustum savings vs draw-call count.
- * ~200 m keeps district opaque meshes in the low tens, not 100+.
+ * A70m cell keeps detailed sidewalk facades separate from distant blocks;
+ * large cells submitted hidden streets whenever one corner entered the view.
  */
-export const DEFAULT_CELL = 140
+export const DEFAULT_CELL = 70
 /** Triangle AABB extent above this goes to spill (ground pads / road decks). */
 export const DEFAULT_SPILL_EXTENT = 48
 
@@ -91,7 +92,7 @@ export function partitionOpaqueGeometry(pos, uvs, colors, indices, opts = {}) {
       }
     }
 
-    appendTri(bucket, pos, uvs, colors, i0, i1, i2)
+    appendTri(bucket, pos, uvs, colors, i0, i1, i2, opts.normals)
     triCount++
   }
 
@@ -178,15 +179,16 @@ export function chunkBounds(chunk) {
 }
 
 function emptyChunk(key, cx, cz) {
-  return { cx, cz, key, positions: [], uvs: [], colors: [], indices: [] }
+  return { cx, cz, key, positions: [], uvs: [], colors: [], normals: [], indices: [] }
 }
 
-function appendTri(bucket, pos, uvs, colors, i0, i1, i2) {
+function appendTri(bucket, pos, uvs, colors, i0, i1, i2, normals) {
   const base = bucket.positions.length / 3
   for (const i of [i0, i1, i2]) {
     bucket.positions.push(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2])
     bucket.uvs.push(uvs[i * 2], uvs[i * 2 + 1])
     bucket.colors.push(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2])
+    if (normals) bucket.normals.push(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2])
   }
   bucket.indices.push(base, base + 1, base + 2)
 }

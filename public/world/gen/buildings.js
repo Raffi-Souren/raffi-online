@@ -202,19 +202,13 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
   const roofY = top.y + top.h / 2
   const cap = arch.cap || { type: 'parapet', height: 0.6 }
   // Roof deck slightly inset so the cornice / parapet can overshoot.
-  if (cap.type !== 'cornice' && cap.type !== 'parapet') {
+  {
     emitSurfaceTiles(b, {
       x: lot.x, y: roofY + 0.02, z: lot.z,
       w: top.w * 0.98, d: top.d * 0.98, ry: lot.ry,
       color: '#ffffff', rect: atlas.uv('roof-tar'),
     }, 48)
   }
-  set.alpha.plane({
-    x: lot.x + 1.6, y: 0.235, z: lot.z + 1.2,
-    w: lot.w + 7, d: lot.d + 7, ry: lot.ry,
-    color: '#ffffff', rect: atlas.uv('blob'),
-  })
-
   // ---------------------------------------------------------- windows ---
   const winStyle = m.windowStyle || (arch.windows?.tile?.includes('curtain') ? 'curtain' : 'recessed')
   if (winStyle !== 'none' && arch.cap?.type !== 'open-deck') {
@@ -232,13 +226,6 @@ export function buildBuilding(set, atlas, lot, cfg, opts = {}) {
 
   // --------------------------------------------------------------- cap ---
   addCap(b, lot, top, roofY, cap, flatRect, rng)
-  if (cap.type === 'cornice' || cap.type === 'parapet') {
-    emitSurfaceTiles(b, {
-      x: lot.x, y: roofY + (cap.height || 0.9) + 0.025, z: lot.z,
-      w: top.w - 0.6, d: top.d - 0.6, ry: lot.ry,
-      color: '#ffffff', rect: atlas.uv('roof-tar'),
-    }, 48)
-  }
 
   // ------------------------------------------------------------- stoop ---
   if (arch.stoop && rng.chance(arch.stoop.chance)) {
@@ -438,7 +425,7 @@ function addWindowGrid(b, atlas, lot, ctx) {
           } else {
             localZ = t
             localX = face.sign * (s.w / 2 + depth)
-            ry = lot.ry + Math.PI / 2 + (face.sign < 0 ? Math.PI : 0)
+            ry = lot.ry - Math.PI / 2 + (face.sign < 0 ? Math.PI : 0)
           }
           const p = lotPoint(lot, localX, localZ)
 
@@ -451,7 +438,24 @@ function addWindowGrid(b, atlas, lot, ctx) {
             rect: paneRect,
           })
 
-          // One lintel on low street stock only — towers skip frames.
+          // Recess reveals, sill and slender mullions catch real light around
+          // street windows. They share the city mesh and use no extra material.
+          if (style !== 'curtain' && y < 22) {
+            const axis = { x: Math.cos(ry), z: Math.sin(ry) }
+            const outward = { x: -Math.sin(ry), z: Math.cos(ry) }
+            const edge = (along, vertical, width, height, depth, tint) => b.box({
+              x: p.x + axis.x * along + outward.x * 0.035,
+              y: y + vertical,
+              z: p.z + axis.z * along + outward.z * 0.035,
+              w: width, h: height, d: depth, ry, color: tint, rect: white,
+              faces: SIDES_TOP,
+            })
+            edge(0, -winH * 0.5 - 0.055, winW + 0.24, 0.11, 0.24, frameColor)
+            edge(-winW * 0.5 - 0.045, 0, 0.09, winH + 0.14, 0.14, frameColor)
+            edge(winW * 0.5 + 0.045, 0, 0.09, winH + 0.14, 0.14, frameColor)
+            edge(0, 0, 0.042, winH, 0.07, '#65717a')
+            edge(0, winH * 0.02, winW, 0.042, 0.07, '#65717a')
+          }
           if (style !== 'curtain' && y < 22 && face.axis === 'z') {
             const lip = 0.08
             const flz = face.sign * (s.d / 2 + 0.03)
@@ -491,32 +495,27 @@ function addDeckBands(b, lot, shells, fh, rect) {
 function addCap(b, lot, top, roofY, cap, rect, rng) {
   const capColor = '#ebe6dc'
   const dark = '#9a968e'
+  const ring = (w, d, y, h, thickness, color) => {
+    for (const sign of [-1, 1]) {
+      let p = lotPoint(lot, 0, sign * (d - thickness) / 2)
+      b.box({ x: p.x, y, z: p.z, w, h, d: thickness, ry: lot.ry, color, rect, faces: SIDES_ALL })
+      p = lotPoint(lot, sign * (w - thickness) / 2, 0)
+      b.box({ x: p.x, y, z: p.z, w: thickness, h, d: d - thickness * 2, ry: lot.ry, color, rect, faces: SIDES_ALL })
+    }
+  }
   switch (cap.type) {
     case 'cornice': {
-      // Double cornice: thick band + thin overhang (InfiniTown roof line).
       const h = cap.height || 0.9
       const over = cap.overhang || 0.45
-      b.box({
-        x: lot.x, y: roofY + h * 0.35, z: lot.z,
-        w: top.w + over * 0.6, h: h * 0.55, d: top.d + over * 0.6,
-        ry: lot.ry, color: capColor, rect, faces: SIDES_TOP,
-      })
-      b.box({
-        x: lot.x, y: roofY + h * 0.85, z: lot.z,
-        w: top.w + over * 2, h: h * 0.28, d: top.d + over * 2,
-        ry: lot.ry, color: dark, rect, faces: SIDES_TOP,
-      })
+      ring(top.w + over * 0.6, top.d + over * 0.6, roofY + h * 0.35, h * 0.55, 0.42, capColor)
+      ring(top.w + over * 2, top.d + over * 2, roofY + h * 0.85, h * 0.28, over + 0.42, dark)
       break
     }
     case 'parapet': {
       const h = cap.height || 0.8
       const over = cap.overhang || 0.15
-      // Raised ring parapet — four walls + slight top lip.
-      b.box({
-        x: lot.x, y: roofY + h / 2, z: lot.z,
-        w: top.w + over * 2, h, d: top.d + over * 2,
-        ry: lot.ry, color: capColor, rect, faces: SIDES_TOP,
-      })
+      ring(top.w + over * 2, top.d + over * 2, roofY + h / 2, h, 0.34, capColor)
+      ring(top.w + over * 2 + 0.12, top.d + over * 2 + 0.12, roofY + h + 0.045, 0.09, 0.47, dark)
       break
     }
     case 'mech-box': {
@@ -637,11 +636,11 @@ function addStorefront(b, set, atlas, lot, ctx) {
   const glassY = glassH * 0.55 + 0.25
   for (let i = 0; i < bays; i++) {
     const lx = (-0.5 + (i + 0.5) / bays) * lot.w
-    const p = lotPoint(lot, lx, faceZ - 0.08)
+    const p = lotPoint(lot, lx, faceZ + 0.03)
     b.box({
       x: p.x, y: glassY, z: p.z,
       w: bayW * 0.72, h: glassH, d: 0.16,
-      ry: lot.ry, color: '#1a2838', rect: white, faces: SIDES,
+      ry: lot.ry, color: '#c1ccd0', rect: atlas.uv('window-reflection'), faces: SIDES,
     })
     // Frame lintel
     const fl = lotPoint(lot, lx, faceZ + 0.02)
@@ -674,8 +673,12 @@ function addStorefront(b, set, atlas, lot, ctx) {
       x: p.x, y: fh * 0.68, z: p.z,
       w: aw, h: 0.14, d: 1.15, ry: lot.ry,
       color: rng.pick(['#8a3a3a', '#2e5a6e', '#3a5a3a', '#6e5a2e', '#c45a2e']),
-      rect: white, faces: SIDES_ALL,
+      rect: atlas.uv('awning-stripe'), faces: SIDES_ALL,
     })
+    const valance = lotPoint(lot, 0, lot.d / 2 + 1.06)
+    b.box({ x: valance.x, y: fh * 0.68 - 0.18, z: valance.z,
+      w: aw, h: 0.36, d: 0.12, ry: lot.ry, color: '#d2d1c9',
+      rect: atlas.uv('awning-stripe'), faces: SIDES_ALL })
   }
 }
 
@@ -708,8 +711,9 @@ function addLitWindows(set, atlas, lot, ctx) {
     if (wy > totalH - 0.5) continue
     // Prefer upper floors for night glow (base often retail).
     if (wy < (shells[0]?.role === 'base' ? shells[0].h : 0) + 0.5 && rng.chance(0.5)) continue
-    const outward = (main?.d || lot.d) / 2 + 0.09
-    const p = lotPoint(lot, along, side * outward)
+    const shell = shells.find((s) => wy >= s.y - s.h / 2 && wy <= s.y + s.h / 2) || main
+    const paneAlong = along * (shell.w / (main?.w || lot.w))
+    const p = lotPoint(lot, paneAlong, side * (shell.d / 2 + 0.091))
     set.emissive.billboard({
       x: p.x, y: wy, z: p.z,
       w: 1.05, h: 0.9,

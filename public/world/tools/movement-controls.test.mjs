@@ -10,7 +10,7 @@ globalThis.screen = { width: 1280, height: 720 }
 
 const { state, data } = await import('../engine/state.js')
 const { CollisionWorld, stepVehicle } = await import('../engine/physics.js')
-const { cam, initCamera, setCameraMode, updateCamera, movementBasis } = await import('../engine/camera.js')
+const { cam, initCamera, setCameraMode, updateCamera, movementBasis, setDrivingView, setReducedMotion, addShake } = await import('../engine/camera.js')
 const { initPlayer, player, updatePlayer, spawnVehicle, enterVehicle, exitVehicle, movementPrompt, teleportPlayer } =
   await import('../game/player.js')
 
@@ -211,4 +211,88 @@ test('blocked-path feedback waits for sustained contact, preserves actions and c
   assert.equal(movementPrompt(none).kind, 'movement-hint')
   teleportPlayer(0, 0)
   assert.equal(movementPrompt(none), none, 'a room transition must not carry a stale hint')
+})
+
+
+test('a stale first animation timestamp cannot launch the camera below the city', (t) => {
+  setup(t)
+  for (const elapsed of [-12, -0.02, NaN, Infinity, 1 / 60]) {
+    updateCamera(elapsed, state.player, { x: 0, z: 0 }, 16 / 9)
+    assert.ok(cam.camera.position.toArray().every(Number.isFinite))
+    assert.ok(cam.camera.position.y > 0 && cam.camera.position.y < 30)
+    assert.ok(cam.target.y > 0 && cam.target.y < 4)
+  }
+})
+
+test('hood is explicit, car-only and stable at low and high speed; camera modes remain available', (t) => {
+  const { scene, world } = setup(t)
+  const vehicle = spawnVehicle(scene, materials, atlas, 'grand-tourer', 0, 0, 0, 'hood-test')
+  enterVehicle(vehicle)
+  setDrivingView('hood')
+  for (const speed of [0, 5, 35, 0]) {
+    state.player.speed = speed
+    updateCamera(dt, state.player, { x: 0, z: speed }, 16 / 9, world)
+    assert.ok(Math.abs(cam.camera.position.z - 1.05) < 1e-9)
+    assert.ok(Math.abs(cam.camera.position.y - 1.32) < 1e-9)
+    const direction = cam.camera.getWorldDirection(new THREE.Vector3())
+    assert.ok(direction.z > 0.99)
+  }
+  setCameraMode('birds'); updateCamera(dt, state.player, { x: 0, z: 0 }, 16 / 9, world)
+  assert.equal(cam.camera.isOrthographicCamera, true)
+  exitVehicle(world); setCameraMode('chase'); updateCamera(dt, state.player, { x: 0, z: 0 }, 16 / 9, world)
+  assert.ok(cam.camera.position.y > 2, 'hood preference must not lower the foot camera')
+  setDrivingView('chase')
+})
+
+test('reduced camera motion disables shake independently of the chosen camera', (t) => {
+  setup(t)
+  setReducedMotion(true); addShake(1)
+  assert.equal(cam.shake, 0)
+  setReducedMotion(false); addShake(0.5)
+  assert.equal(cam.shake, 0.5)
+  setReducedMotion(true)
+  assert.equal(cam.shake, 0)
+})
+
+
+test('a driven car stops its visible nose before another car and can reverse away', (t) => {
+  const { scene, world } = setup(t)
+  const driver = spawnVehicle(scene, materials, atlas, 'grand-tourer', 0, 0, 0, 'driver-contact')
+  const parked = spawnVehicle(scene, materials, atlas, 'sedan', 0, 12, 0, 'parked-contact')
+  enterVehicle(driver)
+  for (let i = 0; i < 240; i++) frame(world, input(0, 1, { throttle: 1 }))
+  const gap = parked.z - parked.mesh.userData.length / 2 - (driver.z + driver.mesh.userData.length / 2)
+  assert.ok(gap >= -0.01, `visible car bodies overlap by ${-gap}m`)
+  assert.ok(driver.speed < 0.1)
+  const stopped = driver.z
+  for (let i = 0; i < 45; i++) frame(world, input(0, -1, { brake: 1 }))
+  assert.ok(driver.z < stopped - 1, 'reverse must free a stopped car')
+})
+
+test('a driven car stops before a pedestrian; its own mesh and presentation clones never block it', (t) => {
+  const { scene, world } = setup(t)
+  const driver = spawnVehicle(scene, materials, atlas, 'compact', 0, 0, 0, 'driver-ped')
+  const ped = new THREE.Object3D(); ped.userData.rig = 'biped'; ped.position.set(0, 9, 0); scene.add(ped)
+  const presentation = new THREE.Object3D(); presentation.userData = { rig: 'biped', authoredCharacter: true }; scene.add(presentation)
+  enterVehicle(driver)
+  for (let i = 0; i < 50; i++) frame(world, input(0, 1, { throttle: 1 }))
+  assert.ok(driver.z > 2, 'own vehicle or elevated/presentation actor blocked ordinary driving')
+  ped.userData.presentationReplaced = true
+  ped.position.set(0, 0, driver.z + 9)
+  for (let i = 0; i < 180; i++) frame(world, input(0, 1, { throttle: 1 }))
+  assert.ok(driver.z + driver.mesh.userData.length / 2 <= ped.position.z - 0.39, 'car nose passed through pedestrian')
+  assert.ok(driver.speed < 0.1)
+})
+
+test('car and rider visuals retain ramp height and ignore street actors below', (t) => {
+  const { scene, world } = setup(t)
+  world.add({ type: 'ramp', x: 0, z: 0, w: 20, d: 30, h: 12, ry: 0 })
+  const driver = spawnVehicle(scene, materials, atlas, 'scooter', 0, 0, 0, 'ramp-rider')
+  driver.y = 6
+  const streetPed = new THREE.Object3D(); streetPed.userData.rig = 'biped'; streetPed.position.set(0, 0, 3); scene.add(streetPed)
+  enterVehicle(driver)
+  for (let i = 0; i < 45; i++) frame(world, input(0, 1, { throttle: 1 }))
+  assert.ok(driver.z > 2.5, 'street pedestrian blocked a raised rider')
+  assert.ok(driver.y > 3); assert.equal(driver.mesh.position.y, driver.y); assert.equal(state.player.y, driver.y)
+  assert.ok(Math.abs(player.group.position.y - driver.y - driver.riderHeight) < 0.001)
 })

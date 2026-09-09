@@ -1,0 +1,33 @@
+{
+  "materials": [
+    {
+      "id": "brick_wall_003",
+      "role": "brick",
+      "slot": 0,
+      "metersPerRepeat": 1.2
+    },
+    {
+      "id": "asphalt_03",
+      "role": "asphalt",
+      "slot": 1,
+      "metersPerRepeat": 2.0
+    },
+    {
+      "id": "concrete_pavement_02",
+      "role": "concrete",
+      "slot": 2,
+      "metersPerRepeat": 1.8
+    },
+    {
+      "id": "pavement_05",
+      "role": "cobble",
+      "slot": 3,
+      "metersPerRepeat": 3.4
+    }
+  ],
+  "maps": {
+    "albedo": "./albedo.webp",
+    "normal": "./normal.webp",
+    "roughness": "./roughness.webp"
+  }
+}

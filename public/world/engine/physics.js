@@ -199,7 +199,7 @@ export function clampToBounds(x, z, bounds, margin = 4) {
  * @param h   handling block from vehicles.json
  * @param ctl {throttle, brake, steer, handbrake} each -1..1 / 0..1
  */
-export function stepVehicle(v, h, ctl, dt, world) {
+export function stepVehicle(v, h, ctl, dt, world, bodies = []) {
   const throttle = clamp(ctl.throttle, 0, 1)
   const brake = clamp(ctl.brake, 0, 1)
   const steer = clamp(ctl.steer, -1, 1)
@@ -266,7 +266,27 @@ export function stepVehicle(v, h, ctl, dt, world) {
   let nz = v.z + (fz * v.speed + rz * v.lateral) * dt
 
   const radius = v.collisionRadius || h.collisionRadius || 1.7
-  const res = resolveCircle(world, nx, nz, radius, 3)
+  const res = bodies.length ? moveCircle(world, v.x, v.z, nx - v.x, nz - v.z, radius, bodies) : resolveCircle(world, nx, nz, radius, 3)
+  if (bodies.length) {
+    // Rounded front/rear probes cover the visible body beyond the old center
+    // collider, while leaving authored static-world steering clearance intact.
+    const bodyRadius = Math.max(0.2, (v.mesh?.userData?.width || radius * 2) / 2)
+    const extent = Math.max(0, (v.mesh?.userData?.length || radius * 2) / 2 - bodyRadius)
+    const actorWorld = { query: () => [] }
+    for (const offset of extent > 0.05 ? [-extent, extent] : []) {
+      const ox = fx * offset, oz = fz * offset
+      const contact = moveCircle(actorWorld, v.x + ox, v.z + oz, res.x - v.x, res.z - v.z, bodyRadius, bodies)
+      if (!contact.hit) continue
+      res.x = contact.x - ox; res.z = contact.z - oz; res.hit = true
+      res.normalX += contact.normalX; res.normalZ += contact.normalZ
+    }
+    // Actor correction must not push a car through a nearby wall.
+    const solid = resolveCircle(world, res.x, res.z, radius, 3)
+    res.x = solid.x; res.z = solid.z; res.y = solid.y; res.hit ||= solid.hit
+    res.normalX += solid.normalX; res.normalZ += solid.normalZ
+    const normalLength = Math.hypot(res.normalX, res.normalZ)
+    if (normalLength) { res.normalX /= normalLength; res.normalZ /= normalLength }
+  }
   if (res.hit) {
     // Kill only velocity into the wall so reverse can free you.
     let vx = fx * v.speed + rx * v.lateral

@@ -8,6 +8,8 @@ import { state, data, makeRng } from '../engine/state.js'
 import { resolveCircle, clampToBounds } from '../engine/physics.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { decidePolicy, verbDuration, reconsiderIn } from './npc-policy-core.js'
+import { createActivityState, planActivity } from './npc-activity-core.js'
+import { actorCollisionBodies } from '../engine/actor-collisions.js'
 import {
   RingBuffer,
   transformCapacity,
@@ -34,6 +36,7 @@ let decisionBuf = null
 let transformBuf = null
 let recording = false
 let worldSeed = 'port-vantage'
+let vehiclePoses = new WeakMap()
 
 export function initNpcSim({ scene, materials, atlas, collision, seed }) {
   disposeNpcSim()
@@ -58,11 +61,13 @@ export function initNpcSim({ scene, materials, atlas, collision, seed }) {
   const n = Math.min(POOL, data.npcs.population?.poolSize || POOL)
 
   for (let i = 0; i < n; i++) {
-    const archId = rng.pick(archetypes)
+    const activity = data.npcs.neighborhoodActivities?.[i] || null
+    const archId = activity?.archetype || rng.pick(i < 12 ? archetypes.filter((id) => data.npcs.archetypes[id].rig !== 'quadruped' && id !== 'bodega-cat') : archetypes)
     const arch = data.npcs.archetypes[archId]
     const ang = rng.range(0, Math.PI * 2)
     const rad = rng.range(8, 36)
-    const spawnPosition = resolveCircle(collision, spawn.x + Math.cos(ang) * rad, spawn.z + Math.sin(ang) * rad, NPC_RADIUS, 4)
+    const start = activity?.points[0] || { x: spawn.x + Math.cos(ang) * rad, z: spawn.z + Math.sin(ang) * rad }
+    const spawnPosition = resolveCircle(collision, start.x, start.z, NPC_RADIUS, 4)
     const x = spawnPosition.x
     const z = spawnPosition.z
     const yaw = rng.range(0, Math.PI * 2)
@@ -75,12 +80,19 @@ export function initNpcSim({ scene, materials, atlas, collision, seed }) {
       atlas,
       data.blocks.vertexLighting,
     )
+    ped.userData.npcId = 'npc-' + i
+    ped.userData.appearanceSeed = worldSeed + ':ambient:' + i
+    ped.userData.activityRole = activity?.role || 'neighborhood-resident'
+    ped.userData.locomotionStyle = activity?.locomotion || 'relaxed'
+    ped.userData.carriedItem = activity?.carriedItem || null
     ped.position.set(x, 0, z)
     scene.add(ped)
     actors.push({
       id: 'npc-' + i,
       archId,
       arch,
+      activity,
+      activityState: activity ? createActivityState() : null,
       mesh: ped,
       x, z,
       yaw,
@@ -111,6 +123,7 @@ export function disposeNpcSim() {
   lastSampleT = null
   simTime = 0
   recording = false
+  vehiclePoses = new WeakMap()
 }
 
 /**
@@ -133,6 +146,7 @@ export function resetNpcToStart() {
     a.verb = 'idle'
     a.target = null
     a.decisionIndex = 0
+    if (a.activity) a.activityState = createActivityState()
     a.verbEndsAt = simTime
     a.nextReconsiderAt = simTime
     if (a.mesh) {
@@ -141,6 +155,7 @@ export function resetNpcToStart() {
     }
   }
   lastSampleT = null
+  vehiclePoses = new WeakMap()
 }
 
 export function setNpcRecording(on) {
@@ -172,6 +187,11 @@ export function npcActorCount() {
   return actors.length
 }
 
+/** Read-only behavior evidence for the neighborhood/replay QA view. */
+export function npcActivitySnapshot() {
+  return actors.map((a) => ({ id: a.id, x: a.x, z: a.z, verb: a.verb, target: a.target, activity: a.activity?.id || null, index: a.activityState?.index ?? null, crossing: a.activityState?.crossing || false, visible: a.mesh.visible, role: a.mesh.userData.activityRole, locomotionStyle: a.mesh.userData.locomotionStyle, carriedItem: a.mesh.userData.carriedItem, appearanceSeed: a.mesh.userData.appearanceSeed, animation: a.mesh.userData.animationState, speed: a.mesh.userData.animationSpeed || 0 }))
+}
+
 /**
  * @param {number} dt
  * @param {{ threatNear?: (x,z,r)=>boolean, hour?: number }} [ctx]
@@ -182,6 +202,13 @@ export function updateNpcSim(dt, ctx = {}) {
   const tools = data.npcs.tools
   const sampleHz = data.npcs.replay.sampleHz
   const hour = ctx.hour ?? 12
+  const vehicleObjects = sceneRef.children.filter((object) => object.visible && Number.isFinite(object.userData?.width) && Number.isFinite(object.userData?.length))
+  const vehicles = vehicleObjects.map((object) => {
+    const previous = vehiclePoses.get(object), { x, y, z } = object.position, yaw = object.rotation.y
+    const speed = previous && dt > 0 ? ((x - previous.x) * Math.sin(yaw) + (z - previous.z) * Math.cos(yaw)) / dt : 0
+    vehiclePoses.set(object, { x, z })
+    return { x, y, z, yaw, speed, width: object.userData.width, length: object.userData.length }
+  })
 
   // Resolve in array order — insertion order is the collision non-determinism
   // surface when two sims diverge slightly (WORLD-BIBLE path divergence).
@@ -191,7 +218,20 @@ export function updateNpcSim(dt, ctx = {}) {
       ? ctx.threatNear(a.x, a.z, a.arch.policy?.fleeRadius || 7)
       : false
 
-    if (simTime >= a.nextReconsiderAt || simTime >= a.verbEndsAt) {
+    let activityPlan = a.activity && !threat ? planActivity(a.activity, a.activityState, a, dt, vehicles) : null
+    if (activityPlan && a.activity.social && state.mode === 'foot' && !state.interior) {
+      const dx = a.x - state.player.x, dz = a.z - state.player.z, distance = Math.hypot(dx, dz)
+      if (distance < 1.3) activityPlan = { verb: 'walk', target: a.activity.id + ':make-room', x: a.x + (distance > 0.01 ? dx / distance : 1) * 0.9, z: a.z + (distance > 0.01 ? dz / distance : 0) * 0.9 }
+    }
+    if (activityPlan) {
+      if (a.verb !== activityPlan.verb || a.target !== activityPlan.target) {
+        a.decisionIndex++
+        if (recording && decisionBuf) decisionBuf.push({ t: simTime, actorId: a.id, verb: activityPlan.verb, target: activityPlan.target })
+      }
+      a.verb = activityPlan.verb; a.target = activityPlan.target
+      a.goalX = activityPlan.x; a.goalZ = activityPlan.z
+      if (Number.isFinite(activityPlan.yaw)) a.yaw += Math.atan2(Math.sin(activityPlan.yaw - a.yaw), Math.cos(activityPlan.yaw - a.yaw)) * Math.min(1, dt * 7)
+    } else if (simTime >= a.nextReconsiderAt || simTime >= a.verbEndsAt) {
       const localGoals = goals.map((g) => ({
         ...g,
         dist: Math.hypot(g.x - a.x, g.z - a.z),
@@ -256,11 +296,15 @@ export function updateNpcSim(dt, ctx = {}) {
       }
     }
 
+    const present = activityPlan?.present !== false
+    if (!state.interior) a.mesh.visible = present
+
     // Locomotion
+    const oldX = a.x, oldZ = a.z
     const speed = a.verb === 'flee'
       ? (a.arch.speed?.run || 3.2)
       : a.verb === 'walk' || a.verb === 'enter' || a.verb === 'buy'
-        ? (a.arch.speed?.walk || 1.4)
+        ? (a.activity?.walkSpeed || a.arch.speed?.walk || 1.4)
         : 0
 
     if (speed > 0.05) {
@@ -268,17 +312,18 @@ export function updateNpcSim(dt, ctx = {}) {
       const dz = a.goalZ - a.z
       const dist = Math.hypot(dx, dz)
       if (dist > 0.4) {
-        a.yaw = Math.atan2(dx, dz)
+        const wantedYaw = Math.atan2(dx, dz)
+        a.yaw += Math.atan2(Math.sin(wantedYaw - a.yaw), Math.cos(wantedYaw - a.yaw)) * Math.min(1, dt * 9)
         const step = Math.min(speed * dt, dist)
-        let nx = a.x + Math.sin(a.yaw) * step
-        let nz = a.z + Math.cos(a.yaw) * step
+        let nx = a.x + dx / dist * step
+        let nz = a.z + dz / dist * step
         const res = resolveCircle(collisionRef, nx, nz, NPC_RADIUS, 3)
         const bounded = clampToBounds(res.x, res.z, data.world.bounds, 8)
         // Soft separation from other NPCs (order-dependent → run divergence).
         let sx = bounded.x
         let sz = bounded.z
         for (let j = 0; j < actors.length; j++) {
-          if (j === i) continue
+          if (j === i || !actors[j].mesh.visible) continue
           const o = actors[j]
           const ddx = sx - o.x
           const ddz = sz - o.z
@@ -293,17 +338,29 @@ export function updateNpcSim(dt, ctx = {}) {
           ? [{ type: 'circle', x: state.player.x, z: state.player.z, r: 0.45 }]
           : []
         // Peer separation must not push a pedestrian into walls or through the player.
-        const separated = resolveCircle(collisionRef, sx, sz, NPC_RADIUS, 4, playerBody)
+        const vehicleBodies = actorCollisionBodies(vehicleObjects, sx, sz, a.mesh, 10)
+        const separated = resolveCircle(collisionRef, sx, sz, NPC_RADIUS, 4, [...playerBody, ...vehicleBodies])
         a.x = separated.x
         a.z = separated.z
       }
     }
 
+    // Stationary neighbors need personal space too; previously only walking
+    // actors separated, leaving overlapping idle pairs at the garage.
+    const personal = actors.filter((other) => other !== a && other.mesh.visible && Math.hypot(other.x - a.x, other.z - a.z) < 2).map((other) => ({ type: 'circle', x: other.x, z: other.z, r: 0.42 }))
+    if (state.mode === 'foot' && !state.interior) personal.push({ type: 'circle', x: state.player.x, z: state.player.z, r: 0.45 })
+    personal.push(...actorCollisionBodies(vehicleObjects, a.x, a.z, a.mesh, 10))
+    if (present) { const settled = resolveCircle(collisionRef, a.x, a.z, NPC_RADIUS, 4, personal); a.x = settled.x; a.z = settled.z }
+
     a.phase += dt * (speed > 0.5 ? 2.2 : 0.4)
     a.mesh.position.set(a.x, 0, a.z)
     a.mesh.rotation.y = a.yaw
-    const st = speed < 0.2 ? 'idle' : speed > 2.5 ? 'run' : 'walk'
-    animatePed(a.mesh, data.npcs, st, dt, speed, a.phase)
+    const actualSpeed = Math.min(speed, dt > 0 ? Math.hypot(a.x - oldX, a.z - oldZ) / dt : 0)
+    const talking = a.verb === 'talk' || (a.activity && ['buy', 'enter'].includes(a.verb) && actualSpeed < 0.2)
+    const st = actualSpeed < 0.2 ? (talking ? 'talk' : 'idle') : actualSpeed > 2.5 ? 'run' : 'walk'
+    if (a.verb === 'talk') { const peer = actors.find((actor) => actor.id === (a.activity?.peer || a.target)); if (peer) { const yaw = Math.atan2(peer.x - a.x, peer.z - a.z); a.yaw += Math.atan2(Math.sin(yaw-a.yaw),Math.cos(yaw-a.yaw)) * Math.min(1,dt*5) } }
+    a.mesh.rotation.y = a.yaw
+    animatePed(a.mesh, data.npcs, st, dt, actualSpeed, a.phase)
   }
 
   if (recording && transformBuf && shouldSampleTransform(lastSampleT, simTime, sampleHz)) {
@@ -346,9 +403,10 @@ function buildGoalCatalog() {
   add('crosswalk', spawn.x + 15, spawn.z - 10, false)
   add('plaza', 60, -250, false)
   add('lobby-door', 62, -206, true)
-  add('transit-stop', -470, -145, false)
+  const transit = data.world.landmarks.find((landmark) => landmark.type === 'mobility-hub')?.transit?.at
+  if (transit) add('transit-stop', transit.x, transit.z - 3.5, false)
   add('vendor', -60, 112, false)
-  add('record-store', 148, 152, true)
+  add('record-store', -69, 110, false)
   add('club-door', 140, 136, true)
   add('queue', 145, 130, false)
   for (const d of data.world.districts || []) {

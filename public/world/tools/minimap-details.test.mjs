@@ -6,6 +6,27 @@ import { mapPlaces, mapViewAngle, visibleMapPlaces } from "../game/minimap-detai
 const world = JSON.parse(fs.readFileSync(new URL("../data/world.json", import.meta.url), "utf8"))
 const view = { x: 0, z: 0, scale: 1, radius: 100 }
 
+test("explicit map pins keep ownership until a new objective or clear replaces them", async () => {
+  globalThis.location = { search: "" }
+  globalThis.matchMedia = () => ({ matches: false })
+  globalThis.window = { devicePixelRatio: 1 }
+  globalThis.screen = { width: 1280, height: 800 }
+  const { setWaypoint, getWaypoint } = await import("../game/hud.js")
+  const { state } = await import("../engine/state.js")
+  const park = mapPlaces(world).find(place => place.kind === "sports")
+  assert.ok(park, "park must be reachable through the authored map")
+  setWaypoint(park, park.label, "map")
+  assert.equal(getWaypoint().source, "map")
+  assert.deepEqual(state.navigation.waypoint, getWaypoint())
+  const observed = getWaypoint(); observed.source = "changed"
+  assert.equal(getWaypoint().source, "map", "observation must not mutate the pin")
+  setWaypoint({ x: 12, z: 24 }, "RETURN THE CRATE")
+  assert.equal(getWaypoint().source, undefined, "a newly accepted objective owns its own route")
+  setWaypoint(null)
+  assert.equal(getWaypoint(), null)
+  assert.equal(state.navigation.waypoint, null)
+})
+
 test("map destinations follow authored garage, subway and repaint locations", () => {
   const places = mapPlaces(world)
   const hub = world.landmarks.find((landmark) => landmark.type === "mobility-hub")

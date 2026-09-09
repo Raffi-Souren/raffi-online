@@ -1,0 +1,13 @@
+{
+  "title": "Raf’s cheat sheet",
+  "codes": [
+    { "code": "WHIP", "label": "Grand tourer", "description": "A fresh set of keys. Delivered nearby.", "action": "vehicle", "vehicle": "grand-tourer" },
+    { "code": "SPORT", "label": "Sport coupe", "description": "Something a little quicker.", "action": "vehicle", "vehicle": "coupe-sport" },
+    { "code": "BOARD", "label": "Fresh skateboard", "description": "Take the scenic route.", "action": "vehicle", "vehicle": "skateboard" },
+    { "code": "REPLYALL", "label": "Lose the heat", "description": "Catch your breath. Start fresh.", "action": "clear" },
+    { "code": "MIXTAPE", "label": "Unlock all six stations", "description": "Every frequency is yours.", "action": "radio" },
+    { "code": "GOLDEN", "label": "Golden hour", "description": "A little more time before the sun goes down.", "action": "grade", "grade": "dusk" },
+    { "code": "AFTERHOURS", "label": "After hours", "description": "Turn on the city lights.", "action": "grade", "grade": "night" },
+    { "code": "HOME", "label": "Back to the crib", "description": "Return to the garage between missions.", "action": "home" }
+  ]
+}

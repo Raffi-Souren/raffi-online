@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>RAFFI WORLD — Port Vantage</title>
+<title>RAFFI WORLD — Brooklyn after hours</title>
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./style.css">
 <script type="importmap">
@@ -19,7 +19,7 @@
 <body>
 
 <div id="stage">
-  <canvas id="view"></canvas>
+  <canvas id="view" tabindex="0" aria-label="Raffi World 3D game. WASD to move, drag to look, E to interact, Escape to pause."></canvas>
 
   <!-- ================= HUD ================= -->
   <div id="hud" class="hidden" aria-hidden="true">
@@ -30,7 +30,7 @@
 
     <div class="hud-top-right">
       <div id="compliance" data-tier="0">
-        <span class="cl-label">COMPLIANCE</span>
+        <span class="cl-label">HEAT</span>
         <span class="cl-pips"></span>
       </div>
       <div id="clock">--:--</div>
@@ -56,12 +56,14 @@
       <span id="interaction-label">INTERACT</span>
     </div>
 
+    <button type="button" id="game-question" aria-label="Raf’s cheat sheet and radio">?</button>
+    <div id="play-tools"><button type="button" id="desktop-camera">Change view <kbd>C</kbd></button><button type="button" id="desktop-pause">Pause <kbd>Esc</kbd></button></div>
     <div id="toast"></div>
     <div id="subtitle" role="status" aria-live="polite">
       <div id="subtitle-kicker"></div>
       <div id="subtitle-speaker"></div>
       <div id="subtitle-text"></div>
-      <div id="subtitle-next" aria-hidden="true">▼</div>
+      <button id="subtitle-next" type="button" hidden>Continue <kbd>E ↵</kbd></button>
     </div>
 
     <!-- Touch controls -->
@@ -80,15 +82,15 @@
 
   <!-- ================= FAST TRAVEL ================= -->
   <div id="travel" class="hidden" role="status" aria-live="polite">
-    <div class="travel-line">VANTAGE EXPRESS</div>
+    <div class="travel-line">BROOKLYN EXPRESS</div>
     <div id="travel-destination">MISSION EXPRESS</div>
     <div class="travel-track"><i></i></div>
   </div>
 
   <!-- ================= COMPLIANCE CATCH ================= -->
   <div id="catch-fade" class="hidden" role="status" aria-live="polite">
-    <div class="catch-line">CALENDAR INVITE</div>
-    <div id="catch-label">INVITE ACCEPTED · RECURRING</div>
+    <div class="catch-line">CAUGHT</div>
+    <div id="catch-label">TAKE A BREATH · TRY AGAIN</div>
   </div>
 
   <!-- ================= DEBUG ================= -->
@@ -106,10 +108,19 @@
   <div id="pause" class="hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title" aria-hidden="true">
     <div class="pause-panel">
       <h2 id="pause-title">Take five.</h2>
-      <p class="pause-location">Port Vantage will wait.</p>
+      <p class="pause-location">Brooklyn will wait.</p>
       <button data-pause="resume">Back to the block</button>
+      <button data-pause="map">City map</button>
+      <button data-pause="cheats">Raf’s cheat sheet</button>
+      <button data-pause="saves">Save / Load</button>
       <button data-pause="rewind" disabled>Rewind unavailable</button>
-      <button data-pause="grade">COLOUR GRADE: AUTO</button>
+      <button data-pause="grade">Time of day: Auto</button>
+      <button data-pause="quality">Graphics: Auto</button>
+      <button data-pause="driving-view">Driving view: Chase</button>
+      <button data-pause="motion">Camera motion: Normal</button>
+      <button data-pause="sound">Sound: On</button>
+      <label class="sound-volume" for="sound-volume"><span>Volume <output id="sound-volume-value" for="sound-volume">100%</output></span><input id="sound-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Game volume"></label>
+      <p id="quality-description" class="pause-foot">Graphics adjust to keep the city responsive.</p>
       <div class="pause-controls">
         <h3>CONTROLS</h3>
         <div class="pc-grid">
@@ -120,12 +131,37 @@
           <span class="pc-key">F</span><span class="pc-what">brake · kickflip on board</span>
           <span class="pc-key">R</span><span class="pc-what">radio</span>
           <span class="pc-key">C</span><span class="pc-what">camera mode</span>
-          <span class="pc-key">Q / X</span><span class="pc-what">rotate view</span>
+          <span class="pc-key">DRAG / Q / X</span><span class="pc-what">look around</span>
+          <span class="pc-key">SCROLL</span><span class="pc-what">camera distance</span>
           <span class="pc-key">TAB / ESC</span><span class="pc-what">pause</span>
         </div>
         <div class="pc-touch">TOUCH — left thumb: stick to move / steer · right: GAS, BRAKE, RADIO, CAM</div>
       </div>
-      <div class="pause-foot">C cycles isometric, chase, free and overhead cameras. Minimize the game window to keep your session open.</div>
+      <div class="pause-foot">C cycles street, overhead, isometric and chase views. Minimize the game window to keep your session open.</div>
+    </div>
+  </div>
+
+  <div id="save-menu" class="hidden" role="dialog" aria-modal="true" aria-labelledby="save-title">
+    <section class="cheat-panel">
+      <div class="map-heading"><div><h2 id="save-title">Your place in the city</h2><p id="save-notice" role="status"></p></div><button id="save-close" type="button">Back</button></div>
+      <div id="save-slots"></div>
+    </section>
+  </div>
+  <div id="cheat-menu" class="hidden" role="dialog" aria-modal="true" aria-labelledby="cheat-title">
+    <section class="cheat-panel">
+      <div class="map-heading"><div><h2 id="cheat-title">Raf’s cheat sheet</h2><p>From the yellow box. With love.</p></div><button id="cheat-close" type="button">Back to the block</button></div>
+      <p id="cheat-result" role="status" aria-live="polite"></p>
+      <div id="cheat-actions"></div>
+      <form id="cheat-form"><label for="cheat-code">Got a code?</label><div><input id="cheat-code" name="code" autocomplete="off" autocapitalize="characters" maxlength="24" placeholder="WHIP"/><button type="submit">Use code</button></div></form>
+      <h3>Radio</h3><div id="cheat-stations"></div>
+    </section>
+  </div>
+
+  <div id="world-map" class="hidden" role="dialog" aria-modal="true" aria-labelledby="world-map-title">
+    <div class="map-panel">
+      <div class="map-heading"><div><h2 id="world-map-title">Brooklyn</h2><p id="world-map-notice" role="status"></p></div><button type="button" id="world-map-back">Back</button></div>
+      <canvas id="world-map-canvas" role="img" aria-label="City map"></canvas>
+      <div id="world-map-places" aria-label="Choose a destination"></div>
     </div>
   </div>
 
@@ -140,61 +176,34 @@
 
   <!-- ================= END CARD ================= -->
   <div id="end-card" class="hidden" role="dialog" aria-label="Finale">
-    <div class="end-line">PORT VANTAGE</div>
+    <div class="end-line">BROOKLYN, NYC</div>
     <div id="end-label">YOU LOST THEM AT THE BRIDGE</div>
     <div class="end-note">Power's back. Nobody will mention this again.</div>
     <div class="end-hint">TAP TO CONTINUE</div>
   </div>
 
+  <div id="graphics-error" class="hidden" role="alertdialog" aria-modal="true" aria-labelledby="graphics-error-title">
+    <div class="pause-panel">
+      <h2 id="graphics-error-title">Let's get you back.</h2>
+      <p id="graphics-error-message" class="pause-location">The graphics connection was interrupted.</p>
+      <button id="graphics-retry" type="button">Reload the game</button>
+      <button id="graphics-light" type="button">Try performance mode</button>
+      <p class="pause-foot">Your last saved checkpoint is available after reloading.</p>
+    </div>
+  </div>
+
   <!-- ================= BOOT / LOADER ================= -->
   <div id="boot">
-    <div class="boot-art" aria-hidden="true">
-      <svg viewBox="0 0 600 560" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="boot-windows" width="38" height="51" patternUnits="userSpaceOnUse">
-            <path fill="#233a50" d="M10 9h17v29H10z"/>
-            <path fill="#e4b575" d="M12 11h13v11H12z"/>
-            <path stroke="#9f795e" stroke-width="3" d="M8 39h21"/>
-          </pattern>
-          <pattern id="boot-brick" width="36" height="14" patternUnits="userSpaceOnUse">
-            <path stroke="#6d4d44" stroke-width="1" d="M0 13h36M18 0v13"/>
-          </pattern>
-        </defs>
-        <circle cx="379" cy="186" r="122" fill="#a67e81"/>
-        <path fill="#283d52" d="M32 276h54V128h44v-24h42v182h31V196h52v-51h34v180h49V226h67v82h44V145h25V99h24v46h24v150h38v173H32z"/>
-        <path fill="#192b3e" d="M26 450 474 404 585 458 144 530z"/>
-        <path fill="#c19b78" d="M100 259 246 222 358 275 209 319z"/>
-        <path fill="#966c54" d="M100 259v197l109 53V310z"/>
-        <path fill="url(#boot-brick)" d="M100 259v197l109 53V310z"/>
-        <path fill="#674e46" d="m209 310 149-35v189l-149 45z"/>
-        <path fill="#b08363" d="m223 315 121-29v166l-121 30z"/>
-        <path fill="url(#boot-windows)" d="m223 315 121-29v166l-121 30z"/>
-        <path fill="#cbab85" d="m93 250 152-39 122 57v15l-158 38-116-56z"/>
-        <path fill="#645047" d="m209 306 158-38v15l-158 38z"/>
-        <path fill="#d2b48d" d="m356 222 75-18 69 33-75 22z"/>
-        <path fill="#805c4e" d="m356 222 69 32v207l-69-31z"/>
-        <path fill="#a4795c" d="m425 254 75-17v207l-75 17z"/>
-        <path fill="url(#boot-windows)" d="m434 266 58-14v178l-58 14z"/>
-        <path stroke="#253746" stroke-width="6" d="M447 277v136m29-143v136m-39-92 49-12m-49 56 49-12m-49 56 49-12"/>
-        <path stroke="#b59f7b" stroke-width="4" d="M263 177v43m42-34v43"/>
-        <path fill="#665448" d="M256 155h59v48c-17 9-41 3-59-7z"/>
-        <path fill="#8f7960" d="m252 155 32-18 35 24c-16 8-47 4-67-6z"/>
-        <path stroke="#edd29a" stroke-width="3" d="m160 480 10 5m10 5 10 5m10 5 10 5m10 5 10 5"/>
-        <path stroke="#172c3d" stroke-width="6" d="M373 469V357l-19-9"/>
-        <path stroke="#efd292" stroke-width="5" d="m344 348 16 7"/>
-        <path fill="#345b68" d="m284 449 40-9 20 10v20l-40 10-20-10z"/>
-        <path fill="#88a2a5" d="m292 445 10-14 20-5 14 17-32 9z"/>
-      </svg>
-    </div>
     <div id="boot-inner">
-      <div class="boot-sub">Port Vantage</div>
-      <h1 class="boot-title">Raffi<br>World<span>Vol. 2</span></h1>
-      <p class="boot-description">Brownstones, B-sides, and a city to get lost in.</p>
+      <div class="boot-sub">A city with a B-side.</div>
+      <h1 class="boot-title">Raffi<br>World<span>Brooklyn</span></h1>
+      <p class="boot-description">Step out of the apartment. Pick your ride. Find your way through Brooklyn.</p>
       <div id="boot-bar"><i id="boot-progress"></i></div>
-      <div id="boot-status">loading…</div>
-      <button id="boot-start" class="hidden">Step outside <span aria-hidden="true">↗</span></button>
-      <div class="boot-controls"><span><kbd>WASD</kbd> Move</span><span><kbd>E</kbd> Interact</span><span><kbd>C</kbd> Camera</span></div>
-      <p class="boot-touch-controls">Left thumb to move. Right thumb to ride, talk and change the view.</p>
+      <div id="boot-status" role="status" aria-live="polite">Opening the city…</div>
+      <button id="boot-continue" class="hidden" type="button">Continue saved game</button>
+      <button id="boot-start" class="hidden">Step outside</button>
+      <div class="boot-controls"><span><kbd>WASD</kbd> Move</span><span><kbd>E</kbd> Interact</span><span><kbd>Drag</kbd> Look</span></div>
+      <p class="boot-touch-controls">Left thumb to move. Drag the view to look around. Tap a ride to get going.</p>
     </div>
   </div>
 </div>
