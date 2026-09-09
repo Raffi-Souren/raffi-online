@@ -1,7 +1,23 @@
 {
   "activityPlaces": [
-    { "id": "waterfront-pickup", "kind": "sports", "name": "Waterfront Pickup · tennis / soccer / boxing", "at": { "x": -310, "z": -408 } },
-    { "id": "neighborhood-editions", "kind": "print", "name": "Mae’s live-print table", "at": { "x": -333, "z": -403 } }
+    {
+      "id": "waterfront-pickup",
+      "kind": "sports",
+      "name": "Waterfront Pickup \u00b7 tennis / soccer / boxing",
+      "at": {
+        "x": -310,
+        "z": -408
+      }
+    },
+    {
+      "id": "neighborhood-editions",
+      "kind": "print",
+      "name": "Mae\u2019s live-print table",
+      "at": {
+        "x": -333,
+        "z": -403
+      }
+    }
   ],
   "$schema": "world",
   "$comment": "NYC-inspired compressed city. Stable district and mission IDs are retained for compatibility. Compass: -Z north, +X east; 1 unit is one metre.",
@@ -1442,5 +1458,42 @@
       "z": -134,
       "yaw": 0.8
     }
-  ]
+  ],
+  "skatePark": {
+    "board": {
+      "x": -339,
+      "z": -412,
+      "yaw": 3.141592653589793
+    },
+    "sign": {
+      "x": -339.5,
+      "y": 1.6,
+      "z": -413
+    },
+    "rails": [
+      {
+        "id": "waterfront-flatbar",
+        "x1": -338,
+        "z1": -431,
+        "x2": -338,
+        "z2": -416,
+        "height": 0.82
+      },
+      {
+        "id": "waterfront-short-rail",
+        "x1": -334,
+        "z1": -434,
+        "x2": -327,
+        "z2": -434,
+        "height": 0.72
+      }
+    ],
+    "ground": {
+      "x": -334.5,
+      "z": -421.5,
+      "width": 16,
+      "depth": 27,
+      "height": 0.32
+    }
+  }
 }

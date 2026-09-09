@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import { chromium } from 'playwright'
+import { captureGameAudio, saveGameAudio } from './browser-audio-capture.mjs'
 const OUT = process.env.RAFFI_SMOKE_OUT || '/tmp/raffi-core-loop'
 await fs.mkdir(OUT, { recursive: true })
 const url = new URL(process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3081/world/index.html')
@@ -89,7 +90,7 @@ async function mountParked(car) {
 }
 async function visitOwner() { await walkTo(-73,107);await walkTo(-71.4,109,1.4);assert.match((await observe()).prompt,/LAST CRATE|record shop owner/i);await action();await page.locator('#last-crate').waitFor({state:'visible'}) }
 try {
-  context=await browser.newContext({viewport:{width:1280,height:720},recordVideo:{dir:OUT+'/video',size:{width:1280,height:720}}});page=await context.newPage()
+  context=await browser.newContext({viewport:{width:1280,height:720},recordVideo:{dir:OUT+'/video',size:{width:1280,height:720}}});await captureGameAudio(context);report.videoBeganAt=Date.now();page=await context.newPage()
   page.on('pageerror',e=>report.errors.push(e.message));page.on('console',m=>{if(m.type()==='error')report.errors.push(m.text())})
   await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:120000});await page.locator('#boot-start').waitFor({state:'visible',timeout:120000});assert.equal(await page.evaluate(()=>Boolean(window.RAFFI_WORLD)),false)
   await page.locator('#boot-start').click()
@@ -118,4 +119,4 @@ try {
   report.checks.push('Fresh boot and ordinary keyboard garage walk, GT mount and legal street exit','Real keyboard lane driving across at least two districts; no teleports or debug API','Typed question does not accept; typed return promise selects route','Real drive to Lena, visible E delivery, trust reward, later drive back and remembered owner callback','Explicit listening session completed and final trust reward earned')
   await checkpoint('07-finished');process.stdout.write('Core loop journey passed\n')
 }catch(error){report.failure=error.stack||String(error);try{report.last=await observe();await page.screenshot({path:OUT+'/failure.png'})}catch{};console.error(report.failure);process.exitCode=1}
-finally{if(page){await setKeys([]);report.video=await page.video()?.path()}report.elapsedSeconds=(Date.now()-started)/1000;report.drivenMeters=driven;await context?.close();await browser.close();await fs.writeFile(OUT+'/report.json',JSON.stringify(report,null,2))}
+finally{if(page){report.audio=await saveGameAudio(page,OUT).catch(error=>[{error:String(error)}]);await setKeys([]);report.video=await page.video()?.path()}report.elapsedSeconds=(Date.now()-started)/1000;report.drivenMeters=driven;await context?.close();await browser.close();await fs.writeFile(OUT+'/report.json',JSON.stringify(report,null,2))}

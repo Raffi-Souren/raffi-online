@@ -1,5 +1,23 @@
 # RAFFI WORLD — Jank Log
 
+## Gameplay polish — September 9 follow-up
+
+The section below titled “Active NYC modernisation” is now the historical db25e8a rebuild record. The current pass uses runtime hash `c24638189f99c426d2d0c7a8ef2fc62a3bef0c232605c72e50e1f533074d77d3`; see HANDOFF and the updated review bundle for current evidence.
+
+| Finding | Fix and verification |
+|---|---|
+| Negative replies accepted obligations / sports | Shared language guard before state transition; exact straight/curly apostrophes, explicit negation, questions, conditionals, quotes and mixed intentions. Meaningful tests plus actual typed UI and saved wallet checks. |
+| Completed Last Crate sounded unfinished | Settled-state copy and remembered outcome; all3branches plus ordinary8-minute return/listening journey. |
+| Mobile multi-touch zoom / no handbrake | Independent pointer ownership, explicit zoom, DRIFT. Real browser touch streams cover move/run/look, steer/gas/brake/drift, cancellation and landscape. Native OS keyboard remains unverified; resized emulation is labeled. |
+| Hair/gait/camera | Front hair/downward nape and round glasses from user reference, polo and skin adjustment. Natural source gait blending,2.8walk/6run and double-tap. Looking around stays put when stationary. Close-up hair/clothing remain visibly stylized. |
+| Civilians walking into walls / each other | Bounded dynamic-obstacle detours and authored sidewalk errands.60simulation-second ordinary observation passes, after reproducing sustained deadlocks in earlier iterations. |
+| Skateboard and grind instability | Curved detailed board, independent rider pose, aligned catch, balanced rail slide/hop-off. Correct rail collider height and elevated plaza surface; normal-input flip/grind/pause/exit passes. |
+| Delayed jab across save/vehicle changes | Reproduced deterministic failures; clear reactions on load and cancel when leaving foot mode.453tests pass. |
+| Misleading recovery | Actual WebGL-disabled and failed-asset iframe checks pass, with accurate graphics/save copy and shelf exit. |
+| Browser release failure34347687388 | Inspected artifact10102613973: SwiftShader3233msframes starved1.8s simulation wait. Functional Low/progress-aware waits, Medium budgets unchanged; fixture camera now settles before collision approach. |
+
+Current review: `artifacts/raffi-world-review/index.html`. Capture reports and before/after logic failures remain in its `polish/` directory. Five requested video groups are represented; the long journey includes captured game WebAudio, other clips are silent. Existing historical clips were inspected through timestamped samples, not claimed as continuous human viewing. Broader streets remain sparse; facial/garment edges and sports character scale are next visual priorities.
+
 Severity: `blocker` must be fixed · `visible` should be fixed · `charm` ships.
 
 ## Active NYC modernisation — September 9, 2026

@@ -1,5 +1,13 @@
 # RAFFI WORLD — Grok gameplay journey audit
 
+## September 9, 2026 follow-up status
+
+The August2 audit below is historical. The rebuild was published as db25e8a; current character/gameplay polish is on `codex/world-character-gameplay-polish`. The original missing-missions/NPC/audio/interiors/pause controls findings are no longer current. Current reports cover all eight missions, traffic and interiors, story decisions, saves, sports, printing, real Ghost Deck and audio.
+
+Newly reproduced issues addressed: negative typed commitments, sports refusal, settled-story copy, accidental two-thumb zoom, missing touch handbrake, misleading graphics recovery, civilian deadlocks, idle camera drift and skate rail/camera grounding. Added user-requested identity/gait changes, non-injurious street jab and proper deck/rails. Two jab save/mode edges were source-discovered, reproduced in tests and fixed.
+
+Final453tests/build pass; final-hash save/navigation/sports-lifecycle/WebKit/Firefox checks pass. Ordinary-input story capture spans495seconds/2492.6m; isolated branches/activity checks disclose fixtures. Review and downloadable evidence live at `artifacts/raffi-world-review/index.html`, with previous footage preserved separately. No physical-phone/native-keyboard or every-frame audiovisual review is claimed. See HANDOFF/JANK for exact fingerprints and performance context.
+
 **Date:** 2026-08-02  
 **Branch / worktree:** `grok/world-gameplay-audit`  
 **URL:** `/world/index.html?debug=1&auto=1&seed=FIXED`  

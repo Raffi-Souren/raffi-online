@@ -5,9 +5,10 @@
 
 import * as THREE from 'three'
 import { state, data, makeRng } from '../engine/state.js'
-import { resolveCircle, clampToBounds } from '../engine/physics.js'
+import { resolveCircle, moveCircle, clampToBounds } from '../engine/physics.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { decidePolicy, verbDuration, reconsiderIn } from './npc-policy-core.js'
+import { pedestrianDetour } from './npc-navigation.js'
 import { createActivityState, planActivity } from './npc-activity-core.js'
 import { actorCollisionBodies } from '../engine/actor-collisions.js'
 import {
@@ -105,6 +106,7 @@ export function initNpcSim({ scene, materials, atlas, collision, seed }) {
       verbEndsAt: 0,
       nextReconsiderAt: 0,
       decisionIndex: 0,
+      blockedFor: 0, detour: null, recoverUntil: 0, recoveries: 0, routeAgainAt: 0,
       phase,
     })
     startSnapshot.push({ id: 'npc-' + i, x, z, yaw, phase, goalX: x, goalZ: z })
@@ -145,6 +147,8 @@ export function resetNpcToStart() {
     a.vz = 0
     a.verb = 'idle'
     a.target = null
+    a.blockedFor = 0; a.detour = null; a.recoverUntil = 0; a.recoveries = 0; a.routeAgainAt = 0
+    delete a.mesh.userData.streetReaction
     a.decisionIndex = 0
     if (a.activity) a.activityState = createActivityState()
     a.verbEndsAt = simTime
@@ -189,7 +193,7 @@ export function npcActorCount() {
 
 /** Read-only behavior evidence for the neighborhood/replay QA view. */
 export function npcActivitySnapshot() {
-  return actors.map((a) => ({ id: a.id, x: a.x, z: a.z, verb: a.verb, target: a.target, activity: a.activity?.id || null, index: a.activityState?.index ?? null, crossing: a.activityState?.crossing || false, visible: a.mesh.visible, role: a.mesh.userData.activityRole, locomotionStyle: a.mesh.userData.locomotionStyle, carriedItem: a.mesh.userData.carriedItem, appearanceSeed: a.mesh.userData.appearanceSeed, animation: a.mesh.userData.animationState, speed: a.mesh.userData.animationSpeed || 0 }))
+  return actors.map((a) => ({ id: a.id, x: a.x, z: a.z, verb: a.verb, target: a.target, goalX:a.goalX,goalZ:a.goalZ,blockedFor:a.blockedFor,recoveries:a.recoveries,detour:!!a.detour, activity: a.activity?.id || null, index: a.activityState?.index ?? null, crossing: a.activityState?.crossing || false, visible: a.mesh.visible, role: a.mesh.userData.activityRole, locomotionStyle: a.mesh.userData.locomotionStyle, carriedItem: a.mesh.userData.carriedItem, appearanceSeed: a.mesh.userData.appearanceSeed, animation: a.mesh.userData.animationState, speed: a.mesh.userData.animationSpeed || 0 }))
 }
 
 /**
@@ -212,18 +216,23 @@ export function updateNpcSim(dt, ctx = {}) {
 
   // Resolve in array order — insertion order is the collision non-determinism
   // surface when two sims diverge slightly (WORLD-BIBLE path divergence).
+  let routeBudget = 1
   for (let i = 0; i < actors.length; i++) {
     const a = actors[i]
-    const threat = ctx.threatNear
+    const streetReaction = a.mesh.userData.streetReaction
+    const startled = streetReaction?.until > state.time
+    const threat = startled || (ctx.threatNear
       ? ctx.threatNear(a.x, a.z, a.arch.policy?.fleeRadius || 7)
-      : false
+      : false)
 
     let activityPlan = a.activity && !threat ? planActivity(a.activity, a.activityState, a, dt, vehicles) : null
     if (activityPlan && a.activity.social && state.mode === 'foot' && !state.interior) {
       const dx = a.x - state.player.x, dz = a.z - state.player.z, distance = Math.hypot(dx, dz)
       if (distance < 1.3) activityPlan = { verb: 'walk', target: a.activity.id + ':make-room', x: a.x + (distance > 0.01 ? dx / distance : 1) * 0.9, z: a.z + (distance > 0.01 ? dz / distance : 0) * 0.9 }
     }
-    if (activityPlan) {
+    if (startled) {
+      a.verb='flee';const dx=a.x-streetReaction.x,dz=a.z-streetReaction.z,d=Math.hypot(dx,dz)||1;a.goalX=a.x+dx/d*5;a.goalZ=a.z+dz/d*5
+    } else if (activityPlan) {
       if (a.verb !== activityPlan.verb || a.target !== activityPlan.target) {
         a.decisionIndex++
         if (recording && decisionBuf) decisionBuf.push({ t: simTime, actorId: a.id, verb: activityPlan.verb, target: activityPlan.target })
@@ -299,19 +308,40 @@ export function updateNpcSim(dt, ctx = {}) {
     const present = activityPlan?.present !== false
     if (!state.interior) a.mesh.visible = present
 
+    // A collision never becomes an endless walk cycle against a facade.
+    // Plan at most one bounded detour per tick, then take a short idle pause
+    // and choose another errand if its endpoint is genuinely unreachable.
+    if(a.detour && a.detour.target!==a.target)a.detour=null
+    if(a.blockedFor>.45 && routeBudget>0 && simTime>=a.recoverUntil && simTime>=a.routeAgainAt){
+      routeBudget--
+      const blockers=actors.filter(other=>other!==a && other.mesh.visible && Math.hypot(other.x-a.x,other.z-a.z)<14).map(other=>({type:'circle',x:other.x,z:other.z,r:.75}))
+      blockers.push(...actorCollisionBodies(vehicleObjects,a.x,a.z,a.mesh,14))
+      a.routeAgainAt=simTime+1.5
+      const clear=(from,to)=>{const p=moveCircle(collisionRef,from.x,from.z,to.x-from.x,to.z-from.z,NPC_RADIUS+.035,blockers);return Math.hypot(p.x-to.x,p.z-to.z)<.025}
+      const route=pedestrianDetour(a,{x:a.goalX,z:a.goalZ},clear)
+      a.recoveries++;a.blockedFor=0
+      if(route?.length)a.detour={target:a.target,points:route}
+      else{
+        a.detour=null;a.recoverUntil=simTime+1.2;a.verb='idle';a.nextReconsiderAt=simTime+1.2;a.verbEndsAt=simTime+1.2
+        if(a.activityState){a.activityState.index=(a.activityState.index+1)%a.activity.points.length;a.activityState.arrived=false;a.activityState.crossing=false}
+        a.phase+=Math.PI/2
+      }
+    }
     // Locomotion
     const oldX = a.x, oldZ = a.z
-    const speed = a.verb === 'flee'
+    const speed = simTime<a.recoverUntil ? 0 : a.verb === 'flee'
       ? (a.arch.speed?.run || 3.2)
       : a.verb === 'walk' || a.verb === 'enter' || a.verb === 'buy'
         ? (a.activity?.walkSpeed || a.arch.speed?.walk || 1.4)
         : 0
 
     if (speed > 0.05) {
-      const dx = a.goalX - a.x
-      const dz = a.goalZ - a.z
+      while(a.detour?.points.length && Math.hypot(a.detour.points[0].x-a.x,a.detour.points[0].z-a.z)<.25)a.detour.points.shift()
+      const waypoint=a.detour?.points[0] || {x:a.goalX,z:a.goalZ}
+      const dx = waypoint.x - a.x
+      const dz = waypoint.z - a.z
       const dist = Math.hypot(dx, dz)
-      if (dist > 0.4) {
+      if (dist > (a.detour?.points.length ? .18 : .4)) {
         const wantedYaw = Math.atan2(dx, dz)
         a.yaw += Math.atan2(Math.sin(wantedYaw - a.yaw), Math.cos(wantedYaw - a.yaw)) * Math.min(1, dt * 9)
         const step = Math.min(speed * dt, dist)
@@ -356,6 +386,7 @@ export function updateNpcSim(dt, ctx = {}) {
     a.mesh.position.set(a.x, 0, a.z)
     a.mesh.rotation.y = a.yaw
     const actualSpeed = Math.min(speed, dt > 0 ? Math.hypot(a.x - oldX, a.z - oldZ) / dt : 0)
+    a.blockedFor = speed>.05 && actualSpeed<speed*.2 && Math.hypot(a.goalX-a.x,a.goalZ-a.z)>.5 ? a.blockedFor+dt : 0
     const talking = a.verb === 'talk' || (a.activity && ['buy', 'enter'].includes(a.verb) && actualSpeed < 0.2)
     const st = actualSpeed < 0.2 ? (talking ? 'talk' : 'idle') : actualSpeed > 2.5 ? 'run' : 'walk'
     if (a.verb === 'talk') { const peer = actors.find((actor) => actor.id === (a.activity?.peer || a.target)); if (peer) { const yaw = Math.atan2(peer.x - a.x, peer.z - a.z); a.yaw += Math.atan2(Math.sin(yaw-a.yaw),Math.cos(yaw-a.yaw)) * Math.min(1,dt*5) } }

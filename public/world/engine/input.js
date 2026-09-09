@@ -41,6 +41,7 @@ const keyMap = {
   Space: 'space',
   KeyE: 'action', Enter: 'action',
   KeyF: 'second',
+  KeyJ: 'punch',
   KeyR: 'radio',
   KeyM: 'map',
   Backquote: 'cheats',
@@ -53,6 +54,9 @@ const keyMap = {
 }
 
 const keys = new Set()
+const pointerOwners = new Set()
+let lastForwardTap = -Infinity
+let forwardRun = false
 
 /** True once and then cleared — use for menu presses, not held movement. */
 export function consume(name) {
@@ -79,6 +83,7 @@ function release(name) {
 // ------------------------------------------------------------ keyboard ---
 
 function onKeyDown(e) {
+  if (e.altKey || e.ctrlKey || e.metaKey) return
   if (e.key !== 'Escape' && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return
   if (e.key === '?') { e.preventDefault(); press('cheats'); return }
   // Tab opens pause during play, then returns to its native focus-navigation
@@ -88,6 +93,11 @@ function onKeyDown(e) {
   if (!name) return
   if (e.code === 'Tab' || e.code === 'Space') e.preventDefault()
   if (e.repeat) return
+  if (name === 'up' && state.mode !== 'vehicle' && !state.paused) {
+    const now = performance.now()
+    forwardRun = now - lastForwardTap < 300
+    lastForwardTap = now
+  }
   keys.add(name)
   press(name)
 }
@@ -97,6 +107,7 @@ function onKeyUp(e) {
   const name = keyMap[e.code]
   if (!name) return
   keys.delete(name)
+  if (name === 'up') forwardRun = false
   release(name)
 }
 
@@ -112,9 +123,6 @@ const stick = {
 }
 
 let els = {}
-const activePinch = new Map()
-let pinchStartDist = 0
-let pinchStartValue = 1
 let lookPointer = null
 let lookX = 0
 let lookY = 0
@@ -207,45 +215,20 @@ function onStickUp(e) {
 
 function bindButton(el, name) {
   if (!el) return
-  const down = (e) => { e.preventDefault(); press(name) }
-  const up = (e) => { e.preventDefault(); release(name) }
-  el.addEventListener('touchstart', down, { passive: false })
-  el.addEventListener('touchend', up, { passive: false })
-  el.addEventListener('touchcancel', up, { passive: false })
-  el.addEventListener('mousedown', down)
-  window.addEventListener('mouseup', up)
-}
+  const pointers=new Set();pointerOwners.add(pointers)
+  const up=e=>{if(!pointers.delete(e.pointerId))return;e.preventDefault();if(!pointers.size)release(name)}
+  el.addEventListener('pointerdown',e=>{e.preventDefault();if(state.paused)return;pointers.add(e.pointerId);el.setPointerCapture(e.pointerId);press(name)})
+  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)
 
-// --------------------------------------------------------------- pinch ---
-
-function onPinchStart(e) {
-  for (const t of e.changedTouches) activePinch.set(t.identifier, t)
-  if (activePinch.size === 2) {
-    const [a, b] = Array.from(activePinch.values())
-    pinchStartDist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
-    pinchStartValue = input.pinch
-  }
-}
-
-function onPinchMove(e) {
-  if (activePinch.size < 2) return
-  for (const t of e.changedTouches) if (activePinch.has(t.identifier)) activePinch.set(t.identifier, t)
-  const [a, b] = Array.from(activePinch.values())
-  const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
-  if (pinchStartDist > 8) {
-    input.pinch = pinchStartValue * (pinchStartDist / dist)
-    bus.emit('pinch', input.pinch)
-  }
-}
-
-function onPinchEnd(e) {
-  for (const t of e.changedTouches) activePinch.delete(t.identifier)
 }
 
 // ---------------------------------------------------------------- init ---
 
 export function resetInput() {
   keys.clear()
+  lastForwardTap = -Infinity
+  forwardRun = false
+  for(const pointers of pointerOwners)pointers.clear()
   input.held.clear()
   input.pressed.clear()
   input.move.x = 0
@@ -258,7 +241,6 @@ export function resetInput() {
   stick.id = null
   stick.x = 0
   stick.y = 0
-  activePinch.clear()
   lookPointer = null
   input.look.x = 0
   input.look.y = 0
@@ -289,15 +271,16 @@ export function initInput(elements) {
   // it distinct from keyboard E prevents the first GAS press from exiting.
   bindButton(els.action, 'primary')
   bindButton(els.second, 'second')
+  bindButton(els.punch, 'punch')
+  bindButton(els.handbrake, 'handbrake')
   bindButton(els.radio, 'radio')
   bindButton(els.cam, 'cam')
   bindButton(els.exit, 'exit')
   bindButton(els.pauseButton, 'pause')
 
-  window.addEventListener('touchstart', onPinchStart, { passive: true })
-  window.addEventListener('touchmove', onPinchMove, { passive: true })
-  window.addEventListener('touchend', onPinchEnd, { passive: true })
-  window.addEventListener('touchcancel', onPinchEnd, { passive: true })
+  for (const [id, delta] of [['btn-zoom-in', -.12], ['btn-zoom-out', .12]]) {
+    document.getElementById(id)?.addEventListener('click', () => { if(state.paused)return; input.pinch=Math.max(.75,Math.min(1.6,input.pinch+delta));bus.emit('pinch',input.pinch) })
+  }
 
   if (device.touch && els.touchRoot) els.touchRoot.classList.remove('hidden')
 }
@@ -327,9 +310,9 @@ export function updateInput(mode, vehicleKind = null) {
   input.move.y = my
   input.moveAmount = Math.min(len, 1)
 
-  input.run = keys.has('run') || (mode !== 'vehicle' && input.held.has('second'))
+  input.run = keys.has('run') || (mode !== 'vehicle' && forwardRun && keys.has('up')) || (mode !== 'vehicle' && input.held.has('second'))
   // Space = handbrake. CAM is reserved for camera-mode cycling, not drift.
-  input.handbrake = keys.has('space') || keys.has('handbrake')
+  input.handbrake = keys.has('space') || input.held.has('handbrake')
 
   if (mode === 'vehicle') {
     const gasBtn = input.held.has('primary') ? 1 : 0

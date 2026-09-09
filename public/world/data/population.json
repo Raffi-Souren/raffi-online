@@ -247,17 +247,23 @@
     "age": 35,
     "height": 1.78,
     "build": "average",
-    "hair": "short-parted",
+    "hair": "swept-back-down-soft-wave",
     "face": "wide-cheekbones",
-    "skin": "#b98865",
+    "skin": "#aa7956",
     "garment": "relaxed-polo",
     "bottom": "straight-jeans",
     "footwear": "trainers",
     "colors": [
-      "#303a43",
+      "#285747",
       "#354859",
       "#e0d9c9"
     ],
-    "facialHair": "trimmed-beard"
-  }
+    "facialHair": "trimmed-beard",
+    "eyewear": "rounded dark acetate with sculpted temples"
+  },
+  "reservedConversationIdentities": [
+    "dev",
+    "june",
+    "mae"
+  ]
 }

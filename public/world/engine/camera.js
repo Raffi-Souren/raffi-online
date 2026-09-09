@@ -41,6 +41,7 @@ export const cam = {
   chaseDistance: 10,
   boomDistance: 10,
   orbitHold: 0,
+  manualFootLook: false,
   shake: 0,
   modeIndex: 0,
   modeId: 'classic',
@@ -56,6 +57,7 @@ export function initCamera(aspect) {
   cam.modeId = 'classic'
   cam.boomDistance = 10
   cam.orbitHold = 0
+  cam.manualFootLook = false
   cam.pinch = 1
   cam.reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   try {
@@ -98,6 +100,7 @@ export function cycleCameraMode(dir = 1) {
   cam.modeIndex = (cam.modeIndex + (dir >= 0 ? 1 : n - 1)) % n
   const mode = CAMERA_MODES[cam.modeIndex]
   cam.modeId = mode.id
+  cam.manualFootLook = false
   state.camera.mode = mode.id
 
   if (mode.kind === 'ortho') {
@@ -122,7 +125,7 @@ export function cycleCameraMode(dir = 1) {
       : (mode.id === 'free' ? 0.24 : data.world.camera.footPitch ?? 0.24)
     cam.pitch = cam.desiredPitch
     // Street-level chase pullback; rides need more room than foot.
-    cam.chaseDistance = mounted ? 13 : data.world.camera.footDistance ?? 6.2
+    cam.chaseDistance = mounted ? (state.player.vehicle === 'skateboard' ? 7.2 : 13) : data.world.camera.footDistance ?? 6.2
     cam.boomDistance = cam.chaseDistance
   }
   return mode
@@ -170,6 +173,7 @@ export function rotateView(dir = 1) {
   } else {
     cam.desiredYaw += dir * 0.55
     cam.orbitHold = 2.5
+    cam.manualFootLook = state.mode !== 'vehicle'
   }
 }
 
@@ -185,6 +189,7 @@ export function orbitView(dx, dy) {
   cam.desiredYaw -= dx * 0.005
   cam.desiredPitch = clamp(cam.desiredPitch + dy * 0.0035, 0.06, 1.12)
   cam.orbitHold = 3
+  cam.manualFootLook = state.mode !== 'vehicle'
 }
 
 export function addShake(amount) {
@@ -207,7 +212,7 @@ export function updateCamera(dt, focus, velocity, aspect, collisionWorld = null)
   const mounted = state.mode === 'vehicle'
   const persp = mode.kind === 'persp'
   cam.orbitHold = Math.max(0, cam.orbitHold - dt)
-  cam.chaseDistance = damp(cam.chaseDistance, (mounted ? 13 + Math.min(4, Math.abs(state.player.speed || 0) * 0.12) : c.footDistance ?? 6.2) * cam.pinch, 4, dt)
+  cam.chaseDistance = damp(cam.chaseDistance, (mounted ? (state.player.vehicle === 'skateboard' ? 7.2 + Math.min(1.6, Math.abs(state.player.speed || 0) * .08) : 13 + Math.min(4, Math.abs(state.player.speed || 0) * 0.12)) : c.footDistance ?? 6.2) * cam.pinch, 4, dt)
 
   // Ortho zoom target (foot vs vehicle).
   const wantHeight = mounted
@@ -238,15 +243,15 @@ export function updateCamera(dt, focus, velocity, aspect, collisionWorld = null)
       // While moving we freeze the rig yaw so the screen-relative stick keeps a
       // constant meaning — holding a direction walks in a straight line instead
       // of curving, and the camera eases behind again the moment you pause.
-      const moving = (state.player.speed || 0) > 0.6
-      if (!moving) {
+      const moving = (state.player.speed || 0) > 0.1
+      if (!moving && !cam.manualFootLook) {
         const behind = (state.player.yaw || 0) + Math.PI
         let dy = behind - cam.desiredYaw
         while (dy > Math.PI) dy -= Math.PI * 2
         while (dy < -Math.PI) dy += Math.PI * 2
         cam.desiredYaw += dy * (1 - Math.exp(-4 * dt))
       }
-      cam.desiredPitch = c.footPitch ?? 0.24
+      if (!cam.manualFootLook) cam.desiredPitch = c.footPitch ?? 0.24
     }
   } else if (mode.id === 'free') {
     // Keep free cam from going flat on the road when riding.

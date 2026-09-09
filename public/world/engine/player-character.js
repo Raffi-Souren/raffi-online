@@ -1,9 +1,10 @@
 /** Authored, skinned player presentation over the existing collision/controller. */
 import * as THREE from 'three'
 import { clone } from '../vendor/utils/SkeletonUtils.js'
+import { createBoardPose } from './humanoid-pose.js'
 import { loadPopulationTemplate } from './population.js'
 
-const ONE_SHOTS = new Set(['interact', 'enter', 'exit'])
+const ONE_SHOTS = new Set(['interact', 'enter', 'exit', 'jab'])
 
 export function loadCharacterTemplate(detail) {
   return loadPopulationTemplate('player', detail ? 'far' : 'near')
@@ -39,7 +40,7 @@ function createRig(template, low) {
     const action = actions.get(name)
     if (action) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true }
   }
-  return { model, ownedMaterials, ownedSkeletons, meshCount, triangleCount, mixer, actions, spine: model.getObjectByName('spine_03') || model.getObjectByName('spine_02') }
+  return { model, boardPose: createBoardPose(model), ownedMaterials, ownedSkeletons, meshCount, triangleCount, mixer, actions, spine: model.getObjectByName('spine_03') || model.getObjectByName('spine_02') }
 }
 
 /** Await during the real loading screen; a failed asset load remains observable. */
@@ -47,7 +48,7 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
   if (!player.group?.parent || !player.ped) throw new Error('Player simulation must be initialized before loading its character')
   let low = tier === 'low' || tier === 'performance'
   const template = await loadCharacterTemplate(low)
-  let { model, ownedMaterials, ownedSkeletons, meshCount, triangleCount, mixer, actions, spine } = createRig(template, low)
+  let { model, boardPose, ownedMaterials, ownedSkeletons, meshCount, triangleCount, mixer, actions, spine } = createRig(template, low)
   const visual = new THREE.Group()
   visual.name = 'player-character'
   visual.userData.authoredCharacter = true
@@ -102,7 +103,10 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
     if (current === name) return actions.get(name)
     const next = actions.get(name) || actions.get('idle')
     const old = actions.get(current)
+    const gait = new Set(['walk', 'run', 'sprint'])
+    const phase = old && gait.has(current) && gait.has(name) ? old.time / old.getClip().duration : null
     next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play()
+    if (phase !== null) next.time = (phase % 1) * next.getClip().duration
     if (old) old.crossFadeTo(next, duration, false)
     current = name
     stats.animation = name
@@ -131,11 +135,12 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
       mixer.stopAllAction(); mixer.uncacheRoot(model)
       for (const material of ownedMaterials) material.dispose()
       for (const skeleton of ownedSkeletons) skeleton.dispose()
-      ;({ model, ownedMaterials, ownedSkeletons, meshCount, triangleCount, mixer, actions, spine } = next)
+      ;({ model, boardPose, ownedMaterials, ownedSkeletons, meshCount, triangleCount, mixer, actions, spine } = next)
       low = nextLow
       Object.assign(stats, { lod: low ? 'low' : 'standard', meshes: meshCount, triangles: triangleCount })
       return stats
     },
+    playPunch() { interactionTime = .58; select('jab', .07)?.setEffectiveTimeScale(1.2) },
     playInteraction() {
       interactionTime = 0.55
       select('interact', 0.12)?.setEffectiveTimeScale(1.8)
@@ -145,6 +150,8 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
       const p = state.player
       const vehicle = state.mode === 'vehicle' ? player.vehicle : null
       const car = vehicle && !vehicle.riderVisible
+      const skating = vehicle?.kind === 'skateboard'
+      model.rotation.y = skating ? Math.PI / 2 : 0
       // Fit the seated pose to the low coupe cabin. The original driving clip
       // was authored for a taller seat; its head otherwise pierced the roof.
       const seatedScale = car ? 0.89 : 1
@@ -166,6 +173,7 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
         rotation.setFromEuler(turn)
       } else if (vehicle) {
         target.copy(player.group.position)
+        if (skating) target.y += .022 + Math.max(0, (player.skatePose?.riderHop || 0) - (player.skatePose?.boardHop || 0))
         rotation.copy(player.group.quaternion)
       } else {
         const height = surfaceOffset(p, state.interior)
@@ -187,12 +195,13 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
       interactionTime = Math.max(0, interactionTime - dt)
       if (!transition && interactionTime === 0) {
         const speed = Math.abs(p.speed || 0)
-        const name = car ? 'drive' : vehicle ? 'idle' : speed < 0.18 ? 'idle' : speed > 4.2 ? 'sprint' : speed > 2.2 ? 'run' : 'walk'
+        const name = car ? 'drive' : vehicle ? 'idle' : speed < 0.18 ? 'idle' : speed > 5.4 ? 'sprint' : speed > 3.1 ? 'run' : 'walk'
         const action = select(name)
-        const authoredSpeed = name === 'sprint' ? 5.7 : name === 'run' ? 3.2 : name === 'walk' ? 1.65 : 1
+        const authoredSpeed = name === 'sprint' ? 5.7 : name === 'run' ? 3.8 : name === 'walk' ? 1.85 : 1
         if (['walk', 'run', 'sprint'].includes(name)) action.setEffectiveTimeScale(Math.max(0.55, Math.min(1.5, speed / authoredSpeed)))
       }
       mixer.update(dt)
+      if (skating) boardPose.update(player.skatePose || {}, Math.abs(p.speed || 0), state.time || 0)
       // Small upper-body anticipation makes stationary turns legible while
       // respecting the authored lower-body locomotion and collision heading.
       const yawDelta = Math.atan2(Math.sin(p.yaw - previousYaw), Math.cos(p.yaw - previousYaw))

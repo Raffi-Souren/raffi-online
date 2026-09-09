@@ -780,9 +780,9 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
     border-width: 3px;
   }
 
-  #minimap-north { top: 5px; font-size: 8px; }
-  #minimap-distance { top: 89px; min-width: 52px; font-size: 8px; }
-  #minimap-label { margin-top: 5px; font-size: 8px; }
+  #minimap-north { top: 5px; font-size: 11px; }
+  #minimap-distance { top: 86px; min-width: 58px; font-size: 11px; }
+  #minimap-label { margin-top: 5px; font-size: 11px; }
 
   #subtitle {
     bottom: calc(290px + var(--safe-b));
@@ -880,3 +880,36 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   top: calc(76px + var(--safe-t));
   right: calc(94px + var(--safe-r));
 }
+
+/* Separate actions have their own touch owner; zoom never borrows either thumb. */
+.tbtn.zoom { width: 44px; height: 44px; font-size: 22px; border-radius: 8px; }
+#btn-handbrake { color: #f3cb78; border-color: #f3cb78; }
+#touch.dialogue #btn-punch, #touch.dialogue #btn-handbrake, #touch.dialogue .zoom { display:none; }
+
+#btn-zoom-in, #btn-zoom-out { position: absolute; right: 186px; bottom: 0; }
+#btn-zoom-in { bottom: 52px; }
+
+/* Keep both thumb clusters clear in a short landscape viewport. */
+@media (max-height: 540px) and (min-width: 601px) {
+  #hud:has(#touch:not(.hidden)) #buttons { grid-template-columns: repeat(3, 54px); gap: 8px; right: calc(12px + var(--safe-r)); bottom: calc(12px + var(--safe-b)); }
+  #hud:has(#touch:not(.hidden)) #buttons .tbtn { width: 54px; height: 54px; font-size: 10px; }
+  #hud:has(#touch:not(.hidden)) #buttons .primary { grid-column: 3; grid-row: 1; }
+  #hud:has(#touch:not(.hidden)) #btn-second { grid-column: 2; grid-row: 1; }
+  #hud:has(#touch:not(.hidden)) #btn-handbrake { grid-column: 1; grid-row: 1; }
+  #hud:has(#touch:not(.hidden)) #btn-exit { grid-column: 3; grid-row: 2; }
+  #hud:has(#touch:not(.hidden)) #buttons .zoom { right: 0; bottom: 130px; width: 44px; height: 44px; font-size: 20px; }
+  #hud:has(#touch:not(.hidden)) #btn-zoom-in { right: 52px; }
+  #hud:has(#touch:not(.hidden)) #subtitle { width: min(420px, calc(100vw - 420px)); bottom: calc(16px + var(--safe-b)); min-height: 0; padding: 12px; border-width: 2px; box-shadow: 3px 3px 0 var(--speaker-accent); }
+  #hud:has(#touch:not(.hidden)) #subtitle-text { font-size: 13px; }
+  #hud:has(#touch:not(.hidden)) #subtitle-kicker { display: none; }
+  #hud:has(#touch:not(.hidden)) #minimap { top: calc(72px + var(--safe-t)); bottom: auto; width: 112px; height: 132px; }
+  #hud:has(#touch:not(.hidden)) #minimap-canvas { width: 112px; height: 112px; }
+  #hud:has(#touch:not(.hidden)) #minimap-distance { top: 86px; font-size: 11px; }
+  #hud:has(#touch:not(.hidden)) #minimap-label { font-size: 11px; }
+  #hud:has(#touch:not(.hidden)) #side-activities { top: 126px; right: 12px; }
+  #hud:has(#touch:not(.hidden)) #buttons #btn-zoom-in { right: 52px; }
+  #hud:has(#touch:not(.hidden)) #interaction-prompt { bottom: 155px; max-width: 240px; }
+  #touch.dialogue #buttons { bottom: 12px; }
+}
+
+#graphics-light[hidden] { display: none !important; }

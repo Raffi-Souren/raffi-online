@@ -11,8 +11,9 @@ function visible(object) { for (let parent = object; parent; parent = parent.par
 /** A one-metre handoff bias prevents churn without reserving slots for distant peers. */
 export function selectNearActors(candidates, assigned, position, capacity = 2, enter = 14, exit = 18) {
   const distance = object => Math.hypot(object.position.x - position.x, object.position.z - position.z)
+  const priority = object => object.userData?.conversationCharacter && distance(object) < 5 ? 30 : 0
   return candidates.filter(object => visible(object) && distance(object) <= (assigned.includes(object) ? exit : enter))
-    .sort((a, b) => distance(a) - (assigned.includes(a) ? 1 : 0) - distance(b) + (assigned.includes(b) ? 1 : 0)).slice(0, capacity)
+    .sort((a, b) => distance(a) - priority(a) - (assigned.includes(a) ? 1 : 0) - distance(b) + priority(b) + (assigned.includes(b) ? 1 : 0)).slice(0, capacity)
 }
 
 function createRig(template, identity, lod) {
@@ -165,8 +166,14 @@ export async function createNearCharacters(scene, { tier = 'medium', surfaceRoot
         const action = selectAction(rig, animation, rig.current === null ? (source.userData.phase || 0) / (Math.PI * 2) % 1 : null)
         action.setEffectiveTimeScale(['idle', 'talk', 'sit'].includes(animation) ? 1 : Math.max(.5, Math.min(1.6, entry.speed / (['walk', 'purposeful'].includes(animation) ? 1.5 : animation === 'run' ? 3.2 : 5.7))))
         rig.model.position.copy(source.position); rig.model.position.y += floorOffset(entry); rig.model.quaternion.copy(source.quaternion)
+        if(rig.flinchBone && rig.flinchRest)rig.flinchBone.quaternion.copy(rig.flinchRest)
         rig.elapsed += dt
         if (rig.lod === 'near' || rig.elapsed >= 1 / 12) { rig.mixer.update(rig.elapsed); rig.elapsed = 0; stats.mixerUpdates++ }
+        const reaction=source.userData.streetReaction
+        if(reaction && state.time-reaction.start<.7){
+          rig.flinchBone ||= rig.model.getObjectByName('spine_03')
+          if(rig.flinchBone){rig.flinchRest=rig.flinchBone.quaternion.clone();rig.flinchBone.rotation.x-=Math.sin(Math.max(0,state.time-reaction.start)/.7*Math.PI)*.18}
+        }else rig.flinchRest=null
         if (entry.accessory) {
           rig.model.updateMatrixWorld(true)
           const hand = rig.model.getObjectByName('hand_l')

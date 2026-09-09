@@ -27,3 +27,12 @@ test('hidden pooled actors and hidden exterior parents release presentation slot
   a.visible=true;root.visible=false
   assert.deepEqual(selectNearActors([a,b],[a],origin),[b])
 })
+
+
+test('an approached conversation host retains a detailed slot in a crowded sidewalk', () => {
+  const host={position:{x:3,z:0},visible:true,userData:{conversationCharacter:true}}
+  const neighbors=Array.from({length:6},(_,i)=>({position:{x:1+i*.1,z:0},visible:true,userData:{}}))
+  const selected=selectNearActors([...neighbors,host],neighbors.slice(0,4),{x:0,z:0},4)
+  assert.equal(selected.length,4);assert.ok(selected.includes(host))
+  assert.deepEqual(selectNearActors([host],[],{x:0,z:0},0),[])
+})

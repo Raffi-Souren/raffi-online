@@ -1,5 +1,17 @@
 # RAFFI WORLD — World Bible
 
+## September 9 follow-up — current player and control contract
+
+The historical verification section at the end describes the published db25e8a rebuild. The following character/gameplay pass retains its NYC music, sports, printing, missions and relationship consequences.
+
+Player walk2.8m/s and run6m/s use phase-blended source clips; holdShift or double-tapW/Up on desktop, holdRUN on touch. On-foot mouse/touch look remains at the chosen bearing while stopped. J/PUNCH is a brief non-injurious startle interaction with no damage/death reward; contact is valid only on foot, and loading resets transients. Skateboards have their own7.2m camera pullback, a physical deck silhouette, independent rider/board kickflip and aligned rail catch/slide/hop-off. Vehicle chase/ownership and collision contracts remain intact.
+
+The player has the supplied-reference-inspired full front/downward wavy hair, dark round acetate glasses, green polo and warmer skin. Named hosts are reserved from ambient selection; nearby conversation partners get detail priority inside the existing cap. Citizens use bounded sidewalk detours around static and dynamic obstacles; population count remains bounded.
+
+Touch control ownership excludes pinch mixing; zoom uses explicit buttons and DRIFT is distinct from BRAKE. Typed negation/questions/quotes/conditions/mixed intentions never commit obligations. A completed story reports its actual outcome. Graphics recovery offers only supported actions and verified save information.
+
+Current evidence:453tests/build pass; runtime/assets `c24638189f99c426d2d0c7a8ef2fc62a3bef0c232605c72e50e1f533074d77d3`. Review and provenance are in HANDOFF/JANK and `artifacts/raffi-world-review/index.html`. Keep historical/current browser pacing separate; no physical-phone or photorealism claim.
+
 > Current contract: September 9, 2026. The user's NYC modernisation brief and later
 > tone/conversation/music overrides replace the original Phase 0 art restrictions.
 > Historical sections below describe source systems, not permission to undo working play.

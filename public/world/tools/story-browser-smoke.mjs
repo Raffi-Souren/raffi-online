@@ -7,7 +7,7 @@ const url = new URL(process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3000/world/
 url.searchParams.set('debug', '1'); url.searchParams.set('seed', 'FIXED'); url.searchParams.set('tier', 'low'); url.searchParams.delete('auto')
 const OUT = process.env.RAFFI_SMOKE_OUT || '/tmp/raffi-story-browser'
 await fs.mkdir(OUT, { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', ...(process.env.RAFFI_GPU === 'metal' ? ['--use-angle=metal'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] })
 const report = { checks: [], errors: [], routePositionFixtures: true, realTypedChoices: true, realKeyboardSkill: true }
 let page
 async function observers() {
