@@ -271,7 +271,10 @@ try {
     })
     await check(`${name}-minesweeper-timer-on-hide`, page, async () => {
       const dialog = await open(page, "games")
-      await page.getByRole("button", { name: "Play Minesweeper", exact: true }).click()
+      // This card swaps React content without navigating. In CI the click
+      // completed, but Playwright's implicit navigation wait stalled. Wait for
+      // the actual board below, while preserving normal click actionability.
+      await page.getByRole("button", { name: "Play Minesweeper", exact: true }).click({ noWaitAfter: true })
       await dialog.getByRole("button", { name: "Row 4, column 4: hidden", exact: true }).click()
       const clock = dialog.locator('[aria-label^="Elapsed time "]')
       await page.waitForTimeout(350)
