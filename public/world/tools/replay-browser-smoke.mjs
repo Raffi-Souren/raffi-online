@@ -7,6 +7,9 @@ import { chromium } from 'playwright'
 
 const BASE = process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3025/world/index.html'
 const OUT = process.env.RAFFI_SMOKE_OUT || '/tmp/raffi-replay-smoke'
+const FUNCTIONAL_TIER = process.env.RAFFI_FUNCTIONAL_TIER || 'medium'
+const FUNCTIONAL_QUALITY = { low: 'performance', medium: 'balanced', high: 'high' }[FUNCTIONAL_TIER]
+assert.ok(FUNCTIONAL_QUALITY, 'invalid functional graphics tier')
 await fs.mkdir(OUT, { recursive: true })
 
 const browser = await chromium.launch({
@@ -19,16 +22,23 @@ async function ready(context) {
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
-  await page.goto(BASE + '?debug=1&auto=1&seed=FIXED&tier=medium', { waitUntil: 'domcontentloaded', timeout: 180_000 })
+  await page.goto(BASE + '?debug=1&auto=1&seed=FIXED&tier=' + FUNCTIONAL_TIER, { waitUntil: 'domcontentloaded', timeout: 180_000 })
   await page.waitForFunction(() => window.RAFFI_WORLD?.ready, null, { timeout: 180_000 })
   await page.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
+  await page.evaluate(async () => { window.__REPLAY_STATE__ = (await import('/world/engine/state.js')).state })
   page._errs = errors
   return page
 }
 
+async function renderedStats(page) {
+  const target = await page.evaluate(() => window.__REPLAY_STATE__.frame + 2)
+  await page.waitForFunction((frame) => window.__REPLAY_STATE__.frame >= frame, target, { timeout: 60_000 })
+  return page.evaluate(() => window.RAFFI_WORLD.stats())
+}
+
 async function waitRecording(page, minSec = 3) {
-  // The engine caps dt at 50ms, so slow software rendering advances less
-  // simulation time than wall time. Wait for actual 10Hz samples instead.
+  // The bounded fixed-step clock drops excess time on slow software frames.
+  // Wait for actual 10Hz recorded samples instead of assuming wall time.
   const deadline = Date.now() + 120_000
   let span = 0
   while (Date.now() < deadline) {
@@ -102,14 +112,17 @@ try {
   await page.screenshot({ path: OUT + '/replay-complete-desktop.png' })
   console.log('[replay] DAR%', metrics.darPercent, 'TAR%', metrics.tarPercent)
 
-  // Cameras still work
+  // Camera/replay geometry assertions retain Medium even when CPU-only
+  // functional playback uses Low. Sampling waits for actual rendered frames.
+  await page.evaluate(() => window.RAFFI_WORLD.setQuality('balanced'))
   for (const mode of ['classic', 'chase', 'free', 'birds']) {
     await page.evaluate((m) => window.RAFFI_WORLD.setCameraMode(m), mode)
-    await page.waitForTimeout(80)
-    const s = await page.evaluate(() => window.RAFFI_WORLD.stats())
+    const s = await renderedStats(page)
+    assert.equal(s.quality, 'balanced', 'replay camera budget must measure Medium')
     assert.ok(s.drawCalls < 250, mode + ' draws ' + s.drawCalls)
     assert.ok(s.visibleTriangles < 150_000, mode + ' tris ' + s.triangles)
   }
+  await page.evaluate((quality) => window.RAFFI_WORLD.setQuality(quality), FUNCTIONAL_QUALITY)
 
   // Second full cycle: re-record and compare (lifecycle reset)
   await page.evaluate(() => window.RAFFI_WORLD.beginRecordingRun())
@@ -177,12 +190,14 @@ try {
 
   // Budget during compare
   await page.evaluate(() => window.RAFFI_WORLD.startRewindCompare())
-  await page.waitForTimeout(400)
-  const budget = await page.evaluate(() => window.RAFFI_WORLD.stats())
+  await page.evaluate(() => window.RAFFI_WORLD.setQuality('balanced'))
+  const budget = await renderedStats(page)
+  assert.equal(budget.quality, 'balanced', 'ghost comparison budget must measure Medium')
   assert.ok(budget.drawCalls < 250, 'compare draws ' + budget.drawCalls)
   assert.ok(budget.visibleTriangles < 150_000, 'compare tris ' + budget.triangles)
   console.log('[replay] compare budget', budget)
   await page.evaluate(() => window.RAFFI_WORLD.stopCompare())
+  await page.evaluate((quality) => window.RAFFI_WORLD.setQuality(quality), FUNCTIONAL_QUALITY)
 
   assert.equal(page._errs.length, 0, 'console errors: ' + page._errs.join(' | '))
 
@@ -220,6 +235,8 @@ try {
   await mpage.screenshot({ path: OUT + '/replay-mobile-390.png' })
 
   await fs.writeFile(OUT + '/replay-metrics.json', JSON.stringify({
+    functionalTier: FUNCTIONAL_TIER,
+    budgetQuality: 'balanced',
     dar: metrics.darPercent,
     tar: metrics.tarPercent,
     dar2: m2.darPercent,

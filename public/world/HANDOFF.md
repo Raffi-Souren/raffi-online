@@ -1,5 +1,24 @@
 # RAFFI WORLD — Handoff
 
+## September 9, 2026 — character and gameplay polish
+
+This pass builds on the already-published `db25e8af1af82a2aafcaa85847b5b76768797ff6` baseline, using `codex/world-character-gameplay-polish` and a PR release. Do not treat the older phase notes below as current missing features.
+
+Final runtime/asset fingerprint: `a6ed3a22f9b96efd42cc35f0eb806ce8c19606da1bb27577872b53bcaef28ab7`.
+
+- Latest likeness pass: moderate athletic macro proportions, a softer oval face and natural jaw, smaller acetate frames, warmer olive skin and quieter pine/indigo clothing colors. Retains full front/downward hair and the stubble/collar corrections. Player-only assets; other 24 population GLBs unchanged.
+- Final portrait refinement: replaced the raised beard patch with feathered stubble baked into skin; fitted a shorter curved polo collar and removed hidden shoulder skin that pierced the shirt after simplification. Player near/far remain3draws, below12.5k/6.5k triangles, with unchanged texture dimensions. Final character grounding/LOD/vehicle checks,453tests and build pass. Earlier clips retain the previous beard/polo; the review includes a matched four-angle before/after. CI screenshot race now captures the PATH BLOCKED state atomically before slow image capture.
+- Player: green polo, warmer skin, full front hair with a low wavy nape silhouette, original rounded acetate glasses. The user-supplied portrait informed the shape; no portrait is embedded in the game. Head-aware decimation preserves faces and frames within existing near/far budgets. Shared animations have player-specific upright run adjustment and phase-preserving gait blends. Walk2.8m/s, run6m/s; Shift, double-tapW/Up and touchRUN.
+- Controls/camera: manual on-foot look persists at rest; two-thumb controls own their pointers; explicit zoom and separate touchDRIFT; landscape layout and11px small minimap labels. DebugF/G/B now requireAlt to leave normalF kickflip intact.
+- Skate: one merged curved deck/truck/wheel asset, independent rider stance/flip, catch/landing and aligned late rail capture. The authored waterfront rails have bounded grind/balance/hop-off, correct collider height and plaza ground. Board camera7.2m; car chase unchanged.
+- Citizens: named host identities excluded from ordinary ambient selection; nearby host detail prioritized. Authored sidewalk errands and bounded A* detours include nearby people and vehicles. A real60sim-second observation caught head-on deadlocks during development; the final observer passes. No new global population increase.
+- Non-injurious J/PUNCH uses an authored jab and bounded startle, no damage/death/reward. Save reset clears transient reactions and vehicle entry cancels pending contact; both late edge cases failed focused tests before the fix.
+- Intent handling: negatives, questions, mixed/quoted/conditional statements cannot commit money or obligations. Settled Last Crate copy remembers completion. Recovery distinguishes missing graphics/assets and only promises a verified save.
+
+Verification:453 unit tests and production build pass. All eight campaign missions, three story routes, sports, print/export, crate/Ghost Deck, audio and home cheats have preservation reports. The ordinary-input story journey takes495s and2492.6m through three districts, including the listening callback; no position/time/score fixtures. Other branches and isolated activity checks disclose fixtures. Pre-likeness saves6, navigation4, sports resource/cancellation and WebKit/Firefox compatibility pass.
+
+Evidence: `artifacts/raffi-world-review/index.html` and `raffi-world-review.zip`; older review preserved as `historical-baseline.html`. New clips retain their original runtime hashes:3298a977… or eda9b503…; subsequent deltas were recovery hidden-button CSS, combat reset/mode guards and player-only likeness/beard/polo assets. The Medium182-view gate passed187draws/144354visible triangles before those combat guards. Low/Medium focused Metal1440×900 routes measured8.3ms median this session versus33.3ms in the earlier session; do not claim a4× optimization or physical-phone certification. High measurement was interrupted and excluded. Native phone keyboard, thermal behavior, every-frame audiovisual review and rich activity outside the focused block remain gaps.
+
 ## [2026-08-02] FROM: grok — REPLAY GHOSTS (DAR / TAR)
 
 **Branch:** `grok/replay-ghosts` (from `origin/grok/camera-budget`). Port **3025**.

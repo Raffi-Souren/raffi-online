@@ -21,3 +21,14 @@ test('named characters and explicit appearance choices remain stable independent
   assert.ok(catalog.identities.every(identity => identity.age >= 18 && identity.height >= 1.5 && identity.height <= 2))
   assert.ok(new Set(catalog.identities.map(identity => identity.garment)).size >= 8)
 })
+
+
+test('ambient citizens never duplicate the recurring conversation hosts', () => {
+  const reserved=new Set(catalog.reservedConversationIdentities)
+  for(const seed of ['FIXED','OTHER'])for(let i=0;i<64;i++){
+    const source={userData:{npcId:'npc-'+i}}
+    const identity=appearanceForActor(source,seed,catalog)
+    assert.ok(!reserved.has(identity.id))
+    assert.equal(appearanceForActor(source,seed,catalog).id,identity.id)
+  }
+})

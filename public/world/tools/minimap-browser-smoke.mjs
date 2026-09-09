@@ -24,7 +24,12 @@ try {
     })
     const page = await context.newPage()
     page.on("pageerror", (error) => errors.push(error.message))
-    await page.goto(base + "?auto=1&debug=1&seed=FIXED", { waitUntil: "domcontentloaded" })
+    const url = new URL(base)
+    url.searchParams.set("auto", "1")
+    url.searchParams.set("debug", "1")
+    url.searchParams.set("seed", "FIXED")
+    if (process.env.RAFFI_FUNCTIONAL_TIER) url.searchParams.set("tier", process.env.RAFFI_FUNCTIONAL_TIER)
+    await page.goto(url.href, { waitUntil: "domcontentloaded" })
     await page.waitForFunction(() => window.RAFFI_WORLD?.ready, null, { timeout: 120_000 })
     await page.addStyleTag({ content: "#debug { display: none !important; }" })
     await page.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
@@ -33,10 +38,13 @@ try {
     await page.evaluate(() => {
       window.RAFFI_WORLD.dismissDialogue()
       window.RAFFI_WORLD.teleport(-438, -101)
+      window.RAFFI_WORLD.setQuality("balanced")
     })
+    await page.evaluate(async () => { window.__MINIMAP_STATE__ = (await import("/world/engine/state.js")).state })
     for (const mode of ["classic", "chase", "free", "birds"]) {
       await page.evaluate((mode) => window.RAFFI_WORLD.setCameraMode(mode), mode)
-      await page.waitForTimeout(550)
+      const frame = await page.evaluate(() => window.__MINIMAP_STATE__.frame + 3)
+      await page.waitForFunction((target) => window.__MINIMAP_STATE__.frame >= target, frame, { timeout: 60_000 })
       const sample = await page.evaluate(async () => {
         const { cam } = await import("/world/engine/camera.js")
         const { state, data } = await import("/world/engine/state.js")
@@ -56,10 +64,14 @@ try {
         })
         return { dot, places: places.map((place) => place.label), ...window.RAFFI_WORLD.stats() }
       })
+      samples.push({ name, mode, ...sample })
       assert.ok(sample.dot > 0.999, `${name}/${mode}: view sector does not match camera`)
       assert.ok(sample.places.length > 0, `${name}/${mode}: no landmarks at the garage approach`)
-      assert.ok(sample.drawCalls < 120 && sample.triangles < 60_000, `${name}/${mode}: renderer budget exceeded`)
-      samples.push({ name, mode, ...sample })
+      // WORLD-BIBLE section 5 explicitly supersedes the old 120 draw / 60k
+      // total-triangle kit. Keep the same Medium contract as camera-budget.
+      assert.equal(sample.quality, "balanced", `${name}/${mode}: budget must measure Medium`)
+      assert.ok(sample.drawCalls < 250 && sample.visibleTriangles < 150_000,
+        `${name}/${mode}: Medium budget exceeded (${sample.drawCalls} draws, ${sample.visibleTriangles} visible triangles)`)
     }
     await page.evaluate(() => window.RAFFI_WORLD.setCameraMode("classic"))
     await page.addStyleTag({ content: "#debug { display: none !important; }" })
@@ -91,6 +103,9 @@ try {
       out,
     }),
   )
+} catch (error) {
+  await fs.writeFile(`${out}/failure.json`, JSON.stringify({ error: error.stack, samples, errors }, null, 2))
+  throw error
 } finally {
   await browser.close()
 }

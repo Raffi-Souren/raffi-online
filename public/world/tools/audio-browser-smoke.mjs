@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 const url = new URL(process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3000/world/index.html')
 url.searchParams.set('tier', 'low'); url.searchParams.set('debug', '1'); url.searchParams.set('seed', 'FIXED'); url.searchParams.delete('auto')
 const OUT = process.env.RAFFI_SMOKE_OUT || '/tmp/raffi-audio-browser'; await fs.mkdir(OUT, { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', ...(process.env.RAFFI_GPU === 'metal' ? ['--use-angle=metal'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] })
 const report = { checks: [], errors: [] }; let page
 async function boot() {
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 120000 }); await page.locator('#boot-start').waitFor({ state: 'visible', timeout: 120000 }); await page.locator('#boot-start').click()

@@ -73,7 +73,7 @@ def dress_materials(bpy, human, equipped, spec):
                         original = image_node.image
                         if not original.packed_file and not pathlib.Path(bpy.path.abspath(original.filepath)).exists(): raise RuntimeError('Missing licensed hair image: ' + original.filepath)
                         values = np.empty(len(original.pixels), dtype=np.float32); original.pixels.foreach_get(values); values = values.reshape((-1, 4))
-                        low_color, high_color = ('#696569', '#b6b1ab') if spec['hair'] == 'short-grey' else ('#959294', '#e7e0d8') if spec['hair'] == 'silver-pixie' else ('#151211', '#48362b')
+                        low_color, high_color = ('#696569', '#b6b1ab') if spec['hair'] == 'short-grey' else ('#959294', '#e7e0d8') if spec['hair'] == 'silver-pixie' else ('#1c1713', '#594337') if spec['id'] == 'player' else ('#151211', '#48362b')
                         low = np.array(linear(low_color)[:3]); high = np.array(linear(high_color)[:3])
                         luminance = np.clip(values[:, :3].mean(axis=1) * 2.5, 0, 1)
                         values[:, :3] = low + luminance[:, None] * (high - low)
@@ -135,6 +135,7 @@ def apply_face(human, spec, targets):
         "broad-mature": [("head/head-age-incr", .35), ("head/head-scale-horiz-incr", .2)],
         "rounded-jaw": [("chin/chin-width-incr", .2), ("head/head-fat-incr", .1)],
         "square-jaw": [("head/head-rectangular", .23), ("chin/chin-bones-incr", .22)],
+        "portrait-oval": [("head/head-oval", .16), ("head/head-scale-horiz-decr", .08), ("chin/chin-width-incr", .09), ("chin/chin-height-decr", .08)],
         "wide-cheekbones": [("head/head-scale-horiz-incr", .15), ("cheek/l-cheek-bones-incr", .2), ("cheek/r-cheek-bones-incr", .2)],
         "heart-shaped": [("head/head-triangular", .23), ("chin/chin-width-decr", .2)],
     }
@@ -143,6 +144,144 @@ def apply_face(human, spec, targets):
         if not path.exists():
             raise RuntimeError(f"Missing inspected MPFB face target {name}")
         TargetService.load_target(human, str(path), weight=weight)
+
+
+def player_polo(bpy, rig, spec, height):
+    """A small rounded knit collar and short placket, rather than rigid lapels."""
+    if spec['id'] != 'player': return None
+    h = height / 1.77
+    vertices, faces = [], []
+    # Open-front collar follows an oval neckline. Three curved bands let the
+    # fabric roll softly over the shoulder; the front ends stay short.
+    count = 40
+    for row in range(3):
+        t = row / 2
+        for i in range(count + 1):
+            angle = -math.pi / 2 + .24 + (math.tau - .48) * i / count
+            front = max(0, -math.sin(angle))
+            x = (.061 + .030*t) * math.cos(angle)
+            y = .002 + (.077 + .026*t) * math.sin(angle) - .028*t*front
+            z = 1.520 - .027*t - .024*front - .008*t*front + .001*math.sin(t*math.pi)
+            vertices.append((x*h,y*h,z*h))
+    for row in range(2):
+        for i in range(count):
+            j=row*(count+1)+i;faces.append((j,j+1,j+count+2,j+count+1))
+    # Narrow, flexible placket lies against the chest with two subtle buttons.
+    offset=len(vertices)
+    for z,y in [(1.478,-.092),(1.444,-.115),(1.409,-.122)]:
+        for x in [-.009,.009]:vertices.append((x*h,y*h,z*h))
+    faces.extend([(offset,offset+1,offset+3,offset+2),(offset+2,offset+3,offset+5,offset+4)])
+    mesh=bpy.data.meshes.new('player_soft_knit_polo_collar');mesh.from_pydata(vertices,[],faces);mesh.update()
+    obj=bpy.data.objects.new(mesh.name,mesh);bpy.context.collection.objects.link(obj);obj.parent=rig
+    bone='spine_05' if 'spine_05' in rig.data.bones else 'spine_03'
+    obj.vertex_groups.new(name=bone).add(list(range(len(vertices))),1,'REPLACE')
+    arm=obj.modifiers.new('Collar follows shoulders','ARMATURE');arm.object=rig
+    solid=obj.modifiers.new('Soft folded knit thickness','SOLIDIFY');solid.thickness=.0015*h
+    bpy.ops.object.select_all(action='DESELECT');bpy.context.view_layer.objects.active=obj;obj.select_set(True);bpy.ops.object.modifier_apply(modifier=solid.name)
+    material=bpy.data.materials.new('polo_collar_pique');material.use_nodes=True
+    shader=material.node_tree.nodes.get('Principled BSDF');shader.inputs['Base Color'].default_value=linear(spec['colors'][0]);shader.inputs['Roughness'].default_value=.89;mesh.materials.append(material)
+    for face in mesh.polygons:face.use_smooth=True
+    button_material=bpy.data.materials.new('polo_matte_buttons');button_material.use_nodes=True
+    button_shader=button_material.node_tree.nodes.get('Principled BSDF');button_shader.inputs['Base Color'].default_value=linear('#719181');button_shader.inputs['Roughness'].default_value=.75
+    for z,y in [(1.451,-.114),(1.423,-.123)]:
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=10,ring_count=5,radius=.0025*h,location=(0,y*h,z*h))
+        button=bpy.context.object;button.name='polo_button';button.scale.y=.45;button.parent=rig
+        button.vertex_groups.new(name=bone).add(list(range(len(button.data.vertices))),1,'REPLACE')
+        modifier=button.modifiers.new('Button skin','ARMATURE');modifier.object=rig;button.data.materials.append(button_material)
+        obj.select_set(True);button.select_set(True);bpy.context.view_layer.objects.active=obj;bpy.ops.object.join()
+    return obj
+
+
+def player_stubble(bpy, human, height, top, mouth):
+    """Bake softly feathered short facial hair into skin; no offset face shell."""
+    def smooth(a,b,x):
+        t=max(0,min(1,(x-a)/(b-a)));return t*t*(3-2*t)
+    mask=human.data.color_attributes.new(name='RaffiStubble',type='FLOAT_COLOR',domain='POINT')
+    for vertex in human.data.vertices:
+        x,y,z=vertex.co;dx=abs(x);dz=z-mouth.z
+        # Jaw coverage rises gently toward the sideburns. Lips and throat stay
+        # separate, and interpolation feathers the cheek boundary continuously.
+        cheek_top=mouth.z+.005+.029*smooth(.026*height,.048*height,dx)
+        jaw=smooth(mouth.z-.047*height,mouth.z-.034*height,z)*(1-smooth(cheek_top-.015,cheek_top+.012,z))
+        front=(1-smooth(.014*height,.045*height,y-mouth.y))*(1-smooth(.048*height,.063*height,dx))
+        lip_gap=(1-smooth(.012*height,.026*height,dx))*(1-smooth(.003*height,.009*height,abs(dz)))
+        moustache=(1-smooth(.019*height,.028*height,dx))*smooth(.002*height,.006*height,dz)*(1-smooth(.011*height,.016*height,dz))
+        density=max(jaw*(1-lip_gap)*.70,moustache*.62)*front
+        if vertex.index>=13380 or z<top-height*.17:density=0
+        mask.data[vertex.index].color=(density,density,density,1)
+    for material in human.data.materials:
+        if not material or not material.use_nodes:continue
+        tree=material.node_tree;shader=next((n for n in tree.nodes if n.type=='BSDF_PRINCIPLED'),None)
+        if not shader or not shader.inputs['Base Color'].links:continue
+        source=shader.inputs['Base Color'].links[0].from_socket
+        attribute=tree.nodes.new('ShaderNodeAttribute');attribute.attribute_name='RaffiStubble'
+        geometry=tree.nodes.new('ShaderNodeNewGeometry');noise=tree.nodes.new('ShaderNodeTexNoise');noise.inputs['Scale'].default_value=1350;noise.inputs['Detail'].default_value=1
+        tree.links.new(geometry.outputs['Position'],noise.inputs['Vector'])
+        grain=tree.nodes.new('ShaderNodeMapRange');grain.inputs['To Min'].default_value=.30;grain.inputs['To Max'].default_value=.95;tree.links.new(noise.outputs['Fac'],grain.inputs['Value'])
+        amount=tree.nodes.new('ShaderNodeMath');amount.operation='MULTIPLY';tree.links.new(attribute.outputs['Color'],amount.inputs[0]);tree.links.new(grain.outputs['Result'],amount.inputs[1])
+        mix=tree.nodes.new('ShaderNodeMixRGB');mix.blend_type='MULTIPLY';mix.inputs[2].default_value=(.16,.14,.13,1);tree.links.new(amount.outputs[0],mix.inputs[0]);tree.links.new(source,mix.inputs[1]);tree.links.new(mix.outputs[0],shader.inputs['Base Color'])
+
+
+def player_clothing_clearance(human, equipped, spec):
+    """Keep the covered torso beneath the fitted tee through coarse mesh LODs."""
+    if spec['id']!='player':return
+    clothes=next(item['object'] for item in equipped if item['kind']=='Clothes' and 'casualsuit' in item['source'].stem)
+    clothes.data.update()
+    for vertex in clothes.data.vertices:
+        if vertex.co.z>1.16:vertex.co+=vertex.normal*.0035
+    clothes.data.update()
+    human.data.update()
+
+
+def hide_player_covered_torso(human, spec, height):
+    # Source garment masks leave small shoulder triangles that can pierce the
+    # tee after LOD simplification. Remove only fully covered torso skin after
+    # MPFB has consumed its original helper indices; retain neck and arms.
+    if spec['id']!='player':return
+    import bmesh
+    h=height/1.77
+    mesh=bmesh.new();mesh.from_mesh(human.data)
+    covered=[]
+    for face in mesh.faces:
+        c=face.calc_center_median()/h
+        if 1.15<c.z<1.535 and abs(c.x)<.34 and not (abs(c.x)<.070 and c.z>1.445):covered.append(face)
+    bmesh.ops.delete(mesh,geom=covered,context='FACES')
+    mesh.to_mesh(human.data);mesh.free();human.data.update()
+
+
+def player_glasses(bpy, rig, spec, equipped):
+    """Original rounded acetate spectacles, fitted from the actual eye geometry."""
+    if spec['id'] != 'player': return None
+    from mathutils import Vector
+    eyes=next(item['object'] for item in equipped if item['kind']=='Eyes')
+    points=[v.co for v in eyes.data.vertices]
+    center_z=(min(v.z for v in points)+max(v.z for v in points))/2
+    front=min(v.y for v in points)-.013
+    center_x=max(v.x for v in points)*.68
+    vertices,faces=[],[]
+    def tube(path,radius=.0025,closed=False):
+        start=len(vertices);n=len(path);sides=6
+        for i,p in enumerate(path):
+            tangent=Vector(path[(i+1)%n])-Vector(path[(i-1)%n]) if closed else Vector(path[min(n-1,i+1)])-Vector(path[max(0,i-1)])
+            tangent.normalize();u=tangent.cross(Vector((0,0,1)))
+            if u.length<.01:u=tangent.cross(Vector((0,1,0)))
+            u.normalize();v=tangent.cross(u).normalized()
+            for k in range(sides): vertices.append(tuple(Vector(p)+radius*(math.cos(k*math.tau/sides)*u+math.sin(k*math.tau/sides)*v)))
+        for i in range(n if closed else n-1):
+            for k in range(sides): faces.append((start+i*sides+k,start+i*sides+(k+1)%sides,start+((i+1)%n)*sides+(k+1)%sides,start+((i+1)%n)*sides+k))
+    for side in [-1,1]:
+        tube([(side*center_x+.0255*math.cos(t),front+.005*abs(math.cos(t)),center_z+.020*math.sin(t)) for t in [i*math.tau/24 for i in range(24)]],closed=True)
+        x=side*(center_x+.027)
+        tube([(x,front+.003,center_z+.008),(x+side*.005,front+.022,center_z+.009),(x+side*.006,.008,center_z+.005),(x+side*.002,.032,center_z-.009)],.0034)
+    tube([(-center_x+.024,front,center_z+.006),(0,front-.004,center_z+.010),(center_x-.024,front,center_z+.006)],.0025)
+    mesh=bpy.data.meshes.new('player_rounded_acetate_spectacles');mesh.from_pydata(vertices,[],faces);mesh.update()
+    obj=bpy.data.objects.new(mesh.name,mesh);bpy.context.collection.objects.link(obj);obj.parent=rig
+    obj.vertex_groups.new(name='head').add(list(range(len(vertices))),1,'REPLACE')
+    modifier=obj.modifiers.new('Spectacles follow head','ARMATURE');modifier.object=rig
+    material=bpy.data.materials.new('dark_tortoise_acetate');material.use_nodes=True
+    shader=material.node_tree.nodes.get('Principled BSDF');shader.inputs['Base Color'].default_value=linear('#211a13');shader.inputs['Roughness'].default_value=.28;mesh.materials.append(material)
+    for face in mesh.polygons:face.use_smooth=True
+    return obj
 
 
 def facial_hair(bpy, human, rig, spec, source):
@@ -155,6 +294,9 @@ def facial_hair(bpy, human, rig, spec, source):
     # Helper cube indices are not stable after MPFB's rest-pose bake. Fit the
     # patch to the actual head surface in body units, below the nose/eye line.
     mouth = Vector((0, face_front + height * .015, top - height * .095))
+    if spec['id']=='player':
+        player_stubble(bpy,human,height,top,mouth)
+        return None
     vertices, faces, weights, mapping = [], [], [], {}
     human.data.update()
     for polygon in human.data.polygons:
@@ -320,6 +462,16 @@ def author(bpy, args, spec, plan):
     diffuse = next((line.split(None, 1)[1].strip() for line in skin_path.read_text().splitlines() if line.startswith('diffuseTexture ')), None)
     if not diffuse or not (skin_path.parent / diffuse).exists(): raise RuntimeError('Missing licensed skin diffuse: ' + str(skin_path.parent / (diffuse or '<unspecified>')))
     HumanService.set_character_skin(str(skin_path), human, skin_type="GAMEENGINE")
+    if spec['id'] == 'player':
+        # Tint the actual skin albedo, retaining pores/lips/eye sockets. Catalog
+        # swatches alone do not change the exported MakeHuman skin texture.
+        for material in human.data.materials:
+            if not material or not material.use_nodes: continue
+            tree=material.node_tree; shader=next((n for n in tree.nodes if n.type=='BSDF_PRINCIPLED'),None)
+            if shader and shader.inputs['Base Color'].links:
+                source=shader.inputs['Base Color'].links[0].from_socket
+                tint=tree.nodes.new('ShaderNodeMixRGB');tint.blend_type='MULTIPLY';tint.inputs[0].default_value=1;tint.inputs[2].default_value=(.68,.61,.51,1)
+                tree.links.new(source,tint.inputs[1]);tree.links.new(tint.outputs[0],shader.inputs['Base Color'])
     rig = HumanService.add_builtin_rig(human, "game_engine")
     equipped = []
     for subdir, filename, kind in [("eyes", "low-poly.mhclo", "Eyes"), ("eyebrows", plan.get("brows", "eyebrow001.mhclo"), "Eyebrows")] + plan["assets"]:
@@ -335,17 +487,33 @@ def author(bpy, args, spec, plan):
     RigService.set_pose_from_dict(rig, pose)
     bpy.ops.object.mode_set(mode="OBJECT")
     RigService.apply_pose_as_rest_pose(rig)
+    if spec['id'] == 'player':
+        hair=next(item['object'] for item in equipped if item['kind']=='Hair')
+        # Keep the full frontal hairline. Extra length lies behind the ears and
+        # down toward the nape; broad waves follow the supplied portrait.
+        for vertex in hair.data.vertices:
+            x,y,z=vertex.co
+            back=max(0,min(1,(y+.005)/.09))
+            lower=max(0,min(1,(1.73-z)/.10))
+            vertex.co.y+=.012*back*lower
+            vertex.co.z-=.018*back*lower
+            vertex.co.x+=.0025*math.sin(y*92+z*45)*max(0,min(1,(z-1.59)/.1))
+        hair.data.update()
+    player_clothing_clearance(human,equipped,spec)
     beard = facial_hair(bpy, human, rig, spec, args.mpfb_source)
     body_group = human.vertex_groups.get('body').index
     body_z = [vertex.co.z for vertex in human.data.vertices if any(group.group == body_group for group in vertex.groups)]
     authored_body_height = max(body_z) - min(body_z)
     waistband = skirt_waistband(bpy, rig, spec, equipped, authored_body_height)
+    polo = player_polo(bpy, rig, spec, authored_body_height)
+    glasses = player_glasses(bpy, rig, spec, equipped)
     ExportService.bake_modifiers_remove_helpers(human, bake_masks=True, bake_subdiv=False, remove_helpers=True, also_proxy=True)
+    hide_player_covered_torso(human,spec,authored_body_height)
     # Preserve fitted body proportions; this last units correction sets authored height.
     bpy.context.view_layer.update()
     scale = spec["height"] / max(.1, authored_body_height)
     rig.scale *= scale
-    opaque = [human] + ([beard] if beard else []) + ([waistband] if waistband else []) + [item["object"] for item in equipped if item["kind"] not in ("Hair", "Eyebrows", "Eyelashes")]
+    opaque = [human] + ([beard] if beard else []) + ([waistband] if waistband else []) + ([polo] if polo else []) + ([glasses] if glasses else []) + [item["object"] for item in equipped if item["kind"] not in ("Hair", "Eyebrows", "Eyelashes")]
     atlas = bake_opaque_atlas(bpy, opaque, args.output, spec["id"], resolution=1024)
     bpy.ops.object.select_all(action="DESELECT"); rig.select_set(True)
     for child in ObjectService.get_list_of_children(rig): child.select_set(True)

@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import { hexToRgb, makeRng } from '../engine/state.js'
 import { attachHeroVehicle, updateHeroVehicle } from '../engine/hero-vehicle.js'
 import { MeshBuilder } from './builder.js'
+import { makeSkateboard } from './skateboard.js'
 import { buildStreetVehicle } from './vehicle-kit.js'
 
 function addBox(builder, options) {
@@ -185,7 +186,8 @@ function makeMicroVehicle(vehData, archetypeId, arch, seed, material, atlas, lig
 export function makeVehicle(vehData, archetypeId, seed, material, atlas, lighting) {
   const arch = vehData.archetypes[archetypeId]
   if (!arch) return null
-  if (arch.kind === 'skateboard' || arch.kind === 'scooter') {
+  if (arch.kind === 'skateboard') return makeSkateboard(arch, material, atlas, lighting)
+  if (arch.kind === 'scooter') {
     return makeMicroVehicle(vehData, archetypeId, arch, seed, material, atlas, lighting)
   }
   const rng = makeRng('veh:' + archetypeId + ':' + seed)

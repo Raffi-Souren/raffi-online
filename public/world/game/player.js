@@ -12,10 +12,11 @@ import { movementBasis, getCameraMode } from '../engine/camera.js'
 import { resolveCircle, moveCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
 import { actorCollisionBodies } from '../engine/actor-collisions.js'
 import { makePed, animatePed } from '../gen/peds.js'
+import { kickflipPose, catchGrind, stepGrind } from './skate-core.js'
 import { makeVehicle, animateVehicle } from '../gen/vehicles.js'
 
-const WALK_SPEED = 3.4
-const RUN_SPEED = 6.2
+const WALK_SPEED = 2.8
+const RUN_SPEED = 6.0
 const PLAYER_RADIUS = 0.45
 
 export const player = {
@@ -28,6 +29,9 @@ export const player = {
   blockedTime: 0,
   /** Active board trick, if any: { name, t, duration, boost }. */
   trick: null,
+  grind: null,
+  skateLanding: null,
+  skatePose: null,
   trickScore: 0,
   trickChain: 0,
   lastLanding: -10,
@@ -41,9 +45,9 @@ export const player = {
 
 const KICKFLIP = {
   name: 'kickflip',
-  duration: 0.58,
-  hop: 0.95,
-  boost: 3.8,
+  duration: 0.92,
+  hop: 0.57,
+  boost: 0.8,
   minSpeed: 1.2,
 }
 
@@ -184,7 +188,8 @@ export function enterVehicle(v) {
 export function tryKickflip() {
   const v = player.vehicle
   if (!v || v.kind !== 'skateboard') return false
-  if (player.trick) return false
+  if (player.grind) { finishGrind(); return true }
+  if (player.trick || player.skateLanding) return false
   if (Math.abs(v.speed) < KICKFLIP.minSpeed) return false
 
   player.trick = {
@@ -204,13 +209,13 @@ export function tryKickflip() {
 }
 
 export function isBoardTrickActive() {
-  return !!player.trick
+  return !!(player.trick || player.grind || player.skateLanding)
 }
 
 export function exitVehicle(collisionWorld = null) {
   const v = player.vehicle
   if (!v) return false
-  if (player.trick) return false // finish the flip first
+  if (isBoardTrickActive()) return false // finish the landing first
   const off = v.exitOffset || data.vehicles.player.exitOffset
   const sideX = Math.cos(v.yaw)
   const sideZ = -Math.sin(v.yaw)
@@ -249,6 +254,7 @@ export function exitVehicle(collisionWorld = null) {
   v.angularVel = 0
   v.stuckFrames = 0
   player.vehicle = null
+  player.skatePose = null
   state.mode = 'foot'
   state.player.vehicle = null
   state.player.mountCameraHeight = null
@@ -260,6 +266,8 @@ export function exitVehicle(collisionWorld = null) {
 
 /** Moves the on-foot player safely between world-space interaction points. */
 export function teleportPlayer(x, z, yaw = state.player.yaw) {
+  // Reload/fast travel cancels transient air states before releasing ownership.
+  player.trick = player.grind = player.skateLanding = player.skatePose = null
   if (player.vehicle) exitVehicle()
   player.blockedTime = 0
   const p = state.player
@@ -320,7 +328,7 @@ function updateWalking(dt, input, world, beatPhase) {
 
   // Snappier accel/stop — the old damp rate felt like ice-skating. A stronger
   // stop rate kills the residual slide when the stick is released.
-  const blend = mag > 0.01 ? 20 : 24
+  const blend = mag > 0.01 ? 12 : 24
   p.vx = damp(p.vx, desiredX, blend, dt)
   p.vz = damp(p.vz, desiredZ, blend, dt)
 
@@ -365,6 +373,16 @@ export function settlePlayerContacts(world) {
 
 function updateDriving(dt, input, world, beatPhase = 0) {
   const v = player.vehicle
+  if (player.grind) {
+    const ride=stepGrind(player.grind,dt,input.move.x,input.brake)
+    v.x=ride.x;v.z=ride.z;v.y=ride.height;v.yaw=ride.yaw;v.speed=player.grind.speed
+    player.skatePose={crouch:.16,balance:player.grind.balance,riderHop:0,boardHop:0}
+    v.mesh.position.set(v.x,v.y,v.z);v.mesh.rotation.set(0,v.yaw,0,'YXZ')
+    Object.assign(state.player,{x:v.x,y:v.y,z:v.z,yaw:v.yaw,speed:v.speed,vx:Math.sin(v.yaw)*v.speed,vz:Math.cos(v.yaw)*v.speed})
+    syncRiderVisual(v);syncMarker(v.x,v.y,v.z,1)
+    if(ride.done)finishGrind()
+    return
+  }
   const basis = movementBasis()
   const inputMag = Math.hypot(input.move.x, input.move.y)
   const microRide = v.kind === 'skateboard' || v.kind === 'scooter'
@@ -439,7 +457,9 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   }
 
   const bodies = actorCollisionBodies(player.group.parent?.children, v.x, v.z, v.mesh, 18, v.y || 0)
-  stepVehicle(v, v.handling, ctl, dt, world, bodies)
+  const ridingAir=v.kind==='skateboard'&&(player.trick||player.skateLanding)
+  const contactWorld=ridingAir?{query:(x,z,r,out)=>world.query(x,z,r,out).filter(c=>c.tag!=='skate-rail')}:world
+  stepVehicle(v, v.handling, ctl, dt, contactWorld, bodies)
   const groundHeight = v.y || 0
 
   const bounded = clampToBounds(v.x, v.z, data.world.bounds, 6)
@@ -452,9 +472,10 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   if (player.trick) {
     player.trick.t += dt
     const u = clamp(player.trick.t / player.trick.duration, 0, 1)
-    // Smooth hop arc + one clean longitudinal flip.
-    hop = Math.sin(u * Math.PI) * (player.trick.hop || 0.9)
-    flip = u * Math.PI * 2
+    player.skatePose=kickflipPose(player.trick.t,player.trick.duration)
+    hop=player.skatePose.boardHop;flip=player.skatePose.flip
+    const grind=catchGrind(v,player.trick,data.world.skatePark?.rails)
+    if(grind){player.grind=grind;player.trick=null;bus.emit('toast','50–50 GRIND · STEER TO BALANCE · F / FLIP TO HOP OFF');return}
     if (u >= 1) {
       if (Math.abs(v.speed) > 1.2) {
         player.trickChain = state.time - player.lastLanding < 3 ? Math.min(5, player.trickChain + 1) : 1
@@ -463,16 +484,24 @@ function updateDriving(dt, input, world, beatPhase = 0) {
         bus.emit('toast', `KICKFLIP LANDED · +${100 * player.trickChain} · CHAIN ${player.trickChain} · ${player.trickScore} PTS`)
       } else { player.trickChain = 0; bus.emit('toast', 'ROUGH LANDING · GET SOME SPEED') }
       player.trick = null
+      player.skatePose = null
       hop = 0
       flip = 0
     }
   }
 
+  if(player.skateLanding){
+    player.skateLanding.time+=dt
+    const f=Math.min(1,player.skateLanding.time/.38)
+    hop=Math.max(0,player.skateLanding.height-groundHeight)*(1-f)+Math.sin(f*Math.PI)*.09
+    player.skatePose={crouch:.13*Math.sin(f*Math.PI),boardHop:hop,riderHop:hop}
+    if(f===1){player.skateLanding=null;player.skatePose=null}
+  }
   v.y = groundHeight + hop
   v.mesh.position.set(v.x, v.y, v.z)
   v.mesh.rotation.order = 'YXZ'
   v.mesh.rotation.y = v.yaw
-  v.mesh.rotation.x = 0
+  v.mesh.rotation.x = player.skatePose?.pitch || 0
   // Kickflip: rotate around the board's forward axis (local Z after yaw).
   v.mesh.rotation.z = flip
   if (!player.trick) {
@@ -503,14 +532,23 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   syncMarker(v.x, v.y, v.z, v.kind === 'car' || !v.kind ? 1.7 : 1.08)
 }
 
+function finishGrind(){
+  const g=player.grind,v=player.vehicle;if(!g||!v)return
+  const points=g.distance>=2?Math.floor(g.distance)*25:0
+  player.trickScore+=points
+  bus.emit('toast',points?`CLEAN GRIND · +${points} · ${player.trickScore} PTS`:'ROLL OUT · LINE IT UP AGAIN')
+  player.skateLanding={height:v.y,time:0};player.grind=null
+  v.x+=Math.sin(v.yaw)*.7;v.z+=Math.cos(v.yaw)*.7
+}
+
 function syncRiderVisual(v, hop = 0, flip = 0) {
   if (!v?.riderVisible || !player.group) return
-  // Rider rides the board: same hop, slight crouch spin feel.
+  // Board rotates independently; the rider keeps a balanced upright frame.
   player.group.position.set(v.x, (v.y || 0) + (v.riderHeight || 0), v.z)
   player.group.rotation.order = 'YXZ'
   player.group.rotation.y = v.yaw
-  player.group.rotation.z = flip * 0.15
-  player.group.rotation.x = player.trick ? -0.25 : 0
+  player.group.rotation.z = 0
+  player.group.rotation.x = 0
 }
 
 /** A movement hint never changes the context button's action or hides an available interaction. */

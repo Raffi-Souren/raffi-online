@@ -12,6 +12,7 @@ const url = new URL(base)
 url.searchParams.set('debug', '1')
 url.searchParams.set('auto', '1')
 url.searchParams.set('seed', 'FIXED')
+if (process.env.RAFFI_FUNCTIONAL_TIER) url.searchParams.set('tier', process.env.RAFFI_FUNCTIONAL_TIER)
 
 // No system-browser fallback and no persistent profile: this is the bundled
 // Playwright binary with a fresh context, unrelated to anyone's open tabs.
@@ -38,7 +39,8 @@ async function holdForward(page, milliseconds = 1600, inspect = null) {
 async function positionPlayer(page, pose) {
   await page.evaluate(async ({ x, z, yaw }) => {
     const { teleportPlayer } = await import('/world/game/player.js')
-    const { updateCamera } = await import('/world/engine/camera.js')
+    const { updateCamera, cam, movementBasis } = await import('/world/engine/camera.js')
+    window.__COLLISION_CAMERA__ = { cam, movementBasis }
     window.RAFFI_WORLD.dismissDialogue()
     teleportPlayer(x, z, yaw)
     window.RAFFI_WORLD.setCameraMode('chase')
@@ -46,6 +48,15 @@ async function positionPlayer(page, pose) {
     // approach pose before sending real held-key input.
     updateCamera(0, { x, y: 0, z }, { x: 0, z: 0 }, innerWidth / innerHeight)
   }, pose)
+  // A checkpoint can be hundreds of meters from the prior camera target. Let
+  // the real follow rig settle before applying screen-relative forward input;
+  // otherwise the first movement veers off the intended contact trajectory.
+  await page.waitForFunction(({ x, z, yaw }) => {
+    const { cam, movementBasis } = window.__COLLISION_CAMERA__
+    const basis = movementBasis()
+    return Math.hypot(cam.target.x - x, cam.target.z - z) < 0.05 &&
+      basis.fx * Math.sin(yaw) + basis.fz * Math.cos(yaw) > 0.9995
+  }, pose, { timeout: 30_000 })
 }
 
 try {
@@ -62,11 +73,21 @@ try {
 
   // Use a naturally moving, generated pedestrian. Sample every rendered frame
   // while both the player and NPC simulation are running normally.
-  const pedestrian = await page.evaluate(async () => {
+  const pedestrianStart = await page.evaluate(async () => {
     const { gfx } = await import('/world/engine/render.js')
+    const { state } = await import('/world/engine/state.js')
+    window.__COLLISION_STATE__ = state
     const peds = gfx.scene.children.filter((object) => object.visible && object.userData?.rig === 'biped')
-    const before = new Map(peds.map((ped) => [ped.uuid, ped.position.clone()]))
-    await new Promise((resolve) => setTimeout(resolve, 700))
+    return { time: state.time, poses: peds.map((ped) => ({ uuid: ped.uuid, x: ped.position.x, z: ped.position.z })) }
+  })
+  // First-use shader/skin uploads can occupy more than 700ms wall time. Observe
+  // real simulation progress before selecting a moving person; do not tick it.
+  await page.waitForFunction((target) => window.__COLLISION_STATE__.time >= target,
+    pedestrianStart.time + 0.7, { timeout: 60_000 })
+  const pedestrian = await page.evaluate(async (poses) => {
+    const { gfx } = await import('/world/engine/render.js')
+    const before = new Map(poses.map((pose) => [pose.uuid, pose]))
+    const peds = gfx.scene.children.filter((object) => object.visible && before.has(object.uuid))
     const candidates = peds
       .map((ped) => {
         const old = before.get(ped.uuid)
@@ -90,7 +111,7 @@ try {
       yaw: Math.atan2(-dx, -dz),
       movement,
     }
-  })
+  }, pedestrianStart.poses)
   await positionPlayer(page, pedestrian)
   await page.keyboard.down('Shift')
   await page.keyboard.down('w')
@@ -176,23 +197,41 @@ try {
     z: pole.z + Math.sin(angle) * 3.5,
     yaw: Math.atan2(-Math.cos(angle), -Math.sin(angle)),
   })
+  await page.evaluate(async (pole) => {
+    const { state } = await import('/world/engine/state.js')
+    const trace = { active: true, minimum: Infinity, frames: 0 }
+    window.__COLLISION_POLE_TRACE__ = trace
+    const sample = () => {
+      if (!trace.active) return
+      trace.minimum = Math.min(trace.minimum, Math.hypot(state.player.x - pole.x, state.player.z - pole.z))
+      trace.frames++
+      requestAnimationFrame(sample)
+    }
+    sample()
+  }, pole)
   const blockedHint = await holdForward(page, 1600, async () => {
-    await page.waitForFunction(
+    const visibleHint = await page.waitForFunction(
       () => {
         const prompt = document.querySelector('#interaction-prompt')
-        return prompt?.classList.contains('show') && prompt.textContent.includes('PATH BLOCKED')
+        if (!prompt?.classList.contains('show') || !prompt.textContent.includes('PATH BLOCKED')) return false
+        return { visible: true, text: prompt.textContent, frame: window.__COLLISION_STATE__.frame }
       },
       null,
       { timeout: 10_000 },
     )
+    // Capture the transient hint in the same browser evaluation that sees it.
+    // Screenshot encoding can take seconds on CI while the held movement
+    // continues and correctly lets the player slide free of the obstacle.
+    const observation = await visibleHint.jsonValue()
+    await visibleHint.dispose()
     await page.screenshot({ path: out + '/raffi-world-prop-collision.png' })
-    return page.locator('#interaction-prompt').evaluate((element) => ({
-      visible: element.classList.contains('show'),
-      text: element.textContent,
-    }))
+    return observation
   })
   const afterPole = await page.evaluate(() => window.RAFFI_WORLD.getState().player)
-  report.pole = { clearance: Math.hypot(afterPole.x - pole.x, afterPole.z - pole.z), blockedHint }
+  const poleTrace = await page.evaluate(() => { window.__COLLISION_POLE_TRACE__.active = false; return window.__COLLISION_POLE_TRACE__ })
+  // A round solid can correctly slide the player around it. Assert closest
+  // actual contact, not that the final position must remain stuck to the pole.
+  report.pole = { clearance: poleTrace.minimum, finalClearance: Math.hypot(afterPole.x - pole.x, afterPole.z - pole.z), frames: poleTrace.frames, blockedHint }
   assert.ok(
     report.pole.clearance >= 1.44 && report.pole.clearance < 1.65,
     'floodlight solid missing: ' + JSON.stringify(report.pole),

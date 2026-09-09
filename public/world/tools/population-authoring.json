@@ -254,9 +254,13 @@
       ],
       [
         "hair",
-        "short01.mhclo",
+        "short02.mhclo",
         "Hair"
       ]
-    ]
+    ],
+    "macro": {
+      "muscle": 0.43,
+      "weight": 0.55
+    }
   }
 }

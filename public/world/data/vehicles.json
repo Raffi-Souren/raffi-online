@@ -750,10 +750,10 @@
       "weight": 0,
       "spawnable": false,
       "riderVisible": true,
-      "riderHeight": 0.26,
+      "riderHeight": 0.105,
       "cameraHeight": 52,
       "mapRadius": 125,
-      "collisionRadius": 0.62,
+      "collisionRadius": 0.45,
       "mountLine": "ride-board",
       "controls": {
         "enter": "RIDE",
@@ -762,11 +762,11 @@
         "cam": "CARVE"
       },
       "silhouette": {
-        "length": 1.78,
-        "width": 0.58,
-        "deckHeight": 0.16,
-        "wheelRadius": 0.09,
-        "wheelbase": 1.18
+        "length": 0.82,
+        "width": 0.218,
+        "deckHeight": 0.102,
+        "wheelRadius": 0.03,
+        "wheelbase": 0.47
       },
       "handling": {
         "accel": 8.4,

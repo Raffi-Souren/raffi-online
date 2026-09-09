@@ -25,7 +25,7 @@ for (const candidate of executableCandidates) {
 const browser = await chromium.launch({
   headless: true,
   ...(executablePath ? { executablePath } : {}),
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+  args: ['--no-sandbox', '--disable-dev-shm-usage', ...(process.env.RAFFI_GPU === 'metal' ? ['--use-angle=metal'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])],
 })
 const errors = []
 const report = { platform: MOBILE ? 'phone' : 'desktop', missions: [], checks: [], errors }

@@ -10,7 +10,7 @@ import { retargetHumanoid } from './retarget-humanoid.mjs'
 const requireTools = createRequire(fileURLToPath(new URL('../../../scripts/world-asset-tools/package.json', import.meta.url)))
 const { NodeIO } = requireTools('@gltf-transform/core')
 const { ALL_EXTENSIONS, EXTTextureWebP } = requireTools('@gltf-transform/extensions')
-const { prune, dedup, unpartition, resample, weld, simplify, cloneDocument, textureCompress, meshopt } = requireTools('@gltf-transform/functions')
+const { prune, dedup, unpartition, resample, weld, simplifyPrimitive, joinPrimitives, cloneDocument, meshopt } = requireTools('@gltf-transform/functions')
 const { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } = requireTools('meshoptimizer')
 const sharp = requireTools('sharp'), validator = requireTools('gltf-validator')
 await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready, MeshoptSimplifier.ready])
@@ -29,6 +29,44 @@ function geometryHash(document) {
   }
   return hash.digest('hex')
 }
+
+/** Reserve topology for eyelids, nose, lips and ears instead of simplifying the
+ * head as a tiny part of the entire clothed body. Rejoin the shared material. */
+function simplifyPopulation(document, budget, lod) {
+  const skin=document.getRoot().listSkins()[0], joints=skin.listJoints()
+  const headJoints=new Set(joints.map((n,i)=>/^head$/.test(n.getName())?i:-1).filter(i=>i>=0))
+  const parts=[]; const splits=[]
+  for(const mesh of document.getRoot().listMeshes())for(const primitive of [...mesh.listPrimitives()]){
+    const weights=primitive.getAttribute('WEIGHTS_0'), joint=primitive.getAttribute('JOINTS_0'), indices=primitive.getIndices()
+    if(primitive.getMaterial()?.getAlphaMode()==='OPAQUE'&&weights&&joint&&indices){
+      const face=[],body=[],w=[],j=[]
+      const isHead=i=>{weights.getElement(i,w);joint.getElement(i,j);return w.reduce((sum,v,k)=>sum+(headJoints.has(j[k])?v:0),0)>.6}
+      const array=indices.getArray()
+      for(let i=0;i<array.length;i+=3){const target=[array[i],array[i+1],array[i+2]].some(isHead)?face:body;target.push(array[i],array[i+1],array[i+2])}
+      if(face.length&&body.length){
+        const head=primitive.clone();head.setIndices(indices.clone().setArray(new Uint32Array(face)))
+        primitive.setIndices(indices.clone().setArray(new Uint32Array(body)))
+        mesh.addPrimitive(head);splits.push({mesh,body:primitive,head});parts.push({primitive:head,head:true},{primitive,head:false});continue
+      }
+    }
+    parts.push({primitive,head:false})
+  }
+  const isPlayer=document.getRoot().listScenes()[0].getExtras().identity?.id==='player'
+  const headBudget=isPlayer?(lod==='near'?4300:1800):(lod==='near'?1400:400)
+  const headCount=parts.filter(p=>p.head).reduce((n,p)=>n+p.primitive.getIndices().getCount()/3,0)
+  const reserve=Math.min(headBudget,headCount)
+  const bodyCount=parts.filter(p=>!p.head).reduce((n,p)=>n+p.primitive.getIndices().getCount()/3,0)
+  for(const part of parts){
+    const initial=part.primitive.getIndices().getCount()/3
+    const target=part.head?reserve:Math.max(8,(budget-reserve)*initial/bodyCount)
+    for(const error of part.head?[.002,.008,.03,.12]:[.012,.05,.2,1]){
+      const count=part.primitive.getIndices().getCount()/3
+      if(count<=target+4)break
+      simplifyPrimitive(part.primitive,{simplifier:MeshoptSimplifier,ratio:Math.min(1,target/count),error,lockBorder:part.head && lod==='near'})
+    }
+  }
+  for(const{mesh,body,head}of splits){const joined=joinPrimitives([body,head]);mesh.removePrimitive(body).removePrimitive(head).addPrimitive(joined);body.dispose();head.dispose()}
+}
 await fs.mkdir(output, { recursive: true })
 const results = []
 for (const spec of [...catalog.identities, ...(catalog.player ? [catalog.player] : [])].filter(spec => !selected || selected.includes(spec.id))) {
@@ -41,7 +79,7 @@ for (const spec of [...catalog.identities, ...(catalog.player ? [catalog.player]
     if (material.getAlphaMode() !== 'OPAQUE') material.setAlphaMode('MASK').setAlphaCutoff(.38).setDoubleSided(true)
   }
   for (const mesh of document.getRoot().listMeshes()) for (const primitive of mesh.listPrimitives()) primitive.setAttribute('TANGENT', null)
-  const clips = retargetHumanoid(document, animationDocument)
+  const clips = retargetHumanoid(document, animationDocument, { naturalLocomotion: spec.id === 'player' })
   // glTF skins use joint world transforms and ignore mesh-node TRS. Keep mesh
   // nodes at scene root with identity TRS; the fitted rig retains body scale.
   for (const node of document.getRoot().listNodes().filter(node => node.getSkin())) {
@@ -61,10 +99,8 @@ for (const spec of [...catalog.identities, ...(catalog.player ? [catalog.player]
         animation.dispose()
       }
     }
-    await copy.transform(simplify({ simplifier: MeshoptSimplifier, ratio: Math.min(1, target / originalTriangles), error: lod === 'near' ? .012 : .05, lockBorder: false }), prune(), weld())
-    if (lod === 'near' && spec.id !== 'player' && countTriangles(copy) > 6500) await copy.transform(simplify({ simplifier: MeshoptSimplifier, ratio: 5800 / countTriangles(copy), error: .04, lockBorder: false }), prune())
-    if (lod === 'far' && spec.id !== 'player' && countTriangles(copy) > 1550) await copy.transform(simplify({ simplifier: MeshoptSimplifier, ratio: 1450 / countTriangles(copy), error: .12, lockBorder: false }), prune())
-    if (lod === 'far' && spec.id !== 'player' && countTriangles(copy) > 1600) await copy.transform(simplify({ simplifier: MeshoptSimplifier, ratio: 1450 / countTriangles(copy), error: 1, lockBorder: false }), prune())
+    simplifyPopulation(copy, target, lod)
+    await copy.transform(prune(), weld())
     for (const texture of copy.getRoot().listTextures()) {
       const inspection = await sharp(texture.getImage()).resize(128, 128, { fit: 'inside' }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
       let placeholder = 0
@@ -107,7 +143,7 @@ if (!selected) {
     identities: catalog.identities, player: catalog.player, units: 'metres; +Y up; +Z forward',
     geometry: { uniqueNearNpcGeometry: new Set(results.filter(result => result.lod === 'near' && result.id !== 'player').map(result => result.geometrySha256)).size, verification: 'SHA256 of vertex positions and indices; excludes names, colors and metadata.' },
     runtime: { nearMaximum: { low: 0, medium: 4, high: 6 }, farMixerHz: 12, farShadows: false, independentSkeletons: true, immutableTexturesAndGeometryShared: true, firstPlayPolicy: 'Load twelve small far templates and the player, then stream only nearby identity detail.' },
-    modifications: ['Individually fitted twelve adults and one separate player with natural gender/age/build/height/head targets, fitted source wardrobe and hair.', 'Replaced source clothing logos and body normal detail with original woven colors; preserved licensed footwear panels/soles/laces; baked opaque skin/clothes/eyes to one map and cutout hair/brows separately.', 'Removed hidden body geometry, baked T-pose as rest, authored relaxed standing, retargeted locomotion/talk/sit and sports clips by world-space rest rotations.', 'Generated distinct near/far geometry, pruned distant animation sets, compressed Meshopt/WebP, hashed shared textures, and validated GLB payloads.'],
+    modifications: ['Individually fitted twelve adults and one separate player with natural gender/age/build/height/head targets, fitted source wardrobe and hair.', 'Replaced source clothing logos and body normal detail with original woven colors; preserved licensed footwear panels/soles/laces; baked opaque skin/clothes/eyes to one map and cutout hair/brows separately.', 'Removed hidden body geometry, baked T-pose as rest, authored relaxed standing, retargeted locomotion/talk/sit and sports clips by world-space rest rotations.', 'Preserved extra face topology; player has feathered skin-blended stubble, a soft folded polo collar with garment clearance, rounded original acetate glasses, portrait-inspired full wavy hairline and a lower swept nape. Player run/sprint spine lean and pelvic bounce are reduced while limb timing is preserved.', 'Generated distinct near/far geometry, pruned distant animation sets, compressed Meshopt/WebP, hashed shared textures, and validated GLB payloads.'],
     limitations: 'Animation blends preserve source gait and independent phase; terrain grounding is a cached visual offset, not full foot IK. Carrying uses small original hand-held props. Source mannequins, source packs and Blender files are not shipped to players.',
     lods: results.map(result => ({ ...result, file: 'population/' + result.file })),
     reproduce: ['npm ci --prefix scripts/world-asset-tools', 'python3 public/world/tools/download-population-source.py --work /tmp/raffi --setup --python python3.11', 'python3 public/world/tools/download-character-source.py /tmp/raffi-character-source --pack animation', '/tmp/raffi-blender-runtime/bin/python public/world/tools/author-population.py --plan public/world/tools/population-authoring.json --save-blend', 'RAFFI_ANIMATION_SOURCE=/tmp/raffi-character-source/UAL1_Standard.glb node public/world/tools/prepare-population.mjs'],

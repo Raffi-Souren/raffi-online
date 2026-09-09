@@ -116,7 +116,7 @@ export function resolveCircle(world, x, z, r, iterations = 2, bodies = []) {
         const local = worldToLocal(px - c.x, pz - c.z, -c.ry)
         if (Math.abs(local.x) <= c.w / 2 && Math.abs(local.z) <= c.d / 2) {
           const t = clamp((c.d / 2 - local.z) / c.d, 0, 1)
-          groundY = Math.max(groundY, t * c.h)
+          groundY = Math.max(groundY, (c.baseHeight || 0) + t * c.h)
         }
       } else {
         const angle = c.ry || 0

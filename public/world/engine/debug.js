@@ -6,7 +6,7 @@
  * much state as possible: coordinates, heading, district, draw calls,
  * triangles, and the collision volumes that are otherwise invisible.
  *
- * Controls (desktop): F fly, G wireframe, C collision, V cycle grade,
+ * Controls (desktop): Alt+F fly, Alt+G wireframe, Alt+B collision; panel grade,
  * arrow keys / WASD to fly, [ ] to change altitude.
  */
 
@@ -48,7 +48,7 @@ export function initDebug(elements, collisionWorld) {
   })
 
   window.addEventListener('keydown', (e) => {
-    if (state.paused || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return
+    if (!e.altKey || state.paused || e.repeat || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return
     if (e.code === 'KeyF') toggle('fly')
     else if (e.code === 'KeyG') toggle('wire')
     else if (e.code === 'KeyB') toggle('collide')

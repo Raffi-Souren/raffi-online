@@ -108,6 +108,8 @@ function renderChoices() {
       const option = button(branch.label, () => apply({ kind: 'accept', branch: id }))
       const description = node('small', '', branch.description); option.append(description); choices.append(option)
     }
+  } else if (storySettled(story)) {
+    choices.append(button('Remember our story', () => apply({ kind: 'visit-owner' })))
   } else {
     choices.append(button('Follow my route', () => { focusStory(); closeStory() }), button('Ask about the arrangement', () => apply({ kind: currentTarget?.id === 'owner' ? 'visit-owner' : 'ask' })))
   }

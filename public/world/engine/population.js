@@ -73,5 +73,9 @@ export function appearanceForActor(source, worldSeed, catalog) {
     if (identity) return identity
   }
   const id = source.userData.npcId || source.userData.appearanceSeed || source.name
-  return getPopulationIdentity(worldSeed, id, catalog)
+  // Important recurring hosts keep their faces throughout the neighborhood.
+  const reserved = new Set(catalog.reservedConversationIdentities || [])
+  const pool = /^npc-\d+$/.test(id || '') && reserved.size
+    ? { ...catalog, identities: catalog.identities.filter(identity => !reserved.has(identity.id)) } : catalog
+  return getPopulationIdentity(worldSeed, id, pool)
 }

@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 const base = process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3000/world/index.html'
 const out = process.env.RAFFI_CHARACTER_OUT || '/tmp/raffi-character-smoke'
 await fs.mkdir(out, { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', ...(process.env.RAFFI_GPU === 'metal' ? ['--use-angle=metal'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] })
 const errors = [], report = []
 try {
   const page = await browser.newPage({ viewport: { width: 900, height: 800 } })

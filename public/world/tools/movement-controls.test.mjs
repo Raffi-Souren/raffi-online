@@ -72,7 +72,7 @@ test('held diagonal walking in chase view travels straight and stops promptly on
   const dz = (basis.rz + basis.fz) / Math.sqrt(2)
   const yaw = cam.currentYaw
   for (let i = 0; i < 120; i++) frame(world, input(1, 1))
-  assert.ok(state.player.x * dx + state.player.z * dz > 6)
+  assert.ok(state.player.x * dx + state.player.z * dz > 5.2 && state.player.x * dx + state.player.z * dz < 5.7)
   assert.ok(
     Math.abs(state.player.x * dz - state.player.z * dx) < 0.01,
     'body-relative feedback curved the walking path',

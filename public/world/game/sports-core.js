@@ -1,3 +1,4 @@
+import { inspectIntentLanguage } from './intent-language.js'
 /** Park choices and persistent sports records. No rendering or browser effects. */
 export const SPORT_IDS = ['tennis', 'soccer', 'boxing']
 export function emptySportsProgress() { return Object.fromEntries(SPORT_IDS.map(id => [id,{played:0,wins:0,best:0,medal:false,lastWon:null}])) }
@@ -16,11 +17,11 @@ export function recordSportResult(progress,id,result){
   return {state:next,newMedal}
 }
 export function classifySportIntent(raw){
-  const text=String(raw||'').trim().toLowerCase()
+  const {text,guard}=inspectIntentLanguage(raw)
   const ids=SPORT_IDS.filter(id=>new RegExp(id==='soccer'?'\\b(soccer|football|kickabout)\\b':id==='boxing'?'\\b(boxing|box|spar|sparring)\\b':'\\b(tennis|racket|racquet)\\b').test(text))
-  if(/[?]/.test(text)||/^(what|how|why|can (?:you|i)|could (?:you|i)|would (?:you|i)|tell me|is it|are there)\b/.test(text))return {kind:'question',id:ids.length===1?ids[0]:null}
-  if(/\b(no thanks|leave|walk away|not now|not today|not interested|rather not|decline|cancel|exit|don't want|do not want)\b/.test(text))return {kind:'leave'}
-  if(/\b(maybe|perhaps|might|not sure|thinking about|if)\b/.test(text))return {kind:'clarify'}
-  if(ids.length===1)return {kind:'play',id:ids[0]}
+  if(guard==='question')return {kind:'question',id:ids.length===1?ids[0]:null}
+  if(guard==='refuse'||/\b(leave|walk away|cancel|exit)\b/.test(text))return {kind:'leave'}
+  if(guard)return {kind:'clarify'}
+  if(ids.length===1)return {kind:/\bwatch\b/.test(text)?'watch':/\bpractice\b/.test(text)?'practice':'play',id:ids[0]}
   return {kind:'clarify'}
 }

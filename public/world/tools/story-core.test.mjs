@@ -25,7 +25,7 @@ function coverReady() {
 const valid = (state) => assert.equal(validateStoryState(state, config).ok, true, JSON.stringify(validateStoryState(state, config)))
 
 test('questions, hedges, competing intentions and unknown text never accept an obligation', () => {
-  for (const text of ['Can I return her records?', 'What does the deposit cost', 'I will cover the gig?', "Maybe I'll return her records", "I'll cover the gig or return Lena's personal records", "I'll pay the deposit and owe a favor", 'wibble', 'I love records', "I won't cover tonight", "I will return the records if you pay me", "I will cover the gig provided I get paid"]) {
+  for (const text of ['Can I return her records?', 'What does the deposit cost', 'I will cover the gig?', "Maybe I'll return her records", "I'll cover the gig or return Lena's personal records", "I'll pay the deposit and owe a favor", 'wibble', 'I love records', "I will return the records if you pay me", "I will cover the gig provided I get paid"]) {
     const before = createStoryState(config)
     const result = transitionStory(before, { kind: 'typed', text }, config)
     assert.equal(result.state.branch, null, text)

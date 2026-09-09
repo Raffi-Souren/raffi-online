@@ -20,7 +20,7 @@ function sample(sampler, time, quaternion) {
 }
 
 /** MPFB must bake its supplied T-pose as rest before this stage. */
-export function retargetHumanoid(targetDocument, sourceDocument, { clips = POPULATION_CLIPS, fps = 30 } = {}) {
+export function retargetHumanoid(targetDocument, sourceDocument, { clips = POPULATION_CLIPS, fps = 30, naturalLocomotion = false } = {}) {
   const targetRoot = targetDocument.getRoot(), buffer = targetRoot.listBuffers()[0]
   const sourceNodes = sourceDocument.getRoot().listNodes().slice().sort((a, b) => depth(a) - depth(b))
   const targetNodes = targetRoot.listNodes().slice().sort((a, b) => depth(a) - depth(b))
@@ -41,7 +41,8 @@ export function retargetHumanoid(targetDocument, sourceDocument, { clips = POPUL
     if (!name) continue
     const channels = new Map(), tracks = new Map(), targetPositions = []
     let duration = 0
-    for (const channel of original.listChannels()) {
+    const authored = naturalLocomotion && name === 'walk' ? sourceDocument.getRoot().listAnimations().find(clip => clip.getName() === 'Walk_Formal_Loop') || original : original
+    for (const channel of authored.listChannels()) {
       const times = channel.getSampler().getInput().getArray()
       duration = Math.max(duration, times[times.length - 1])
       if (!channels.has(channel.getTargetNode())) channels.set(channel.getTargetNode(), new Map())
@@ -83,11 +84,17 @@ export function retargetHumanoid(targetDocument, sourceDocument, { clips = POPUL
             if (node.getName().toLowerCase() === 'pelvis') position.y += .0015 * Math.sin(time / duration * Math.PI * 2)
           } else {
           const desired = sourcePose.get(source).quaternion.clone().multiply(sourceRest.get(source).quaternion.clone().invert()).multiply(targetRest.get(node).quaternion)
+          if (naturalLocomotion && ['run', 'sprint'].includes(name) && /^(pelvis|spine_\d+|neck_\d+|head)$/.test(node.getName())) {
+            // The source mannequin sprints in a deep, forward combat crouch.
+            // Keep its coordinated leg/arm cycle, with an upright easy-run torso.
+            desired.copy(targetRest.get(node).quaternion).slerp(sourcePose.get(source).quaternion.clone().multiply(sourceRest.get(source).quaternion.clone().invert()).multiply(targetRest.get(node).quaternion), .4)
+          }
           quaternion.copy(parentQuaternion).invert().multiply(desired).normalize()
           // Keep hands relaxed through locomotion instead of importing a fist.
           if (['idle', 'walk', 'purposeful', 'talk'].includes(name) && /^(index|middle|ring|pinky|thumb)_/.test(node.getName())) quaternion.slerp(new THREE.Quaternion().fromArray(node.getRotation()), .85)
           if (node.getName().toLowerCase() === 'pelvis') {
             const world = sourcePose.get(source).position.clone().sub(sourceRest.get(source).position).multiplyScalar(heightRatio).add(targetRest.get(node).position)
+            if (naturalLocomotion && ['run', 'sprint'].includes(name)) world.y = targetRest.get(node).position.y + (world.y - targetRest.get(node).position.y) * .4
             position.copy(world).applyMatrix4(parentMatrix.clone().invert())
           }
           }

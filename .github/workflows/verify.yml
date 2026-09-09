@@ -48,7 +48,7 @@ jobs:
       - name: Build production site
         run: pnpm run build
 
-      - name: Run production browser and performance gates
+      - name: Run production browser and geometry gates
         shell: bash
         run: |
           pnpm start --hostname 127.0.0.1 --port 3100 > /tmp/raffi-next.log 2>&1 &
@@ -70,6 +70,10 @@ jobs:
           mkdir -p /tmp/raffi-world-smoke /tmp/raffi-world-collisions /tmp/raffi-world-minimap /tmp/raffi-signal-smoke /tmp/raffi-camera-budget /tmp/raffi-replay-smoke
           export RAFFI_WORLD_URL=http://127.0.0.1:3100/world/index.html
           export RAFFI_APP_URL=http://127.0.0.1:3100
+          # GitHub's CPU-only SwiftShader runs gameplay in Low. The independent
+          # camera-budget script explicitly retains Medium and its hard limits.
+          export RAFFI_FUNCTIONAL_TIER=low
+          export RAFFI_BUILD_SHA=${{ github.sha }}
           export RAFFI_QA_OUTPUT_DIR=/tmp/raffi-window-qa
           pnpm run test:windows:browser
           export RAFFI_QA_OUTPUT_DIR=/tmp/raffi-raf-os-flow
@@ -87,8 +91,8 @@ jobs:
           export RAFFI_SMOKE_OUT=/tmp/raffi-replay-smoke
           pnpm run test:world:replay
 
-      - name: Upload browser evidence on failure
-        if: failure()
+      - name: Upload browser evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-gate-evidence
@@ -103,3 +107,4 @@ jobs:
             /tmp/raffi-window-qa
             /tmp/raffi-raf-os-flow
           if-no-files-found: ignore
+          retention-days: 14

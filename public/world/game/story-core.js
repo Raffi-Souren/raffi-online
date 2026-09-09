@@ -1,3 +1,4 @@
+import { inspectIntentLanguage } from './intent-language.js'
 /** Last Crate: local intent classification and a serializable, separate story. */
 export const STORY_VERSION = 1
 
@@ -53,10 +54,9 @@ export function validateStoryState(value, config) {
 
 /** Questions and hedged/contradictory paraphrases never accept an obligation. */
 export function classifyStoryIntent(raw) {
-  const text = String(raw || '').trim().toLowerCase().replace(/[’‘]/g, "'").slice(0, 600)
-  if (!text) return { kind: 'clarify' }
-  if (/\?|^(?:what|why|where|who|when|how|could|can|would|do|does|is|are|will|tell me|explain)\b/.test(text)) return { kind: 'ask' }
-  if (/\b(no thanks|not interested|can't help|cannot help|won't help|walk away|leave it|pass on this|rather not|i decline)\b/.test(text)) return { kind: 'refuse' }
+  const { text, guard } = inspectIntentLanguage(raw)
+  if (guard) return { kind: guard === 'question' ? 'ask' : guard }
+  if (/\b(walk away|leave it|pass on this)\b/.test(text)) return { kind: 'refuse' }
   const commit = /\b(i'll|i will|i can|let me|i want to|i choose|i accept|i agree|i promise|i owe|i'm in|sounds good|i'd like to|i would like to|i'm going to|i am going to|count me in|happy to|take the|choose the|accept the)\b/.test(text)
   if (!commit || /\b(maybe|might|not sure|perhaps|unless|if|provided|as long as|don't|do not|won't)\b/.test(text)) return { kind: 'clarify' }
   const matches = []
@@ -101,7 +101,7 @@ export function transitionStory(current, event, config) {
   const state = structuredClone(current)
   const result = { state, changed: false, reply: config.activeReply, challenge: false }
   if (event.kind === 'typed') event = classifyStoryIntent(event.text)
-  if (event.kind === 'ask') { result.reply = config.question; return result }
+  if (event.kind === 'ask') { result.reply = storySettled(state) ? 'We are all settled. Your choice stays part of this neighborhood. To try a different route, start a new run or load a save from before the agreement.' : config.question; return result }
   if (event.kind === 'clarify') { result.reply = config.ambiguous; return result }
   if (event.kind === 'visit-owner') {
     if (state.status === 'complete' || state.stage === 'sleeve' || state.stage === 'flyers') {
@@ -117,7 +117,9 @@ export function transitionStory(current, event, config) {
     state.status = 'declined'; result.changed = true; result.reply = config.refuse; return result
   }
   if (event.kind === 'accept') {
-    if (state.branch) { result.reply = 'We already have an arrangement. Finish it before taking on another one.'; return result }
+    if (state.branch) { result.reply = state.status === 'complete'
+      ? storySettled(state) ? 'You kept your word. That story is finished, and we remember how you handled it. A different route needs a new run or a save from before our agreement.' : 'The delivery is settled. Come back to the shop — there is a follow-up waiting for you.'
+      : 'We already have an arrangement. Your next stop is still marked on the map.'; return result }
     if (!branches.includes(event.branch)) { result.reply = config.ambiguous; return result }
     const branch = config.branches[event.branch]
     if (event.branch === 'negotiate' && !['deposit', 'favor'].includes(event.terms)) { result.reply = branch.terms; result.terms = true; return result }

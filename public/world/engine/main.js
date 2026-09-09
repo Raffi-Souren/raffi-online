@@ -1,3 +1,6 @@
+import { recoveryFor } from './boot-recovery.js'
+import { createStreetCombat } from '../game/street-combat.js'
+import { buildSkateRails } from '../gen/skate-park.js'
 /**
  * RAFFI WORLD — boot and main loop.
  *
@@ -15,7 +18,7 @@ import {
   cycleCameraMode, getCameraMode, setCameraMode, orbitView, getDrivingView, setDrivingView, setReducedMotion,
 } from './camera.js'
 import { initInput, updateInput, endInputFrame, input, consume, resetInput, setActionLabel, setSecondLabel, setCamLabel } from './input.js'
-import { CollisionWorld, resolveCircle, clampToBounds } from './physics.js'
+import { CollisionWorld, resolveCircle, moveCircle, clampToBounds } from './physics.js'
 import { buildAtlas } from '../gen/atlas.js'
 import { buildWorld } from '../gen/world.js'
 import { findOpenSpots } from '../gen/blocks.js'
@@ -84,6 +87,7 @@ let graphicsFailed = false
 let actorBatcher = null
 let playerCharacter = null
 let nearCharacters = null
+let streetCombat = null
 let presentationTier = null
 let pausedFrameDirty = true
 let gameStarted = false
@@ -191,6 +195,8 @@ function grab() {
     knob: $('stick-knob'),
     action: $('btn-action'),
     second: $('btn-second'),
+    punch: $('btn-punch'),
+    handbrake: $('btn-handbrake'),
     btnRadio: $('btn-radio'),
     cam: $('btn-cam'),
     exit: $('btn-exit'),
@@ -659,6 +665,7 @@ async function boot() {
   setCameraMode('chase')
   initPlayer(gfx.scene, materials, atlas)
   playerCharacter = await createPlayerCharacter(player, { tier: getQuality().tier, surfaceRoot: world.cityRoot })
+  streetCombat = createStreetCombat({scene:gfx.scene,state,collision,moveCircle,character:playerCharacter,onHit:() => { bus.emit('sfx','ui-deny');toast('BACK OFF. · Give them some space.',2);setComplianceTier(Math.max(1,state.compliance.tier),state.compliance.heat+8) }})
   spawnParkedCars(gfx.scene, materials, atlas)
   spawnMobilityHub(gfx.scene, materials, atlas)
   initSideActivities(gfx.scene, world.vehicles)
@@ -669,7 +676,7 @@ async function boot() {
     canvas: els.canvas,
     zone: els.zone, base: els.base, knob: els.knob,
     action: els.action, second: els.second, radio: els.btnRadio, cam: els.cam,
-    exit: els.exit,
+    exit: els.exit, punch: els.punch, handbrake: els.handbrake,
     pauseButton: els.pauseButton,
     touchRoot: els.touchRoot,
   })
@@ -763,6 +770,7 @@ async function boot() {
   }, onClose: () => setPaused(false) })
   playerCharacter?.refreshGroundSurfaces()
   initSaves({ scene: gfx.scene, materials, atlas, vehicles: world.vehicles, collision, world, onLoad: () => {
+    streetCombat?.reset()
     world.transitBusy = false
     world.crateQuestActive = false
     resetAudioTransport()
@@ -774,6 +782,9 @@ async function boot() {
   } })
   initSaveMenu({ close: () => { hideSaveMenu(); setPaused(true) }, start: startGame })
   presentationTier = getQuality().tier
+  buildSkateRails(world.cityRoot, materials, atlas, data.blocks.vertexLighting, collision, data.world.skatePark)
+  const parkBoard=spawnVehicle(gfx.scene,materials,atlas,'skateboard',data.world.skatePark.board.x,data.world.skatePark.board.z,data.world.skatePark.board.yaw,state.seed+':park-board')
+  parkBoard.id='park-board';parkBoard.y=data.world.skatePark.ground.height;parkBoard.mesh.position.y=parkBoard.y;world.vehicles.push(parkBoard)
   nearCharacters = await createNearCharacters(gfx.scene, { tier: presentationTier, surfaceRoot: world.cityRoot })
   actorBatcher = createActorBatcher(gfx.scene)
   initDebug({ root: els.debugRoot, readout: els.debugReadout, buttons: els.debugButtons }, collision)
@@ -821,6 +832,7 @@ async function boot() {
     storySnapshot, focusStory, openStory, isStoryOpen, sportsSnapshot, printStudioSnapshot,
     characterStats: () => playerCharacter?.stats,
     nearCharacterStats: () => nearCharacters?.stats,
+    streetCombatSnapshot: () => streetCombat?.snapshot(),
     saveGame, loadGame, saveSlots, saveStatus,
     actorBatchStats: () => actorBatcher?.stats,
     renderAuditView: (camera) => {
@@ -971,6 +983,8 @@ function loop(now) {
     setSecondLabel(state.mode === 'vehicle' ? controls?.second || 'BRAKE' : 'RUN')
     setCamLabel(getCameraMode().label.split(' ')[0] || 'CAM')
     els.exit?.classList.toggle('hidden', state.mode !== 'vehicle')
+    els.punch?.classList.toggle('hidden',state.mode !== 'foot' || dialogueBlocking || !!state.interior)
+    els.handbrake?.classList.toggle('hidden',state.mode !== 'vehicle' || player.vehicle?.riderVisible || dialogueBlocking)
     els.touchRoot?.classList.toggle('mounted', state.mode === 'vehicle')
     els.touchRoot?.classList.toggle('dialogue', dialogueBlocking)
     // Touch has a dedicated EXIT button while mounted. Desktop needs the
@@ -982,6 +996,8 @@ function loop(now) {
     const touchPrimary = consume('primary')
     const spacePressed = consume('space')
     const secondPressed = consume('second')
+    const punchPressed = consume('punch')
+    if (punchPressed && !dialogueBlocking && !world.transitBusy) streetCombat?.punch()
     const spaceAction = state.mode !== 'vehicle' && spacePressed
     const spaceMicroExit = state.mode === 'vehicle' &&
       (player.vehicle?.kind === 'skateboard' || player.vehicle?.kind === 'scooter') &&
@@ -1035,6 +1051,7 @@ function loop(now) {
       updateTransport(dt)
       if (!world.transitBusy && !state.interior) updateTraffic(dt)
       if (!flying && !world.transitBusy && !isDialogueBlocking()) {
+        streetCombat?.update(dt)
         updatePlayer(dt, input, world.collision, state.radio.beatPhase)
       }
 
@@ -1135,12 +1152,18 @@ function loop(now) {
 
 // ------------------------------------------------------------------ init ---
 
-function showGraphicsError(message) {
+function showGraphicsError(error, contextLost = false) {
+  let validSave=false,saveChecked=false
+  try { if(data.world && data.missions && data.conversations){validSave=saveSlots().some(slot=>slot.valid);saveChecked=true} } catch {}
+  const recovery=recoveryFor(error,{contextLost,validSave,saveChecked})
   graphicsFailed = true
   resetInput()
   setAudioActive(false)
   const panel = document.getElementById('graphics-error')
-  document.getElementById('graphics-error-message').textContent = message
+  document.getElementById('graphics-error-message').textContent = recovery.message
+  document.getElementById('graphics-error-title').textContent = recovery.title
+  document.getElementById('graphics-save-status').textContent = recovery.save
+  document.getElementById('graphics-light').hidden = !recovery.offerPerformance
   panel?.classList.remove('hidden')
   document.getElementById('graphics-retry')?.focus()
 }
@@ -1157,10 +1180,10 @@ document.getElementById('graphics-light')?.addEventListener('click', () => {
 })
 document.getElementById('view')?.addEventListener('webglcontextlost', (event) => {
   event.preventDefault()
-  showGraphicsError('The graphics connection was interrupted. Reload to return to Brooklyn, or try a lighter graphics setting.')
+  showGraphicsError(new Error('WebGL context lost'), true)
 })
 
 boot().catch((err) => {
   console.error('[raffi-world] boot failed', err)
-  showGraphicsError('Raffi World could not open. Check your connection and reload. If your browser is struggling with 3D, try performance mode.')
+  showGraphicsError(err)
 })

@@ -11,6 +11,11 @@ const BASE = process.env.RAFFI_WORLD_URL || 'http://127.0.0.1:3000/world/index.h
 const OUT = process.env.RAFFI_SMOKE_OUT || '/tmp'
 const CPU_RATE = Number(process.env.RAFFI_SMOKE_CPU_RATE || 1)
 const STEP_TIMEOUT = 15_000
+// Functional playback can use Low on CPU-only CI; the separate camera-budget
+// gate always measures Medium with its original draw/triangle limits.
+const FUNCTIONAL_TIER = process.env.RAFFI_FUNCTIONAL_TIER || 'medium'
+assert.ok(['low', 'medium', 'high'].includes(FUNCTIONAL_TIER), 'invalid functional graphics tier')
+const playbackEvidence = []
 await fs.mkdir(OUT, { recursive: true })
 
 const world = JSON.parse(await fs.readFile(new URL('../data/world.json', import.meta.url), 'utf8'))
@@ -55,13 +60,25 @@ async function readyPage(context) {
   page.on('pageerror', (error) => errors.push('page: ' + error.message))
   page.on('console', (message) => { if (message.type() === 'error') errors.push('console: ' + message.text()) })
   page.on('requestfailed', (request) => errors.push('request: ' + request.url()))
-  await page.goto(BASE + '?debug=1&auto=1&seed=FIXED&tier=medium', { waitUntil: 'domcontentloaded', timeout: 120_000 })
+  await page.goto(BASE + '?debug=1&auto=1&seed=FIXED&tier=' + FUNCTIONAL_TIER, { waitUntil: 'domcontentloaded', timeout: 120_000 })
   await page.waitForFunction(() => window.RAFFI_WORLD?.ready && window.RAFFI_WORLD.stats().drawCalls > 0, null, { timeout: 120_000 })
   await page.evaluate(async () => {
     window.RAFFI_WORLD.dismissDialogue()
     // Cache only a reference for synchronous polling; never mutate engine state.
     window.__ONBOARDING_STATE__ = (await import('/world/engine/state.js')).state
   })
+  playbackEvidence.push(await page.evaluate((requestedTier) => {
+    const canvas = document.querySelector('#view')
+    const gl = canvas.getContext('webgl2')
+    const info = gl?.getExtension('WEBGL_debug_renderer_info')
+    return {
+      requestedTier, actualQuality: window.RAFFI_WORLD.stats().quality,
+      renderer: info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl?.getParameter(gl.RENDERER),
+      viewport: { width: innerWidth, height: innerHeight },
+      url: location.href,
+    }
+  }, FUNCTIONAL_TIER))
+  assert.equal(playbackEvidence.at(-1).actualQuality, { low: 'performance', medium: 'balanced', high: 'high' }[FUNCTIONAL_TIER], 'requested functional graphics tier was not applied')
   if (CPU_RATE > 1) {
     const session = await context.newCDPSession(page)
     await session.send('Emulation.setCPUThrottlingRate', { rate: CPU_RATE })
@@ -79,7 +96,14 @@ async function waitGameFrames(page, count = 2) {
 
 async function waitGameTime(page, seconds) {
   const target = await page.evaluate((duration) => window.__ONBOARDING_STATE__.time + duration, seconds)
-  await page.waitForFunction((time) => window.__ONBOARDING_STATE__.time >= time, target, { timeout: STEP_TIMEOUT })
+  // Physics accepts at most eight 60Hz ticks per rendered frame. A CPU renderer
+  // can take seconds per frame, so wall time alone is not a simulation deadline.
+  // Keep a hard bound: a paused/stuck game must still fail, never be advanced here.
+  const frameMs = await page.evaluate(() => window.__ONBOARDING_STATE__.stats.frameMs || 0)
+  const timeout = Math.min(120_000, Math.max(STEP_TIMEOUT, Math.ceil(seconds * 60 / 8) * frameMs * 3))
+  const started = Date.now()
+  await page.waitForFunction((time) => window.__ONBOARDING_STATE__.time >= time, target, { timeout })
+  playbackEvidence.push({ simulationSeconds: seconds, wallMs: Date.now() - started, timeoutMs: timeout, observedFrameMs: frameMs })
 }
 
 async function pressKey(page, key) {
@@ -821,9 +845,20 @@ assert.equal(await mobile.locator('#btn-second').isVisible(), true)
 assert.equal(await mobile.locator('#btn-radio').isVisible(), true)
 assert.equal(await mobile.locator('#btn-cam').isVisible(), true)
 const beforeMobileGas = await mobile.evaluate(() => window.RAFFI_WORLD.getState().player)
-await mobile.locator('#btn-action').dispatchEvent('mousedown', { button: 0 })
-await waitGameTime(mobile, 1.1)
-await mobile.evaluate(() => window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })))
+// Use a browser touch contact, including hit testing and pointer capture. A DOM
+// mousedown is not a touch hold and cannot exercise the mobile ownership path.
+const gasBounds = await mobile.locator('#btn-action').boundingBox()
+assert.ok(gasBounds, 'mobile throttle has no tappable bounds')
+const touchSession = await mobileContext.newCDPSession(mobile)
+await touchSession.send('Input.dispatchTouchEvent', {
+  type: 'touchStart', touchPoints: [{ x: gasBounds.x + gasBounds.width / 2, y: gasBounds.y + gasBounds.height / 2, id: 1 }],
+})
+try {
+  await waitGameTime(mobile, 1.1)
+} finally {
+  await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await touchSession.detach()
+}
 await waitGameFrames(mobile)
 const afterMobileGas = await mobile.evaluate(() => window.RAFFI_WORLD.getState().player)
 assert.equal((await mobile.evaluate(() => window.RAFFI_WORLD.getState())).player.vehicle, 'skateboard', 'touch GAS ejected rider')
@@ -892,13 +927,14 @@ for (const grade of ['dusk', 'night']) {
 await mobileContext.close()
 
 assert.deepEqual(errors, [])
+await fs.writeFile(OUT + '/playback-evidence.json', JSON.stringify({ commit: process.env.RAFFI_BUILD_SHA || null, browser: browser.version(), functionalTier: FUNCTIONAL_TIER, measurement: 'Functional software/hardware playback; not an FPS or Medium geometry-budget certification.', playbackEvidence, errors }, null, 2))
 console.info('RAFFI WORLD onboarding smoke: pause, rides, subway, DEAL CLOCK, Reply All Repaint, and mobile controls passed')
 } catch (error) {
   const pages = browser.contexts().flatMap((context) => context.pages())
   for (const [index, page] of pages.entries()) {
     if (page.isClosed()) continue
     const prefix = `${OUT}/raffi-world-failure-${index}`
-    await page.screenshot({ path: prefix + '.png', timeout: 5_000 }).catch(() => {})
+    await page.screenshot({ path: prefix + '.png', timeout: 20_000 }).catch(() => {})
     const evidence = await page.evaluate(async () => {
       const { state } = await import('/world/engine/state.js')
       const { input } = await import('/world/engine/input.js')
@@ -912,7 +948,7 @@ console.info('RAFFI WORLD onboarding smoke: pause, rides, subway, DEAL CLOCK, Re
         objective: document.querySelector('#objective')?.textContent,
       }
     }).catch((failure) => ({ captureError: failure.message }))
-    await fs.writeFile(prefix + '.json', JSON.stringify({ error: error.stack, errors, cpuRate: CPU_RATE, ...evidence }, null, 2))
+    await fs.writeFile(prefix + '.json', JSON.stringify({ commit: process.env.RAFFI_BUILD_SHA || null, error: error.stack, errors, cpuRate: CPU_RATE, functionalTier: FUNCTIONAL_TIER, browser: browser.version(), playbackEvidence, ...evidence }, null, 2))
   }
   throw error
 } finally {

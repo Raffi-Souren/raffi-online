@@ -73,8 +73,12 @@
       <div id="buttons">
         <button id="btn-action" class="tbtn primary">ENTER</button>
         <button id="btn-second" class="tbtn">RUN</button>
+        <button id="btn-punch" class="tbtn small" aria-label="Punch (J)">PUNCH</button>
+        <button id="btn-handbrake" class="tbtn small hidden" aria-label="Hold handbrake">DRIFT</button>
         <button id="btn-radio" class="tbtn small">RADIO</button>
         <button id="btn-cam" class="tbtn small">CAM</button>
+        <button id="btn-zoom-in" class="tbtn zoom" aria-label="Zoom closer">+</button>
+        <button id="btn-zoom-out" class="tbtn zoom" aria-label="Zoom farther">−</button>
         <button id="btn-exit" class="tbtn small hidden">EXIT</button>
       </div>
     </div>
@@ -125,7 +129,9 @@
         <h3>CONTROLS</h3>
         <div class="pc-grid">
           <span class="pc-key">ARROWS / WASD</span><span class="pc-what">move · steer (goes where you press)</span>
-          <span class="pc-key">SHIFT</span><span class="pc-what">run</span>
+          <span class="pc-key">SHIFT / ↑ ↑</span><span class="pc-what">run · hold the second forward press</span>
+          <span class="pc-key">J</span><span class="pc-what">punch · people react and Heat rises</span>
+          <span class="pc-key">F / FLIP</span><span class="pc-what">kickflip · pop onto a rail · hop off a grind</span>
           <span class="pc-key">E / ENTER</span><span class="pc-what">talk · enter / exit ride</span>
           <span class="pc-key">SPACE</span><span class="pc-what">handbrake · hop off board</span>
           <span class="pc-key">F</span><span class="pc-what">brake · kickflip on board</span>
@@ -188,7 +194,7 @@
       <p id="graphics-error-message" class="pause-location">The graphics connection was interrupted.</p>
       <button id="graphics-retry" type="button">Reload the game</button>
       <button id="graphics-light" type="button">Try performance mode</button>
-      <p class="pause-foot">Your last saved checkpoint is available after reloading.</p>
+      <p id="graphics-save-status" class="pause-foot"></p>
     </div>
   </div>
 
