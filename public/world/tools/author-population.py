@@ -73,7 +73,7 @@ def dress_materials(bpy, human, equipped, spec):
                         original = image_node.image
                         if not original.packed_file and not pathlib.Path(bpy.path.abspath(original.filepath)).exists(): raise RuntimeError('Missing licensed hair image: ' + original.filepath)
                         values = np.empty(len(original.pixels), dtype=np.float32); original.pixels.foreach_get(values); values = values.reshape((-1, 4))
-                        low_color, high_color = ('#696569', '#b6b1ab') if spec['hair'] == 'short-grey' else ('#959294', '#e7e0d8') if spec['hair'] == 'silver-pixie' else ('#151211', '#48362b')
+                        low_color, high_color = ('#696569', '#b6b1ab') if spec['hair'] == 'short-grey' else ('#959294', '#e7e0d8') if spec['hair'] == 'silver-pixie' else ('#1c1713', '#594337') if spec['id'] == 'player' else ('#151211', '#48362b')
                         low = np.array(linear(low_color)[:3]); high = np.array(linear(high_color)[:3])
                         luminance = np.clip(values[:, :3].mean(axis=1) * 2.5, 0, 1)
                         values[:, :3] = low + luminance[:, None] * (high - low)
@@ -135,6 +135,7 @@ def apply_face(human, spec, targets):
         "broad-mature": [("head/head-age-incr", .35), ("head/head-scale-horiz-incr", .2)],
         "rounded-jaw": [("chin/chin-width-incr", .2), ("head/head-fat-incr", .1)],
         "square-jaw": [("head/head-rectangular", .23), ("chin/chin-bones-incr", .22)],
+        "portrait-oval": [("head/head-oval", .16), ("head/head-scale-horiz-decr", .08), ("chin/chin-width-incr", .09), ("chin/chin-height-decr", .08)],
         "wide-cheekbones": [("head/head-scale-horiz-incr", .15), ("cheek/l-cheek-bones-incr", .2), ("cheek/r-cheek-bones-incr", .2)],
         "heart-shaped": [("head/head-triangular", .23), ("chin/chin-width-decr", .2)],
     }
@@ -258,7 +259,7 @@ def player_glasses(bpy, rig, spec, equipped):
     front=min(v.y for v in points)-.013
     center_x=max(v.x for v in points)*.68
     vertices,faces=[],[]
-    def tube(path,radius=.0036,closed=False):
+    def tube(path,radius=.0025,closed=False):
         start=len(vertices);n=len(path);sides=6
         for i,p in enumerate(path):
             tangent=Vector(path[(i+1)%n])-Vector(path[(i-1)%n]) if closed else Vector(path[min(n-1,i+1)])-Vector(path[max(0,i-1)])
@@ -269,10 +270,10 @@ def player_glasses(bpy, rig, spec, equipped):
         for i in range(n if closed else n-1):
             for k in range(sides): faces.append((start+i*sides+k,start+i*sides+(k+1)%sides,start+((i+1)%n)*sides+(k+1)%sides,start+((i+1)%n)*sides+k))
     for side in [-1,1]:
-        tube([(side*center_x+.0275*math.cos(t),front+.005*abs(math.cos(t)),center_z+.0225*math.sin(t)) for t in [i*math.tau/24 for i in range(24)]],closed=True)
-        x=side*(center_x+.029)
-        tube([(x,front+.003,center_z+.008),(x+side*.005,front+.022,center_z+.009),(x+side*.006,.008,center_z+.005),(x+side*.002,.032,center_z-.009)],.0042)
-    tube([(-center_x+.026,front,center_z+.006),(0,front-.004,center_z+.010),(center_x-.026,front,center_z+.006)],.003)
+        tube([(side*center_x+.0255*math.cos(t),front+.005*abs(math.cos(t)),center_z+.020*math.sin(t)) for t in [i*math.tau/24 for i in range(24)]],closed=True)
+        x=side*(center_x+.027)
+        tube([(x,front+.003,center_z+.008),(x+side*.005,front+.022,center_z+.009),(x+side*.006,.008,center_z+.005),(x+side*.002,.032,center_z-.009)],.0034)
+    tube([(-center_x+.024,front,center_z+.006),(0,front-.004,center_z+.010),(center_x-.024,front,center_z+.006)],.0025)
     mesh=bpy.data.meshes.new('player_rounded_acetate_spectacles');mesh.from_pydata(vertices,[],faces);mesh.update()
     obj=bpy.data.objects.new(mesh.name,mesh);bpy.context.collection.objects.link(obj);obj.parent=rig
     obj.vertex_groups.new(name='head').add(list(range(len(vertices))),1,'REPLACE')
@@ -469,7 +470,7 @@ def author(bpy, args, spec, plan):
             tree=material.node_tree; shader=next((n for n in tree.nodes if n.type=='BSDF_PRINCIPLED'),None)
             if shader and shader.inputs['Base Color'].links:
                 source=shader.inputs['Base Color'].links[0].from_socket
-                tint=tree.nodes.new('ShaderNodeMixRGB');tint.blend_type='MULTIPLY';tint.inputs[0].default_value=1;tint.inputs[2].default_value=(.67,.57,.48,1)
+                tint=tree.nodes.new('ShaderNodeMixRGB');tint.blend_type='MULTIPLY';tint.inputs[0].default_value=1;tint.inputs[2].default_value=(.68,.61,.51,1)
                 tree.links.new(source,tint.inputs[1]);tree.links.new(tint.outputs[0],shader.inputs['Base Color'])
     rig = HumanService.add_builtin_rig(human, "game_engine")
     equipped = []

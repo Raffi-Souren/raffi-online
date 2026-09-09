@@ -10,7 +10,7 @@ The player has the supplied-reference-inspired full front/downward wavy hair, da
 
 Touch control ownership excludes pinch mixing; zoom uses explicit buttons and DRIFT is distinct from BRAKE. Typed negation/questions/quotes/conditions/mixed intentions never commit obligations. A completed story reports its actual outcome. Graphics recovery offers only supported actions and verified save information.
 
-Current evidence:453tests/build pass; runtime/assets `2d40b611fa184900c3c67fa14b38ad224a2ab57331b65c63447f99bdb60b3a87`. Review and provenance are in HANDOFF/JANK and `artifacts/raffi-world-review/index.html`. Keep historical/current browser pacing separate; no physical-phone or photorealism claim.
+Current evidence:453tests/build pass; runtime/assets `a6ed3a22f9b96efd42cc35f0eb806ce8c19606da1bb27577872b53bcaef28ab7`. Review and provenance are in HANDOFF/JANK and `artifacts/raffi-world-review/index.html`. Keep historical/current browser pacing separate; no physical-phone or photorealism claim.
 
 > Current contract: September 9, 2026. The user's NYC modernisation brief and later
 > tone/conversation/music overrides replace the original Phase 0 art restrictions.

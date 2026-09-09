@@ -1416,9 +1416,9 @@
       "id": "player",
       "lod": "near",
       "file": "player-near.glb",
-      "bytes": 629896,
-      "sha256": "e27defdc902346a27287afd7b7463af02a97d410f430c106d63de8889e8512db",
-      "geometrySha256": "2c377181cd7fc65d9968c0249e67b23dd701a1ad73846ea0886b5881edeff677",
+      "bytes": 630048,
+      "sha256": "1e078df67766b82b4708023caf19523673346ada645ef698317088b8ec5a7704",
+      "geometrySha256": "2e9efd80944c2fb1437a37b41384861da8c93c0238358e034bdd6821f3d9db49",
       "triangles": 11997,
       "triangleBudget": 12500,
       "originalTriangles": 31984,
@@ -1444,17 +1444,17 @@
         {
           "width": 128,
           "height": 128,
-          "bytes": 2350
+          "bytes": 2440
         },
         {
           "width": 512,
           "height": 512,
-          "bytes": 18050
+          "bytes": 19632
         },
         {
           "width": 1024,
           "height": 1024,
-          "bytes": 118304
+          "bytes": 116750
         }
       ],
       "decodedTextureRGBA8WithMipsBytes": 7077888,
@@ -1478,9 +1478,9 @@
       "id": "player",
       "lod": "far",
       "file": "player-far.glb",
-      "bytes": 468872,
-      "sha256": "1f19360a6b2627a835e50b638553854b68b1a379bb7b94ee58e9772aad3c4f5a",
-      "geometrySha256": "dbbd1acea8d80a551a30e605dd29e44fe3464428097cc5126cd4e9c7c48e9fbd",
+      "bytes": 469360,
+      "sha256": "a1ce7f467a0fa1dbd6a05385d1ffb24fa4dd15a2829cbd94937979dcca34f734",
+      "geometrySha256": "7327c79459cd251f3306c2ae806bba77a56d0ab8fe8180faf74f13c9cd1c44b0",
       "triangles": 5797,
       "triangleBudget": 6500,
       "originalTriangles": 31984,
@@ -1506,17 +1506,17 @@
         {
           "width": 128,
           "height": 128,
-          "bytes": 2326
+          "bytes": 2360
         },
         {
           "width": 512,
           "height": 512,
-          "bytes": 16878
+          "bytes": 17624
         },
         {
           "width": 512,
           "height": 512,
-          "bytes": 31662
+          "bytes": 30728
         }
       ],
       "decodedTextureRGBA8WithMipsBytes": 2883584,
