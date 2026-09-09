@@ -32,6 +32,12 @@ async function check(name, page, run) {
       }
       return {
         url: location.href,
+        visibility: document.visibilityState,
+        frameEvidence: window.__windowQaFrames && {
+          ...window.__windowQaFrames,
+          ageMs: performance.now() - window.__windowQaFrames.last,
+        },
+        minesweeperBounds: card?.getBoundingClientRect().toJSON(),
         gameTaskState: document.querySelector('[data-window-task="games"]')?.getAttribute("data-window-state"),
         gameShellModal: dialog?.getAttribute("aria-modal"),
         gameButtonLabels: Array.from(dialog?.querySelectorAll("button") ?? []).map((button) => button.getAttribute("aria-label") ?? button.textContent?.trim()),
@@ -48,6 +54,9 @@ async function check(name, page, run) {
 }
 async function open(page, app, query = "") {
   await page.goto(`${base}/?app=${app}${query}`, { waitUntil: "domcontentloaded" })
+  // Actionability waits need animation frames from the page under test. Claim
+  // foreground ownership after navigation, including on headless CI runners.
+  await page.bringToFront()
   await shell(page, app).waitFor({ state: "visible", timeout: 60000 })
   await task(page, app).waitFor()
   // Visible chrome can arrive before its activity/focus contract settles.
@@ -124,6 +133,15 @@ try {
     })
     // Observe real render output; no production hooks or game-state changes.
     await page.addInitScript(() => {
+      window.__windowQaFrames = { count: 0, last: performance.now(), maxGapMs: 0 }
+      const observeFrame = (now) => {
+        const frames = window.__windowQaFrames
+        frames.count++
+        frames.maxGapMs = Math.max(frames.maxGapMs, now - frames.last)
+        frames.last = now
+        requestAnimationFrame(observeFrame)
+      }
+      requestAnimationFrame(observeFrame)
       const fill = CanvasRenderingContext2D.prototype.fillRect
       CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) {
         if (w === 20 && h === 3 && y === 426) this.canvas.dataset.qaPaddle = String(x + 10)
