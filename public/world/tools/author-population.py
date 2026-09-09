@@ -146,38 +146,106 @@ def apply_face(human, spec, targets):
 
 
 def player_polo(bpy, rig, spec, height):
-    """Original folded collar, open placket and buttons, fitted to the tee shell."""
+    """A small rounded knit collar and short placket, rather than rigid lapels."""
     if spec['id'] != 'player': return None
-    bpy.ops.object.select_all(action='DESELECT')
     h = height / 1.77
     vertices, faces = [], []
-    def panel(points):
-        start = len(vertices); vertices.extend([(x*h,y*h,z*h) for x,y,z in points]); faces.append(tuple(range(start, len(vertices))))
-    # Blender -Y faces forward. Collar points fold over the upper chest.
-    for side in [-1, 1]:
-        panel([(side*.012,-.086,1.49),(side*.061,-.049,1.51),(side*.105,-.081,1.47),(side*.063,-.126,1.419)])
-        panel([(side*.061,-.049,1.51),(side*.057,.039,1.515),(side*.083,.058,1.477),(side*.105,-.081,1.47)])
-    panel([(-.057,.039,1.515),(.057,.039,1.515),(.083,.058,1.477),(-.083,.058,1.477)])
-    panel([(-.013,-.104,1.47),(.013,-.104,1.47),(.013,-.131,1.365),(-.013,-.131,1.365)])
-    mesh=bpy.data.meshes.new('player_folded_polo_collar');mesh.from_pydata(vertices,[],faces);mesh.update()
+    # Open-front collar follows an oval neckline. Three curved bands let the
+    # fabric roll softly over the shoulder; the front ends stay short.
+    count = 40
+    for row in range(3):
+        t = row / 2
+        for i in range(count + 1):
+            angle = -math.pi / 2 + .24 + (math.tau - .48) * i / count
+            front = max(0, -math.sin(angle))
+            x = (.061 + .030*t) * math.cos(angle)
+            y = .002 + (.077 + .026*t) * math.sin(angle) - .028*t*front
+            z = 1.520 - .027*t - .024*front - .008*t*front + .001*math.sin(t*math.pi)
+            vertices.append((x*h,y*h,z*h))
+    for row in range(2):
+        for i in range(count):
+            j=row*(count+1)+i;faces.append((j,j+1,j+count+2,j+count+1))
+    # Narrow, flexible placket lies against the chest with two subtle buttons.
+    offset=len(vertices)
+    for z,y in [(1.478,-.092),(1.444,-.115),(1.409,-.122)]:
+        for x in [-.009,.009]:vertices.append((x*h,y*h,z*h))
+    faces.extend([(offset,offset+1,offset+3,offset+2),(offset+2,offset+3,offset+5,offset+4)])
+    mesh=bpy.data.meshes.new('player_soft_knit_polo_collar');mesh.from_pydata(vertices,[],faces);mesh.update()
     obj=bpy.data.objects.new(mesh.name,mesh);bpy.context.collection.objects.link(obj);obj.parent=rig
-    obj.vertex_groups.new(name='spine_05').add(list(range(len(vertices))),1,'REPLACE')
-    if 'spine_05' not in rig.data.bones:
-        obj.vertex_groups[0].name='spine_03'
+    bone='spine_05' if 'spine_05' in rig.data.bones else 'spine_03'
+    obj.vertex_groups.new(name=bone).add(list(range(len(vertices))),1,'REPLACE')
     arm=obj.modifiers.new('Collar follows shoulders','ARMATURE');arm.object=rig
-    solid=obj.modifiers.new('Folded fabric thickness','SOLIDIFY');solid.thickness=.002*h
-    bpy.context.view_layer.objects.active=obj;obj.select_set(True);bpy.ops.object.modifier_apply(modifier=solid.name)
+    solid=obj.modifiers.new('Soft folded knit thickness','SOLIDIFY');solid.thickness=.0015*h
+    bpy.ops.object.select_all(action='DESELECT');bpy.context.view_layer.objects.active=obj;obj.select_set(True);bpy.ops.object.modifier_apply(modifier=solid.name)
     material=bpy.data.materials.new('polo_collar_pique');material.use_nodes=True
-    shader=material.node_tree.nodes.get('Principled BSDF');shader.inputs['Base Color'].default_value=linear('#356555');shader.inputs['Roughness'].default_value=.89;mesh.materials.append(material)
-    for z in [1.432,1.395]:
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=8,ring_count=4,radius=.0037*h,location=(0,-.126*h,z*h))
-        button=bpy.context.object;button.name='polo_button';button.parent=rig
-        button.vertex_groups.new(name=obj.vertex_groups[0].name).add(list(range(len(button.data.vertices))),1,'REPLACE')
-        modifier=button.modifiers.new('Button skin','ARMATURE');modifier.object=rig
-        button.data.materials.append(material)
-        # Join before the opaque atlas bake; buttons add no draw calls.
+    shader=material.node_tree.nodes.get('Principled BSDF');shader.inputs['Base Color'].default_value=linear(spec['colors'][0]);shader.inputs['Roughness'].default_value=.89;mesh.materials.append(material)
+    for face in mesh.polygons:face.use_smooth=True
+    button_material=bpy.data.materials.new('polo_matte_buttons');button_material.use_nodes=True
+    button_shader=button_material.node_tree.nodes.get('Principled BSDF');button_shader.inputs['Base Color'].default_value=linear('#719181');button_shader.inputs['Roughness'].default_value=.75
+    for z,y in [(1.451,-.114),(1.423,-.123)]:
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=10,ring_count=5,radius=.0025*h,location=(0,y*h,z*h))
+        button=bpy.context.object;button.name='polo_button';button.scale.y=.45;button.parent=rig
+        button.vertex_groups.new(name=bone).add(list(range(len(button.data.vertices))),1,'REPLACE')
+        modifier=button.modifiers.new('Button skin','ARMATURE');modifier.object=rig;button.data.materials.append(button_material)
         obj.select_set(True);button.select_set(True);bpy.context.view_layer.objects.active=obj;bpy.ops.object.join()
     return obj
+
+
+def player_stubble(bpy, human, height, top, mouth):
+    """Bake softly feathered short facial hair into skin; no offset face shell."""
+    def smooth(a,b,x):
+        t=max(0,min(1,(x-a)/(b-a)));return t*t*(3-2*t)
+    mask=human.data.color_attributes.new(name='RaffiStubble',type='FLOAT_COLOR',domain='POINT')
+    for vertex in human.data.vertices:
+        x,y,z=vertex.co;dx=abs(x);dz=z-mouth.z
+        # Jaw coverage rises gently toward the sideburns. Lips and throat stay
+        # separate, and interpolation feathers the cheek boundary continuously.
+        cheek_top=mouth.z+.005+.029*smooth(.026*height,.048*height,dx)
+        jaw=smooth(mouth.z-.047*height,mouth.z-.034*height,z)*(1-smooth(cheek_top-.015,cheek_top+.012,z))
+        front=(1-smooth(.014*height,.045*height,y-mouth.y))*(1-smooth(.048*height,.063*height,dx))
+        lip_gap=(1-smooth(.012*height,.026*height,dx))*(1-smooth(.003*height,.009*height,abs(dz)))
+        moustache=(1-smooth(.019*height,.028*height,dx))*smooth(.002*height,.006*height,dz)*(1-smooth(.011*height,.016*height,dz))
+        density=max(jaw*(1-lip_gap)*.70,moustache*.62)*front
+        if vertex.index>=13380 or z<top-height*.17:density=0
+        mask.data[vertex.index].color=(density,density,density,1)
+    for material in human.data.materials:
+        if not material or not material.use_nodes:continue
+        tree=material.node_tree;shader=next((n for n in tree.nodes if n.type=='BSDF_PRINCIPLED'),None)
+        if not shader or not shader.inputs['Base Color'].links:continue
+        source=shader.inputs['Base Color'].links[0].from_socket
+        attribute=tree.nodes.new('ShaderNodeAttribute');attribute.attribute_name='RaffiStubble'
+        geometry=tree.nodes.new('ShaderNodeNewGeometry');noise=tree.nodes.new('ShaderNodeTexNoise');noise.inputs['Scale'].default_value=1350;noise.inputs['Detail'].default_value=1
+        tree.links.new(geometry.outputs['Position'],noise.inputs['Vector'])
+        grain=tree.nodes.new('ShaderNodeMapRange');grain.inputs['To Min'].default_value=.30;grain.inputs['To Max'].default_value=.95;tree.links.new(noise.outputs['Fac'],grain.inputs['Value'])
+        amount=tree.nodes.new('ShaderNodeMath');amount.operation='MULTIPLY';tree.links.new(attribute.outputs['Color'],amount.inputs[0]);tree.links.new(grain.outputs['Result'],amount.inputs[1])
+        mix=tree.nodes.new('ShaderNodeMixRGB');mix.blend_type='MULTIPLY';mix.inputs[2].default_value=(.16,.14,.13,1);tree.links.new(amount.outputs[0],mix.inputs[0]);tree.links.new(source,mix.inputs[1]);tree.links.new(mix.outputs[0],shader.inputs['Base Color'])
+
+
+def player_clothing_clearance(human, equipped, spec):
+    """Keep the covered torso beneath the fitted tee through coarse mesh LODs."""
+    if spec['id']!='player':return
+    clothes=next(item['object'] for item in equipped if item['kind']=='Clothes' and 'casualsuit' in item['source'].stem)
+    clothes.data.update()
+    for vertex in clothes.data.vertices:
+        if vertex.co.z>1.16:vertex.co+=vertex.normal*.0035
+    clothes.data.update()
+    human.data.update()
+
+
+def hide_player_covered_torso(human, spec, height):
+    # Source garment masks leave small shoulder triangles that can pierce the
+    # tee after LOD simplification. Remove only fully covered torso skin after
+    # MPFB has consumed its original helper indices; retain neck and arms.
+    if spec['id']!='player':return
+    import bmesh
+    h=height/1.77
+    mesh=bmesh.new();mesh.from_mesh(human.data)
+    covered=[]
+    for face in mesh.faces:
+        c=face.calc_center_median()/h
+        if 1.15<c.z<1.535 and abs(c.x)<.34 and not (abs(c.x)<.070 and c.z>1.445):covered.append(face)
+    bmesh.ops.delete(mesh,geom=covered,context='FACES')
+    mesh.to_mesh(human.data);mesh.free();human.data.update()
 
 
 def player_glasses(bpy, rig, spec, equipped):
@@ -225,6 +293,9 @@ def facial_hair(bpy, human, rig, spec, source):
     # Helper cube indices are not stable after MPFB's rest-pose bake. Fit the
     # patch to the actual head surface in body units, below the nose/eye line.
     mouth = Vector((0, face_front + height * .015, top - height * .095))
+    if spec['id']=='player':
+        player_stubble(bpy,human,height,top,mouth)
+        return None
     vertices, faces, weights, mapping = [], [], [], {}
     human.data.update()
     for polygon in human.data.polygons:
@@ -427,6 +498,7 @@ def author(bpy, args, spec, plan):
             vertex.co.z-=.018*back*lower
             vertex.co.x+=.0025*math.sin(y*92+z*45)*max(0,min(1,(z-1.59)/.1))
         hair.data.update()
+    player_clothing_clearance(human,equipped,spec)
     beard = facial_hair(bpy, human, rig, spec, args.mpfb_source)
     body_group = human.vertex_groups.get('body').index
     body_z = [vertex.co.z for vertex in human.data.vertices if any(group.group == body_group for group in vertex.groups)]
@@ -435,6 +507,7 @@ def author(bpy, args, spec, plan):
     polo = player_polo(bpy, rig, spec, authored_body_height)
     glasses = player_glasses(bpy, rig, spec, equipped)
     ExportService.bake_modifiers_remove_helpers(human, bake_masks=True, bake_subdiv=False, remove_helpers=True, also_proxy=True)
+    hide_player_covered_torso(human,spec,authored_body_height)
     # Preserve fitted body proportions; this last units correction sets authored height.
     bpy.context.view_layer.update()
     scale = spec["height"] / max(.1, authored_body_height)

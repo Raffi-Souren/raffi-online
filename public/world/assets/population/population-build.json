@@ -1416,12 +1416,12 @@
       "id": "player",
       "lod": "near",
       "file": "player-near.glb",
-      "bytes": 631664,
-      "sha256": "17a21f9ac6c3e92e761f091a36da9eaae8fb9500b09908b7c4e0755a3af3773b",
-      "geometrySha256": "885a3ab4f7284f9f754958b4acd351567b97b11be7b42d50d1a37257598145c4",
-      "triangles": 11998,
+      "bytes": 629896,
+      "sha256": "e27defdc902346a27287afd7b7463af02a97d410f430c106d63de8889e8512db",
+      "geometrySha256": "2c377181cd7fc65d9968c0249e67b23dd701a1ad73846ea0886b5881edeff677",
+      "triangles": 11997,
       "triangleBudget": 12500,
-      "originalTriangles": 32788,
+      "originalTriangles": 31984,
       "geometryCount": 3,
       "draws": 3,
       "skeletonJoints": 53,
@@ -1454,7 +1454,7 @@
         {
           "width": 1024,
           "height": 1024,
-          "bytes": 119056
+          "bytes": 118304
         }
       ],
       "decodedTextureRGBA8WithMipsBytes": 7077888,
@@ -1478,12 +1478,12 @@
       "id": "player",
       "lod": "far",
       "file": "player-far.glb",
-      "bytes": 470508,
-      "sha256": "7d7e7fc9ff6f8fd0721d44d5bd02f1e13dabdd52a835c9c8524d038499c3f9ab",
-      "geometrySha256": "2e110047eb11f3a3391cc2a40cc11be8f9fd4ac8ff8345cfefbac2d8c68a1817",
-      "triangles": 5795,
+      "bytes": 468872,
+      "sha256": "1f19360a6b2627a835e50b638553854b68b1a379bb7b94ee58e9772aad3c4f5a",
+      "geometrySha256": "dbbd1acea8d80a551a30e605dd29e44fe3464428097cc5126cd4e9c7c48e9fbd",
+      "triangles": 5797,
       "triangleBudget": 6500,
-      "originalTriangles": 32788,
+      "originalTriangles": 31984,
       "geometryCount": 3,
       "draws": 3,
       "skeletonJoints": 53,
@@ -1516,7 +1516,7 @@
         {
           "width": 512,
           "height": 512,
-          "bytes": 32484
+          "bytes": 31662
         }
       ],
       "decodedTextureRGBA8WithMipsBytes": 2883584,

@@ -210,19 +210,22 @@ try {
     sample()
   }, pole)
   const blockedHint = await holdForward(page, 1600, async () => {
-    await page.waitForFunction(
+    const visibleHint = await page.waitForFunction(
       () => {
         const prompt = document.querySelector('#interaction-prompt')
-        return prompt?.classList.contains('show') && prompt.textContent.includes('PATH BLOCKED')
+        if (!prompt?.classList.contains('show') || !prompt.textContent.includes('PATH BLOCKED')) return false
+        return { visible: true, text: prompt.textContent, frame: window.__COLLISION_STATE__.frame }
       },
       null,
       { timeout: 10_000 },
     )
+    // Capture the transient hint in the same browser evaluation that sees it.
+    // Screenshot encoding can take seconds on CI while the held movement
+    // continues and correctly lets the player slide free of the obstacle.
+    const observation = await visibleHint.jsonValue()
+    await visibleHint.dispose()
     await page.screenshot({ path: out + '/raffi-world-prop-collision.png' })
-    return page.locator('#interaction-prompt').evaluate((element) => ({
-      visible: element.classList.contains('show'),
-      text: element.textContent,
-    }))
+    return observation
   })
   const afterPole = await page.evaluate(() => window.RAFFI_WORLD.getState().player)
   const poleTrace = await page.evaluate(() => { window.__COLLISION_POLE_TRACE__.active = false; return window.__COLLISION_POLE_TRACE__ })

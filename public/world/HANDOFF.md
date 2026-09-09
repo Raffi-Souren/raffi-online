@@ -4,8 +4,9 @@
 
 This pass builds on the already-published `db25e8af1af82a2aafcaa85847b5b76768797ff6` baseline, using `codex/world-character-gameplay-polish` and a PR release. Do not treat the older phase notes below as current missing features.
 
-Final runtime/asset fingerprint: `c24638189f99c426d2d0c7a8ef2fc62a3bef0c232605c72e50e1f533074d77d3`.
+Final runtime/asset fingerprint: `2d40b611fa184900c3c67fa14b38ad224a2ab57331b65c63447f99bdb60b3a87`.
 
+- Final portrait refinement: replaced the raised beard patch with feathered stubble baked into skin; fitted a shorter curved polo collar and removed hidden shoulder skin that pierced the shirt after simplification. Player near/far remain3draws, below12.5k/6.5k triangles, with unchanged texture dimensions. Final character grounding/LOD/vehicle checks,453tests and build pass. Earlier clips retain the previous beard/polo; the review includes a matched four-angle before/after. CI screenshot race now captures the PATH BLOCKED state atomically before slow image capture.
 - Player: green polo, warmer skin, full front hair with a low wavy nape silhouette, original rounded acetate glasses. The user-supplied portrait informed the shape; no portrait is embedded in the game. Head-aware decimation preserves faces and frames within existing near/far budgets. Shared animations have player-specific upright run adjustment and phase-preserving gait blends. Walk2.8m/s, run6m/s; Shift, double-tapW/Up and touchRUN.
 - Controls/camera: manual on-foot look persists at rest; two-thumb controls own their pointers; explicit zoom and separate touchDRIFT; landscape layout and11px small minimap labels. DebugF/G/B now requireAlt to leave normalF kickflip intact.
 - Skate: one merged curved deck/truck/wheel asset, independent rider stance/flip, catch/landing and aligned late rail capture. The authored waterfront rails have bounded grind/balance/hop-off, correct collider height and plaza ground. Board camera7.2m; car chase unchanged.

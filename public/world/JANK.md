@@ -2,7 +2,7 @@
 
 ## Gameplay polish — September 9 follow-up
 
-The section below titled “Active NYC modernisation” is now the historical db25e8a rebuild record. The current pass uses runtime hash `c24638189f99c426d2d0c7a8ef2fc62a3bef0c232605c72e50e1f533074d77d3`; see HANDOFF and the updated review bundle for current evidence.
+The section below titled “Active NYC modernisation” is now the historical db25e8a rebuild record. The current pass uses runtime hash `2d40b611fa184900c3c67fa14b38ad224a2ab57331b65c63447f99bdb60b3a87`; see HANDOFF and the updated review bundle for current evidence.
 
 | Finding | Fix and verification |
 |---|---|
