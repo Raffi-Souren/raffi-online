@@ -137,7 +137,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       <button
         ref={blockRef}
         type="button"
-        aria-label={settled ? "Open Raf’s crate" : "Question block"}
+        aria-label={settled ? "Play the secret level" : "Question block: unlock a secret level"}
         onClick={revealSurprise}
         onFocus={() => {
           motionRef.current.focused = true
@@ -240,8 +240,8 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       >
         {revealing && (
           <>
-            <strong style={{ display: "block", fontSize: 17 }}>A little surprise</strong>
-            <span style={{ fontSize: 12 }}>Here comes something from Raf’s crate…</span>
+            <strong style={{ display: "block", fontSize: 17 }}>Secret level unlocked</strong>
+            <span style={{ fontSize: 12 }}>World 1-1 · Brooklyn Dig</span>
           </>
         )}
       </div>

@@ -1,11 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useRef } from "react"
-import { Shuffle, CheckCircle, Pause, Play } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+import { Shuffle, CheckCircle, Pause, Play, RotateCcw } from "lucide-react"
 import { useAudio } from "../context/AudioContext"
-import { SOUNDCLOUD_TRACKS, getRandomTrackIndex } from "@/data/audio-library"
+import { SOUNDCLOUD_TRACKS, getRandomTrackIndex, type Track } from "@/data/audio-library"
 import worldCheats from "../../public/world/data/cheats.json"
 import WindowShell from "../../components/ui/WindowShell"
+import CrateRunGame from "./crate-run/CrateRunGame"
+import CrateDig from "./crate-run/CrateDig"
 
 interface DiggingInTheCratesProps {
   isOpen: boolean
@@ -13,23 +15,47 @@ interface DiggingInTheCratesProps {
   onWorldCheat?: (code: string | null) => void
 }
 
+type CratePhase = "level" | "dig" | "reward"
+
+const PHASE_TITLES: Record<CratePhase, string> = {
+  level: "World 1-1 · Brooklyn Dig",
+  dig: "Raf’s Records",
+  reward: "Raf’s crate",
+}
+
 export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: DiggingInTheCratesProps) {
   const { currentTrack, isPlaying, isLoading, error, playTrack, setPlaylist, togglePlay } = useAudio()
-  // Minimize keeps this session mounted, so restoring never reseeds the music.
-  const seededRef = useRef(false)
+  // Minimize keeps this session mounted, so restoring resumes the same phase.
+  const [phase, setPhase] = useState<CratePhase>("level")
+  const [recordsFound, setRecordsFound] = useState(0)
+  const [run, setRun] = useState(0)
 
-  // On open, load the crate into the global player and play a random record.
   useEffect(() => {
-    if (isOpen && !seededRef.current) {
-      seededRef.current = true
-      setPlaylist(SOUNDCLOUD_TRACKS)
-      const randomIndex = getRandomTrackIndex(SOUNDCLOUD_TRACKS.length)
-      playTrack(SOUNDCLOUD_TRACKS[randomIndex])
-    }
     if (!isOpen) {
-      seededRef.current = false
+      setPhase("level")
+      setRecordsFound(0)
     }
-  }, [isOpen, setPlaylist, playTrack])
+  }, [isOpen])
+
+  const handleCleared = useCallback((records: number) => {
+    setRecordsFound(records)
+    setPhase("dig")
+  }, [])
+
+  // The pull is a tap, so the SoundCloud widget is allowed to start audio.
+  const handlePull = useCallback(
+    (track: Track) => {
+      setPlaylist(SOUNDCLOUD_TRACKS)
+      playTrack(track)
+      setPhase("reward")
+    },
+    [playTrack, setPlaylist],
+  )
+
+  const runItBack = () => {
+    setRun((value) => value + 1)
+    setPhase("level")
+  }
 
   const handleShuffle = useCallback(() => {
     const currentIndex = currentTrack ? SOUNDCLOUD_TRACKS.findIndex((t) => t.id === currentTrack.id) : -1
@@ -47,8 +73,20 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
 
   if (!isOpen) return null
 
+  if (phase !== "reward") {
+    return (
+      <WindowShell title={PHASE_TITLES[phase]} onClose={handleClose} appearance="crate" maxWidth="28rem">
+        {phase === "level" ? (
+          <CrateRunGame key={run} onCleared={handleCleared} onSkip={() => handleCleared(0)} />
+        ) : (
+          <CrateDig key={run} records={recordsFound} onPull={handlePull} />
+        )}
+      </WindowShell>
+    )
+  }
+
   return (
-    <WindowShell title="Raf’s crate" onClose={handleClose} appearance="crate" maxWidth="28rem">
+    <WindowShell title={PHASE_TITLES.reward} onClose={handleClose} appearance="crate" maxWidth="28rem">
       <div style={{ padding: "1.25rem", backgroundColor: "white" }}>
         <div style={{ marginBottom: "1rem", display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
           <CheckCircle size={22} style={{ color: "#10B981", flexShrink: 0, marginTop: "2px" }} />
@@ -62,9 +100,9 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
                 fontSize: "0.9375rem",
               }}
             >
-              A surprise from Raf’s crate
+              You pulled one from Raf’s crate
             </p>
-            <p style={{ fontSize: "0.875rem", color: "#374151", margin: 0 }}>Shuffle to dig for another track.</p>
+            <p style={{ fontSize: "0.875rem", color: "#374151", margin: 0 }}>Shuffle to dig for another, or run the level again.</p>
           </div>
         </div>
 
@@ -189,6 +227,24 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
           >
             <Shuffle size={20} />
             Shuffle
+          </button>
+          <button
+            onClick={runItBack}
+            aria-label="Run the level again"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: "3rem",
+              padding: "0.75rem",
+              backgroundColor: "#f3e8bf",
+              color: "#43381d",
+              border: "1px solid #c5ab60",
+              borderRadius: "0.375rem",
+              cursor: "pointer",
+            }}
+          >
+            <RotateCcw size={20} aria-hidden="true" />
           </button>
           <button
             onClick={handleClose}
