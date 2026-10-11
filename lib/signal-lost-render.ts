@@ -141,7 +141,8 @@ export function renderSignal(ctx: CanvasRenderingContext2D, s: SignalState, art:
     h = ctx.canvas.height
   const bob = s.moving && s.phase === "playing" ? Math.sin(s.time * 11) * 2.5 : 0
   const horizon = h * 0.46 + bob,
-    projection = w / (2 * Math.tan(1.13 / 2))
+    // Cap the vertical field of view on phones so targets stay readable in portrait.
+    projection = Math.max(w / (2 * Math.tan(1.13 / 2)), h * 0.6)
   ctx.imageSmoothingEnabled = false
   const ceiling = ctx.createLinearGradient(0, 0, 0, horizon)
   ceiling.addColorStop(0, "#172633")

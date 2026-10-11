@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import Leaderboard from "./Leaderboard"
 import GameOverScreen from "./GameOverScreen"
 import GameControls from "./GameControls"
+import { useGameControlMode } from "../../components/ui/GameControlChoice"
 import HandheldConsole from "../../components/ui/HandheldConsole"
 import { useWindowActivity } from "../../components/ui/WindowShell"
 import { PARACHUTE_LEVELS, loadGameProgress, saveGameProgress, type GameProgress } from "@/lib/game-utils"
@@ -36,6 +37,7 @@ const GROUND_Y = CANVAS_HEIGHT - 45
 
 export default function ParachuteGame() {
   const { active } = useWindowActivity()
+  const [controlMode, setControlMode] = useGameControlMode("parachute")
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [gameView, setGameView] = useState<GameView>("menu")
   const [score, setScore] = useState(0)
@@ -49,15 +51,18 @@ export default function ParachuteGame() {
   const [isNewHighScore, setIsNewHighScore] = useState(false)
   const [progress, setProgress] = useState<GameProgress | null>(null)
 
-  const [keys, setKeys] = useState<Record<string, boolean>>({})
+  const keysRef = useRef(new Set<string>())
+  const stickRef = useRef(0)
+  const touchRef = useRef({ left: false, right: false })
   const [mobileControls, setMobileControls] = useState({ left: false, right: false })
-  const gameLoopRef = useRef<NodeJS.Timeout>()
   const simulationRef = useRef(createParachute())
   const gameOverHandledRef = useRef(false)
 
   useEffect(() => {
     const pause = () => {
-      setKeys({})
+      keysRef.current.clear()
+      stickRef.current = 0
+      touchRef.current = { left: false, right: false }
       setMobileControls({ left: false, right: false })
       setGameView((view) => (view === "playing" ? "paused" : view))
     }
@@ -99,7 +104,9 @@ export default function ParachuteGame() {
     simulationRef.current = createParachute()
     gameOverHandledRef.current = false
     setIsNewHighScore(false)
-    setKeys({})
+    keysRef.current.clear()
+    stickRef.current = 0
+    touchRef.current = { left: false, right: false }
     setMobileControls({ left: false, right: false })
     setGameView("playing")
     setScore(0)
@@ -111,6 +118,15 @@ export default function ParachuteGame() {
     setTimeElapsed(0)
     setLandings(0)
   }, [])
+
+  useEffect(() => {
+    if (gameView !== "playing") {
+      keysRef.current.clear()
+      stickRef.current = 0
+      touchRef.current = { left: false, right: false }
+      setMobileControls({ left: false, right: false })
+    }
+  }, [gameView])
 
   // Keyboard controls
   useEffect(() => {
@@ -134,13 +150,13 @@ export default function ParachuteGame() {
         setGameView("paused")
         return
       }
-      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (gameView === "playing" && ["ArrowLeft", "ArrowRight", "KeyA", "KeyD"].includes(e.code)) {
         e.preventDefault()
-        setKeys((prev) => ({ ...prev, [e.key]: true }))
+        keysRef.current.add(e.code)
       }
     }
     const handleKeyUp = (e: KeyboardEvent) => {
-      setKeys((prev) => ({ ...prev, [e.key]: false }))
+      keysRef.current.delete(e.code)
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -154,50 +170,60 @@ export default function ParachuteGame() {
   // Touch controls
   const handleTouchStart = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
-      e.preventDefault()
+      if (!active) return
       if (gameView !== "playing") {
         if (gameView === "menu") startGame()
         return
       }
       const rect = e.currentTarget.getBoundingClientRect()
       const touchX = e.touches[0].clientX - rect.left
-      setMobileControls({ left: touchX < rect.width / 2, right: touchX >= rect.width / 2 })
+      touchRef.current = { left: touchX < rect.width / 2, right: touchX >= rect.width / 2 }
+      setMobileControls(touchRef.current)
     },
-    [gameView, startGame],
+    [gameView, startGame, active],
   )
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault()
-    setMobileControls({ left: false, right: false })
+  const handleTouchEnd = useCallback(() => {
+    touchRef.current = { left: false, right: false }
+    setMobileControls(touchRef.current)
   }, [])
 
   const handleGameOver = useCallback(() => {
     if (gameOverHandledRef.current) return
     gameOverHandledRef.current = true
+    const finalScore = simulationRef.current.score
+    setScore(finalScore)
     setGameView("gameover")
-    setIsNewHighScore(score > (progress?.highScores[level] || 0))
+    setIsNewHighScore(finalScore > (progress?.highScores[level] || 0))
     if (progress) {
       const newProgress = { ...progress, highScores: { ...progress.highScores } }
-      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, score)
-      newProgress.totalScore += score
+      newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, finalScore)
+      newProgress.totalScore += finalScore
       newProgress.gamesPlayed += 1
       saveGameProgress("parachute", newProgress)
       setProgress(newProgress)
     }
-  }, [score, level, progress])
+  }, [level, progress])
 
   // Update simulation outside React state setters, which may run twice in Strict Mode.
   useEffect(() => {
     if (gameView !== "playing" || !active) return
     const config = getLevelConfig(level)
-    const interval = setInterval(() => {
+    let frame = 0
+    let previous = 0
+    let accumulator = 0
+    const animate = (now: number) => {
+      accumulator += previous ? Math.min(now - previous, 80) : 16
+      previous = now
       const state = simulationRef.current
-      stepParachute(
-        state,
-        Boolean(keys["ArrowLeft"] || mobileControls.left),
-        Boolean(keys["ArrowRight"] || mobileControls.right),
-        config,
-      )
+      while (accumulator >= 16 && state.lives > 0) {
+        const keys = keysRef.current
+        const left = keys.has("ArrowLeft") || keys.has("KeyA") || touchRef.current.left
+        const right = keys.has("ArrowRight") || keys.has("KeyD") || touchRef.current.right
+        const movement = left || right ? Number(right) - Number(left) : stickRef.current
+        stepParachute(state, Math.max(0, -movement), Math.max(0, movement), config)
+        accumulator -= 16
+      }
       setPlayer(state.player)
       setHelicopters(state.helicopters)
       setMissiles(state.missiles)
@@ -205,13 +231,11 @@ export default function ParachuteGame() {
       setScore(state.score)
       setLandings(state.landings)
       if (state.lives <= 0) handleGameOver()
-    }, 16)
-    gameLoopRef.current = interval
-    return () => {
-      clearInterval(interval)
-      if (gameLoopRef.current === interval) gameLoopRef.current = undefined
+      else frame = requestAnimationFrame(animate)
     }
-  }, [gameView, keys, mobileControls, level, handleGameOver, active])
+    frame = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(frame)
+  }, [gameView, level, handleGameOver, active])
 
   // Draw
   useEffect(() => {
@@ -288,6 +312,7 @@ export default function ParachuteGame() {
     <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto px-2">
       {(gameView === "playing" || gameView === "paused") && (
         <GameControls
+          compact
           isPaused={gameView === "paused"}
           onPause={() => setGameView("paused")}
           onResume={() => setGameView("playing")}
@@ -302,6 +327,17 @@ export default function ParachuteGame() {
 
       <HandheldConsole
         title="Parachute"
+        controlMode={controlMode}
+        onControlModeChange={(mode) => {
+          stickRef.current = 0
+          touchRef.current = { left: false, right: false }
+          setMobileControls(touchRef.current)
+          setControlMode(mode)
+        }}
+        controlsDisabled={!active || gameView !== "playing"}
+        onStick={({ x }) => {
+          stickRef.current = active && gameView === "playing" ? x : 0
+        }}
         horizontalOnly
         paused={gameView === "paused"}
         onStart={() => {
@@ -310,8 +346,11 @@ export default function ParachuteGame() {
           else startGame()
         }}
         onDirection={(direction, held) => {
-          if (direction === "LEFT" || direction === "RIGHT")
-            setMobileControls((previous) => ({ ...previous, [direction === "LEFT" ? "left" : "right"]: held }))
+          if (!active || gameView !== "playing") return
+          if (direction === "LEFT" || direction === "RIGHT") {
+            touchRef.current = { ...touchRef.current, [direction === "LEFT" ? "left" : "right"]: held }
+            setMobileControls(touchRef.current)
+          }
         }}
       >
         <div
@@ -326,6 +365,8 @@ export default function ParachuteGame() {
               className="w-full h-full object-contain"
               style={{ touchAction: "none" }}
               onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchStart}
+              aria-label="Parachute playfield. Use the movement stick, buttons, or hold either half to steer."
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
               onClick={() => gameView === "menu" && startGame()}
@@ -383,8 +424,8 @@ export default function ParachuteGame() {
       </HandheldConsole>
 
       <div className="text-sm text-gray-600 font-mono text-center">
-        <span className="hidden md:inline">Arrow Keys to Steer • Space to Start</span>
-        <span className="md:hidden">Tap Left/Right to Steer</span>
+        <span className="hidden md:inline">Arrows / A D to steer • Space to start</span>
+        <span className="md:hidden">Stick, buttons or hold either half to steer</span>
       </div>
     </div>
   )

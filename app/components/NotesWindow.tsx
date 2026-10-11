@@ -400,7 +400,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
         </div>
 
         {/* Tab Content */}
-        <div style={{ backgroundColor: "#f9fafb", borderRadius: 6, padding: "1.5rem" }}>
+        <div style={{ backgroundColor: "#f9fafb", borderRadius: 6, padding: "clamp(0.75rem, 3vw, 1.5rem)" }}>
           {activeTab === "articles" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {/* Substack Section */}
@@ -420,35 +420,27 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {ARTICLES.filter((a) => a.platform === "substack").map((article) => (
-                    <div key={article.url} style={cardStyle}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                          <span
-                            style={{
-                              fontSize: "0.875rem",
-                              fontWeight: "bold",
-                              color: "#FF6719",
-                              backgroundColor: "#FFF0E5",
-                              padding: "0.25rem 0.5rem",
-                              borderRadius: "0.25rem",
-                            }}
-                          >
-                            {article.version}
-                          </span>
-                          <h4 style={{ fontWeight: "600", color: "#111827" }}>{article.title}</h4>
-                        </div>
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: "#FF6719", fontWeight: "500", fontSize: "0.875rem", textDecoration: "none" }}
-                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-                        >
-                          Read →
-                        </a>
-                      </div>
-                    </div>
+                    <a
+                      key={article.url}
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="notes-article-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                      style={{ ...cardStyle, textDecoration: "none" }}
+                    >
+                      <span
+                        className="notes-article-version"
+                        style={{ fontSize: "0.875rem", fontWeight: "bold", color: "#b5440a", backgroundColor: "#FFF0E5", padding: "0.25rem 0.5rem", borderRadius: "0.25rem" }}
+                      >
+                        {article.version}
+                      </span>
+                      <h4 className="notes-article-title" style={{ fontWeight: "600", color: "#111827", minWidth: 0 }}>
+                        {article.title}
+                      </h4>
+                      <span className="notes-article-action" style={{ color: "#b5440a", fontWeight: "500", fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+                        Read →
+                      </span>
+                    </a>
                   ))}
                 </div>
               </div>
@@ -475,35 +467,27 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {ARTICLES.filter((a) => a.platform !== "substack").map((article) => (
-                    <div key={article.version} style={cardStyle}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                          <span
-                            style={{
-                              fontSize: "0.875rem",
-                              fontWeight: "bold",
-                              color: "#2563eb",
-                              backgroundColor: "#dbeafe",
-                              padding: "0.25rem 0.5rem",
-                              borderRadius: "0.25rem",
-                            }}
-                          >
-                            {article.version}
-                          </span>
-                          <h4 style={{ fontWeight: "600", color: "#111827" }}>{article.title}</h4>
-                        </div>
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: "#2563eb", fontWeight: "500", fontSize: "0.875rem", textDecoration: "none" }}
-                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-                        >
-                          Read →
-                        </a>
-                      </div>
-                    </div>
+                    <a
+                      key={article.url}
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="notes-article-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                      style={{ ...cardStyle, textDecoration: "none" }}
+                    >
+                      <span
+                        className="notes-article-version"
+                        style={{ fontSize: "0.875rem", fontWeight: "bold", color: "#2563eb", backgroundColor: "#dbeafe", padding: "0.25rem 0.5rem", borderRadius: "0.25rem" }}
+                      >
+                        {article.version}
+                      </span>
+                      <h4 className="notes-article-title" style={{ fontWeight: "600", color: "#111827", minWidth: 0 }}>
+                        {article.title}
+                      </h4>
+                      <span className="notes-article-action" style={{ color: "#2563eb", fontWeight: "500", fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+                        Read →
+                      </span>
+                    </a>
                   ))}
                 </div>
               </div>
@@ -526,8 +510,8 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {PRESS.map((item, index) => (
                     <div key={index} style={cardStyle}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div style={{ flex: 1 }}>
+                      <div className="notes-content-row">
+                        <div style={{ flex: 1, minWidth: 0 }}>
                           <h4 style={{ fontWeight: "600", color: "#111827", marginBottom: "0.25rem" }}>{item.title}</h4>
                           <p style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
                             {item.publication}
@@ -544,7 +528,6 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                             fontSize: "0.875rem",
                             textDecoration: "none",
                             whiteSpace: "nowrap",
-                            marginLeft: "1rem",
                           }}
                           onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                           onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
@@ -577,8 +560,8 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 {RESEARCH_PAPERS.map((paper, index) => (
                   <div key={index} style={{ ...cardStyle, borderLeft: "4px solid #22c55e" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ flex: 1, paddingRight: "1rem" }}>
+                    <div className="notes-content-row">
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.25rem" }}>
                           <span
                             style={{
@@ -889,6 +872,46 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
             </div>
           )}
         </div>
+        <style jsx>{`
+          .notes-article-card {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 0.75rem;
+          }
+          .notes-article-version {
+            justify-self: start;
+          }
+          .notes-article-card:hover .notes-article-title,
+          .notes-article-card:focus-visible .notes-article-title {
+            text-decoration: underline;
+          }
+          .notes-content-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+          }
+          @media (max-width: 640px) {
+            .notes-article-card {
+              grid-template-columns: minmax(0, 1fr) auto;
+              gap: 0.5rem;
+            }
+            .notes-article-title {
+              grid-column: 1 / -1;
+              grid-row: 2;
+            }
+            .notes-article-action {
+              grid-column: 2;
+              grid-row: 1;
+            }
+            .notes-content-row {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 0.75rem;
+            }
+          }
+        `}</style>
       </div>
     </WindowShell>
   )

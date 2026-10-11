@@ -101,12 +101,15 @@ export default function CrateDig({ records, onPull }: CrateDigProps) {
   }
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragRef.current || (event.pointerType === "mouse" && event.button !== 0)) return
     dragRef.current = { x: event.clientX, id: event.pointerId }
+    try { event.currentTarget.setPointerCapture(event.pointerId) } catch { dragRef.current = null }
   }
   const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current
-    dragRef.current = null
     if (!drag || drag.id !== event.pointerId) return
+    dragRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
     const delta = event.clientX - drag.x
     if (Math.abs(delta) > 36) flip(delta < 0 ? 1 : -1)
   }
@@ -165,7 +168,8 @@ export default function CrateDig({ records, onPull }: CrateDigProps) {
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
-        onPointerCancel={() => (dragRef.current = null)}
+        onPointerCancel={(event) => { if (dragRef.current?.id === event.pointerId) dragRef.current = null }}
+        onLostPointerCapture={(event) => { if (dragRef.current?.id === event.pointerId) dragRef.current = null }}
         className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
         style={{ width: "min(72vw, 240px)", touchAction: "pan-y", cursor: "grab", outlineColor: PALETTE.amber }}
       >

@@ -55,6 +55,13 @@
   justify-content: center;
 }
 
+.desktop-welcome {
+  grid-column: 1 / -1;
+  width: min(100%, 360px);
+  justify-self: center;
+  margin-bottom: 0.5rem;
+}
+
 @media (min-width: 768px) {
   .desktop-shortcuts {
     bottom: 0;
@@ -72,6 +79,16 @@
   .desktop-shortcut-ipod { top: 8rem; left: 2rem; }
   .desktop-shortcut-projects { top: 8rem; right: 2rem; }
   .desktop-shortcut-world { top: 8rem; left: 50%; transform: translateX(-50%); }
+
+  .desktop-welcome {
+    position: absolute;
+    top: 48%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    z-index: 21;
+  }
+
 }
 
 /* Wide phones do not have enough vertical room for the absolute desktop
@@ -90,6 +107,13 @@
     position: static;
     transform: none;
   }
+
+  .desktop-welcome {
+    position: static;
+    transform: none;
+    margin: 0.5rem 0;
+  }
+
 }
 
 /* Held game controls (steer, gas, d-pad). React's inline `userSelect` only
@@ -533,37 +557,58 @@ html {
   font-display: swap;
 }
 
-/* Brickbreaker: a pocket-sized industrial cabinet, with its own play controls. */
-.bb-cabinet { width: 100%; max-width: 520px; margin: 0 auto; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; background: linear-gradient(120deg, #303945, #171e28 65%); color: #e6ebf2; border: 1px solid #687789; border-radius: 9px; font-family: Tahoma, Verdana, sans-serif; box-shadow: inset 0 1px #ffffff38; }
-.bb-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-.bb-heading h2 { margin: 0; font: bold 16px/1.2 Menlo, Consolas, monospace; letter-spacing: 1px; color: #e6edf7; }
-.bb-heading span { font-size: 10px; color: #b2becb; }
-.bb-console { max-width: 400px; margin: 0 auto; }
-.bb-instruments { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 8px; }
-.bb-instruments > div { padding: 5px 13px; background: linear-gradient(#18212b, #2e3743); border: 2px solid #637183; box-shadow: inset 0 2px 5px #0a111b, 0 1px #ffffff22; border-radius: 4px; }
+/* Brickbreaker fills its window; the board is sized from the available play area. */
+.bb-cabinet { width: 100%; height: 100%; min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 5px; padding: 5px; box-sizing: border-box; background: linear-gradient(120deg, #303945, #171e28 65%); color: #e6ebf2; font-family: Tahoma, Verdana, sans-serif; }
+.bb-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 44px; flex-shrink: 0; }
+.bb-toolbar { display: flex; gap: 4px; flex-shrink: 0; }
+.bb-instruments { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: 1; min-width: 0; }
+.bb-instruments > div { min-width: 0; }
 .bb-instruments span, .bb-instruments small { display: block; font-size: 10px; color: #b5c1d0; }
-.bb-instruments strong { display: block; font: bold 22px/1.3 Menlo, Consolas, monospace; color: #fff1b6; font-variant-numeric: tabular-nums; }
-.bb-instruments strong span { display: inline; font: inherit; }
-.bb-field-frame { position: relative; padding: 7px; background: repeating-linear-gradient(130deg, #343a37 0 7px, #c0b65d 7px 14px); border: 3px solid #738091; box-shadow: 0 4px 8px #0008, inset 0 1px #edf0d1; }
-.bb-field-frame canvas { display: block; width: 100%; aspect-ratio: 360 / 450; background: #c8ced5; outline-offset: -3px; touch-action: none; }
-.bb-overlay { position: absolute; inset: 16px; padding: 22px 17px; display: flex; flex-direction: column; justify-content: safe center; gap: 12px; background: #18222bf5; border: 1px solid #91a1b1; box-shadow: 0 8px 20px #08101aaa; overflow-y: auto; overscroll-behavior: contain; text-align: center; }
+.bb-instruments small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 165px; }
+.bb-instruments strong { display: block; font: bold 20px/1.15 Menlo, Consolas, monospace; color: #fff1b6; font-variant-numeric: tabular-nums; }
+.bb-instruments .bb-lives { font-size: 14px; color: #d9e8ff; white-space: nowrap; }
+.bb-lives span { display: inline; font-size: 9px; }
+.bb-console { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 5px; }
+.bb-stage { flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; justify-content: center; align-items: center; }
+.bb-field-frame { position: relative; flex-shrink: 0; padding: 4px; background: repeating-linear-gradient(130deg, #343a37 0 7px, #c0b65d 7px 14px); border: 1px solid #738091; box-shadow: 0 2px 5px #0008; }
+.bb-field-frame canvas { display: block; width: 100%; height: 100%; background: #c8ced5; outline-offset: -3px; touch-action: none; }
+.bb-overlay { position: absolute; inset: 8px; padding: 14px 12px; display: flex; flex-direction: column; justify-content: safe center; gap: 10px; background: #18222bf5; border: 1px solid #91a1b1; box-shadow: 0 8px 20px #08101aaa; overflow-y: auto; overscroll-behavior: contain; text-align: center; }
 .bb-overlay h3 { font: bold 24px/1.15 Menlo, Consolas, monospace; margin: 0; color: #f3efdd; }
-.bb-overlay p { margin: 0; font-size: 12px; line-height: 1.7; color: #c4cfdb; }
-.bb-overlay small, .bb-model { color: #a1b4c9; font: 10px/1.6 Menlo, Consolas, monospace; }
+.bb-overlay p { margin: 0; font-size: 12px; line-height: 1.6; color: #c4cfdb; }
+.bb-overlay small, .bb-model { color: #a1b4c9; font: 10px/1.5 Menlo, Consolas, monospace; }
 .bb-menu-row { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
 .bb-menu-row button { flex: 1 1 auto; }
-.bb-deck { padding-top: 12px; }
-.bb-stage-label { text-align: center; color: #c8d2df; font: 11px/1.4 Menlo, Consolas, monospace; margin-bottom: 7px; }
-.bb-touch-strip { display: flex; justify-content: space-between; align-items: center; height: 42px; padding: 0 15px; background: linear-gradient(#121c28, #2c3746); border: 1px solid #667487; border-radius: 22px; touch-action: none; color: #98bce9; font-size: 11px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.bb-deck { flex-shrink: 0; }
+.bb-play-controls { display: flex; align-items: center; gap: 12px; min-height: 80px; }
+.bb-movement { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; }
+.bb-touch-strip { display: flex; flex: 1; justify-content: space-between; align-items: center; height: 56px; padding: 0 15px; background: linear-gradient(#121c28, #2c3746); border: 1px solid #667487; border-radius: 28px; touch-action: none; color: #98bce9; font-size: 12px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .bb-touch-strip span:first-child, .bb-touch-strip span:last-child { font-size: 28px; }
-.bb-play-controls { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; margin-top: 9px; }
-.bb-play-controls button { touch-action: none; min-height: 44px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.bb-direction-buttons { display: flex; flex: 1; gap: 8px; }
+.bb-direction-buttons button { flex: 1; }
+.bb-action { display: flex; flex-direction: column; gap: 4px; width: 106px; flex-shrink: 0; }
+.bb-play-controls button { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .bb-play-controls kbd { font-size: 9px; padding: 2px 3px; border: 1px solid #91a5cc; border-radius: 2px; font-weight: normal; }
 @media (hover: none), (pointer: coarse) { .bb-play-controls kbd { display: none; } }
-.bb-status { min-height: 16px; margin-top: 9px; color: #e3cd94; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; }
+.bb-status { min-height: 15px; color: #e3cd94; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bb-powers { color: #a5d4ed; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; }
-.bb-aim { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; color: #bbc9de; font-size: 10px; }
-.bb-aim input { width: 45%; accent-color: #86b7f6; }
+.bb-aim { display: flex; align-items: center; gap: 5px; color: #bbc9de; font-size: 10px; min-height: 24px; }
+.bb-aim input { min-width: 0; width: 100%; accent-color: #86b7f6; }
+.bb-preferences { border: 0; border-top: 1px solid #667487; padding: 8px 0 0; margin: 0; }
+.bb-preferences legend { font-size: 11px; padding: 0 6px; color: #c9d8e8; }
+.bb-preferences > div { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 5px; }
+.bb-preferences button { flex: 1 1 auto; }
+.bb-cabinet[data-wide="true"] { display: grid; grid-template-columns: minmax(0, 1fr) 202px; grid-template-rows: auto minmax(0, 1fr); column-gap: 10px; }
+.bb-cabinet[data-wide="true"] .bb-heading { grid-column: 2; grid-row: 1; flex-wrap: wrap; }
+.bb-cabinet[data-wide="true"] .bb-toolbar { width: 100%; justify-content: flex-end; }
+.bb-cabinet[data-wide="true"] .bb-instruments { gap: 8px; flex-basis: 100%; }
+.bb-cabinet[data-wide="true"] .bb-instruments small { max-width: 130px; }
+.bb-cabinet[data-wide="true"] .bb-console { display: contents; }
+.bb-cabinet[data-wide="true"] .bb-stage { grid-column: 1; grid-row: 1 / span 2; }
+.bb-cabinet[data-wide="true"] .bb-deck { grid-column: 2; grid-row: 2; align-self: center; }
+.bb-cabinet[data-wide="true"] .bb-play-controls { gap: 8px; }
+.bb-cabinet[data-wide="true"] .bb-action { width: 106px; }
+.bb-cabinet[data-wide="true"] .bb-touch-strip { padding: 0 8px; font-size: 10px; }
+.bb-cabinet[data-wide="true"] .bb-status { white-space: normal; margin-top: 5px; }
 .bb-pickup-guide { display: flex; flex-direction: column; gap: 10px; text-align: left; }
 .bb-pickup-guide > div { display: flex; gap: 10px; align-items: center; font-size: 11px; line-height: 1.5; color: #becad9; }
 .bb-pickup-guide b { flex: 0 0 23px; text-align: center; padding: 3px; color: #152132; border: 2px solid #718394; }
@@ -572,16 +617,3 @@ html {
 .bb-cabinet button:disabled { opacity: .4; cursor: default; }
 .bb-cabinet button:not(:disabled):hover { filter: brightness(1.15); }
 .bb-cabinet :focus-visible { outline: 2px solid #a7d4ff; outline-offset: 2px; }
-@media (min-height: 541px) { .bb-console { width: min(100%, max(210px, calc((100dvh - 420px) * .8))); } }
-@media (max-height: 540px) and (min-width: 600px) {
-  .bb-cabinet { max-width: 740px; padding: 8px; display: grid; grid-template-columns: 120px minmax(170px, 1fr) minmax(150px, 1fr); gap: 8px 14px; }
-  .bb-heading { grid-column: 1; grid-row: 1; flex-direction: column; align-items: flex-start; margin: 0; }
-  .bb-heading h2 { font-size: 12px; }
-  .bb-heading span { display: none; }
-  .bb-console { display: contents; }
-  .bb-instruments { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 5px; margin: 0; }
-  .bb-field-frame { grid-column: 2; grid-row: 1 / span 2; width: min(100%, calc((100dvh - 145px) * .8)); justify-self: center; align-self: start; }
-  .bb-deck { grid-column: 3; grid-row: 1 / span 2; padding-top: 0; }
-  .bb-overlay { inset: 10px; padding: 12px; }
-  .bb-overlay h3 { font-size: 18px; }
-}

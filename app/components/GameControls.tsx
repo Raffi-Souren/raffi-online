@@ -14,6 +14,7 @@ interface GameControlsProps {
   level: number
   lives?: number
   timeElapsed?: number
+  compact?: boolean
   showLevelSelect?: () => void
 }
 
@@ -57,6 +58,7 @@ export default function GameControls({
   lives,
   timeElapsed,
   showLevelSelect,
+  compact = false,
 }: GameControlsProps) {
   return (
     <div
@@ -64,7 +66,7 @@ export default function GameControls({
       aria-label="Game controls"
       className="game-touch"
       style={{
-        width: "min(100%, 360px)",
+        width: compact ? "min(100%, 420px)" : "min(100%, 360px)",
         padding: "10px 12px 12px",
         border: "1px solid #adb3aa",
         borderRadius: 12,
@@ -74,7 +76,7 @@ export default function GameControls({
         fontFamily: "'Trebuchet MS', Arial, sans-serif",
       }}
     >
-      <div
+      {!compact && <div
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -104,7 +106,7 @@ export default function GameControls({
           </Stat>
         )}
         {typeof timeElapsed === "number" && <Stat label="Time">{formatTime(timeElapsed)}</Stat>}
-      </div>
+      </div>}
 
       <div style={{ display: "flex", gap: 7 }}>
         {isPaused ? (

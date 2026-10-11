@@ -214,7 +214,7 @@ export function storyContext() {
 }
 export function focusStory() {
   if (!story || state.mission.active) return false
-  if (storySettled(story)) { setWaypoint(null); setObjective('LAST CRATE COMPLETE · EXPLORE BROOKLYN'); return false }
+  if (storySettled(story)) { setWaypoint(null); setObjective('LAST CRATE COMPLETE · KEEP EXPLORING'); return false }
   const targets = storyTargets(story, config())
   const target = targets.sort((a, b) => distance(a.at) - distance(b.at))[0]
   if (target) { setWaypoint(target.at, target.title); setObjective('LAST CRATE · ' + target.title) }

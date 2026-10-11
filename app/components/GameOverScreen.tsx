@@ -115,6 +115,30 @@ export default function GameOverScreen({
         )}
       </div>
 
+      {/* Action Buttons */}
+      <div className="space-y-2 mb-4">
+        <button
+          onClick={onRestart}
+          className="w-full px-4 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-400 transition-colors"
+        >
+          🔄 Play Again
+        </button>
+
+        <button
+          onClick={onViewLeaderboard}
+          className="w-full px-4 py-3 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-400 transition-colors"
+        >
+          🏆 View Leaderboard
+        </button>
+
+        <button
+          onClick={onQuit}
+          className="w-full px-4 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-500 transition-colors"
+        >
+          ✕ Back to Menu
+        </button>
+      </div>
+
       {/* Save Score Section */}
       {!saved && (
         <div className="mb-4">
@@ -144,30 +168,6 @@ export default function GameOverScreen({
           {saveError}
         </p>
       )}
-
-      {/* Action Buttons */}
-      <div className="space-y-2">
-        <button
-          onClick={onRestart}
-          className="w-full px-4 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-400 transition-colors"
-        >
-          🔄 Play Again
-        </button>
-
-        <button
-          onClick={onViewLeaderboard}
-          className="w-full px-4 py-3 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-400 transition-colors"
-        >
-          🏆 View Leaderboard
-        </button>
-
-        <button
-          onClick={onQuit}
-          className="w-full px-4 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-500 transition-colors"
-        >
-          ✕ Back to Menu
-        </button>
-      </div>
     </div>
   )
 }

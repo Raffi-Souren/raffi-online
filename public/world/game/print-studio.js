@@ -17,7 +17,7 @@ export function initPrintStudio(options) {
   deps = options
   const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = new URL('./print-studio.css', import.meta.url).href; document.head.append(css)
   root = el('section', 'print-studio hidden'); root.id = 'print-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'print-title')
-  const card = el('div', 'print-card'), header = el('header', 'print-header'); title = el('h2', '', 'NEIGHBORHOOD EDITIONS'); title.id = 'print-title'; header.append(el('span', 'print-edition', 'LIVE PRINT / NYC'), title, button('Back to Brooklyn ×', closePrintStudio))
+  const card = el('div', 'print-card'), header = el('header', 'print-header'); title = el('h2', '', 'NEIGHBORHOOD EDITIONS'); title.id = 'print-title'; header.append(el('span', 'print-edition', 'LIVE PRINT / NYC'), title, button('Back outside ×', closePrintStudio))
   const body = el('div', 'print-body'), workbench = el('div', 'print-workbench'); canvas = el('canvas'); canvas.width = 600; canvas.height = 720; canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Print workbench. Arrow keys align your screen. Hold Space to pull ink down. You can also drag the screen and squeegee.'); workbench.append(canvas)
   const side = el('div', 'print-sidebar'); side.append(el('p', 'print-person', 'MAE / THE LIVE-PRINT TABLE')); instructions = el('p', 'print-instructions'); instructions.setAttribute('aria-live', 'polite'); status = el('p', 'print-status'); status.setAttribute('aria-live', 'polite'); invitation = el('p', 'print-invitation hidden')
   designForm = el('form', 'print-design')
@@ -29,7 +29,7 @@ export function initPrintStudio(options) {
   const caption = el('label', '', 'Your headline'), input = el('input'); input.name = 'title'; input.maxLength = 32; input.value = design.title; input.autocomplete = 'off'; input.addEventListener('input', () => { design.title = normalizePrintDesign({ ...design, title: input.value }).title; draw() }); caption.append(input); designForm.append(caption); designForm.addEventListener('submit', event => { event.preventDefault(); begin() })
   buttons = el('div', 'print-buttons'); side.append(instructions, designForm, status, invitation, buttons, el('p', 'print-note', 'Inspired by Raffi’s NYC live-print and popup work. Original artwork, made here by you.')); body.append(workbench, side); card.append(header, body); root.append(card); document.body.append(root)
   canvas.addEventListener('pointerdown', event => {
-    if (!job || job.phase === 'done') return
+    if (!job || job.phase === 'done' || dragging || event.button !== 0) return
     event.preventDefault(); canvas.setPointerCapture(event.pointerId); canvas.focus(); const point = canvasPoint(event)
     dragging = { id: event.pointerId, x: point.x, y: point.y, offset: { ...job.offset } }
     if (job.phase === 'pull') { cursor = Math.max(0, Math.min(1, (point.y - paper.y) / paper.h)); pullPrintInk(job, cursor, performance.now() / 1000, event.pressure || .5) }
@@ -41,7 +41,7 @@ export function initPrintStudio(options) {
     else if (job.phase === 'pull') { cursor = Math.max(0, Math.min(1, (point.y - paper.y) / paper.h)); pullPrintInk(job, cursor, performance.now() / 1000, event.pressure || .5) }
     draw(); updateStatus()
   })
-  for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, release)
+  for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, event => { if (dragging?.id === event.pointerId) release() })
   window.addEventListener('keydown', event => {
     if (!opened) return
     if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); closePrintStudio(); return }
@@ -53,6 +53,7 @@ export function initPrintStudio(options) {
   root.addEventListener('keydown', event => { if (event.key !== 'Tab') return; const nodes = [...root.querySelectorAll('button:not([disabled]),input,select,canvas')].filter(n => n.getClientRects().length), i = nodes.indexOf(document.activeElement); if (event.shiftKey && i <= 0) { event.preventDefault(); nodes.at(-1)?.focus() } else if (!event.shiftKey && i === nodes.length - 1) { event.preventDefault(); nodes[0]?.focus() } })
   document.addEventListener('visibilitychange', release)
   window.addEventListener('blur', release)
+  window.addEventListener('resize', release)
   window.addEventListener('message', event => { if (event.source === window.parent && event.origin === location.origin && event.data?.type === 'raffi-world:activity') release() })
   buildStand(); showDesign()
 }
@@ -99,7 +100,7 @@ function showResult(accept) {
     if (!saved.added && !progress.recent.includes(job.id)) {
       instructions.textContent = 'This edition could not be added to the collection. Your other prints are safe.'
       status.textContent = 'You can export the artwork or start a fresh edition.'
-      invitation.classList.add('hidden'); buttons.replaceChildren(button('Save a PNG of my print', download), button('Make another edition', showDesign), button('Back to Brooklyn', closePrintStudio)); draw(); return
+      invitation.classList.add('hidden'); buttons.replaceChildren(button('Save a PNG of my print', download), button('Make another edition', showDesign), button('Back outside', closePrintStudio)); draw(); return
     }
     progress = saved.state; newlyInvited = saved.invited
     if (saved.added) { const station = data.radio.stations.find(station => station.id === 'KFLP'); if (station) station.unlocked = true; updatePrintDisplay(); bus.emit('print-checkpoint') }
@@ -108,7 +109,7 @@ function showResult(accept) {
   status.textContent = `${printQuality(job)}% print quality · ${progress.printed} edition${progress.printed === 1 ? '' : 's'} pulled. Your latest design and both ink layers are saved.`
   if (deps.saveStatus?.().lastError) status.textContent = 'Your print is kept for this session, but browser storage could not save it. Export the PNG to keep a copy.'
   invitation.classList.toggle('hidden', !progress.invited); invitation.textContent = newlyInvited ? 'Mae: “The people making sleeves put together FLIP SIDE. I saved the frequency for you.” KFLP is now available on your city radio.' : 'Mae remembers your print-table visit. The sleeve crew’s FLIP SIDE station is still in your radio.'
-  buttons.replaceChildren(button('Save a PNG of my print', download), button('Make another edition', showDesign), button('Back to Brooklyn', closePrintStudio)); draw()
+  buttons.replaceChildren(button('Save a PNG of my print', download), button('Make another edition', showDesign), button('Back outside', closePrintStudio)); draw()
 }
 function download() { const output = document.createElement('canvas'); output.width = 1200; output.height = 1440; drawPrintArt(output.getContext('2d'), job.design, job.layers); output.toBlob(blob => { if (!blob) return; const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = `neighborhood-edition-${job.design.format}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 30000) }, 'image/png') }
 export function printStudioContext() { if (!deps || opened || state.mode === 'vehicle' || state.interior || state.mission.active || Math.hypot(state.player.x - HOST.x, state.player.z - HOST.z) > HOST.radius) return null; return { ...HOST, kind: 'print-studio', key: 'E', label: 'PRINT', prompt: 'Make a print with Mae', target: HOST } }

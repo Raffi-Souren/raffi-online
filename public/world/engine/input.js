@@ -53,8 +53,12 @@ const keyMap = {
   KeyV: 'cam',
 }
 
-const keys = new Set()
-const pointerOwners = new Set()
+const keys = new Map()
+const actionOwners = new Map()
+function keyHeld(name) {
+  for (const held of keys.values()) if (held === name) return true
+  return false
+}
 let lastForwardTap = -Infinity
 let forwardRun = false
 
@@ -69,15 +73,23 @@ export function consume(name) {
 
 export function isHeld(name) { return input.held.has(name) }
 
-function press(name) {
+function press(name, owner) {
+  if (!actionOwners.has(name)) actionOwners.set(name, new Set())
+  actionOwners.get(name).add(owner)
   if (!input.held.has(name)) input.pressed.add(name)
   input.held.add(name)
   input.anyInputYet = true
   bus.emit('input', name)
 }
 
-function release(name) {
-  input.held.delete(name)
+function release(name, owner) {
+  const owners = actionOwners.get(name)
+  if (!owners) return
+  owners.delete(owner)
+  if (!owners.size) {
+    actionOwners.delete(name)
+    input.held.delete(name)
+  }
 }
 
 // ------------------------------------------------------------ keyboard ---
@@ -85,30 +97,28 @@ function release(name) {
 function onKeyDown(e) {
   if (e.altKey || e.ctrlKey || e.metaKey) return
   if (e.key !== 'Escape' && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return
-  if (e.key === '?') { e.preventDefault(); press('cheats'); return }
   // Tab opens pause during play, then returns to its native focus-navigation
   // job inside the modal. Escape remains the keyboard close action.
   if (e.code === 'Tab' && state.paused) return
-  const name = keyMap[e.code]
+  const name = e.key === '?' ? 'cheats' : keyMap[e.code]
   if (!name) return
-  if (e.code === 'Tab' || e.code === 'Space') e.preventDefault()
+  if (e.code === 'Tab' || e.code === 'Space' || e.code.startsWith('Arrow') || e.key === '?') e.preventDefault()
   if (e.repeat) return
   if (name === 'up' && state.mode !== 'vehicle' && !state.paused) {
     const now = performance.now()
     forwardRun = now - lastForwardTap < 300
     lastForwardTap = now
   }
-  keys.add(name)
-  press(name)
+  keys.set(e.code, name)
+  press(name, e.code)
 }
 
 function onKeyUp(e) {
-  if (e.key === '?') { release('cheats'); return }
-  const name = keyMap[e.code]
+  const name = keys.get(e.code)
   if (!name) return
-  keys.delete(name)
-  if (name === 'up') forwardRun = false
-  release(name)
+  keys.delete(e.code)
+  if (name === 'up' && !keyHeld('up')) forwardRun = false
+  release(name, e.code)
 }
 
 // --------------------------------------------------------------- touch ---
@@ -173,12 +183,13 @@ function setStickVisual(on, ox, oy, kx, ky) {
 }
 
 function onStickDown(e) {
-  if (stick.id !== null) return
-  const t = e.changedTouches ? e.changedTouches[0] : e
-  stick.id = t.identifier ?? 'mouse'
+  if (stick.id !== null || state.paused || !state.ready || e.button !== 0) return
+  e.preventDefault()
+  stick.id = e.pointerId
+  els.zone.setPointerCapture(e.pointerId)
   const rect = els.zone.getBoundingClientRect()
-  stick.originX = t.clientX - rect.left
-  stick.originY = t.clientY - rect.top
+  stick.originX = e.clientX - rect.left
+  stick.originY = e.clientY - rect.top
   stick.x = 0
   stick.y = 0
   setStickVisual(true, stick.originX, stick.originY, 0, 0)
@@ -186,27 +197,25 @@ function onStickDown(e) {
 }
 
 function onStickMove(e) {
-  if (stick.id === null) return
-  const list = e.changedTouches ? Array.from(e.changedTouches) : [e]
-  const t = list.find((p) => (p.identifier ?? 'mouse') === stick.id)
-  if (!t) return
+  if (stick.id !== e.pointerId) return
+  e.preventDefault()
   const rect = els.zone.getBoundingClientRect()
-  let dx = t.clientX - rect.left - stick.originX
-  let dy = t.clientY - rect.top - stick.originY
+  let dx = e.clientX - rect.left - stick.originX
+  let dy = e.clientY - rect.top - stick.originY
   const len = Math.hypot(dx, dy)
   if (len > stick.radius) {
     dx = (dx / len) * stick.radius
     dy = (dy / len) * stick.radius
   }
-  stick.x = dx / stick.radius
-  stick.y = dy / stick.radius
+  // A small dead zone keeps a resting thumb from creeping or steering a car.
+  const amount = Math.max(0, (Math.min(len / stick.radius, 1) - 0.1) / 0.9)
+  stick.x = len ? dx / Math.min(len, stick.radius) * amount : 0
+  stick.y = len ? dy / Math.min(len, stick.radius) * amount : 0
   setStickVisual(true, stick.originX, stick.originY, dx, dy)
 }
 
 function onStickUp(e) {
-  if (stick.id === null) return
-  const list = e.changedTouches ? Array.from(e.changedTouches) : [e]
-  if (!list.some((p) => (p.identifier ?? 'mouse') === stick.id)) return
+  if (stick.id !== e.pointerId) return
   stick.id = null
   stick.x = 0
   stick.y = 0
@@ -215,11 +224,14 @@ function onStickUp(e) {
 
 function bindButton(el, name) {
   if (!el) return
-  const pointers=new Set();pointerOwners.add(pointers)
-  const up=e=>{if(!pointers.delete(e.pointerId))return;e.preventDefault();if(!pointers.size)release(name)}
-  el.addEventListener('pointerdown',e=>{e.preventDefault();if(state.paused)return;pointers.add(e.pointerId);el.setPointerCapture(e.pointerId);press(name)})
-  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)
-
+  const up = (event) => release(name, event.pointerId)
+  el.addEventListener('pointerdown', (event) => {
+    event.preventDefault()
+    if (state.paused || !state.ready || event.button !== 0) return
+    el.setPointerCapture(event.pointerId)
+    press(name, event.pointerId)
+  })
+  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(event, up)
 }
 
 // ---------------------------------------------------------------- init ---
@@ -228,7 +240,7 @@ export function resetInput() {
   keys.clear()
   lastForwardTap = -Infinity
   forwardRun = false
-  for(const pointers of pointerOwners)pointers.clear()
+  actionOwners.clear()
   input.held.clear()
   input.pressed.clear()
   input.move.x = 0
@@ -255,16 +267,13 @@ export function initInput(elements) {
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', resetInput)
+  window.addEventListener('resize', resetInput)
+  document.addEventListener('visibilitychange', () => { if (document.hidden) resetInput() })
 
   if (els.zone) {
-    els.zone.addEventListener('touchstart', (e) => { e.preventDefault(); onStickDown(e) }, { passive: false })
-    els.zone.addEventListener('touchmove', (e) => { e.preventDefault(); onStickMove(e) }, { passive: false })
-    els.zone.addEventListener('touchend', onStickUp)
-    els.zone.addEventListener('touchcancel', onStickUp)
-    // Mouse fallback so the stick can be exercised in a desktop browser.
-    els.zone.addEventListener('mousedown', onStickDown)
-    window.addEventListener('mousemove', onStickMove)
-    window.addEventListener('mouseup', onStickUp)
+    els.zone.addEventListener('pointerdown', onStickDown)
+    els.zone.addEventListener('pointermove', onStickMove)
+    for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) els.zone.addEventListener(event, onStickUp)
   }
 
   // Touch primary is context on foot and held throttle while mounted. Keeping
@@ -294,10 +303,10 @@ export function updateInput(mode, vehicleKind = null) {
   let mx = 0
   let my = 0
 
-  if (keys.has('left')) mx -= 1
-  if (keys.has('right')) mx += 1
-  if (keys.has('up')) my += 1
-  if (keys.has('down')) my -= 1
+  if (keyHeld('left')) mx -= 1
+  if (keyHeld('right')) mx += 1
+  if (keyHeld('up')) my += 1
+  if (keyHeld('down')) my -= 1
 
   if (stick.id !== null) {
     mx += stick.x
@@ -310,9 +319,9 @@ export function updateInput(mode, vehicleKind = null) {
   input.move.y = my
   input.moveAmount = Math.min(len, 1)
 
-  input.run = keys.has('run') || (mode !== 'vehicle' && forwardRun && keys.has('up')) || (mode !== 'vehicle' && input.held.has('second'))
+  input.run = keyHeld('run') || (mode !== 'vehicle' && forwardRun && keyHeld('up')) || (mode !== 'vehicle' && input.held.has('second'))
   // Space = handbrake. CAM is reserved for camera-mode cycling, not drift.
-  input.handbrake = keys.has('space') || input.held.has('handbrake')
+  input.handbrake = keyHeld('space') || input.held.has('handbrake')
 
   if (mode === 'vehicle') {
     const gasBtn = input.held.has('primary') ? 1 : 0

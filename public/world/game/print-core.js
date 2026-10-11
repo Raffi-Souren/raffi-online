@@ -4,7 +4,7 @@ export const PRINT_MOTIFS = ['sound-system', 'city-grid', 'park-lines']
 export const PRINT_PALETTES = { 'night-shift': ['#192f4f', '#ee644a'], 'court-side': ['#287665', '#dda82d'], 'after-hours': ['#633983', '#ef7fa1'] }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 export function normalizePrintDesign(value = {}) {
-  return { format: PRINT_FORMATS.includes(value.format) ? value.format : 'poster', motif: PRINT_MOTIFS.includes(value.motif) ? value.motif : 'sound-system', palette: Object.hasOwn(PRINT_PALETTES, value.palette) ? value.palette : 'night-shift', title: String(value.title || 'BROOKLYN AFTER HOURS').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 32) || 'BROOKLYN AFTER HOURS' }
+  return { format: PRINT_FORMATS.includes(value.format) ? value.format : 'poster', motif: PRINT_MOTIFS.includes(value.motif) ? value.motif : 'sound-system', palette: Object.hasOwn(PRINT_PALETTES, value.palette) ? value.palette : 'night-shift', title: String(value.title || 'AFTER HOURS').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 32) || 'AFTER HOURS' }
 }
 export function createPrintJob(design, id) {
   return { id, design: normalizePrintDesign(design), phase: 'register', layer: 0, offset: { x: 9, y: -7 }, layers: [], coverage: Array(48).fill(0), previous: null }

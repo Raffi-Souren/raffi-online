@@ -207,12 +207,12 @@ async function run() {
       await game.locator(':scope[data-phase="playing"]').waitFor()
       const initial = await state(game),
         cdp = await c.newCDPSession(p)
-      const forward = await p.getByRole("button", { name: "Accelerate", exact: true }).boundingBox(),
+      const forward = await game.locator("[data-game-joystick]").boundingBox(),
         boost = await p.getByRole("button", { name: "Boost", exact: true }).boundingBox()
       await cdp.send("Input.dispatchTouchEvent", {
         type: "touchStart",
         touchPoints: [
-          { x: forward.x + forward.width / 2, y: forward.y + forward.height / 2, id: 1 },
+          { x: forward.x + forward.width / 2, y: forward.y + forward.height * 0.1, id: 1 },
           { x: boost.x + boost.width / 2, y: boost.y + boost.height / 2, id: 2 },
         ],
       })
@@ -222,7 +222,8 @@ async function run() {
       const moved = await state(game)
       assert.ok(moved.x > initial.x + 3)
       assert.ok(moved.fuel < initial.fuel)
-      assert.equal(await game.locator('button[aria-pressed="true"]').count(), 0)
+      assert.equal(await p.getByRole("button", { name: "Boost", exact: true }).getAttribute("aria-pressed"), "false")
+      await p.getByRole("button", { name: "Buttons", exact: true }).click()
       await p.screenshot({ path: out + `/${name}-playing.png` })
       for (const label of ["Steer left", "Steer right", "Brake or reverse", "Jump", "Boost", "Accelerate"]) {
         const box = await p.getByRole("button", { name: label, exact: true }).boundingBox()

@@ -28,13 +28,52 @@ try {
 
     if (touch) {
       const cdp = await context.newCDPSession(page)
+      const stick = await game.locator("[data-game-joystick]").boundingBox()
+      const fire = await page.getByRole("button", { name: "Fire pulse blaster" }).boundingBox()
+      assert.ok(stick && fire, "touch stick and fire should be visible")
+      const startX = Number(await game.getAttribute("data-player-x"))
+      const startY = Number(await game.getAttribute("data-player-y"))
+      const movement = { x: stick.x + stick.width / 2, y: stick.y + stick.height * 0.18, id: 1 }
+      const firing = { x: fire.x + fire.width / 2, y: fire.y + fire.height / 2, id: 2 }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [movement] })
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [movement, firing] })
+      await page.waitForFunction(({ x, y }) => {
+        const game = document.querySelector('[data-game="signal-lost"]')
+        return Math.hypot(Number(game.dataset.playerX) - x, Number(game.dataset.playerY) - y) > 0.2
+      }, { x: startX, y: startY })
+      const firingX = Number(await game.getAttribute("data-player-x"))
+      const firingY = Number(await game.getAttribute("data-player-y"))
+      // Lifting the fire finger must not release the movement finger.
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [movement] })
+      await page.waitForFunction(({ x, y }) => {
+        const game = document.querySelector('[data-game="signal-lost"]')
+        return Math.hypot(Number(game.dataset.playerX) - x, Number(game.dataset.playerY) - y) > 0.2
+      }, { x: firingX, y: firingY })
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
+      await page.waitForTimeout(100)
+      const movedX = Number(await game.getAttribute("data-player-x"))
+      const movedY = Number(await game.getAttribute("data-player-y"))
+      assert.ok(Math.hypot(movedX - startX, movedY - startY) > 0.3, "stick should move player while firing")
+      await page.waitForTimeout(150)
+      assert.equal(Number(await game.getAttribute("data-player-x")), movedX, "released stick should stop x movement")
+      assert.equal(Number(await game.getAttribute("data-player-y")), movedY, "released stick should stop y movement")
+      await page.getByRole("button", { name: "Pause Signal Lost" }).click()
+      await page.getByRole("button", { name: "Buttons", exact: true }).click()
+      await page.getByRole("button", { name: "Resume transmission" }).click()
       const box = await page.getByRole("button", { name: "Move forward", exact: true }).boundingBox()
       await cdp.send("Input.dispatchTouchEvent", {
         type: "touchStart",
-        touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 }],
+        touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2, id: 3 }],
       })
-      await page.waitForTimeout(700)
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
+      await page.waitForTimeout(250)
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] })
+      await page.waitForTimeout(100)
+      const stopped = [await game.getAttribute("data-player-x"), await game.getAttribute("data-player-y")]
+      await page.waitForTimeout(150)
+      assert.deepEqual([await game.getAttribute("data-player-x"), await game.getAttribute("data-player-y")], stopped, "canceled buttons should release")
+      await page.getByRole("button", { name: "Pause Signal Lost" }).click()
+      await page.getByRole("button", { name: "Thumbstick", exact: true }).click()
+      await page.getByRole("button", { name: "Resume transmission" }).click()
       await page.getByRole("button", { name: "Fire pulse blaster" }).tap()
     } else {
       await page.keyboard.down("w")

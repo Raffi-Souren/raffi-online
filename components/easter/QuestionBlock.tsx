@@ -9,7 +9,8 @@ interface QuestionBlockProps {
 }
 
 const BLOCK_SIZE = 56
-const PLAYER_CLEARANCE = 190
+// Let the block disappear just beyond an edge before bouncing back into view.
+const EDGE_OVERSHOOT = BLOCK_SIZE + 16
 
 export default function QuestionBlock({ onClick, active = true }: QuestionBlockProps) {
   const fieldRef = useRef<HTMLDivElement>(null)
@@ -20,6 +21,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
   const [paused, setPaused] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
   const [revealing, setRevealing] = useState(false)
+  const [motionReady, setMotionReady] = useState(false)
 
   useEffect(() => {
     motionRef.current.active = active
@@ -39,8 +41,8 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
     if (!field || !block) return
     let width = field.clientWidth
     let height = field.clientHeight
-    let x = Math.min(14, Math.max(0, width - BLOCK_SIZE))
-    let y = Math.max(0, height - BLOCK_SIZE - PLAYER_CLEARANCE)
+    let x = Math.max(0, width * 0.12)
+    let y = Math.max(0, height * 0.55 - BLOCK_SIZE)
     let directionX = 1
     let directionY = -1
     let previous = 0
@@ -49,8 +51,9 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       width = field.clientWidth
       height = field.clientHeight
       x = Math.max(0, Math.min(x, width - BLOCK_SIZE))
-      y = Math.max(0, Math.min(y, height - BLOCK_SIZE - PLAYER_CLEARANCE))
+      y = Math.max(0, Math.min(y, height - BLOCK_SIZE))
       block.style.transform = `translate3d(${x}px, ${y}px, 0)`
+      setMotionReady(true)
     })
     resize.observe(field)
 
@@ -64,21 +67,21 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
         !state.focused &&
         !state.reduced &&
         !state.revealing &&
-        !state.settled &&
         !document.hidden
       ) {
         const speed = 64
-        const maxX = Math.max(0, width - BLOCK_SIZE)
-        const maxY = Math.max(0, height - BLOCK_SIZE - PLAYER_CLEARANCE)
+        const min = -EDGE_OVERSHOOT
+        const maxX = width - BLOCK_SIZE + EDGE_OVERSHOOT
+        const maxY = height - BLOCK_SIZE + EDGE_OVERSHOOT
         x += directionX * speed * dt
         y += directionY * speed * 0.72 * dt
-        if (x <= 0 || x >= maxX) {
+        if (x <= min || x >= maxX) {
           directionX *= -1
-          x = Math.max(0, Math.min(maxX, x))
+          x = Math.max(min, Math.min(maxX, x))
         }
-        if (y <= 0 || y >= maxY) {
+        if (y <= min || y >= maxY) {
           directionY *= -1
-          y = Math.max(0, Math.min(maxY, y))
+          y = Math.max(min, Math.min(maxY, y))
         }
       }
       block.style.transform = `translate3d(${x}px, ${y}px, 0)`
@@ -127,11 +130,10 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       data-settled={settled}
       style={{
         position: "fixed",
-        inset:
-          "max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) calc(54px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px))",
+        inset: "0 0 calc(44px + env(safe-area-inset-bottom, 0px))",
         zIndex: 20,
         pointerEvents: "none",
-        visibility: active ? "visible" : "hidden",
+        visibility: active && motionReady ? "visible" : "hidden",
       }}
     >
       <button
@@ -189,7 +191,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           />
         )}
       </button>
-      {!reducedMotion && !settled && (
+      {!reducedMotion && (
         <button
           type="button"
           onClick={toggleMotion}
@@ -197,8 +199,8 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           aria-label={paused ? "Resume mystery box movement" : "Pause mystery box movement"}
           style={{
             position: "absolute",
-            bottom: 0,
-            left: 4,
+            bottom: 8,
+            left: "max(12px, env(safe-area-inset-left, 0px))",
             display: "inline-flex",
             gap: 5,
             alignItems: "center",
@@ -226,7 +228,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           bottom: 45,
           left: "50%",
           transform: "translateX(-50%)",
-          maxWidth: "calc(100% - 20px)",
+          maxWidth: "calc(100% - 32px)",
           width: "max-content",
           padding: revealing ? "12px 18px" : 0,
           border: revealing ? "2px solid #ffdf6f" : 0,
@@ -241,7 +243,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
         {revealing && (
           <>
             <strong style={{ display: "block", fontSize: 17 }}>Secret level unlocked</strong>
-            <span style={{ fontSize: 12 }}>World 1-1 · Brooklyn Dig</span>
+            <span style={{ fontSize: 12 }}>World 1-1 · Downtown Dig</span>
           </>
         )}
       </div>

@@ -17,6 +17,8 @@ import { useWindowActivity } from "../../components/ui/WindowShell"
 import { BRAWL_WAVES, createBrawl, stepBrawl, type BrawlStatus } from "../../lib/brawl-game"
 import { drawBrawl } from "../../lib/brawl-scene"
 import ScoreEntry from "./ScoreEntry"
+import GameJoystick from "../../components/ui/GameJoystick"
+import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
 
 type Control = "left" | "right" | "up" | "down" | "attack" | "jump" | "dodge"
 const KEYS: Record<string, Control> = {
@@ -50,19 +52,30 @@ const buttonStyle: CSSProperties = {
 
 export default function BlockPartyBrawl() {
   const { active } = useWindowActivity()
+  const [landscape, setLandscape] = useState(false)
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 600px) and (max-height: 540px)")
+    const sync = () => setLandscape(query.matches)
+    sync()
+    query.addEventListener("change", sync)
+    return () => query.removeEventListener("change", sync)
+  }, [])
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef(createBrawl())
   const runId = useRef(0)
   const keysRef = useRef(new Set<string>())
-  const touchesRef = useRef(new Set<Control>())
+  const touchesRef = useRef(new Map<number | string, Control>())
+  const stick = useRef({ x: 0, y: 0 })
+  const [controlMode, setControlMode] = useGameControlMode("block-party-brawl")
   const pendingRef = useRef(new Set<Control>())
   const activeRef = useRef(active)
   const [status, setStatus] = useState<BrawlStatus>("ready")
   const [held, setHeld] = useState<Control[]>([])
-  const [hud, setHud] = useState({ health: 100, score: 0, wave: 0, enemies: 3, combo: 0, dodge: 0 })
+  const [hud, setHud] = useState({ x: 160, y: 375, health: 100, score: 0, wave: 0, enemies: 3, combo: 0, dodge: 0 })
   const clearInput = useCallback(() => {
     keysRef.current.clear()
     touchesRef.current.clear()
+    stick.current = { x: 0, y: 0 }
     pendingRef.current.clear()
     setHeld([])
   }, [])
@@ -74,9 +87,10 @@ export default function BlockPartyBrawl() {
   }, [clearInput])
   const resume = useCallback(() => {
     if (gameRef.current.status !== "paused") return
+    clearInput()
     gameRef.current.status = "playing"
     setStatus("playing")
-  }, [])
+  }, [clearInput])
   const start = useCallback(() => {
     clearInput()
     runId.current++
@@ -115,13 +129,13 @@ export default function BlockPartyBrawl() {
       previous = timestamp
       const game = gameRef.current
       const down = (control: Control) =>
-        pending.has(control) || touches.has(control) || Array.from(keys).some((key) => KEYS[key] === control)
+        pending.has(control) || Array.from(touches.values()).includes(control) || Array.from(keys).some((key) => KEYS[key] === control)
       if (activeRef.current) {
         stepBrawl(
           game,
           {
-            x: Number(down("right")) - Number(down("left")),
-            y: Number(down("down")) - Number(down("up")),
+            x: Math.max(-1, Math.min(1, stick.current.x + Number(down("right")) - Number(down("left")))),
+            y: Math.max(-1, Math.min(1, stick.current.y + Number(down("down")) - Number(down("up")))),
             attack: down("attack"),
             jump: down("jump"),
             dodge: down("dodge"),
@@ -139,6 +153,8 @@ export default function BlockPartyBrawl() {
       if (timestamp - lastHud > 90) {
         lastHud = timestamp
         setHud({
+          x: game.player.x,
+          y: game.player.y,
           health: game.player.health,
           score: game.score,
           wave: game.wave,
@@ -204,44 +220,45 @@ export default function BlockPartyBrawl() {
       aria-label={label}
       aria-keyshortcuts={shortcut}
       aria-pressed={held.includes(control)}
+      disabled={!active || status !== "playing"}
       onPointerDown={(event) => {
         event.preventDefault()
-        event.currentTarget.setPointerCapture(event.pointerId)
-        touchesRef.current.add(control)
+        try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* Release handlers still clear a lifted pointer. */ }
+        touchesRef.current.set(event.pointerId, control)
         pendingRef.current.add(control)
-        setHeld(Array.from(touchesRef.current))
+        setHeld(Array.from(touchesRef.current.values()))
       }}
-      onPointerUp={() => {
-        touchesRef.current.delete(control)
-        setHeld(Array.from(touchesRef.current))
+      onPointerUp={(event) => {
+        touchesRef.current.delete(event.pointerId)
+        setHeld(Array.from(touchesRef.current.values()))
       }}
-      onPointerCancel={() => {
-        touchesRef.current.delete(control)
-        setHeld(Array.from(touchesRef.current))
+      onPointerCancel={(event) => {
+        touchesRef.current.delete(event.pointerId)
+        setHeld(Array.from(touchesRef.current.values()))
       }}
-      onLostPointerCapture={() => {
-        touchesRef.current.delete(control)
-        setHeld(Array.from(touchesRef.current))
+      onLostPointerCapture={(event) => {
+        touchesRef.current.delete(event.pointerId)
+        setHeld(Array.from(touchesRef.current.values()))
       }}
       onKeyDown={(event) => {
         if (event.key === " " || event.key === "Enter") {
           event.preventDefault()
           event.stopPropagation()
-          touchesRef.current.add(control)
+          touchesRef.current.set(`key-${control}`, control)
           pendingRef.current.add(control)
-          setHeld(Array.from(touchesRef.current))
+          setHeld(Array.from(touchesRef.current.values()))
         }
       }}
       onKeyUp={(event) => {
         if (event.key === " " || event.key === "Enter") {
           event.stopPropagation()
-          touchesRef.current.delete(control)
-          setHeld(Array.from(touchesRef.current))
+          touchesRef.current.delete(`key-${control}`)
+          setHeld(Array.from(touchesRef.current.values()))
         }
       }}
       onBlur={() => {
-        touchesRef.current.delete(control)
-        setHeld(Array.from(touchesRef.current))
+        touchesRef.current.delete(`key-${control}`)
+        setHeld(Array.from(touchesRef.current.values()))
       }}
       onContextMenu={(event) => event.preventDefault()}
       className="game-touch active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
@@ -250,6 +267,8 @@ export default function BlockPartyBrawl() {
         minWidth: 44,
         minHeight: 44,
         flex: 1,
+        flexDirection: !landscape && (control === "attack" || control === "jump" || control === "dodge") ? "column" : "row",
+        gap: 2,
         padding: "7px 4px",
         background: held.includes(control) ? "#383248" : color || "#625b72",
         touchAction: "none",
@@ -257,7 +276,7 @@ export default function BlockPartyBrawl() {
       }}
     >
       {icon}
-      <span className={control === "attack" ? undefined : "hidden sm:inline"}>{label}</span>
+      <span className={control === "attack" || control === "jump" || control === "dodge" ? undefined : "hidden sm:inline"}>{label}</span>
       {shortcut && (
         <kbd
           aria-hidden="true"
@@ -278,13 +297,20 @@ export default function BlockPartyBrawl() {
   return (
     <section
       aria-label="Block Party Brawl game"
+      data-game="block-party-brawl"
+      data-phase={status}
+      data-player-x={hud.x.toFixed(3)}
+      data-player-y={hud.y.toFixed(3)}
       className="game-touch"
+      data-landscape-controls={landscape || undefined}
       style={{
-        display: "flex",
+        display: landscape ? "grid" : "flex",
+        gridTemplateColumns: "160px minmax(0, 1fr) 104px",
+        gridTemplateRows: "auto minmax(0, 1fr)",
         flexDirection: "column",
         width: "100%",
         height: "100%",
-        minHeight: 365,
+        minHeight: 0,
         background: "#464052",
         color: "#faefd6",
         fontFamily: "'Trebuchet MS', Arial, sans-serif",
@@ -292,12 +318,13 @@ export default function BlockPartyBrawl() {
     >
       <div
         style={{
+          gridColumn: "1 / -1",
           display: "flex",
           gap: 12,
           alignItems: "center",
           justifyContent: "space-between",
           background: "#51485f",
-          padding: "8px 12px",
+          padding: landscape ? "4px 12px" : "8px 12px",
           borderBottom: "2px solid #342e45",
           flexShrink: 0,
         }}
@@ -328,10 +355,10 @@ export default function BlockPartyBrawl() {
           </button>
         </div>
       </div>
-      <div style={{ position: "relative", flex: "1 1 auto", minHeight: 190, overflow: "hidden" }}>
+      <div style={{ position: "relative", gridColumn: 2, gridRow: 2, flex: "1 1 auto", minHeight: 100, overflow: "hidden" }}>
         <canvas
           ref={canvasRef}
-          aria-label="A side-scrolling Brooklyn street with a headphone-wearing hero and speaker robots"
+          aria-label="A side-scrolling Lower East Side street with a headphone-wearing hero and speaker robots"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
         />
         <div
@@ -458,7 +485,7 @@ export default function BlockPartyBrawl() {
                   </div>
                   <div>Jump + punch for a kick. Avoid warning rings.</div>
                   <div>Grab health drops. Follow the arrows between blocks.</div>
-                  <div>Touch controls below. Esc pauses; R restarts.</div>
+                  <div>Choose stick or arrows below; pause anytime to switch. Hold Punch for combos; combine with Jump for a kick. Esc pauses; R restarts.</div>
                 </div>
               )}
               <button
@@ -484,31 +511,36 @@ export default function BlockPartyBrawl() {
           </div>
         )}
       </div>
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          alignItems: "center",
-          padding: "9px 10px 12px",
-          borderTop: "2px solid #342e45",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(42px, 1fr))", gap: 3, flex: "0 1 220px" }}
-        >
-          <span />
-          {controlButton("up", "Move up", <ArrowUp size={18} />)}
-          <span />
-          {controlButton("left", "Move left", <ArrowLeft size={18} />)}
-          {controlButton("down", "Move down", <ArrowDown size={18} />)}
-          {controlButton("right", "Move right", <ArrowRight size={18} />)}
+      <div style={{ display: landscape ? "contents" : "flex", gap: 10, alignItems: "center", padding: "6px 10px", borderTop: "2px solid #342e45", flexShrink: 0 }}>
+        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: landscape ? 8 : 0, flexShrink: 0 }}>
+        {controlMode === "stick" ? (
+          <GameJoystick
+            label="Move brawler"
+            size={88}
+            disabled={!active || status !== "playing"}
+            resetKey={runId.current}
+            onChange={(value) => { stick.current = value }}
+          />
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 44px)", gap: 3 }}>
+            <span />
+            {controlButton("up", "Move up", <ArrowUp size={18} />)}
+            <span />
+            {controlButton("left", "Move left", <ArrowLeft size={18} />)}
+            {controlButton("down", "Move down", <ArrowDown size={18} />)}
+            {controlButton("right", "Move right", <ArrowRight size={18} />)}
+          </div>
+        )}
+        {landscape && status !== "playing" && <GameControlChoice value={controlMode} onChange={(mode) => { clearInput(); setControlMode(mode) }} />}
         </div>
-        <div style={{ display: "flex", gap: 6, flex: "1 1 auto", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {controlButton("dodge", "Dodge", <ChevronsRight size={20} />, "#5c7890")}
-          {controlButton("jump", "Jump", <ArrowUp size={20} />, "#817087")}
-          {controlButton("attack", "Punch", <Zap size={20} />, "#a65e7b", "J")}
-          <span style={{ flexBasis: "100%", textAlign: "right", fontSize: 10, color: "#d8ceda" }}>
+        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", justifyContent: "center", padding: landscape ? 8 : 0, gap: 6, flex: 1, minWidth: 0 }}>
+          {!landscape && status !== "playing" && <GameControlChoice value={controlMode} onChange={(mode) => { clearInput(); setControlMode(mode) }} />}
+          <div style={{ display: "flex", flexDirection: landscape ? "column" : "row", gap: 5 }}>
+            {controlButton("dodge", "Dodge", <ChevronsRight size={20} />, "#5c7890")}
+            {controlButton("jump", "Jump", <ArrowUp size={20} />, "#817087")}
+            {controlButton("attack", "Punch", <Zap size={20} />, "#a65e7b")}
+          </div>
+          <span style={{ textAlign: "right", fontSize: 10, color: "#d8ceda" }}>
             {hud.dodge > 0 ? "Dodge recharging…" : "Dodge ready"}
           </span>
         </div>

@@ -1,14 +1,17 @@
 "use client"
 
 import Image from "next/image"
+import { useId } from "react"
 
 interface DesktopIconProps {
   icon: string
   label: string
+  description?: string
   onClick: () => void
 }
 
-export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) {
+export default function DesktopIcon({ icon, label, description, onClick }: DesktopIconProps) {
+  const descriptionId = useId()
   const iconMap: Record<string, string> = {
     "👤": "/icons/raf-logo.png",
     "🌐": "/icons/globe.jpg", 
@@ -22,9 +25,11 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
 
   return (
     <button
+      className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
       onClick={onClick}
       style={{
         display: 'flex',
+        position: 'relative',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
@@ -45,6 +50,7 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
       type="button"
       aria-label={label}
+      aria-describedby={description ? descriptionId : undefined}
     >
       {/* Icon Container */}
       <div 
@@ -103,6 +109,14 @@ export default function DesktopIcon({ icon, label, onClick }: DesktopIconProps) 
       >
         {label}
       </span>
+      {description && (
+        <span
+          id={descriptionId}
+          role="tooltip"
+          className="opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity"
+          style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: "max-content", maxWidth: 170, padding: "5px 8px", border: "1px solid #9b9474", borderRadius: 3, background: "#fffde8", color: "#353b45", fontSize: 11, fontWeight: 400, lineHeight: 1.4, textAlign: "center", boxShadow: "0 2px 5px #0002", pointerEvents: "none", zIndex: 30 }}
+        >{description}</span>
+      )}
     </button>
   )
 }

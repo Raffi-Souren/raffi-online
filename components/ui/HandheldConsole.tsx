@@ -1,6 +1,8 @@
 "use client"
 
 import { type ReactNode } from "react"
+import GameJoystick from "./GameJoystick"
+import GameControlChoice from "./GameControlChoice"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react"
 
 export type PadDirection = "UP" | "DOWN" | "LEFT" | "RIGHT"
@@ -13,6 +15,10 @@ interface HandheldConsoleProps {
   onAction?: () => void
   paused: boolean
   horizontalOnly?: boolean
+  controlMode?: "stick" | "buttons"
+  onControlModeChange?: (mode: "stick" | "buttons") => void
+  onStick?: (value: { x: number; y: number }) => void
+  controlsDisabled?: boolean
 }
 
 export default function HandheldConsole({
@@ -23,6 +29,10 @@ export default function HandheldConsole({
   onAction,
   paused,
   horizontalOnly = false,
+  controlMode = "buttons",
+  onControlModeChange,
+  onStick,
+  controlsDisabled = false,
 }: HandheldConsoleProps) {
   const directions = [
     { direction: "UP" as const, icon: ArrowUp, row: 1, column: 2 },
@@ -35,8 +45,8 @@ export default function HandheldConsole({
       aria-label={`${title} handheld console`}
       className="game-touch"
       style={{
-        width: "min(100%, 360px)",
-        padding: "18px clamp(10px, 3vw, 22px) 20px",
+        width: "min(100%, 420px)",
+        padding: "12px clamp(10px, 3vw, 22px) 14px",
         border: "1px solid #adb3aa",
         borderRadius: "18px 18px 52px 18px",
         background: "linear-gradient(120deg, #f0f0e6, #d8dacf 78%, #bcc3ba)",
@@ -49,7 +59,7 @@ export default function HandheldConsole({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          margin: "0 0 12px",
+          margin: "0 0 8px",
           fontFamily: "'Trebuchet MS', Arial, sans-serif",
         }}
       >
@@ -68,71 +78,89 @@ export default function HandheldConsole({
       >
         {children}
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 20 }}>
-        <div
-          role="group"
-          aria-label="Directional pad"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 44px)",
-            gridTemplateRows: "repeat(3, 44px)",
-            flexShrink: 0,
-            touchAction: "none",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{ gridRow: 2, gridColumn: 2, background: "#424c48", boxShadow: "inset 0 0 4px #0005" }}
+      {onControlModeChange && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+          <GameControlChoice value={controlMode} onChange={onControlModeChange} />
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+        {controlMode === "stick" && onStick ? (
+          <GameJoystick
+            label={`${title} movement stick`}
+            axis={horizontalOnly ? "horizontal" : "both"}
+            fourWay={!horizontalOnly}
+            onChange={onStick}
+            disabled={controlsDisabled}
+            size={112}
           />
-          {directions
-            .filter(({ direction }) => !horizontalOnly || direction === "LEFT" || direction === "RIGHT")
-            .map(({ direction, icon: Icon, row, column }) => (
-              <button
-                key={direction}
-                type="button"
-                aria-label={`Move ${direction.toLowerCase()}`}
-                onContextMenu={(event) => event.preventDefault()}
-                onPointerDown={(event) => {
-                  event.preventDefault()
-                  onDirection(direction, true)
-                  try {
-                    event.currentTarget.setPointerCapture(event.pointerId)
-                  } catch {
-                    /* A finger that already lifted still releases through pointerup. */
-                  }
-                }}
-                onPointerUp={() => onDirection(direction, false)}
-                onPointerCancel={() => onDirection(direction, false)}
-                onLostPointerCapture={() => onDirection(direction, false)}
-                onKeyDown={(event) => {
-                  if (event.key === " " || event.key === "Enter") {
+        ) : (
+          <div
+            role="group"
+            aria-label="Directional pad"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 44px)",
+              gridTemplateRows: horizontalOnly ? "44px" : "repeat(3, 44px)",
+              flexShrink: 0,
+              touchAction: "none",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{ gridRow: horizontalOnly ? 1 : 2, gridColumn: 2, background: "#424c48", boxShadow: "inset 0 0 4px #0005" }}
+            />
+            {directions
+              .filter(({ direction }) => !horizontalOnly || direction === "LEFT" || direction === "RIGHT")
+              .map(({ direction, icon: Icon, row, column }) => (
+                <button
+                  key={direction}
+                  type="button"
+                  aria-label={`Move ${direction.toLowerCase()}`}
+                  disabled={controlsDisabled}
+                  onContextMenu={(event) => event.preventDefault()}
+                  onPointerDown={(event) => {
                     event.preventDefault()
                     onDirection(direction, true)
-                  }
-                }}
-                onKeyUp={(event) => {
-                  if (event.key === " " || event.key === "Enter") onDirection(direction, false)
-                }}
-                onBlur={() => onDirection(direction, false)}
-                style={{
-                  gridRow: row,
-                  gridColumn: column,
-                  display: "grid",
-                  placeItems: "center",
-                  border: 0,
-                  padding: 0,
-                  background: "#424c48",
-                  color: "#d8dfd4",
-                  boxShadow: "0 3px 0 #27332d, inset 1px 1px 0 #ffffff35",
-                  borderRadius: 3,
-                  touchAction: "none",
-                }}
-                className="active:brightness-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-800"
-              >
-                <Icon size={18} />
-              </button>
-            ))}
-        </div>
+                    try {
+                      event.currentTarget.setPointerCapture(event.pointerId)
+                    } catch {
+                      /* A finger that already lifted still releases through pointerup. */
+                    }
+                  }}
+                  onPointerUp={() => onDirection(direction, false)}
+                  onPointerCancel={() => onDirection(direction, false)}
+                  onLostPointerCapture={() => onDirection(direction, false)}
+                  onKeyDown={(event) => {
+                    if (event.key === " " || event.key === "Enter") {
+                      event.preventDefault()
+                      onDirection(direction, true)
+                    }
+                  }}
+                  onKeyUp={(event) => {
+                    if (event.key === " " || event.key === "Enter") onDirection(direction, false)
+                  }}
+                  onBlur={() => onDirection(direction, false)}
+                  style={{
+                    gridRow: horizontalOnly ? 1 : row,
+                    gridColumn: column,
+                    display: "grid",
+                    placeItems: "center",
+                    border: 0,
+                    padding: 0,
+                    background: "#424c48",
+                    color: "#d8dfd4",
+                    boxShadow: "0 3px 0 #27332d, inset 1px 1px 0 #ffffff35",
+                    borderRadius: 3,
+                    touchAction: "none",
+                  }}
+                  className="active:brightness-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-800"
+                >
+                  <Icon size={18} />
+                </button>
+              ))}
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: horizontalOnly ? "row" : "column", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <button
           type="button"
           onClick={onStart}
@@ -174,8 +202,9 @@ export default function HandheldConsole({
         >
           A
         </button>
+        </div>
       </div>
-      <div aria-hidden="true" style={{ display: "flex", gap: 5, justifyContent: "flex-end", margin: "12px 6px 0" }}>
+      <div aria-hidden="true" style={{ display: "flex", gap: 5, justifyContent: "flex-end", margin: "8px 6px 0" }}>
         {[0, 1, 2, 3, 4].map((slot) => (
           <span
             key={slot}

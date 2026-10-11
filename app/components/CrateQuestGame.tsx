@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react"
 import GhostDeckStation from "./GhostDeckStation"
+import GameJoystick from "../../components/ui/GameJoystick"
+import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Play, RotateCcw, X } from "lucide-react"
 import {
   createCrateQuest,
@@ -32,7 +34,7 @@ const button: CSSProperties = {
   border: "2px solid #665d4e",
   borderRadius: 3,
   padding: "8px 12px",
-  minHeight: 40,
+  minHeight: 44,
   cursor: "pointer",
 }
 
@@ -192,32 +194,51 @@ function drawQuest(ctx: CanvasRenderingContext2D, state: CrateQuestState) {
 }
 
 export default function CrateQuestGame({ onComplete, onExit, active = true }: Props) {
+  const root = useRef<HTMLDivElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const game = useRef(createCrateQuest())
   const keys = useRef(new Set<string>())
+  const touchKeys = useRef(new Map<number, string>())
+  const stick = useRef({ x: 0, y: 0 })
+  const [controlMode, setControlMode] = useGameControlMode("crate-quest")
   const completed = useRef(false)
   const [snapshot, setSnapshot] = useState(() => ({ ...game.current }))
   const [paused, setPaused] = useState(false)
   const [ghostOpen, setGhostOpen] = useState(false)
+  const [compact, setCompact] = useState(false)
+  const clearControls = () => { keys.current.clear(); touchKeys.current.clear(); stick.current = { x: 0, y: 0 } }
   const publish = () =>
     setSnapshot({ ...game.current, player: { ...game.current.player }, records: [...game.current.records] })
   const interact = () => {
     if (active && !paused && !ghostOpen) {
       interactCrateQuest(game.current)
-      keys.current.clear()
+      clearControls()
       publish()
     }
   }
   const restart = () => {
     game.current = createCrateQuest()
     completed.current = false
-    keys.current.clear()
+    clearControls()
     setPaused(false)
     publish()
   }
   useEffect(() => {
+    const element = root.current
+    if (!element) return
+    const resize = () => {
+      setCompact(element.clientWidth >= 600 && element.clientHeight <= 520)
+      clearControls()
+    }
+    const observer = new ResizeObserver(resize)
+    observer.observe(element)
+    resize()
+    return () => observer.disconnect()
+  }, [])
+  useEffect(() => {
     const heldKeys = keys.current
-    if (!active) keys.current.clear()
+    const heldTouches = touchKeys.current
+    if (!active || paused || ghostOpen) clearControls()
     const down = (event: KeyboardEvent) => {
       if (!active || ghostOpen || (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName))) return
       if (["Escape", "KeyP"].includes(event.code)) {
@@ -230,6 +251,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
         return
       }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD"].includes(event.code)) {
+        if (paused) return
         event.preventDefault()
         keys.current.add(event.code)
       }
@@ -237,7 +259,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
         event.preventDefault()
         if (!event.repeat && !paused) {
           interactCrateQuest(game.current)
-          keys.current.clear()
+          clearControls()
           publish()
         }
       }
@@ -246,16 +268,21 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
       keys.current.delete(event.code)
     }
     const blur = () => {
-      keys.current.clear()
+      clearControls()
+      if (game.current.phase === "playing") setPaused(true)
     }
+    const hidden = () => { if (document.hidden) blur() }
     window.addEventListener("keydown", down)
     window.addEventListener("keyup", up)
     window.addEventListener("blur", blur)
+    document.addEventListener("visibilitychange", hidden)
     return () => {
       window.removeEventListener("keydown", down)
       window.removeEventListener("keyup", up)
       window.removeEventListener("blur", blur)
+      document.removeEventListener("visibilitychange", hidden)
       heldKeys.clear()
+      heldTouches.clear()
     }
   }, [active, paused, ghostOpen])
   useEffect(() => {
@@ -271,13 +298,13 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
     const loop = (now: number) => {
       const dt = last ? Math.min((now - last) / 1000, 0.05) : 0
       last = now
-      if (active && !paused && !ghostOpen) {
-        const held = (a: string, b: string) => (keys.current.has(a) || keys.current.has(b) ? 1 : 0)
+      if (active && !paused && !ghostOpen && !document.hidden) {
+        const held = (a: string, b: string) => (keys.current.has(a) || keys.current.has(b) || Array.from(touchKeys.current.values()).includes(a) ? 1 : 0)
         tickCrateQuest(
           game.current,
           dt,
-          held("ArrowRight", "KeyD") - held("ArrowLeft", "KeyA"),
-          held("ArrowDown", "KeyS") - held("ArrowUp", "KeyW"),
+          held("ArrowRight", "KeyD") - held("ArrowLeft", "KeyA") || stick.current.x,
+          held("ArrowDown", "KeyS") - held("ArrowUp", "KeyW") || stick.current.y,
         )
       }
       drawQuest(context, game.current)
@@ -292,10 +319,6 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
   }, [active, paused, ghostOpen])
   const target = nearbyQuestEntity(snapshot)
   const collected = snapshot.dialogue?.record && QUEST_RECORDS.find((record) => record.id === snapshot.dialogue?.record)
-  const move = (code: string, held: boolean) => {
-    if (held && active && !paused && !ghostOpen) keys.current.add(code)
-    else keys.current.delete(code)
-  }
   const panel: CSSProperties = {
     background: cream,
     color: ink,
@@ -309,13 +332,16 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
   }
   return (
     <div
+      ref={root}
       className="crate-quest game-touch"
       style={{
         position: "relative",
         height: "100%",
         minHeight: 0,
-        display: "flex",
+        display: compact ? "grid" : "flex",
         flexDirection: "column",
+        gridTemplateColumns: compact ? "minmax(0, 1fr) 252px" : undefined,
+        gridTemplateRows: compact ? "auto auto minmax(0, 1fr)" : undefined,
         background: "#29433f",
         fontFamily: '"SFMono-Regular", Menlo, Consolas, monospace',
         color: ink,
@@ -328,18 +354,21 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           display: "flex",
           alignItems: "center",
           gap: 10,
-          padding: "8px 12px",
+          padding: compact ? "4px 8px" : "8px 12px",
           borderBottom: "3px solid #665d4e",
+          gridColumn: compact ? "1 / -1" : undefined,
+          gridRow: compact ? 1 : undefined,
+          flexShrink: 0,
         }}
       >
         <div style={{ flex: 1 }}>
           <strong style={{ fontSize: 15, color: plum }}>Crate Quest</strong>
-          <div style={{ fontSize: 10 }}>A courtyard set, one record at a time.</div>
+          <div style={{ fontSize: 10, display: compact ? "none" : undefined }}>A courtyard set, one record at a time.</div>
         </div>
         {snapshot.records.length > 0 && <button style={{ ...button, background: plum, color: cream }} onClick={() => { keys.current.clear(); setGhostOpen(true) }}>DJ booth</button>}
         <button
           aria-label={paused ? "Resume hunt" : "Pause hunt"}
-          style={{ ...button, padding: 8 }}
+          style={{ ...button, padding: 8, minWidth: 44 }}
           onClick={() => {
             keys.current.clear()
             setPaused(!paused)
@@ -347,11 +376,11 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
         >
           {paused ? <Play size={16} /> : <Pause size={16} />}
         </button>
-        <button aria-label="Leave hunt" style={{ ...button, padding: 8 }} onClick={onExit}>
+        <button aria-label="Leave hunt" style={{ ...button, padding: 8, minWidth: 44 }} onClick={onExit}>
           <X size={16} />
         </button>
       </header>
-      <div aria-label="Collected set" style={{ display: "flex", gap: 6, padding: "7px 10px", background: "#d9caab" }}>
+      <div aria-label="Collected set" style={{ display: "flex", gap: 6, padding: "7px 10px", background: "#d9caab", flexShrink: 0, gridColumn: compact ? 1 : undefined, gridRow: compact ? 2 : undefined }}>
         {QUEST_RECORDS.map((record) => (
           <div
             key={record.id}
@@ -384,6 +413,8 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
+          gridColumn: compact ? 1 : undefined,
+          gridRow: compact ? 3 : undefined,
         }}
       >
         <canvas
@@ -525,7 +556,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           </div>
         )}
       </div>
-      <footer style={{ background: cream, borderTop: "3px solid #665d4e", padding: "8px 12px" }}>
+      <footer style={{ background: cream, borderTop: compact ? undefined : "3px solid #665d4e", borderLeft: compact ? "3px solid #665d4e" : undefined, padding: compact ? "8px" : "8px 12px", flexShrink: 0, minHeight: 0, overflowY: compact ? "auto" : undefined, gridColumn: compact ? 2 : undefined, gridRow: compact ? "2 / 4" : undefined }}>
         <div role="status" aria-live="polite" style={{ fontSize: 11, minHeight: 28, marginBottom: 5 }}>
           {snapshot.phase === "complete"
             ? "3 / 3 records · Set assembled"
@@ -536,11 +567,11 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                 : snapshot.records.length + " / 3 records · Explore both shops and the courtyard"}
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <div
+          {controlMode === "stick" ? <GameJoystick label="Crate Quest walking stick" size={compact ? 88 : 96} resetKey={compact ? "landscape" : "portrait"} disabled={!active || paused || ghostOpen || snapshot.phase !== "playing"} onChange={(value) => { stick.current = value }} /> : <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 36px)",
-              gridTemplateRows: "repeat(2, 32px)",
+              gridTemplateColumns: "repeat(3, 44px)",
+              gridTemplateRows: "repeat(2, 44px)",
               gap: 3,
             }}
           >
@@ -554,6 +585,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
             ).map(([code, Icon, column, row]) => (
               <button
                 key={code}
+                disabled={!active || paused || ghostOpen || snapshot.phase !== "playing"}
                 aria-label={"Walk " + code.slice(5).toLowerCase()}
                 className="game-touch"
                 style={{
@@ -569,17 +601,17 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                 onContextMenu={(event) => event.preventDefault()}
                 onPointerDown={(event) => {
                   event.preventDefault()
-                  event.currentTarget.setPointerCapture(event.pointerId)
-                  move(code, true)
+                  try { event.currentTarget.setPointerCapture(event.pointerId) } catch { return }
+                  touchKeys.current.set(event.pointerId, code)
                 }}
-                onPointerUp={() => move(code, false)}
-                onPointerCancel={() => move(code, false)}
-                onLostPointerCapture={() => move(code, false)}
+                onPointerUp={(event) => touchKeys.current.delete(event.pointerId)}
+                onPointerCancel={(event) => touchKeys.current.delete(event.pointerId)}
+                onLostPointerCapture={(event) => touchKeys.current.delete(event.pointerId)}
               >
                 <Icon size={17} />
               </button>
             ))}
-          </div>
+          </div>}
           <div style={{ textAlign: "right" }}>
             <button
               disabled={
@@ -589,7 +621,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                 snapshot.phase === "complete" ||
                 (snapshot.phase === "playing" && !target)
               }
-              style={{ ...button, background: gold, minWidth: 105 }}
+              style={{ ...button, background: gold, minWidth: compact ? 76 : 105, padding: compact ? "8px 6px" : button.padding }}
               onClick={interact}
             >
               {snapshot.phase === "dialogue" ? "Continue" : target?.kind === "crate" ? "Dig crate" : "Talk"}
@@ -597,6 +629,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
             <div style={{ fontSize: 9, marginTop: 5 }}>WASD / arrows · E to interact · P to pause</div>
           </div>
         </div>
+        <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />
       </footer>
       <style jsx>{`
         .crate-quest button:hover:not(:disabled) {

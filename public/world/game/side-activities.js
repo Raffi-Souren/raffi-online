@@ -19,6 +19,9 @@ let handheld = createHandheld(),
   screen,
   status,
   startButton
+const handheldOwners = new Map()
+let handheldPointer = null, handheldTarget = null
+function resetHandheldInput() { direction = 0; handheldOwners.clear(); handheldPointer = null; handheldTarget = null }
 let garagePoint, cars, launchPoint, route
 let skidMesh,
   skidCursor = 0,
@@ -71,11 +74,11 @@ export function initSideActivities(scene, vehicles) {
   garage = document.createElement('dialog')
   garage.id = 'crib-garage'
   garage.setAttribute('aria-labelledby', 'garage-title')
-  garage.innerHTML = `<header><div><small>BROOKLYN / CUSTOMS</small><h2 id="garage-title">The Crib Garage</h2></div><button type="button" id="garage-close" aria-label="Return to World">×</button></header>
+  garage.innerHTML = `<header><div><small>REPAIRS / CUSTOMS</small><h2 id="garage-title">The Crib Garage</h2></div><button type="button" id="garage-close" aria-label="Return to World">×</button></header>
     <p id="garage-car"></p><fieldset><legend>Fresh paint · instant preview on your car</legend><div id="garage-paints"></div></fieldset>
     <button type="button" id="garage-tune">Fit street tires</button><p id="garage-note" role="status">Paint and tuning stay on this car for this visit.</p>
     <section><h3>Harbor Sprint</h3><p>Six checkpoints. 90 seconds. Your customized car moves to the start. Follow the mint rings; brake before corners.</p><button type="button" id="garage-race">Start street time trial</button></section>
-    <details id="glovebox"><summary>Open the glovebox</summary><div class="pocket-console"><div class="pocket-label">RAF PORTABLE · 01</div><canvas width="480" height="272" aria-label="Night Shift hover racer"></canvas><p id="pocket-status" role="status">NIGHT SHIFT · an original WipEout-inspired hover run. Survive 60 seconds. Arrow keys or the buttons steer.</p><div class="pocket-controls"><button type="button" id="pocket-left" aria-label="Steer handheld left">◀</button><button type="button" id="pocket-start">Play Night Shift</button><button type="button" id="pocket-pause">Pause run</button><button type="button" id="pocket-right" aria-label="Steer handheld right">▶</button></div></div></details>`
+    <details id="glovebox"><summary>Open the glovebox</summary><div class="pocket-console"><div class="pocket-label">RAF PORTABLE · 01</div><canvas width="480" height="272" aria-label="Night Shift hover racer. Drag to steer, or use arrow buttons."></canvas><p id="pocket-status" role="status">NIGHT SHIFT · an original WipEout-inspired hover run. Survive 60 seconds. Drag the screen, use arrow keys, or hold the buttons to steer.</p><div class="pocket-controls"><button type="button" id="pocket-left" aria-label="Steer handheld left">◀</button><button type="button" id="pocket-start">Play Night Shift</button><button type="button" id="pocket-pause">Pause run</button><button type="button" id="pocket-right" aria-label="Steer handheld right">▶</button></div></div></details>`
   document.body.append(garage)
   screen = garage.querySelector('canvas')
   status = garage.querySelector('#pocket-status')
@@ -89,19 +92,19 @@ export function initSideActivities(scene, vehicles) {
     event.stopPropagation()
     if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
       event.preventDefault()
-      direction = event.code === 'ArrowLeft' ? -1 : 1
+      if (handheld.phase === 'playing') handheldOwners.set(event.code, event.code === 'ArrowLeft' ? -1 : 1)
     }
   })
   garage.addEventListener('keyup', (event) => {
     event.stopPropagation()
-    if (event.code.startsWith('Arrow')) direction = 0
+    handheldOwners.delete(event.code)
   })
   garage.addEventListener('close', () => {
-    direction = 0
+    resetHandheldInput()
     resetInput()
   })
   garage.querySelector('#glovebox').addEventListener('toggle', (event) => {
-    if (!event.target.open) direction = 0
+    if (!event.target.open) resetHandheldInput()
   })
   for (const [id, value] of [
     ['pocket-left', -1],
@@ -110,25 +113,37 @@ export function initSideActivities(scene, vehicles) {
     const button = garage.querySelector('#' + id)
     button.addEventListener('pointerdown', (event) => {
       event.preventDefault()
+      if (handheld.phase !== 'playing' || event.button !== 0) return
       button.setPointerCapture(event.pointerId)
-      direction = value
+      handheldOwners.set(event.pointerId, value)
     })
     for (const kind of ['pointerup', 'pointercancel', 'lostpointercapture'])
-      button.addEventListener(kind, () => {
-        direction = 0
-      })
+      button.addEventListener(kind, (event) => handheldOwners.delete(event.pointerId))
   }
+  screen.style.touchAction = 'none'
+  const steerScreen = (event) => {
+    const rect = screen.getBoundingClientRect()
+    handheldTarget = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / rect.width * 480 - 240) / 170))
+  }
+  screen.addEventListener('pointerdown', (event) => {
+    if (handheld.phase !== 'playing' || handheldPointer !== null || event.button !== 0) return
+    event.preventDefault(); handheldPointer = event.pointerId; screen.setPointerCapture(event.pointerId); steerScreen(event)
+  })
+  screen.addEventListener('pointermove', (event) => { if (event.pointerId === handheldPointer) steerScreen(event) })
+  for (const kind of ['pointerup', 'pointercancel', 'lostpointercapture']) screen.addEventListener(kind, (event) => {
+    if (event.pointerId === handheldPointer) { handheldPointer = null; handheldTarget = null }
+  })
   startButton.addEventListener('click', () => {
     handheld = createHandheld()
     handheld.phase = 'playing'
-    direction = 0
+    resetHandheldInput()
     startButton.textContent = 'Restart run'
     screen.focus()
   })
   garage.querySelector('#pocket-pause').addEventListener('click', () => {
     if (handheld.phase === 'playing') handheld.phase = 'paused'
     else if (handheld.phase === 'paused') handheld.phase = 'playing'
-    direction = 0
+    resetHandheldInput()
     drawHandheld()
   })
   screen.tabIndex = 0
@@ -177,9 +192,9 @@ export function initSideActivities(scene, vehicles) {
       openGarage()
     }
   })
-  window.addEventListener('blur', () => {
-    direction = 0
-  })
+  window.addEventListener('blur', resetHandheldInput)
+  window.addEventListener('resize', resetHandheldInput)
+  document.addEventListener('visibilitychange', () => { if (document.hidden) resetHandheldInput() })
   drawHandheld()
 }
 function canVisit() {
@@ -217,7 +232,7 @@ function openGarage() {
 function closeGarage() {
   if (handheld.phase === 'playing') handheld.phase = 'paused'
   garage.close()
-  direction = 0
+  resetHandheldInput()
   resetInput()
   document.querySelector('#view')?.focus()
 }
@@ -249,6 +264,8 @@ export function updateSideActivities(dt) {
   panel.querySelector('#garage-open').hidden = !canVisit()
   if (garage.open) {
     if (garage.querySelector('#glovebox').open) {
+      direction = Math.max(-1, Math.min(1, [...handheldOwners.values()].reduce((sum, value) => sum + value, 0)))
+      if (handheldTarget !== null && dt > 0) direction = Math.max(-1, Math.min(1, (handheldTarget - handheld.x) / (Math.min(dt, .05) * 2.5)))
       stepHandheld(handheld, direction, dt)
       drawHandheld()
     }
@@ -353,7 +370,7 @@ function drawHandheld() {
   garage.querySelector('#pocket-pause').disabled = !['playing', 'paused'].includes(handheld.phase)
   if (handheld.phase === 'paused') status.textContent = 'Paused. Your run will wait.'
   if (handheld.phase === 'playing')
-    status.textContent = 'Dodge the coral barriers. Arrow keys or ◀ / ▶ steer.'
+    status.textContent = 'Dodge the coral barriers. Drag to steer, or use arrow keys / ◀ ▶.'
   else if (handheld.phase === 'won' || handheld.phase === 'lost') {
     status.textContent = `${handheld.phase === 'won' ? 'RUN COMPLETE' : 'SIGNAL OUT'} · ${handheld.score} points`
     startButton.textContent = 'Play again'

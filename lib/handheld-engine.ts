@@ -132,8 +132,8 @@ export function createParachute(): ParachuteState {
 /** One 16ms step; React only renders the result, so Strict Mode cannot duplicate hits or rewards. */
 export function stepParachute(
   state: ParachuteState,
-  left: boolean,
-  right: boolean,
+  left: boolean | number,
+  right: boolean | number,
   config: ParachuteConfig,
   random: () => number = Math.random,
 ) {
@@ -145,8 +145,9 @@ export function stepParachute(
     const fromLeft = random() < 0.5
     state.helicopters.push({ x: fromLeft ? -32 : 432, y: random() * 120 + 40, direction: fromLeft ? 1 : -1 })
   }
+  const input = (value: boolean | number) => Number.isFinite(Number(value)) ? Math.max(0, Math.min(1, Number(value))) : 0
   state.player = {
-    x: Math.max(14, Math.min(386, state.player.x + (Number(right) - Number(left)) * 4)),
+    x: Math.max(14, Math.min(386, state.player.x + (input(right) - input(left)) * 4)),
     y: state.player.y + 2.5,
   }
   state.helicopters = state.helicopters
