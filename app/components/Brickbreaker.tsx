@@ -16,11 +16,12 @@ import {
   type BrickRun,
 } from "@/lib/brickbreaker-engine"
 import { drawBrickbreaker } from "@/lib/brickbreaker-render"
+import GameJoystick from "../../components/ui/GameJoystick"
 import ScoreEntry from "./ScoreEntry"
 import Leaderboard from "./Leaderboard"
 
 const button: CSSProperties = {
-  minHeight: 42,
+  minHeight: 44,
   border: "1px solid #6f7c8d",
   borderRadius: 5,
   padding: "8px 12px",
@@ -41,6 +42,7 @@ const blankInput = () => ({
   touches: new Set<string>(),
   target: undefined as number | undefined,
   shot: false,
+  stick: 0,
 })
 const snapshot = (g: BrickRun) => ({
   phase: g.phase,
@@ -58,6 +60,11 @@ const snapshot = (g: BrickRun) => ({
 
 export default function Brickbreaker() {
   const { active } = useWindowActivity()
+  const [controlMode, setControlMode] = useState<"drag" | "stick" | "buttons">("drag")
+  const cabinet = useRef<HTMLElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
+  const [wide, setWide] = useState(false)
+  const [fieldSize, setFieldSize] = useState({ width: 300, height: 375 })
   const activeRef = useRef(active)
   const game = useRef(createBrickbreaker())
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -141,9 +148,28 @@ export default function Brickbreaker() {
     const value = Number(readGameStorage("brickbreaker_circuit_best"))
     setBest(Number.isFinite(value) && value > 0 ? value : 0)
     progress.current = loadGameProgress("brickbreaker")
+    const savedControls = readGameStorage("raffi-controls:brickbreaker")
+    if (savedControls === "stick" || savedControls === "buttons") setControlMode(savedControls)
     return () => {
       void audio.current?.close().catch(() => {})
     }
+  }, [])
+  useEffect(() => {
+    const shell = cabinet.current, area = stage.current
+    if (!shell || !area) return
+    const resize = () => {
+      const bounds = shell.getBoundingClientRect()
+      setWide(bounds.width >= 500 && bounds.width > bounds.height * 1.1)
+      const available = area.getBoundingClientRect()
+      const width = Math.max(1, Math.floor(Math.min(available.width - 10, (available.height - 10) * FIELD.width / FIELD.height)))
+      const next = { width: width + 10, height: Math.floor(width * FIELD.height / FIELD.width) + 10 }
+      setFieldSize((previous) => previous.width === next.width && previous.height === next.height ? previous : next)
+    }
+    const observer = new ResizeObserver(resize)
+    observer.observe(shell)
+    observer.observe(area)
+    resize()
+    return () => observer.disconnect()
   }, [])
   useEffect(() => {
     const element = canvas.current,
@@ -172,7 +198,7 @@ export default function Brickbreaker() {
         stepBrickbreaker(
           g,
           {
-            move: Number(down("ArrowRight") || down("KeyD")) - Number(down("ArrowLeft") || down("KeyA")),
+            move: Number(down("ArrowRight") || down("KeyD")) - Number(down("ArrowLeft") || down("KeyA")) || controls.stick,
             target: controls.target,
             aim: Number(down("ArrowUp")) - Number(down("ArrowDown")),
             fire: controls.shot || down("Space"),
@@ -280,7 +306,7 @@ export default function Brickbreaker() {
       document.removeEventListener("visibilitychange", hidden)
     }
   }, [pause, clearInput, publish])
-  const playable = screen === "game" && !hud.paused && ["playing", "serve"].includes(hud.phase)
+  const playable = active && screen === "game" && !hud.paused && ["playing", "serve"].includes(hud.phase)
   const steer = (event: PointerEvent<HTMLCanvasElement>) => {
     if (!playable || (event.pointerType !== "mouse" && !event.buttons)) return
     const box = event.currentTarget.getBoundingClientRect()
@@ -317,16 +343,22 @@ export default function Brickbreaker() {
   const ended = hud.phase === "over" || hud.phase === "won"
   const overlay = screen !== "game" || hud.phase === "ready" || hud.paused || ended || hud.phase === "cleared"
   return (
-    <section className="bb-cabinet game-touch" aria-label="Brickbreaker arcade">
+    <section ref={cabinet} className="bb-cabinet game-touch" data-wide={wide} aria-label="Brickbreaker arcade">
       <header className="bb-heading">
-        <div>
-          <h2>BRICKBREAKER</h2>
-          <span>BlackBerry-inspired · 34 original circuits</span>
+        <div className="bb-instruments" aria-label="Game status">
+          <div>
+            <span>Score</span>
+            <strong data-bb-score>{hud.score.toLocaleString()}</strong>
+          </div>
+          <div>
+            <strong className="bb-lives">{hud.lives} <span>lives /</span> {hud.rockets} <span>rockets</span></strong>
+            <small>{hud.practice ? "PRACTICE · " : ""}{String(hud.level).padStart(2, "0")} / {BRICK_LEVELS[hud.level - 1][0]}</small>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 5 }}>
+        <div className="bb-toolbar">
           <button
             type="button"
-            style={button}
+            style={{ ...button, minWidth: 44, minHeight: 44, padding: 6 }}
             onClick={toggleSound}
             aria-label={soundEnabled ? "Mute game sounds" : "Enable game sounds"}
             aria-pressed={soundEnabled}
@@ -335,7 +367,7 @@ export default function Brickbreaker() {
           </button>
           <button
             type="button"
-            style={button}
+            style={{ ...button, minWidth: 44, minHeight: 44, padding: 6 }}
             disabled={!["serve", "playing"].includes(hud.phase)}
             onClick={hud.paused ? resume : pause}
             aria-label={hud.paused ? "Resume Brickbreaker" : "Pause Brickbreaker"}
@@ -346,25 +378,8 @@ export default function Brickbreaker() {
         </div>
       </header>
       <div className="bb-console">
-        <div className="bb-instruments" aria-label="Game status">
-          <div>
-            <span>Score</span>
-            <strong data-bb-score>{hud.score.toLocaleString()}</strong>
-            <small>Best {best.toLocaleString()}</small>
-          </div>
-          <div>
-            <span>Lives / rockets</span>
-            <strong>
-              <span style={{ color: "#9bbcff" }}>{hud.lives}</span>
-              <span style={{ fontSize: 14, color: "#acb7c5", margin: "0 10px" }}>/</span>
-              <span style={{ color: "#e5c185" }}>{hud.rockets}</span>
-            </strong>
-            <small>
-              Level {hud.level} / {BRICK_LEVELS.length}
-            </small>
-          </div>
-        </div>
-        <div className="bb-field-frame">
+        <div ref={stage} className="bb-stage">
+        <div className="bb-field-frame" style={{ width: fieldSize.width, height: fieldSize.height }}>
           <canvas
             ref={canvas}
             tabIndex={0}
@@ -399,8 +414,8 @@ export default function Brickbreaker() {
                     every red brick.
                   </p>
                   <p>
-                    Move with ← → / A D, point on the field, or drag the strip below it. ↑ ↓ adjusts your launch angle.
-                    Space / Fire launches the ball and fires weapons. P / Esc pauses.
+                    Slide the field or strip, use the thumbstick, or choose buttons below. Keyboard ← → / A D also works. ↑ ↓ adjusts your launch angle.
+                    Space / Fire launches the ball and fires weapons. P / Esc pauses and opens your control choices.
                   </p>
                   <div className="bb-pickup-guide">
                     {Object.entries(PICKUPS).map(([key, value]) => (
@@ -521,14 +536,37 @@ export default function Brickbreaker() {
                   </div>
                 </>
               )}
+              {(screen === "help" || (screen === "game" && (hud.phase === "ready" || hud.paused))) && (
+                <fieldset className="bb-preferences">
+                  <legend>Movement controls</legend>
+                  <div>
+                    {(["drag", "stick", "buttons"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        aria-pressed={controlMode === mode}
+                        style={controlMode === mode ? primary : button}
+                        onClick={() => {
+                          clearInput()
+                          setControlMode(mode)
+                          writeGameStorage("raffi-controls:brickbreaker", mode)
+                        }}
+                      >
+                        {mode === "drag" ? "Slide" : mode === "stick" ? "Thumbstick" : "Buttons"}
+                      </button>
+                    ))}
+                  </div>
+                  <small>Best {best.toLocaleString()} · Change controls here any time.</small>
+                </fieldset>
+              )}
             </div>
           )}
         </div>
+        </div>
         <div className="bb-deck">
-          <div className="bb-stage-label">
-            {hud.practice ? "PRACTICE · " : ""}
-            {String(hud.level).padStart(2, "0")} / {BRICK_LEVELS[hud.level - 1][0]}
-          </div>
+          <div className="bb-play-controls">
+          <div className="bb-movement">
+          {controlMode === "drag" && (
           <div
             className="bb-touch-strip"
             role="slider"
@@ -546,13 +584,13 @@ export default function Brickbreaker() {
             }}
             onContextMenu={(event) => event.preventDefault()}
             onPointerDown={(event) => {
-              if (!playable) return
+              if (!playable || drag.current || (event.pointerType === "mouse" && event.button !== 0)) return
               event.preventDefault()
               drag.current = { id: event.pointerId, x: event.clientX, paddle: game.current.paddle }
               try {
                 event.currentTarget.setPointerCapture(event.pointerId)
               } catch {
-                /* Window release also clears drag state. */
+                if (drag.current?.id === event.pointerId) drag.current = null
               }
             }}
             onPointerMove={(event) => {
@@ -560,65 +598,64 @@ export default function Brickbreaker() {
               const width = event.currentTarget.getBoundingClientRect().width
               input.current.target = drag.current.paddle + ((event.clientX - drag.current.x) * FIELD.width) / width
             }}
-            onPointerUp={() => {
-              drag.current = null
+            onPointerUp={(event) => {
+              if (drag.current?.id === event.pointerId) drag.current = null
             }}
-            onPointerCancel={() => {
-              drag.current = null
+            onPointerCancel={(event) => {
+              if (drag.current?.id === event.pointerId) drag.current = null
             }}
-            onLostPointerCapture={() => {
-              drag.current = null
+            onLostPointerCapture={(event) => {
+              if (drag.current?.id === event.pointerId) drag.current = null
             }}
           >
             <span>‹</span>
             <span>Slide to steer</span>
             <span>›</span>
           </div>
-          <div className="bb-play-controls">
-            <button
-              style={button}
+          )}
+          {controlMode === "stick" && (
+            <GameJoystick
+              label="Paddle movement stick"
+              axis="horizontal"
+              size={80}
               disabled={!playable}
-              aria-label="Move paddle left"
-              aria-keyshortcuts="ArrowLeft A"
-              {...heldButton("ArrowLeft")}
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <button
-              style={primary}
-              disabled={!playable}
-              aria-label="Launch or fire"
-              aria-keyshortcuts="Space"
-              {...heldButton("Space")}
-            >
+              resetKey={runId.current}
+              onChange={({ x }) => {
+                input.current.stick = x
+                if (x) input.current.target = undefined
+              }}
+            />
+          )}
+          {controlMode === "buttons" && (
+            <div className="bb-direction-buttons">
+              <button style={{ ...button, minHeight: 56 }} disabled={!playable} aria-label="Move paddle left" aria-keyshortcuts="ArrowLeft A" {...heldButton("ArrowLeft")}>
+                <ArrowLeft size={22} />
+              </button>
+              <button style={{ ...button, minHeight: 56 }} disabled={!playable} aria-label="Move paddle right" aria-keyshortcuts="ArrowRight D" {...heldButton("ArrowRight")}>
+                <ArrowRight size={22} />
+              </button>
+            </div>
+          )}
+          </div>
+          <div className="bb-action">
+            <button style={{ ...primary, minHeight: 52 }} disabled={!playable} aria-label="Launch or fire" aria-keyshortcuts="Space" {...heldButton("Space")}>
               {hud.held ? "Launch" : "Fire"} <kbd>Space</kbd>
             </button>
-            <button
-              style={button}
-              disabled={!playable}
-              aria-label="Move paddle right"
-              aria-keyshortcuts="ArrowRight D"
-              {...heldButton("ArrowRight")}
-            >
-              <ArrowRight size={18} />
-            </button>
+            {hud.held && playable && (
+              <label className="bb-aim">
+                Aim
+                <input
+                  aria-label="Launch angle"
+                  type="range"
+                  min={-100}
+                  max={100}
+                  value={Math.round(hud.aim * 100)}
+                  onChange={(event) => { game.current.aim = Number(event.target.value) / 100 }}
+                />
+              </label>
+            )}
           </div>
-          {hud.held && playable && (
-            <label className="bb-aim">
-              Aim{" "}
-              <input
-                aria-label="Launch angle"
-                type="range"
-                min={-100}
-                max={100}
-                value={Math.round(hud.aim * 100)}
-                onChange={(event) => {
-                  game.current.aim = Number(event.target.value) / 100
-                }}
-              />
-              <span>↑ ↓</span>
-            </label>
-          )}
+          </div>
           <div className="bb-status" role="status" aria-live="polite">
             {hud.message ||
               (hud.paused

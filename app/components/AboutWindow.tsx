@@ -27,7 +27,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
               RAFFI
             </h1>
             <p className="text-gray-600">
-              Entrepreneur | Field CTO and Technology Leader | DJ
+              DJ, builder, and a few things in between.
             </p>
           </div>
         </div>
@@ -43,10 +43,29 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
             😎 ABOUT
           </h2>
           <p className="text-gray-700 leading-relaxed">
-            Field CTO and Technology Leader at IBM, helping companies build and scale AI, automation, and infrastructure products. Advisor at Nameless
-            Ventures and End of Love, co-founder of Bad Company and indify. Based in NYC, usually digging for vinyl,
-            DJing at a friends function, or experimenting with new tech.
+            I’m Raffi. I DJ, build things, and like bringing people together. Music runs through a lot of
+            it—from co-founding indify to throwing events and making things with Bad Company, the
+            creative collective I co-founded.
           </p>
+          <p style={{ color: "#374151", lineHeight: 1.625, marginTop: 12 }}>
+            New York is home, on both sides of the East River. This desktop is a place for the records,
+            games, experiments, and ideas I pick up along the way. Some things are finished. Others
+            I’m still making and breaking.
+          </p>
+          <p style={{ color: "#374151", lineHeight: 1.625, marginTop: 16 }}>
+            For work, I’m a Field CTO and Account Technical Leader at IBM, helping financial services
+            teams put AI and automation into production. I also research how to make AI more reliable
+            and advise Nameless.
+          </p>
+          <a
+            href="https://www.raffisourenkhatchadourian.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-block", color: "#1d4ed8", marginTop: 12, fontSize: 14 }}
+            className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+          >
+            Professional bio & work ↗
+          </a>
         </div>
 
         {/* Contact Section */}
@@ -70,7 +89,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
               </a>
             </p>
             <p className="text-gray-700">
-              <span className="font-semibold">Location:</span> Brooklyn, New York
+              <span className="font-semibold">Location:</span> New York
             </p>
           </div>
         </div>

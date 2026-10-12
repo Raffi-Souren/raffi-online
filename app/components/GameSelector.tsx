@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import dynamic from "next/dynamic"
-import { ArrowLeft, Gamepad2, Search, Trophy } from "lucide-react"
+import { ArrowLeft, Gamepad2, Search, Trophy, Maximize2, Minimize2 } from "lucide-react"
 import WindowShell from "../../components/ui/WindowShell"
 import GameShelfNav from "./GameShelfNav"
 import Leaderboard from "./Leaderboard"
@@ -24,7 +24,7 @@ type GameId = keyof typeof GAME_COMPONENTS
 type GameCategory = "Originals" | "Handhelds" | "Desktop & arcade"
 
 interface Game {
-  id: GameId | "world" | "smash-fun"
+  id: GameId | "world"
   name: string
   device: string
   category: GameCategory
@@ -43,9 +43,9 @@ const GAMES: Game[] = [
   {
     id: "world",
     name: "Raffi World",
-    device: "Brooklyn open world",
+    device: "City sandbox",
     category: "Originals",
-    description: "GTA-inspired Brooklyn exploration, neighborhood missions, and a hidden record store.",
+    description: "GTA-inspired city exploration, neighborhood missions, and a hidden record store.",
     icon: "🌆",
     color: "#bdcedd",
   },
@@ -54,7 +54,7 @@ const GAMES: Game[] = [
     name: "Borough Grand Prix",
     device: "Raffi Racing",
     category: "Originals",
-    description: "Mario Kart-inspired racing along the Brooklyn waterfront. Three laps, five rivals.",
+    description: "Mario Kart-inspired racing along the East River. Three laps, five rivals.",
     icon: "🏎️",
     color: "#b7e2e2",
   },
@@ -63,7 +63,7 @@ const GAMES: Game[] = [
     name: "Overtime",
     device: "Rooftop car soccer",
     category: "Originals",
-    description: "Rocket League-inspired car soccer. Boost, jump, and score on a Brooklyn rooftop.",
+    description: "Rocket League-inspired car soccer. Boost, jump, and score above the city.",
     icon: "⚽",
     color: "#a7d6df",
   },
@@ -108,7 +108,7 @@ const GAMES: Game[] = [
     name: "Block Party Brawl",
     device: "Arcade",
     category: "Originals",
-    description: "X-Men arcade-inspired street brawling. Clear the block and bring the sound system back.",
+    description: "X-Men arcade-inspired street brawling. Clear a Lower East Side block and bring the sound system back.",
     icon: "🥊",
     color: "#e8d49a",
   },
@@ -122,20 +122,11 @@ const GAMES: Game[] = [
     color: "#d9c6a7",
   },
   {
-    id: "smash-fun",
-    name: "Smash.fun",
-    device: "Opens smash.fun ↗",
-    category: "Desktop & arcade",
-    description: "A fan-made Super Smash Bros. 64 browser port by Thomas Dimson. Opens in a new tab.",
-    icon: "💥",
-    color: "#e6bcce",
-  },
-  {
     id: "signal-lost",
     name: "Signal Lost",
     device: "Pulse blaster",
     category: "Originals",
-    description: "Doom-inspired action. Take back a Brooklyn substation from rogue speaker drones.",
+    description: "Doom-inspired action. Take back an East Side substation from rogue speaker drones.",
     icon: "📡",
     color: "#d9bcc7",
   },
@@ -158,6 +149,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All games")
   const [activeGame, setActiveGame] = useState<GameId | null>(null)
   const [leaderboardGame, setLeaderboardGame] = useState<GameId | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   if (!isOpen) return null
 
@@ -196,7 +188,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
               borderRadius: 4,
             }}
           >
-            {GAMES.filter((game) => game.id !== "world" && game.id !== "smash-fun").map((game) => (
+            {GAMES.filter((game) => game.id !== "world").map((game) => (
               <option key={game.id} value={game.id}>
                 {game.name}
               </option>
@@ -221,6 +213,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
         fill={viewport}
         fullBleed={viewport}
         compact={viewport}
+        immersive={expanded}
         maxWidth={
           activeGame === "borough-gp" || activeGame === "overtime"
             ? "1160px"
@@ -231,7 +224,18 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                 : "1024px"
         }
       >
-        <GameShelfNav onBack={() => setActiveGame(null)} compact={viewport} />
+        <GameShelfNav onBack={() => { setExpanded(false); setActiveGame(null) }} compact={viewport && !expanded}>
+          <button
+            type="button"
+            aria-pressed={expanded}
+            onClick={() => setExpanded(!expanded)}
+            className="hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+            style={{ minHeight: 44, padding: "4px 9px", display: "inline-flex", alignItems: "center", gap: 5, color: "#294b67", fontSize: 12, borderRadius: 3 }}
+          >
+            {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            {expanded ? "Exit expanded view" : "Expand game"}
+          </button>
+        </GameShelfNav>
         {viewport ? (
           <div
             style={{
@@ -334,7 +338,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
               Pick up and play.
             </h2>
             <p style={{ margin: "7px 0 0", fontSize: 13, color: "#63727a" }}>
-              Old favorites. A new route through Brooklyn.
+              Old favorites. A few experiments. One more round.
             </p>
           </div>
         </header>
@@ -425,20 +429,17 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}
         >
           {filtered.map((game) => {
-            const Card = game.id === "smash-fun" ? "a" : "button"
             return (
-              <Card
+              <button
                 key={game.id}
-                {...(game.id === "smash-fun"
-                  ? { href: "https://smash.fun", target: "_blank", rel: "noopener noreferrer" }
-                  : { type: "button" as const })}
+                type="button"
                 onClick={() => {
                   if (game.id === "world") {
                     if (onOpenWorld) onOpenWorld()
                     else window.location.assign("/?app=world")
-                  } else if (game.id !== "smash-fun") setActiveGame(game.id)
+                  } else setActiveGame(game.id)
                 }}
-                aria-label={game.id === "smash-fun" ? "Open Smash.fun in a new tab" : `Play ${game.name}`}
+                aria-label={`Play ${game.name}`}
                 style={{
                   position: "relative",
                   display: "flex",
@@ -501,7 +502,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                     {game.description}
                   </span>
                 </div>
-              </Card>
+              </button>
             )
           })}
         </div>

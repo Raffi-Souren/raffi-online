@@ -164,3 +164,16 @@ test("Parachute steering is bounded and a finished run stops simulating", () => 
   stepParachute(game, false, true, config, () => 0)
   assert.equal(JSON.stringify(game), before)
 })
+
+
+test("Parachute analog steering preserves gentle movement and sanitizes invalid input", () => {
+  const game = createParachute()
+  stepParachute(game, 0, 0.25, config, () => 1)
+  assert.equal(game.player.x, 201)
+  stepParachute(game, 0.5, 0, config, () => 1)
+  assert.equal(game.player.x, 199)
+  stepParachute(game, NaN, Infinity, config, () => 1)
+  assert.equal(game.player.x, 199)
+  stepParachute(game, -3, 4, config, () => 1)
+  assert.equal(game.player.x, 203)
+})

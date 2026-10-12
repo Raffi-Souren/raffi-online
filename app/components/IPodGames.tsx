@@ -1,6 +1,7 @@
 "use client"
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { useWindowActivity } from "../../components/ui/WindowShell"
 import {
   createParachute,
   queueSnakeTurn,
@@ -14,9 +15,9 @@ import {
 export type IPodGameId = "brick" | "parachute" | "snake"
 
 export const IPOD_GAMES: { id: IPodGameId; name: string; hint: string }[] = [
-  { id: "brick", name: "Brick", hint: "Wheel steers the paddle" },
-  { id: "parachute", name: "Parachute", hint: "Wheel steers the drop" },
-  { id: "snake", name: "Snake", hint: "Wheel turns: clockwise is right" },
+  { id: "brick", name: "Brick", hint: "Wheel or drag screen to steer; tap to launch" },
+  { id: "parachute", name: "Parachute", hint: "Wheel or drag screen to steer" },
+  { id: "snake", name: "Snake", hint: "Swipe screen or turn wheel (clockwise turns right)" },
 ]
 
 /** Imperative surface the click wheel drives. */
@@ -127,6 +128,8 @@ interface IPodGameProps {
 }
 
 const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ game }, ref) {
+  const { active, minimized } = useWindowActivity()
+  const gesture = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [size, setSize] = useState({ width: 220, height: 155 })
@@ -165,11 +168,37 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
     setPhaseBoth("playing")
   }
 
+  const selectGame = () => {
+    if (!active || minimized) return
+    const current = phaseRef.current
+    if (current === "ready" || current === "over") start()
+    else if (current === "paused") setPhaseBoth("playing")
+    else if (game === "brick" && brickRef.current && !brickRef.current.launched) {
+      releaseBrickBall(brickRef.current.ball, 1.8, size.height - 16)
+      brickRef.current.launched = true
+    } else if (game !== "brick") setPhaseBoth("paused")
+  }
+
+  useEffect(() => {
+    const pause = () => {
+      gesture.current = null
+      if (phaseRef.current === "playing") setPhaseBoth("paused")
+    }
+    const hidden = () => { if (document.hidden) pause() }
+    if (!active || minimized) pause()
+    window.addEventListener("blur", pause)
+    document.addEventListener("visibilitychange", hidden)
+    return () => {
+      window.removeEventListener("blur", pause)
+      document.removeEventListener("visibilitychange", hidden)
+    }
+  }, [active, minimized])
+
   useImperativeHandle(
     ref,
     () => ({
       wheel: (steps) => {
-        if (phaseRef.current !== "playing" || !steps) return
+        if (!active || minimized || phaseRef.current !== "playing" || !steps) return
         if (game === "brick" && brickRef.current) {
           const state = brickRef.current
           state.paddleX = Math.max(0, Math.min(size.width - state.paddleW, state.paddleX + steps * 9))
@@ -183,16 +212,9 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
           state.queued = queueSnakeTurn(state.direction, state.queued, turn[heading])
         }
       },
-      select: () => {
-        const current = phaseRef.current
-        if (current === "ready" || current === "over") start()
-        else if (current === "paused") setPhaseBoth("playing")
-        else if (game === "brick" && brickRef.current && !brickRef.current.launched) {
-          releaseBrickBall(brickRef.current.ball, 1.8, size.height - 16)
-          brickRef.current.launched = true
-        } else if (game !== "brick") setPhaseBoth("paused")
-      },
+      select: selectGame,
       playPause: () => {
+        if (!active || minimized) return
         const current = phaseRef.current
         if (current === "playing") setPhaseBoth("paused")
         else if (current === "paused") setPhaseBoth("playing")
@@ -200,7 +222,7 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [game, size.width, size.height, columns, rows],
+    [game, size.width, size.height, columns, rows, active, minimized],
   )
 
   useEffect(() => {
@@ -418,7 +440,7 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
     const loop = (now: number) => {
       const dt = Math.min(64, now - last)
       last = now
-      if (phaseRef.current === "playing") {
+      if (phaseRef.current === "playing" && !document.hidden) {
         accumulator += dt
         while (accumulator >= STEP && phaseRef.current === "playing") {
           accumulator -= STEP
@@ -426,7 +448,7 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
           else if (game === "parachute" && parachuteRef.current) stepParachuteGame(parachuteRef.current)
           else if (game === "snake" && snakeRef.current) stepSnake(snakeRef.current)
         }
-      }
+      } else accumulator = 0
       draw()
       frame = requestAnimationFrame(loop)
     }
@@ -437,11 +459,11 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
   const meta = IPOD_GAMES.find((entry) => entry.id === game)!
   const overlay =
     phase === "ready"
-      ? { title: meta.name, body: `${meta.hint}. Press the center button to start.` }
+      ? { title: meta.name, body: `${meta.hint}. Tap screen or press center to start.` }
       : phase === "paused"
-        ? { title: "Paused", body: "Press the center button to resume." }
+        ? { title: "Paused", body: "Tap screen or press center to resume." }
         : phase === "over"
-          ? { title: "Game Over", body: `Score ${hud.score} · Best ${hud.best}. Press center to play again.` }
+          ? { title: "Game Over", body: `Score ${hud.score} · Best ${hud.best}. Tap screen or press center to play again.` }
           : null
 
   return (
@@ -449,7 +471,53 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
       ref={hostRef}
       data-ipod-game={game}
       data-phase={phase}
-      style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}
+      role="group"
+      aria-label={`${meta.name} game screen. ${meta.hint}. Tap or press Enter to start or resume.`}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return
+        event.preventDefault()
+        event.stopPropagation()
+        if (!event.repeat) selectGame()
+      }}
+      onPointerDown={(event) => {
+        if (!active || minimized || gesture.current || (event.pointerType === "mouse" && event.button !== 0)) return
+        event.preventDefault()
+        try { event.currentTarget.setPointerCapture(event.pointerId) } catch { return }
+        gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false }
+      }}
+      onPointerMove={(event) => {
+        const drag = gesture.current
+        if (!drag || drag.id !== event.pointerId || phaseRef.current !== "playing") return
+        const dx = event.clientX - drag.x, dy = event.clientY - drag.y
+        if (Math.hypot(dx, dy) < 10) return
+        drag.moved = true
+        const bounds = event.currentTarget.getBoundingClientRect()
+        const fraction = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width))
+        if (game === "brick" && brickRef.current) {
+          const state = brickRef.current
+          state.paddleX = Math.max(0, Math.min(size.width - state.paddleW, fraction * size.width - state.paddleW / 2))
+          if (!state.launched) state.ball.x = state.paddleX + state.paddleW / 2
+        } else if (game === "parachute") parachuteTargetRef.current = 14 + fraction * 372
+        else if (game === "snake" && snakeRef.current) {
+          const state = snakeRef.current
+          const direction = Math.abs(dx) > Math.abs(dy) ? dx > 0 ? "RIGHT" : "LEFT" : dy > 0 ? "DOWN" : "UP"
+          state.queued = queueSnakeTurn(state.direction, state.queued, direction)
+          drag.x = event.clientX
+          drag.y = event.clientY
+        }
+      }}
+      onPointerUp={(event) => {
+        if (gesture.current?.id !== event.pointerId) return
+        const tap = !gesture.current.moved
+        gesture.current = null
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+        if (tap) selectGame()
+      }}
+      onPointerCancel={(event) => { if (gesture.current?.id === event.pointerId) gesture.current = null }}
+      onLostPointerCapture={(event) => { if (gesture.current?.id === event.pointerId) gesture.current = null }}
+      onContextMenu={(event) => event.preventDefault()}
+      style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", touchAction: "none" }}
     >
       <canvas
         ref={canvasRef}
@@ -473,6 +541,7 @@ const IPodGame = forwardRef<IPodGameHandle, IPodGameProps>(function IPodGame({ g
             background: `${PAPER}d9`,
             color: INK,
             fontFamily: lcdFont,
+            pointerEvents: "none",
           }}
         >
           <p style={{ fontSize: 13, fontWeight: 700 }}>{overlay.title}</p>

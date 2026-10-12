@@ -34,6 +34,15 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // EmulatorJS needs its CDN and generated core scripts only inside its
+        // dedicated iframe; the portfolio keeps its existing script policy.
+        source: '/emulator/:path*',
+        headers: [{
+          key: 'Content-Security-Policy',
+          value: "default-src 'self' blob: data: https://cdn.emulatorjs.org; script-src 'self' blob: 'unsafe-eval' https://cdn.emulatorjs.org; style-src 'self' 'unsafe-inline' https://cdn.emulatorjs.org; worker-src 'self' blob:; frame-ancestors 'self'; object-src 'none'; base-uri 'none';",
+        }],
+      },
     ]
   },
 }

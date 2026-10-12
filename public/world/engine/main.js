@@ -639,7 +639,7 @@ async function boot() {
   world.atlas = atlas
   const materials = initMaterials(atlas.texture, atlas)
 
-  setBoot(0.5, 'building Brooklyn…')
+  setBoot(0.5, 'building the city…')
   await new Promise((r) => setTimeout(r, 0)) // let the boot bar paint
 
   const built = buildWorld({

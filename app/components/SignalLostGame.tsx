@@ -14,6 +14,8 @@ import {
 import { createSignalArt, renderSignal } from "@/lib/signal-lost-render"
 import ScoreEntry from "./ScoreEntry"
 import { useWindowActivity } from "../../components/ui/WindowShell"
+import GameJoystick from "../../components/ui/GameJoystick"
+import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
 
 const EMPTY_INPUT: SignalInput = { forward: 0, strafe: 0, turn: 0, sprint: false, fire: false }
 const panel: CSSProperties = { background: "rgba(18,31,41,.9)", border: "1px solid #63736f", color: "#ecdfbd" }
@@ -33,6 +35,9 @@ const button: CSSProperties = {
 function readHud(s: SignalState) {
   return {
     phase: s.phase,
+    x: s.x,
+    y: s.y,
+    angle: s.angle,
     health: s.health,
     heat: Math.round(s.heat),
     overheated: s.overheated,
@@ -52,10 +57,12 @@ export default function SignalLostGame() {
     canvas = useRef<HTMLCanvasElement>(null)
   const state = useRef(createSignalState()),
     keys = useRef(new Set<string>())
-  const touchInput = useRef({ ...EMPTY_INPUT }),
-    look = useRef<{ id: number; x: number } | null>(null)
+  const stick = useRef({ x: 0, y: 0 })
+  const mouseFire = useRef(false)
+  const look = useRef<{ id: number; x: number } | null>(null)
+  const [controlMode, setControlMode] = useGameControlMode("signal-lost")
   const queuedShot = useRef(false)
-  const heldControls = useRef(new Map<number, Partial<SignalInput>>())
+  const heldControls = useRef(new Map<number | string, Partial<SignalInput>>())
   const audio = useRef<AudioContext | null>(null),
     muted = useRef(false)
   const [hud, setHud] = useState(() => readHud(state.current)),
@@ -86,7 +93,8 @@ export default function SignalLostGame() {
 
   const releaseInput = useCallback(() => {
     keys.current.clear()
-    touchInput.current = { ...EMPTY_INPUT }
+    stick.current = { x: 0, y: 0 }
+    mouseFire.current = false
     look.current = null
     queuedShot.current = false
     heldControls.current.clear()
@@ -184,15 +192,9 @@ export default function SignalLostGame() {
     }
     const keyUp = (event: KeyboardEvent) => keys.current.delete(event.code)
     const pointerUp = (event: globalThis.PointerEvent) => {
-      const control = heldControls.current.get(event.pointerId)
-      if (control) {
-        for (const key of Object.keys(control) as (keyof SignalInput)[]) {
-          Object.assign(touchInput.current, { [key]: EMPTY_INPUT[key] })
-        }
-        heldControls.current.delete(event.pointerId)
-      }
+      heldControls.current.delete(event.pointerId)
       if (look.current?.id === event.pointerId) look.current = null
-      if (event.pointerType === "mouse") touchInput.current.fire = false
+      if (event.pointerType === "mouse") mouseFire.current = false
     }
     const moveMouse = (event: MouseEvent) => {
       if (document.pointerLockElement === el && state.current.phase === "playing")
@@ -224,15 +226,22 @@ export default function SignalLostGame() {
         beforeShot = s.cooldown,
         beforeHurt = s.hurt,
         beforeKills = s.kills
-      const input = touchInput.current,
-        pressed = (key: string) => (keys.current.has(key) ? 1 : 0)
+      const input = { ...EMPTY_INPUT, forward: -stick.current.y, strafe: stick.current.x, fire: mouseFire.current }
+      for (const control of Array.from(heldControls.current.values())) {
+        input.forward += control.forward || 0
+        input.strafe += control.strafe || 0
+        input.turn += control.turn || 0
+        input.fire ||= Boolean(control.fire)
+        input.sprint ||= Boolean(control.sprint)
+      }
+      const pressed = (key: string) => (keys.current.has(key) ? 1 : 0)
       if (activeRef.current) stepSignal(
         s,
         {
           forward: input.forward + pressed("KeyW") + pressed("ArrowUp") - pressed("KeyS") - pressed("ArrowDown"),
           strafe: input.strafe + pressed("KeyD") - pressed("KeyA"),
           turn: input.turn + pressed("ArrowRight") - pressed("ArrowLeft"),
-          sprint: keys.current.has("ShiftLeft") || keys.current.has("ShiftRight"),
+          sprint: input.sprint || keys.current.has("ShiftLeft") || keys.current.has("ShiftRight"),
           fire: input.fire || keys.current.has("Space") || queuedShot.current,
         },
         (now - last) / 1000,
@@ -273,10 +282,10 @@ export default function SignalLostGame() {
   }, [pause, releaseInput, tone])
 
   const lookStart = (event: PointerEvent<HTMLCanvasElement>) => {
-    if (state.current.phase !== "playing") return
+    if (state.current.phase !== "playing" || (look.current && look.current.id !== event.pointerId)) return
     event.currentTarget.focus()
     if (event.pointerType === "mouse") {
-      touchInput.current.fire = true
+      mouseFire.current = true
       queuedShot.current = true
       if (document.pointerLockElement !== event.currentTarget) {
         try {
@@ -303,9 +312,10 @@ export default function SignalLostGame() {
       type="button"
       aria-label={label}
       className="game-touch"
-      style={{ ...button, width: 52, height: 52, padding: 0, fontSize: 20, touchAction: "none", userSelect: "none", ...style }}
+      style={{ ...button, width: 48, height: 48, padding: 0, fontSize: 20, touchAction: "none", userSelect: "none", ...style }}
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
+        if (state.current.phase !== "playing") return
         event.preventDefault()
         heldControls.current.set(event.pointerId, value)
         try {
@@ -313,20 +323,27 @@ export default function SignalLostGame() {
         } catch {
           /* Window release clears this control. */
         }
-        Object.assign(touchInput.current, value)
         if (value.fire) queuedShot.current = true
       }}
-      onPointerUp={() => {
-        for (const key of Object.keys(value) as (keyof SignalInput)[])
-          Object.assign(touchInput.current, { [key]: EMPTY_INPUT[key] })
+      onPointerUp={(event) => { heldControls.current.delete(event.pointerId) }}
+      onPointerCancel={(event) => { heldControls.current.delete(event.pointerId) }}
+      onLostPointerCapture={(event) => { heldControls.current.delete(event.pointerId) }}
+      onKeyDown={(event) => {
+        if (event.key === " " || event.key === "Enter") {
+          event.preventDefault()
+          event.stopPropagation()
+          heldControls.current.set(label, value)
+          if (value.fire && !event.repeat) queuedShot.current = true
+        }
       }}
-      onPointerCancel={() => {
-        touchInput.current = { ...EMPTY_INPUT }
+      onKeyUp={(event) => {
+        if (event.key === " " || event.key === "Enter") {
+          event.preventDefault()
+          event.stopPropagation()
+          heldControls.current.delete(label)
+        }
       }}
-      onLostPointerCapture={() => {
-        for (const key of Object.keys(value) as (keyof SignalInput)[])
-          Object.assign(touchInput.current, { [key]: EMPTY_INPUT[key] })
-      }}
+      onBlur={() => { heldControls.current.delete(label) }}
     >
       {children}
     </button>
@@ -338,12 +355,15 @@ export default function SignalLostGame() {
       ref={root}
       data-game="signal-lost"
       data-phase={hud.phase}
+      data-player-x={hud.x.toFixed(3)}
+      data-player-y={hud.y.toFixed(3)}
+      data-player-angle={hud.angle.toFixed(3)}
       className="game-touch"
       style={{
         position: "relative",
         width: "100%",
         height: "100%",
-        minHeight: 220,
+        minHeight: 0,
         flex: "1 1 auto",
         overflow: "hidden",
         background: "#172633",
@@ -359,7 +379,7 @@ export default function SignalLostGame() {
           display: "block",
           width: "100%",
           height: "100%",
-          minHeight: 220,
+          minHeight: 0,
           touchAction: "none",
           outline: "none",
         }}
@@ -371,14 +391,17 @@ export default function SignalLostGame() {
             look.current.x = event.clientX
           }
         }}
-        onPointerUp={() => {
-          look.current = null
-          touchInput.current.fire = false
+        onPointerUp={(event) => {
+          if (look.current?.id === event.pointerId) look.current = null
+          if (event.pointerType === "mouse") mouseFire.current = false
         }}
-        onPointerCancel={releaseInput}
-        onLostPointerCapture={() => {
-          look.current = null
-          touchInput.current.fire = false
+        onPointerCancel={(event) => {
+          if (look.current?.id === event.pointerId) look.current = null
+          if (event.pointerType === "mouse") mouseFire.current = false
+        }}
+        onLostPointerCapture={(event) => {
+          if (look.current?.id === event.pointerId) look.current = null
+          if (event.pointerType === "mouse") mouseFire.current = false
         }}
       />
       <div style={{ position: "absolute", top: 14, left: 16, pointerEvents: "none", textShadow: "0 2px 6px #000" }}>
@@ -388,7 +411,7 @@ export default function SignalLostGame() {
             ? hud.wave === SIGNAL_WAVES && !hud.enemies
               ? "Reach the green exit on your map"
               : `${hud.wave}/${SIGNAL_WAVES} · ${SIGNAL_LEVELS[hud.wave - 1]} · ${hud.enemies} signals`
-            : "Brooklyn / Substation 04"}
+            : "East Side / Substation 04"}
         </div>
       </div>
       <div style={{ position: "absolute", right: 12, top: 12, display: "flex", gap: 6 }}>
@@ -470,27 +493,45 @@ export default function SignalLostGame() {
                   position: "absolute",
                   bottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
                   left: 14,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 52px)",
+                  display: "flex",
+                  flexDirection: "column",
                   gap: 6,
                   touchAction: "none",
                 }}
               >
-                <span />
-                {touchButton("Move forward", { forward: 1 }, "↑")}
-                <span />
-                {touchButton("Strafe left", { strafe: -1 }, "←")}
-                {touchButton("Move backward", { forward: -1 }, "↓")}
-                {touchButton("Strafe right", { strafe: 1 }, "→")}
+                {!compact && <GameControlChoice value={controlMode} onChange={(mode) => { releaseInput(); setControlMode(mode) }} />}
+                {controlMode === "stick" ? (
+                  <GameJoystick
+                    label="Move and strafe"
+                    size={compact ? 88 : 104}
+                    disabled={!windowActive || !active}
+                    resetKey={hud.phase}
+                    onChange={(value) => { stick.current = value }}
+                  />
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 48px)", gap: 4 }}>
+                    <span />
+                    {touchButton("Move forward", { forward: 1 }, "↑")}
+                    <span />
+                    {touchButton("Strafe left", { strafe: -1 }, "←")}
+                    {touchButton("Move backward", { forward: -1 }, "↓")}
+                    {touchButton("Strafe right", { strafe: 1 }, "→")}
+                  </div>
+                )}
               </div>
               <div
                 style={{
                   position: "absolute",
                   bottom: "calc(17px + env(safe-area-inset-bottom, 0px))",
                   right: 16,
+                  display: "flex",
+                  flexDirection: compact ? "row" : "column",
+                  alignItems: "center",
+                  gap: 6,
                   touchAction: "none",
                 }}
               >
+                {touchButton("Sprint", { sprint: true }, <span style={{ fontSize: 11 }}>Sprint</span>, { width: 60, height: 44 })}
                 {touchButton("Fire pulse blaster", { fire: true }, <Crosshair size={27} />, {
                   width: 72,
                   height: 72,
@@ -576,7 +617,7 @@ export default function SignalLostGame() {
                 : hud.phase === "paused"
                   ? "Line up the crosshair. Fire in short bursts. Service packs restore integrity and cool your blaster."
                   : hud.phase === "won"
-                    ? "The substation is quiet. Brooklyn has its signal back."
+                    ? "The substation is quiet. The neighborhood has its signal back."
                     : "Keep moving when a speaker glows amber. Use corners for cover, and let the coil cool between bursts."}
             </p>
             {(hud.phase === "won" || hud.phase === "lost") && (
@@ -589,6 +630,7 @@ export default function SignalLostGame() {
                 level={hud.wave}
               />
             )}
+            {touch && <div style={{ marginBottom: 12 }}><GameControlChoice value={controlMode} onChange={(mode) => { releaseInput(); setControlMode(mode) }} /></div>}
             <button
               type="button"
               onClick={() => play()}
@@ -617,7 +659,7 @@ export default function SignalLostGame() {
             )}
             <p style={{ fontSize: 10, lineHeight: 1.6, color: "#a2b1b8", margin: "16px 0 0" }}>
               {touch
-                ? "Left buttons move. Drag the view to aim. Right button fires."
+                ? "Choose a stick or arrows to move. Drag the view to aim. Hold Fire for bursts; Sprint to move faster."
                 : "WASD moves · Mouse / arrows aim · Click / Space fires · Shift sprints · P pauses"}
             </p>
           </div>

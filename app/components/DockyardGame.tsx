@@ -462,6 +462,7 @@ export default function DockyardGame() {
   const selectedRef = useRef<number[]>([])
   const placementRef = useRef<"workshop" | "sentry" | null>(null)
   const pointerRef = useRef<DockyardPoint | null>(null)
+  const gestureRef = useRef<{ id: number; x: number; y: number } | null>(null)
   const [hud, setHud] = useState({
     level: 1,
     scrap: 110,
@@ -578,17 +579,22 @@ export default function DockyardGame() {
       frame = requestAnimationFrame(animate)
     }
     frame = requestAnimationFrame(animate)
-    const onVisibility = () => {
-      if (document.hidden && stateRef.current.phase === "playing") {
+    const pauseInactive = () => {
+      gestureRef.current = null
+      pointerRef.current = null
+      if (stateRef.current.phase === "playing") {
         stateRef.current.phase = "paused"
         refreshHud()
       }
     }
+    const onVisibility = () => { if (document.hidden) pauseInactive() }
     document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("blur", pauseInactive)
     return () => {
       cancelAnimationFrame(frame)
       observer.disconnect()
       document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("blur", pauseInactive)
     }
   }, [])
 
@@ -690,9 +696,14 @@ export default function DockyardGame() {
       refreshHud()
       return
     }
+    const rect = event.currentTarget.getBoundingClientRect()
+    const scale = Math.min(rect.width / DOCKYARD_WIDTH, rect.height / DOCKYARD_HEIGHT)
+    // Preserve a finger-sized target even when the whole map is scaled to a phone.
+    const selectionRadius = event.pointerType === "mouse" ? 20 : Math.max(20, 22 / scale)
     const clicked = state.units
       .filter((unit) => unit.team === "crew")
-      .find((unit) => Math.hypot(unit.x - point.x, unit.y - point.y) < 20)
+      .filter((unit) => Math.hypot(unit.x - point.x, unit.y - point.y) < selectionRadius)
+      .sort((a, b) => Math.hypot(a.x - point.x, a.y - point.y) - Math.hypot(b.x - point.x, b.y - point.y))[0]
     if (clicked) {
       selectedRef.current = event.shiftKey ? Array.from(new Set([...selectedRef.current, clicked.id])) : [clicked.id]
       state.message =
@@ -737,7 +748,7 @@ export default function DockyardGame() {
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    minHeight: 40,
+    minHeight: 44,
     padding: "6px 9px",
     border: "1px solid #b2b39e",
     borderRadius: 3,
@@ -839,6 +850,8 @@ export default function DockyardGame() {
               border: "1px solid #6c8077",
               borderRadius: 3,
               padding: 5,
+              minWidth: 44,
+              minHeight: 44,
               background: "transparent",
               color: palette.paper,
               cursor: "pointer",
@@ -891,9 +904,27 @@ export default function DockyardGame() {
         <canvas
           ref={canvasRef}
           aria-label="Waterfront map. Select crew, then click salvage to gather or ground to move. Use crew command buttons on touch screens."
-          onPointerDown={handleMap}
-          onPointerMove={(event) => {
+          onPointerDown={(event) => {
+            if (stateRef.current.phase !== "playing" || gestureRef.current || event.button !== 0) return
+            gestureRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
             pointerRef.current = mapPoint(event)
+            event.currentTarget.setPointerCapture(event.pointerId)
+          }}
+          onPointerUp={(event) => {
+            const gesture = gestureRef.current
+            if (!gesture || gesture.id !== event.pointerId) return
+            gestureRef.current = null
+            if (placementRef.current || Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) < 12) handleMap(event)
+          }}
+          onPointerCancel={(event) => {
+            if (gestureRef.current?.id === event.pointerId) gestureRef.current = null
+            pointerRef.current = null
+          }}
+          onLostPointerCapture={(event) => {
+            if (gestureRef.current?.id === event.pointerId) gestureRef.current = null
+          }}
+          onPointerMove={(event) => {
+            if (!gestureRef.current || gestureRef.current.id === event.pointerId) pointerRef.current = mapPoint(event)
           }}
           onPointerLeave={() => {
             pointerRef.current = null

@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react"
-import { ArrowUp, ChevronLeft, ChevronRight, Disc3 } from "lucide-react"
+import { ArrowUp, ChevronLeft, ChevronRight, Disc3, Pause, Play } from "lucide-react"
 import { useWindowActivity } from "../../../components/ui/WindowShell"
+import GameJoystick from "../../../components/ui/GameJoystick"
+import GameControlChoice, { useGameControlMode } from "../../../components/ui/GameControlChoice"
 import {
   VIEW_H,
   VIEW_W,
@@ -38,9 +40,16 @@ const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Ma
 export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   const { active, minimized } = useWindowActivity()
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fieldRef = useRef<HTMLDivElement>(null)
+  const [fieldSize, setFieldSize] = useState({ width: 256, height: 160 })
   const stateRef = useRef(createCrateRun())
   const keysRef = useRef<CrateRunInput>({ left: false, right: false, jump: false })
   const touchesRef = useRef(new Map<number, Control>())
+  const jumpPendingRef = useRef(false)
+  const stickRef = useRef(0)
+  const [controlMode, setControlMode] = useGameControlMode("brooklyn-dig")
+  const [paused, setPaused] = useState(false)
+  const [compact, setCompact] = useState(false)
   const runningRef = useRef(active && !minimized)
   const clearedRef = useRef(onCleared)
   const [hud, setHud] = useState({ phase: stateRef.current.phase, records: 0, total: stateRef.current.totalRecords, seconds: 0 })
@@ -51,13 +60,54 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   }, [onCleared])
 
   useEffect(() => {
-    runningRef.current = active && !minimized
+    const query = window.matchMedia("(max-height: 520px) and (min-width: 600px)")
+    const sync = () => setCompact(query.matches)
+    sync()
+    query.addEventListener("change", sync)
+    return () => query.removeEventListener("change", sync)
+  }, [])
+
+  useEffect(() => {
+    const field = fieldRef.current
+    if (!field) return
+    const resize = () => {
+      const width = Math.min(field.clientWidth, field.clientHeight * VIEW_W / VIEW_H)
+      setFieldSize({ width, height: width * VIEW_H / VIEW_W })
+    }
+    resize()
+    const observer = new ResizeObserver(resize)
+    observer.observe(field)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    runningRef.current = active && !minimized && !paused
     if (!runningRef.current) {
       keysRef.current = { left: false, right: false, jump: false }
       touchesRef.current.clear()
+      jumpPendingRef.current = false
+      stickRef.current = 0
       setPressed({ left: false, right: false, jump: false })
     }
-  }, [active, minimized])
+  }, [active, minimized, paused])
+
+  useEffect(() => {
+    const blur = () => {
+      keysRef.current = { left: false, right: false, jump: false }
+      touchesRef.current.clear()
+      jumpPendingRef.current = false
+      stickRef.current = 0
+      setPressed({ left: false, right: false, jump: false })
+      setPaused(true)
+    }
+    const hidden = () => { if (document.hidden) blur() }
+    window.addEventListener("blur", blur)
+    document.addEventListener("visibilitychange", hidden)
+    return () => {
+      window.removeEventListener("blur", blur)
+      document.removeEventListener("visibilitychange", hidden)
+    }
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -74,10 +124,13 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
     const input = (): CrateRunInput => {
       const touch = { left: false, right: false, jump: false }
       touchesRef.current.forEach((control) => (touch[control] = true))
+      // A quick tap can finish between simulation steps; retain its rising edge.
+      const jump = jumpPendingRef.current || keysRef.current.jump || touch.jump
+      jumpPendingRef.current = false
       return {
-        left: keysRef.current.left || touch.left,
-        right: keysRef.current.right || touch.right,
-        jump: keysRef.current.jump || touch.jump,
+        left: keysRef.current.left || touch.left || stickRef.current < -0.12,
+        right: keysRef.current.right || touch.right || stickRef.current > 0.12,
+        jump,
       }
     }
 
@@ -123,14 +176,21 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   useEffect(() => {
     if (!active || minimized) return
     const handle = (event: KeyboardEvent, down: boolean) => {
-      const control = KEY_CONTROLS[event.code]
-      if (!control) return
       // Keys can target window or document, which have no closest().
       const target = event.target instanceof Element ? event.target : null
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return
+      if (["KeyP", "Escape"].includes(event.code)) {
+        event.preventDefault()
+        if (down && !event.repeat) setPaused((value) => !value)
+        return
+      }
+      const control = KEY_CONTROLS[event.code]
+      if (!control) return
       // Let Space/arrows activate a focused button rather than steal it.
       if (target?.tagName === "BUTTON" && (event.code === "Space" || event.code === "Enter")) return
+      if (paused && down) return
       event.preventDefault()
+      if (control === "jump" && down && !event.repeat) jumpPendingRef.current = true
       keysRef.current = { ...keysRef.current, [control]: down }
     }
     const onDown = (event: KeyboardEvent) => handle(event, true)
@@ -141,8 +201,9 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
       window.removeEventListener("keydown", onDown)
       window.removeEventListener("keyup", onUp)
       keysRef.current = { left: false, right: false, jump: false }
+      jumpPendingRef.current = false
     }
-  }, [active, minimized])
+  }, [active, minimized, paused])
 
   const syncPressed = () => {
     const next = { left: false, right: false, jump: false }
@@ -152,7 +213,9 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
 
   const press = (control: Control) => (event: ReactPointerEvent<HTMLButtonElement>) => {
     event.preventDefault()
+    if (!runningRef.current) return
     touchesRef.current.set(event.pointerId, control)
+    if (control === "jump") jumpPendingRef.current = true
     try {
       event.currentTarget.setPointerCapture(event.pointerId)
     } catch {
@@ -162,7 +225,9 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   }
 
   const release = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const control = touchesRef.current.get(event.pointerId)
     if (!touchesRef.current.delete(event.pointerId)) return
+    if (control === "jump" && event.type !== "pointerup") jumpPendingRef.current = false
     syncPressed()
   }
 
@@ -171,11 +236,30 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   const controlButton = (control: Control, label: string, icon: ReactNode, width: number) => (
     <button
       type="button"
+      disabled={!active || minimized || paused || hud.phase === "cleared"}
       aria-label={label}
       onPointerDown={press(control)}
       onPointerUp={release}
       onPointerCancel={release}
       onLostPointerCapture={release}
+      onKeyDown={(event) => {
+        if (event.code !== "Space" && event.code !== "Enter") return
+        event.preventDefault()
+        event.stopPropagation()
+        if (!runningRef.current) return
+        if (control === "jump" && !event.repeat) jumpPendingRef.current = true
+        keysRef.current = { ...keysRef.current, [control]: true }
+      }}
+      onKeyUp={(event) => {
+        if (event.code !== "Space" && event.code !== "Enter") return
+        event.preventDefault()
+        event.stopPropagation()
+        keysRef.current = { ...keysRef.current, [control]: false }
+      }}
+      onBlur={() => { keysRef.current = { ...keysRef.current, [control]: false } }}
+      onClick={(event) => {
+        if (control === "jump" && event.detail === 0 && runningRef.current) jumpPendingRef.current = true
+      }}
       onContextMenu={(event) => event.preventDefault()}
       className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       style={{
@@ -200,7 +284,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   )
 
   return (
-    <div className="game-touch" style={{ display: "flex", flexDirection: "column", gap: 10, background: PALETTE.ink, padding: 10 }}>
+    <div data-game="brooklyn-dig" data-phase={paused ? "paused" : hud.phase} className="game-touch" style={{ display: "grid", height: compact ? "100%" : undefined, minHeight: 0, gridTemplateColumns: compact ? "minmax(0, 1fr) 190px" : "minmax(0, 1fr)", gridTemplateRows: compact ? "44px minmax(0, 1fr)" : "44px auto auto", gap: 10, background: PALETTE.ink, padding: 10 }}>
       <div
         style={{
           display: "flex",
@@ -211,6 +295,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
           fontSize: 13,
           letterSpacing: "0.04em",
+          gridColumn: compact ? "1 / -1" : undefined,
         }}
       >
         <span>
@@ -225,20 +310,24 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
           <span className="sr-only">Time:</span>
           {formatTime(hud.seconds)}
         </span>
+        <button type="button" aria-label={paused ? "Resume Downtown Dig" : "Pause Downtown Dig"} onClick={() => setPaused(!paused)} style={{ minWidth: 44, minHeight: 44, display: "grid", placeItems: "center", color: PALETTE.cream, background: PALETTE.navy, borderRadius: 6 }}>
+          {paused ? <Play size={18} /> : <Pause size={18} />}
+        </button>
       </div>
 
-      <div style={{ position: "relative", width: "100%", aspectRatio: `${VIEW_W} / ${VIEW_H}`, borderRadius: 6, overflow: "hidden", border: `2px solid ${PALETTE.navy}` }}>
+      <div ref={fieldRef} style={{ minWidth: 0, minHeight: 0, aspectRatio: compact ? undefined : `${VIEW_W} / ${VIEW_H}`, maxHeight: compact ? undefined : "calc(100dvh - 330px)", display: "grid", placeItems: "center" }}>
+      <div style={{ position: "relative", width: fieldSize.width, height: fieldSize.height, borderRadius: 6, overflow: "hidden", background: PALETTE.navyDeep, border: `2px solid ${PALETTE.navy}` }}>
         <canvas
           ref={canvasRef}
           width={VIEW_W * RENDER_SCALE}
           height={VIEW_H * RENDER_SCALE}
           role="img"
-          aria-label="Brooklyn Dig: a side-scrolling street level ending at Raf's Records"
+          aria-label="Downtown Dig: a side-scrolling street level ending at Raf's Records"
           onPointerDown={start}
-          style={{ display: "block", width: "100%", height: "100%", imageRendering: "pixelated", touchAction: "none" }}
+          style={{ display: "block", width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated", touchAction: "none" }}
         />
 
-        {hud.phase === "ready" && (
+        {(hud.phase === "ready" || paused) && (
           <div
             style={{
               position: "absolute",
@@ -246,26 +335,28 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "safe center",
               gap: 8,
               padding: 12,
               background: "rgba(18, 24, 38, 0.72)",
               color: PALETTE.cream,
               textAlign: "center",
+              overflowY: "auto",
             }}
           >
             <p style={{ margin: 0, fontFamily: "ui-monospace, Menlo, monospace", fontSize: 11, letterSpacing: "0.2em", color: PALETTE.amber }}>
-              SECRET LEVEL UNLOCKED
+              {paused ? "TAKE A BREATHER" : "SECRET LEVEL UNLOCKED"}
             </p>
             <h2 className="text-balance" style={{ margin: 0, fontSize: 22, lineHeight: 1.1, fontWeight: 800 }}>
-              Brooklyn Dig
+              Downtown Dig
             </h2>
             <p className="text-pretty" style={{ margin: 0, maxWidth: 260, fontSize: 13, lineHeight: 1.45 }}>
               Run to Raf&apos;s Records. Every record you grab makes the crate deeper.
             </p>
+            <GameControlChoice value={controlMode} onChange={(mode) => { touchesRef.current.clear(); jumpPendingRef.current = false; stickRef.current = 0; syncPressed(); setControlMode(mode) }} />
             <button
               type="button"
-              onClick={start}
+              onClick={() => { setPaused(false); start() }}
               className="hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               style={{
                 minHeight: 44,
@@ -281,7 +372,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
                 outlineColor: PALETTE.cream,
               }}
             >
-              Start
+              {paused ? "Resume" : "Start"}
             </button>
           </div>
         )}
@@ -309,18 +400,22 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
           </div>
         )}
       </div>
+      </div>
 
+      <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0, gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ display: "flex", gap: 10 }}>
+        {controlMode === "stick" ? (
+          <GameJoystick label="Downtown Dig run stick" axis="horizontal" size={96} disabled={!active || minimized || paused || hud.phase === "cleared"} onChange={({ x }) => { stickRef.current = x }} />
+        ) : <div style={{ display: "flex", gap: 10 }}>
           {controlButton("left", "Move left", <ChevronLeft size={28} aria-hidden="true" />, 60)}
           {controlButton("right", "Move right", <ChevronRight size={28} aria-hidden="true" />, 60)}
-        </div>
+        </div>}
         {controlButton("jump", "Jump", <ArrowUp size={28} aria-hidden="true" />, 76)}
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <p style={{ margin: 0, fontSize: 12, lineHeight: 1.4, color: PALETTE.cream, opacity: 0.75 }}>
-          Arrows or WASD to run, Space to jump. Stomp the scratched CDs.
+          {compact ? "Run + Jump. P to pause." : `${controlMode === "stick" ? "Stick" : "Arrows"} to run; hold Jump for a higher leap. Keyboard: A D / Space. Pause to change controls.`}
         </p>
         <button
           type="button"
@@ -330,6 +425,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
         >
           Skip to the crate
         </button>
+      </div>
       </div>
     </div>
   )

@@ -1145,7 +1145,7 @@ export default function IPodPlayer() {
                   >
                     <strong>Raffi Khatchadourian</strong>
                     <p style={{ marginTop: 5 }}>
-                      Field CTO at IBM. Co-founder of Bad Company and indify. Brooklyn, New York.
+                      DJ, builder, and co-founder of Bad Company and indify. Field CTO at IBM. New York.
                     </p>
                     <p style={{ marginTop: 8 }}>Building AI products, digging for vinyl, and DJing with friends.</p>
                     <a

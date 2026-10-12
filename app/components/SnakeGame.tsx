@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import Leaderboard from "./Leaderboard"
 import GameOverScreen from "./GameOverScreen"
 import GameControls from "./GameControls"
+import { useGameControlMode } from "../../components/ui/GameControlChoice"
 import HandheldConsole from "../../components/ui/HandheldConsole"
 import { useWindowActivity } from "../../components/ui/WindowShell"
 import {
@@ -35,6 +36,7 @@ const CANVAS_SIZE = 400
 
 export default function SnakeGame() {
   const { active } = useWindowActivity()
+  const [controlMode, setControlMode] = useGameControlMode("snake")
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [gameView, setGameView] = useState<GameView>("menu")
   const [score, setScore] = useState(0)
@@ -59,8 +61,12 @@ export default function SnakeGame() {
   }, [])
 
   useEffect(() => {
-    if (!active) setGameView((view) => (view === "playing" ? "paused" : view))
-    const pause = () => setGameView((view) => (view === "playing" ? "paused" : view))
+    const pause = () => {
+      touchStartRef.current = null
+      turnsRef.current = []
+      setGameView((view) => (view === "playing" ? "paused" : view))
+    }
+    if (!active) pause()
     const visibility = () => {
       if (document.hidden) pause()
     }
@@ -71,6 +77,13 @@ export default function SnakeGame() {
       document.removeEventListener("visibilitychange", visibility)
     }
   }, [active])
+
+  useEffect(() => {
+    if (gameView !== "playing") {
+      turnsRef.current = []
+      touchStartRef.current = null
+    }
+  }, [gameView])
 
   // Load progress
   useEffect(() => {
@@ -179,33 +192,23 @@ export default function SnakeGame() {
     return () => window.removeEventListener("keydown", handleKeyPress)
   }, [gameView, startGame, active, queueTurn])
 
-  // Touch controls
+  // Short swipes turn as soon as the thumb moves, without waiting for lift-off.
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (!active || e.touches.length !== 1) return
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
   }
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!active || gameView !== "playing" || !touchStartRef.current || e.touches.length !== 1) return
+    const touch = e.touches[0]
+    const dx = touch.clientX - touchStartRef.current.x
+    const dy = touch.clientY - touchStartRef.current.y
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return
+    queueTurn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "RIGHT" : "LEFT") : (dy > 0 ? "DOWN" : "UP"))
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+  }
 
-    const dx = e.changedTouches[0].clientX - touchStartRef.current.x
-    const dy = e.changedTouches[0].clientY - touchStartRef.current.y
-
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-      if (gameView !== "playing") startGame()
-      touchStartRef.current = null
-      return
-    }
-
-    if (gameView === "playing") {
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 30) queueTurn("RIGHT")
-        else if (dx < -30) queueTurn("LEFT")
-      } else {
-        if (dy > 30) queueTurn("DOWN")
-        else if (dy < -30) queueTurn("UP")
-      }
-    }
-
+  const handleTouchEnd = () => {
     touchStartRef.current = null
   }
 
@@ -248,7 +251,7 @@ export default function SnakeGame() {
 
   // Game loop
   useEffect(() => {
-    if (gameView !== "playing") return
+    if (gameView !== "playing" || !active) return
 
     const config = getLevelConfig(level)
 
@@ -278,7 +281,7 @@ export default function SnakeGame() {
       clearInterval(interval)
       if (gameLoopRef.current === interval) gameLoopRef.current = undefined
     }
-  }, [gameView, food, level, score, obstacles, handleGameOver])
+  }, [gameView, food, level, score, obstacles, handleGameOver, active])
 
   // Draw game
   useEffect(() => {
@@ -305,7 +308,7 @@ export default function SnakeGame() {
       ctx.textAlign = "center"
       ctx.fillText("SNAKE", CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 60)
       ctx.font = "16px monospace"
-      ctx.fillText("Swipe or Arrows to Move", CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 10)
+      ctx.fillText("Stick, Swipe or Arrows", CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 10)
       ctx.fillText("Tap to Start", CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 20)
       ctx.font = "14px monospace"
       ctx.fillText(`High Score: ${highScore}`, CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 60)
@@ -342,6 +345,7 @@ export default function SnakeGame() {
     <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto px-2">
       {(gameView === "playing" || gameView === "paused") && (
         <GameControls
+          compact
           isPaused={gameView === "paused"}
           onPause={() => setGameView("paused")}
           onResume={() => setGameView("playing")}
@@ -355,6 +359,16 @@ export default function SnakeGame() {
 
       <HandheldConsole
         title="Snake"
+        controlMode={controlMode}
+        onControlModeChange={(mode) => {
+          turnsRef.current = []
+          setControlMode(mode)
+        }}
+        controlsDisabled={!active || gameView !== "playing"}
+        onStick={({ x, y }) => {
+          if (!active || gameView !== "playing" || Math.max(Math.abs(x), Math.abs(y)) < 0.3) return
+          queueTurn(Math.abs(x) > Math.abs(y) ? (x > 0 ? "RIGHT" : "LEFT") : (y > 0 ? "DOWN" : "UP"))
+        }}
         paused={gameView === "paused"}
         onStart={() => {
           if (gameView === "playing") setGameView("paused")
@@ -375,7 +389,10 @@ export default function SnakeGame() {
               className="w-full h-full"
               style={{ imageRendering: "pixelated", touchAction: "none" }}
               onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
+              aria-label="Snake playfield. Swipe, use the movement stick, or press arrow keys to turn."
               onClick={() => gameView === "menu" && startGame()}
             />
           </div>
@@ -425,7 +442,7 @@ export default function SnakeGame() {
 
       <div className="text-sm text-gray-600 font-mono text-center">
         <span className="hidden md:inline">Arrow Keys to Move • Level up every 100 pts</span>
-        <span className="md:hidden">Swipe to Move</span>
+        <span className="md:hidden">Stick, buttons or swipe to turn</span>
       </div>
     </div>
   )

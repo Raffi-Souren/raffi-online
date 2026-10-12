@@ -325,6 +325,8 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   width: 45%;
   height: 58%;
   pointer-events: auto;
+  touch-action: none;
+  user-select: none;
 }
 
 #stick-base {
@@ -889,6 +891,14 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
 #btn-zoom-in, #btn-zoom-out { position: absolute; right: 186px; bottom: 0; }
 #btn-zoom-in { bottom: 52px; }
 
+/* Keep phone actions beside the movement thumb, with zoom above the cluster. */
+@media (max-width: 600px) {
+  #buttons { grid-template-columns: repeat(2, 64px); gap: 8px; right: calc(12px + var(--safe-r)); bottom: calc(16px + var(--safe-b)); }
+  #buttons .tbtn { width: 64px; height: 64px; font-size: 10px; }
+  #buttons .zoom { width: 44px; height: 44px; font-size: 22px; right: 0; bottom: calc(100% + 8px); }
+  #buttons #btn-zoom-in { right: 52px; }
+}
+
 /* Keep both thumb clusters clear in a short landscape viewport. */
 @media (max-height: 540px) and (min-width: 601px) {
   #hud:has(#touch:not(.hidden)) #buttons { grid-template-columns: repeat(3, 54px); gap: 8px; right: calc(12px + var(--safe-r)); bottom: calc(12px + var(--safe-b)); }
@@ -897,7 +907,7 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   #hud:has(#touch:not(.hidden)) #btn-second { grid-column: 2; grid-row: 1; }
   #hud:has(#touch:not(.hidden)) #btn-handbrake { grid-column: 1; grid-row: 1; }
   #hud:has(#touch:not(.hidden)) #btn-exit { grid-column: 3; grid-row: 2; }
-  #hud:has(#touch:not(.hidden)) #buttons .zoom { right: 0; bottom: 130px; width: 44px; height: 44px; font-size: 20px; }
+  #hud:has(#touch:not(.hidden)) #buttons .zoom { right: 0; bottom: calc(100% + 8px); width: 44px; height: 44px; font-size: 20px; }
   #hud:has(#touch:not(.hidden)) #btn-zoom-in { right: 52px; }
   #hud:has(#touch:not(.hidden)) #subtitle { width: min(420px, calc(100vw - 420px)); bottom: calc(16px + var(--safe-b)); min-height: 0; padding: 12px; border-width: 2px; box-shadow: 3px 3px 0 var(--speaker-accent); }
   #hud:has(#touch:not(.hidden)) #subtitle-text { font-size: 13px; }

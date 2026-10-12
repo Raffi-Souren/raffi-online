@@ -75,6 +75,8 @@ interface WindowShellProps {
   maxWidth?: string
   /** Trim chrome so full-bleed apps remain usable in short landscape views. */
   compact?: boolean
+  /** Games can temporarily use the viewport while retaining their mounted state. */
+  immersive?: boolean
   /** Override context activity when a shell is used without a provider. */
   active?: boolean
   /** Override the context stacking layer when needed by a standalone caller. */
@@ -131,6 +133,7 @@ export default function WindowShell({
   fullBleed = false,
   maxWidth = "1024px",
   compact = false,
+  immersive = false,
   active,
   layer,
   onActivate,
@@ -146,7 +149,7 @@ export default function WindowShell({
   const shellLayer = layer ?? activity.layer
   const activate = onActivate ?? activity.onActivate
   const minimize = onMinimize ?? activity.onMinimize
-  const edgeInset = compact ? "0px" : "8px"
+  const edgeInset = compact || immersive ? "0px" : "8px"
   const windowRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll while window is open
@@ -260,11 +263,11 @@ export default function WindowShell({
           top: `max(${edgeInset}, env(safe-area-inset-top, 0px))`,
           left: `max(${edgeInset}, env(safe-area-inset-left, 0px))`,
           right: `max(${edgeInset}, env(safe-area-inset-right, 0px))`,
-          bottom: `calc(${compact ? "42px" : "48px"} + env(safe-area-inset-bottom, 0px))`,
+          bottom: `calc(${immersive ? "0px" : compact ? "42px" : "48px"} + env(safe-area-inset-bottom, 0px))`,
           maxHeight: `calc(100dvh - max(${edgeInset}, env(safe-area-inset-top, 0px)) - ${
-            compact ? "42px" : "48px"
+            immersive ? "0px" : compact ? "42px" : "48px"
           } - env(safe-area-inset-bottom, 0px))`,
-          zIndex: shellLayer + 1,
+          zIndex: immersive && isActive ? 11000 + shellLayer : shellLayer + 1,
           display: hidden ? "none" : "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -287,17 +290,17 @@ export default function WindowShell({
           style={{
             backgroundColor: "#ffffff",
             color: "#111827",
-            borderRadius: "10px",
+            borderRadius: immersive ? 0 : "10px",
             border: terminalChrome ? "1px solid #34433a" : crateChrome ? "1px solid #c59621" : "1px solid #6495da",
             boxShadow: terminalChrome ? "0 24px 80px rgba(0, 0, 0, 0.55)" : "0 24px 72px rgba(12, 32, 64, 0.38)",
             display: "flex",
             flexDirection: "column",
             width: "100%",
-            maxWidth: maximized ? "100%" : maxWidth,
+            maxWidth: maximized || immersive ? "100%" : maxWidth,
             // A definite height is what lets `height: 100%` resolve further
             // down. Without it the dialog sizes to content and every nested
             // percentage height silently collapses to auto.
-            height: fill || maximized ? "100%" : undefined,
+            height: fill || maximized || immersive ? "100%" : undefined,
             maxHeight: "100%",
             pointerEvents: "auto",
             overflow: "hidden",
@@ -316,7 +319,7 @@ export default function WindowShell({
               minHeight: terminalChrome || compact ? "44px" : "52px",
               borderBottom: terminalChrome ? "1px solid #34433a" : crateChrome ? "1px solid #c59621" : "1px solid #17449f",
               boxShadow: terminalChrome ? undefined : "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
-              display: "flex",
+              display: immersive ? "none" : "flex",
               alignItems: "center",
               justifyContent: "center",
               borderTopLeftRadius: "9px",

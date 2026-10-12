@@ -33,13 +33,13 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
   if (!isOpen) return null
 
   const menuItems = [
-    { icon: "👤", label: "About", action: () => onOpenWindow("about") },
-    { icon: "🌐", label: "Blogroll", action: () => onOpenWindow("blogroll") },
-    { icon: "🎮", label: "Games", action: () => onOpenWindow("games") },
-    { icon: "🎧", label: "iPod", action: () => onOpenWindow("ipod") },
-    { icon: "🛠️", label: "Projects", action: () => onOpenWindow("projects") },
-    { icon: "📝", label: "Notes", action: () => onOpenWindow("notes") },
-    { icon: "💡", label: "RAF OS TERMINAL", action: () => onOpenWindow("startup") },
+    { icon: "👤", label: "About", description: "A little about me", action: () => onOpenWindow("about") },
+    { icon: "🌐", label: "Blogroll", description: "Sites and people I follow", action: () => onOpenWindow("blogroll") },
+    { icon: "🎮", label: "Games", description: "Pick up and play", action: () => onOpenWindow("games") },
+    { icon: "🎧", label: "iPod", description: "Mixes & music", action: () => onOpenWindow("ipod") },
+    { icon: "🛠️", label: "Projects", description: "Things I’m making", action: () => onOpenWindow("projects") },
+    { icon: "📝", label: "Notes", description: "Writing, research & talks", action: () => onOpenWindow("notes") },
+    { icon: "💡", label: "RAF OS TERMINAL", description: "Try my pitch-review tool", action: () => onOpenWindow("startup") },
   ]
 
   return (
@@ -138,6 +138,8 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
               key={index}
               ref={index === 0 ? firstItemRef : undefined}
               role="menuitem"
+              aria-label={item.label}
+              aria-describedby={`start-description-${index}`}
               onClick={item.action}
               style={{
                 width: "100%",
@@ -163,7 +165,10 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
               <span style={{ fontSize: "1.125rem" }} aria-hidden="true">
                 {item.icon}
               </span>
-              <span>{item.label}</span>
+              <span style={{ display: "grid", gap: 2 }}>
+                <span>{item.label}</span>
+                <span id={`start-description-${index}`} style={{ fontSize: 10, fontWeight: 400, color: "#dce9ff" }}>{item.description}</span>
+              </span>
             </button>
           ))}
         </div>

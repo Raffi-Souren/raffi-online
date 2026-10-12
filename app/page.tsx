@@ -9,6 +9,7 @@ import StartMenu from "../components/ui/StartMenu"
 import DesktopContextMenu from "../components/ui/DesktopContextMenu"
 import Taskbar from "./components/Taskbar"
 import NowPlaying from "./components/NowPlaying"
+import DesktopWelcome from "./components/DesktopWelcome"
 import WindowShell, { WindowActivityProvider } from "../components/ui/WindowShell"
 
 const AboutWindow = dynamic(() => import("./components/AboutWindow"))
@@ -23,13 +24,13 @@ const RaffiWorldWindow = dynamic(() => import("./components/RaffiWorldWindow"))
 const RafOsTerminal = dynamic(() => import("./components/RafOsTerminal"))
 
 const DESKTOP_SHORTCUTS = [
-  { action: "about", icon: "👤", label: "ABOUT" },
-  { action: "blogroll", icon: "🌐", label: "BLOGROLL" },
-  { action: "games", icon: "🎮", label: "GAMES" },
-  { action: "notes", icon: "📝", label: "NOTES" },
-  { action: "ipod", icon: "🎧", label: "iPod" },
-  { action: "projects", icon: "🛠️", label: "PROJECTS" },
-  { action: "startup", icon: "💡", label: "RAF OS TERMINAL" },
+  { action: "about", icon: "👤", label: "ABOUT", description: "A little about me" },
+  { action: "blogroll", icon: "🌐", label: "BLOGROLL", description: "Sites and people I follow" },
+  { action: "games", icon: "🎮", label: "GAMES", description: "Pick up and play" },
+  { action: "notes", icon: "📝", label: "NOTES", description: "Writing, research & talks" },
+  { action: "ipod", icon: "🎧", label: "iPod", description: "Mixes & music" },
+  { action: "projects", icon: "🛠️", label: "PROJECTS", description: "Things I’m making" },
+  { action: "startup", icon: "💡", label: "RAF OS TERMINAL", description: "Try my pitch-review tool" },
 ] as const
 
 // Keep every window in a stable DOM slot. Visual ordering is supplied through
@@ -50,6 +51,7 @@ const WINDOW_SLOTS = [
 
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
+  const [welcomeCollapsed, setWelcomeCollapsed] = useState(false)
   const [openWindows, setOpenWindows] = useState<Record<string, boolean>>({
     about: false,
     games: false,
@@ -299,14 +301,17 @@ export default function Home() {
       <DesktopContextMenu onOpenWindow={openWindow} />
 
       <div data-desktop-icons="true" className="desktop-shortcuts">
+        <DesktopWelcome collapsed={welcomeCollapsed} onCollapsedChange={setWelcomeCollapsed} onAbout={() => openWindow("about")} onExplore={() => {
+          document.querySelector<HTMLButtonElement>('[data-desktop-app="ipod"] button')?.focus({ preventScroll: false })
+        }} />
         {DESKTOP_SHORTCUTS.map((shortcut) => (
           <div key={shortcut.action} data-desktop-app={shortcut.action} className={`desktop-shortcut desktop-shortcut-${shortcut.action}`}>
-            <DesktopIcon label={shortcut.label} icon={shortcut.icon} onClick={() => handleIconClick(shortcut.action)} />
+            <DesktopIcon label={shortcut.label} description={shortcut.description} icon={shortcut.icon} onClick={() => handleIconClick(shortcut.action)} />
           </div>
         ))}
       </div>
 
-      <QuestionBlock active={activeWindow === null} onClick={handleEasterEggClick} />
+      <QuestionBlock active={welcomeCollapsed && activeWindow === null && !showStartMenu} onClick={handleEasterEggClick} />
 
       {/* Now Playing Component */}
       <NowPlaying />

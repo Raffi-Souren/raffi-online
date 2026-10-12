@@ -238,3 +238,16 @@ test("a predictive paddle can clear the entire campaign through normal input wit
   assert.equal(g.level, 34)
   assert.ok(g.score > 50000)
 })
+
+
+test("analog paddle steering is proportional, releases cleanly, and permits drag afterward", () => {
+  const g = createBrickbreaker()
+  startBrickbreaker(g)
+  stepBrickbreaker(g, { move: 0.25 }, 0.1)
+  assert.ok(Math.abs(g.paddle - 190.5) < 0.001)
+  const released = g.paddle
+  stepBrickbreaker(g, { move: 0 }, 0.1)
+  assert.equal(g.paddle, released)
+  stepBrickbreaker(g, { target: 240 }, 0.1)
+  assert.equal(g.paddle, 240)
+})

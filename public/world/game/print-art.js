@@ -23,7 +23,7 @@ export function drawPrintArt(ctx, design, layers = null, active = null, guides =
       ctx.translate(paper.x + offset.x, paper.y + offset.y); ctx.scale(paper.w / 468, paper.h / 610)
       ctx.fillStyle = colors[layer]; ctx.strokeStyle = colors[layer]; ctx.lineWidth = 3
       if (layer === 0) {
-        ctx.fillRect(28, 27, 412, 5); ctx.font = 'bold 11px sans-serif'; ctx.fillText('NEIGHBORHOOD EDITIONS    /    BROOKLYN, NY', 29, 51)
+        ctx.fillRect(28, 27, 412, 5); ctx.font = 'bold 11px sans-serif'; ctx.fillText('NEIGHBORHOOD EDITIONS    /    NEW YORK', 29, 51)
         ctx.font = '900 45px sans-serif'
         const words = design.title.toUpperCase().split(/\s+/); let line = '', y = 112
         for (const word of words) { if (ctx.measureText(line + ' ' + word).width > 405 && line) { ctx.fillText(line, 28, y); line = word; y += 47 } else line += (line ? ' ' : '') + word }

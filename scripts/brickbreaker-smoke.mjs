@@ -7,12 +7,13 @@ const base = process.env.RAFFI_APP_URL || "http://127.0.0.1:3000"
 const out = process.env.RAFFI_QA_OUTPUT_DIR || "/tmp/brickbreaker-qa"
 await fs.mkdir(out, { recursive: true })
 const report = { checks: [], errors: [], publicPosts: 0 }
-const browser = await chromium.launch({ headless: true })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH })
 try {
   for (const [name, width, height] of [
     ["desktop", 1280, 900],
     ["phone", 390, 844],
     ["small-phone", 360, 800],
+    ["short-phone", 375, 667],
     ["landscape", 844, 390],
   ]) {
     const context = await browser.newContext({
@@ -81,6 +82,36 @@ try {
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
     }
     assert.ok((await position()).paddle > serving.paddle + 20, "keyboard or relative touch steering failed")
+    await game.getByRole("button", { name: "Pause Brickbreaker", exact: true }).click()
+    await game.getByRole("button", { name: "Thumbstick", exact: true }).click()
+    await game.getByRole("button", { name: "Resume", exact: true }).click()
+    const stick = game.getByRole("group", { name: "Paddle movement stick", exact: true })
+    await stick.scrollIntoViewIfNeeded()
+    const stickBox = await stick.boundingBox()
+    const beforeStick = await position()
+    if (name === "desktop") {
+      await page.mouse.move(stickBox.x + stickBox.width * 0.2, stickBox.y + stickBox.height / 2)
+      await page.mouse.down()
+      await page.waitForTimeout(160)
+      await page.mouse.up()
+    } else {
+      const cdp = await context.newCDPSession(page)
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: stickBox.x + stickBox.width * 0.2, y: stickBox.y + stickBox.height / 2, id: 2 }],
+      })
+      await page.waitForTimeout(160)
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
+    }
+    const afterStick = await position()
+    assert.ok(afterStick.paddle < beforeStick.paddle - 20, "thumbstick must steer the paddle")
+    await page.waitForTimeout(120)
+    assert.equal((await position()).paddle, afterStick.paddle, "released thumbstick must stop steering")
+    await game.getByRole("button", { name: "Pause Brickbreaker", exact: true }).click()
+    await game.getByRole("button", { name: "Buttons", exact: true }).click()
+    assert.equal(await game.getByRole("button", { name: "Move paddle left", exact: true }).count(), 1)
+    await game.getByRole("button", { name: "Thumbstick", exact: true }).click()
+    await game.getByRole("button", { name: "Resume", exact: true }).click()
     await game.getByRole("button", { name: "Launch or fire", exact: true }).click()
     await page.waitForTimeout(450)
     assert.ok((await position()).y < serving.y - 50, "launch did not send the ball upward")
@@ -99,12 +130,21 @@ try {
     const fireBounds = await game.getByRole("button", { name: "Launch or fire", exact: true }).boundingBox()
     assert.ok(fieldBounds.y >= 0 && fieldBounds.y + fieldBounds.height <= height - 40, "playfield is clipped by the taskbar")
     assert.ok(fireBounds.y + fireBounds.height <= height - 40, "fire control is clipped by the taskbar")
+    if (name !== "landscape") assert.ok(fieldBounds.width >= (name === "desktop" ? 360 : 250), `${name} playfield is too small: ${fieldBounds.width}`)
+    const initialArea = fieldBounds.width * fieldBounds.height
+    await page.getByRole("button", { name: "Expand game", exact: true }).click()
+    await page.waitForTimeout(250)
+    const expandedBounds = await canvas.boundingBox()
+    assert.ok(expandedBounds.width * expandedBounds.height >= initialArea, "expanded view must not shrink the board")
+    await page.screenshot({ path: `${out}/${name}-expanded.png` })
+    await page.getByRole("button", { name: "Exit expanded view", exact: true }).click()
+    await page.waitForTimeout(200)
     await canvas.focus()
     await page.keyboard.press("p")
     await game.getByRole("button", { name: "Restart run", exact: true }).click()
     await page.waitForTimeout(150)
     assert.equal(await game.locator("[data-bb-score]").innerText(), "0")
-    assert.match(await game.getByLabel("Game status").innerText(), /3\s*\/\s*0/)
+    assert.match(await game.getByLabel("Game status").innerText(), /3\s*lives \/\s*0/)
     assert.equal((await position()).paddle, 180)
     await game.getByRole("button", { name: "Pause Brickbreaker", exact: true }).click()
     await game.getByRole("button", { name: "Menu", exact: true }).click()
@@ -117,7 +157,7 @@ try {
     await game.getByText("PRACTICE · 01 / First contact", { exact: true }).waitFor()
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
     report.checks.push(
-      `${name}: waiting serve, keyboard/touch steering, launch, pause, help, resume, fresh restart, locked practice levels, no horizontal overflow`,
+      `${name}: waiting serve, keyboard/touch/stick steering, clean stick release, optional buttons, launch, pause, help, resume, fresh restart, locked practice levels, no horizontal overflow`,
     )
     console.info("PASS " + report.checks.at(-1))
     await context.close()

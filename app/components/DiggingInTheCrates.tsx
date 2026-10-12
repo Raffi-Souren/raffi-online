@@ -18,7 +18,7 @@ interface DiggingInTheCratesProps {
 type CratePhase = "level" | "dig" | "reward"
 
 const PHASE_TITLES: Record<CratePhase, string> = {
-  level: "World 1-1 · Brooklyn Dig",
+  level: "World 1-1 · Downtown Dig",
   dig: "Raf’s Records",
   reward: "Raf’s crate",
 }
@@ -29,6 +29,15 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
   const [phase, setPhase] = useState<CratePhase>("level")
   const [recordsFound, setRecordsFound] = useState(0)
   const [run, setRun] = useState(0)
+  const [wideShort, setWideShort] = useState(false)
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-height: 520px) and (min-width: 600px)")
+    const sync = () => setWideShort(query.matches)
+    sync()
+    query.addEventListener("change", sync)
+    return () => query.removeEventListener("change", sync)
+  }, [])
 
   useEffect(() => {
     if (!isOpen) {
@@ -75,7 +84,7 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
 
   if (phase !== "reward") {
     return (
-      <WindowShell title={PHASE_TITLES[phase]} onClose={handleClose} appearance="crate" maxWidth="28rem">
+      <WindowShell title={PHASE_TITLES[phase]} onClose={handleClose} appearance="crate" maxWidth={phase === "level" ? "900px" : "28rem"} fill={phase === "level" && wideShort} fullBleed={phase === "level"} compact={phase === "level"} closeOnEscape={phase !== "level"}>
         {phase === "level" ? (
           <CrateRunGame key={run} onCleared={handleCleared} onSkip={() => handleCleared(0)} />
         ) : (

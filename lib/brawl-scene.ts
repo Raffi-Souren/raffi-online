@@ -1,7 +1,8 @@
 import { ARENA_END, BRAWL_WAVES, type BrawlState, type Brawler } from "./brawl-game"
 
 export function drawBrawl(ctx: CanvasRenderingContext2D, game: BrawlState, width: number, height: number) {
-  const worldWidth = Math.max(480, (width / height) * 500)
+  // Keep fighters legible in a short, wide window while retaining every combat lane.
+  const worldWidth = Math.max(480, (width / height) * (width / height > 2 ? 400 : 500))
   const worldHeight = (worldWidth * height) / width
   const offsetY = worldHeight - 500
   const camera = Math.max(0, Math.min(ARENA_END - worldWidth + 70, game.player.x - worldWidth * 0.33))

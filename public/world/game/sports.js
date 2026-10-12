@@ -12,13 +12,15 @@ const adapters=new Map()
 let deps,root,menu,brief,stage,canvas,hud,reply,entry,choices,resultBox,controls,renderer,game=null,selected=null,mode='match',opened=false,generation=0,ended=false,lastClock=0,hostActive=true
 let progress=emptySportsProgress(),lastResult=null,matchPaused=false,pauseButton,pauseOverlay
 const touchButtons={primary:false,secondary:false,guard:false}
+const touchOwners={primary:new Set(),secondary:new Set(),guard:new Set()}
+let stickKnob
 let lastHudSignature=''
 const parkLocals=[]
-const held=new Set(),input={move:{x:0,z:0},primaryPressed:false,primaryHeld:false,secondaryPressed:false,secondaryHeld:false,guardHeld:false,pointerAim:null},stick={x:0,z:0}
+const held=new Set(),input={move:{x:0,z:0},primaryPressed:false,primaryHeld:false,secondaryPressed:false,secondaryHeld:false,guardHeld:false,pointerAim:null},stick={id:null,x:0,z:0}
 const cfg=()=>data.sports
 const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text)node.textContent=text;return node}
 const button=(text,fn)=>{const b=el('button','',text);b.type='button';b.addEventListener('click',fn);return b}
-function resetControls(){held.clear();touchButtons.primary=touchButtons.secondary=touchButtons.guard=false;stick.x=0;stick.z=0;input.move={x:0,z:0};input.primaryPressed=input.primaryHeld=input.secondaryPressed=input.secondaryHeld=input.guardHeld=false;input.pointerAim=null;resetInput()}
+function resetControls(){held.clear();for(const owners of Object.values(touchOwners))owners.clear();touchButtons.primary=touchButtons.secondary=touchButtons.guard=false;stick.id=null;stick.x=0;stick.z=0;if(stickKnob)stickKnob.style.transform='translate(0, 0)';input.move={x:0,z:0};input.primaryPressed=input.primaryHeld=input.secondaryPressed=input.secondaryHeld=input.guardHeld=false;input.pointerAim=null;resetInput()}
 export function registerSport(id,factory){adapters.set(id,factory);if(root)refreshChoices()}
 export function initSports(options){
   deps=options
@@ -26,19 +28,37 @@ export function initSports(options){
   if(!document.querySelector('link[data-park-sports]')){const css=document.createElement('link');css.rel='stylesheet';css.href=new URL('./sports.css',import.meta.url).href;css.dataset.parkSports='';document.head.append(css)}
   buildUI();buildPark();lastClock=performance.now()
   document.addEventListener('visibilitychange',()=>{lastClock=performance.now();resetControls();if(opened)setAudioActive(hostActive&&!document.hidden&&state.sportsPlayingSound)})
+  window.addEventListener('blur',resetControls)
+  window.addEventListener('resize',resetControls)
   window.addEventListener('message',event=>{const m=event.data;if(event.source===window.parent&&event.origin===location.origin&&m&&Object.keys(m).length===2&&m.type==='raffi-world:activity'&&typeof m.active==='boolean'){hostActive=m.active;lastClock=performance.now();resetControls();if(opened)setAudioActive(hostActive&&!document.hidden&&state.sportsPlayingSound)}})
 }
 function buildUI(){
   root=el('section','park-sports hidden');root.id='park-sports';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','park-sports-title')
-  const card=el('div','sports-card'),top=el('header','sports-top'),title=el('h2','',cfg().title);title.id='park-sports-title';pauseButton=button('Pause · P',toggleSportPause);pauseButton.id='sports-pause';pauseButton.hidden=true;top.append(title,pauseButton,button('Back to Brooklyn ×',closeSports));card.append(top)
+  const card=el('div','sports-card'),top=el('header','sports-top'),title=el('h2','',cfg().title);title.id='park-sports-title';pauseButton=button('Pause · P',toggleSportPause);pauseButton.id='sports-pause';pauseButton.hidden=true;top.append(title,pauseButton,button('Back to the park ×',closeSports));card.append(top)
   menu=el('div','sports-menu');reply=el('p','sports-reply',cfg().offer);reply.setAttribute('aria-live','polite');choices=el('div','sports-choices');const form=el('form','sports-form'),label=el('label','','Talk to Jules');label.htmlFor='sports-intent';entry=el('input');entry.id='sports-intent';entry.maxLength=300;entry.autocomplete='off';entry.placeholder='Tennis, soccer, boxing — or ask a question';const send=el('button','','Say it');send.type='submit';form.append(label,entry,send);form.addEventListener('submit',event=>{event.preventDefault();chooseFromText(entry.value);entry.value=''});menu.append(el('p','sports-kicker','JULES · YOUR PARK REGULAR'),reply,choices,form)
   brief=el('div','sports-brief hidden');stage=el('div','sports-stage hidden');canvas=el('canvas');canvas.id='sports-view';canvas.tabIndex=0;canvas.setAttribute('aria-label','Park sports court. WASD to move, Space primary action, Q secondary action, E guard.');stage.append(canvas);pauseOverlay=el('div','sports-pause-overlay hidden');pauseOverlay.append(el('strong','','MATCH PAUSED'),button('Resume match',toggleSportPause));stage.append(pauseOverlay)
-  hud=el('div','sports-hud hidden');resultBox=el('div','sports-result hidden');controls=el('div','sports-controls hidden');const zone=el('div','sports-stick','MOVE');zone.setAttribute('aria-label','Move sports player');let activePointer=null
-  const moveStick=event=>{const box=zone.getBoundingClientRect();let x=(event.clientX-box.x-box.width/2)/42,z=(event.clientY-box.y-box.height/2)/42;const d=Math.max(1,Math.hypot(x,z));stick.x=x/d;stick.z=z/d}
-  zone.addEventListener('pointerdown',event=>{event.preventDefault();activePointer=event.pointerId;zone.setPointerCapture(event.pointerId);moveStick(event)})
-  zone.addEventListener('pointermove',event=>{if(event.pointerId===activePointer)moveStick(event)})
-  const release=()=>{activePointer=null;stick.x=0;stick.z=0};zone.addEventListener('pointerup',release);zone.addEventListener('pointercancel',release);zone.addEventListener('lostpointercapture',release)
-  const actions=el('div','sports-actions');for(const [id,label]of[['primary','PLAY'],['secondary','SECOND'],['guard','GUARD']]){const b=el('button','',label);b.type='button';b.dataset.sportControl=id;b.addEventListener('pointerdown',event=>{event.preventDefault();b.setPointerCapture(event.pointerId);touchButtons[id]=true;if(id!=='guard')input[id+'Pressed']=true;void unlockAudio()});const off=()=>{touchButtons[id]=false};b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off);actions.append(b)}controls.append(zone,actions)
+  hud=el('div','sports-hud hidden');resultBox=el('div','sports-result hidden');controls=el('div','sports-controls hidden');const zone=el('div','sports-stick');zone.setAttribute('aria-label','Analog stick: drag to move sports player');stickKnob=el('span','sports-stick-knob','MOVE');zone.append(stickKnob)
+  const canControl=()=>opened&&game&&!ended&&!matchPaused&&mode!=='watch'&&hostActive&&!document.hidden
+  const moveStick=event=>{
+    const box=zone.getBoundingClientRect(),radius=box.width*.38
+    let x=(event.clientX-box.x-box.width/2)/radius,z=(event.clientY-box.y-box.height/2)/radius
+    const length=Math.hypot(x,z),amount=Math.max(0,(Math.min(length,1)-.12)/.88)
+    stick.x=length?x/length*amount:0;stick.z=length?z/length*amount:0
+    stickKnob.style.transform=`translate(${stick.x*radius}px, ${stick.z*radius}px)`
+  }
+  zone.addEventListener('pointerdown',event=>{event.preventDefault();if(!canControl()||stick.id!==null||event.button!==0)return;stick.id=event.pointerId;zone.setPointerCapture(event.pointerId);moveStick(event)})
+  zone.addEventListener('pointermove',event=>{if(event.pointerId===stick.id&&canControl())moveStick(event)})
+  const release=event=>{if(event.pointerId!==stick.id)return;stick.id=null;stick.x=0;stick.z=0;stickKnob.style.transform='translate(0, 0)'}
+  for(const name of ['pointerup','pointercancel','lostpointercapture'])zone.addEventListener(name,release)
+  const actions=el('div','sports-actions')
+  for(const [id,label]of[['primary','PLAY'],['secondary','SECOND'],['guard','GUARD']]){
+    const b=el('button','',label);b.type='button';b.dataset.sportControl=id
+    b.addEventListener('pointerdown',event=>{event.preventDefault();if(!canControl()||event.button!==0)return;b.setPointerCapture(event.pointerId);if(!touchOwners[id].size&&id!=='guard')input[id+'Pressed']=true;touchOwners[id].add(event.pointerId);touchButtons[id]=true;void unlockAudio()})
+    const off=event=>{touchOwners[id].delete(event.pointerId);touchButtons[id]=touchOwners[id].size>0}
+    for(const name of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(name,off)
+    actions.append(b)
+  }
+  controls.append(zone,actions)
   const foot=el('div','sports-footer');foot.append(button('Choose another game',showMenu));card.append(menu,brief,hud,stage,controls,resultBox,foot);root.append(card);document.body.append(root)
   canvas.addEventListener('pointerdown',event=>{const box=canvas.getBoundingClientRect();input.pointerAim={x:(event.clientX-box.x)/box.width*2-1,y:(event.clientY-box.y)/box.height*2-1};canvas.focus();void unlockAudio()})
   root.addEventListener('keydown',event=>{if(event.key!=='Tab')return;const list=[...root.querySelectorAll('button:not([disabled]),input,canvas')].filter(n=>n.getClientRects().length),i=list.indexOf(document.activeElement);if(event.shiftKey&&i<=0){event.preventDefault();list.at(-1)?.focus()}else if(!event.shiftKey&&i===list.length-1){event.preventDefault();list[0]?.focus()}})
@@ -55,7 +75,7 @@ async function startSport(id,kind){
   disposeGame();selected=id;mode=kind;const token=generation;brief.classList.remove('hidden');brief.replaceChildren(el('p','','Setting up the court…'));menu.classList.add('hidden');resultBox.classList.add('hidden');stage.classList.remove('hidden');hud.classList.add('hidden');controls.classList.add('hidden')
   try{if(!renderer){renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(1.5,devicePixelRatio||1));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap}resize();const loaded=await adapters.get(id)({aspect:stage.clientWidth/Math.max(1,stage.clientHeight),mode:kind,finish:result=>finishSport(token,id,result),playSound:name=>{if(token===generation&&opened)bus.emit('sfx',name)}});if(token!==generation||!opened){loaded?.dispose?.();return}game=loaded;pauseButton.hidden=false;pauseButton.textContent='Pause · P';brief.classList.add('hidden');hud.classList.remove('hidden');controls.classList.toggle('hidden',kind==='watch');state.sportsPlayingSound=true;setAudioActive(hostActive&&!document.hidden);lastClock=performance.now();resize();void unlockAudio();canvas.focus();if(kind!=='match'){const b=button(kind==='watch'?'Join the match':'Start a match',()=>startSport(id,'match'));b.dataset.sportJoin='';resultBox.replaceChildren(b);resultBox.classList.remove('hidden')}}catch{if(token===generation){disposeGame();brief.classList.remove('hidden');stage.classList.add('hidden');brief.replaceChildren(el('p','','That court could not open. Your city progress is safe.'),button('Choose another game',showMenu))}}
 }
-function finishSport(token,id,result){if(token!==generation||!opened||ended)return;ended=true;pauseButton.hidden=true;lastResult={...result};resetControls();controls.classList.add('hidden');resultBox.replaceChildren(el('h3','',result.message||'Good game'),el('p','',`${result.scoreFor ?? 0} — ${result.scoreAgainst ?? 0}`));if(mode==='match'){const saved=recordSportResult(progress,id,result);progress=saved.state;if(saved.newMedal)resultBox.append(el('p','sports-medal','FIRST WIN · PARK MEDAL EARNED'));bus.emit('sports-checkpoint',{id,won:result.won})}resultBox.append(button('Rematch',()=>startSport(id,mode)),button('Back to Jules',()=>showBriefing(id)),button('Return to Brooklyn',closeSports));resultBox.classList.remove('hidden');resultBox.querySelector('button')?.focus()}
+function finishSport(token,id,result){if(token!==generation||!opened||ended)return;ended=true;pauseButton.hidden=true;lastResult={...result};resetControls();controls.classList.add('hidden');resultBox.replaceChildren(el('h3','',result.message||'Good game'),el('p','',`${result.scoreFor ?? 0} — ${result.scoreAgainst ?? 0}`));if(mode==='match'){const saved=recordSportResult(progress,id,result);progress=saved.state;if(saved.newMedal)resultBox.append(el('p','sports-medal','FIRST WIN · PARK MEDAL EARNED'));bus.emit('sports-checkpoint',{id,won:result.won})}resultBox.append(button('Rematch',()=>startSport(id,mode)),button('Back to Jules',()=>showBriefing(id)),button('Return to the park',closeSports));resultBox.classList.remove('hidden');resultBox.querySelector('button')?.focus()}
 export function toggleSportPause(){if(!game||ended)return;matchPaused=!matchPaused;resetControls();lastClock=performance.now();pauseOverlay.classList.toggle('hidden',!matchPaused);pauseButton.textContent=matchPaused?'Resume · P':'Pause · P';state.sportsPlayingSound=!matchPaused;setAudioActive(!matchPaused&&hostActive&&!document.hidden);if(matchPaused)pauseOverlay.querySelector('button').focus();else canvas.focus()}
 function resize(){if(!renderer||!stage)return;const w=Math.max(1,stage.clientWidth),h=Math.max(1,stage.clientHeight);renderer.setSize(w,h,false);game?.resize?.(w/h);if(game&&matchPaused)renderer.render(game.scene,game.camera)}
 export function sportsContext(){if(!deps||opened||state.mode==='vehicle'||state.interior||state.mission.active)return null;const host=cfg().host;if(Math.hypot(state.player.x-host.at.x,state.player.z-host.at.z)>host.radius)return null;return {x:host.at.x,z:host.at.z,radius:host.radius,label:'PLAY',prompt:'Talk to Jules · park games',kind:'sports',key:'E',target:host}}

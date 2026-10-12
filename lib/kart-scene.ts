@@ -263,7 +263,7 @@ export function createKartScene(host: HTMLDivElement) {
 
   for (const [distance, text, color] of [
     [230, "BODEGA RECORDS", "#ca6556"],
-    [790, "BROOKLYN RADIO", "#287680"],
+    [790, "GREENPOINT RADIO", "#287680"],
     [1130, "LAST EXIT / DANCE", "#345d81"],
   ] as const) {
     const board = new THREE.Mesh(new THREE.PlaneGeometry(16, 4), sign(text, color, "#fff2cd", 768))

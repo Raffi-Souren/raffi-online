@@ -111,7 +111,7 @@ function draw() {
   ctx.fillStyle = '#c2f5f4'; ctx.strokeStyle = '#102939'; ctx.lineWidth = 2
   ctx.beginPath(); ctx.moveTo(0, 11); ctx.lineTo(-7, -7); ctx.lineTo(0, -3); ctx.lineTo(7, -7); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore()
   ctx.fillStyle = '#a9c2c8'; ctx.textAlign = 'left'; ctx.font = '13px sans-serif'; ctx.fillText('N ↑', 14, 24)
-  canvas.setAttribute('aria-label', `Brooklyn city map. You are in ${state.district}. ${target ? 'Destination: ' + target.label : 'No destination set'}. Select a named place below to set a route.`)
+  canvas.setAttribute('aria-label', `Neighborhood map. You are in ${state.district}. ${target ? 'Destination: ' + target.label : 'No destination set'}. Select a named place below to set a route.`)
 }
 
 export function showWorldMap() {

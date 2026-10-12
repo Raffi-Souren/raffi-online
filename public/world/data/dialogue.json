@@ -63,7 +63,7 @@
   "lines": {
     "boot-1": {
       "voice": "narrator",
-      "text": "Brooklyn. A few familiar blocks, and a night that could go anywhere."
+      "text": "A few familiar blocks, and a night that could go anywhere."
     },
     "greeter-hello": {
       "voice": "narrator",
@@ -549,7 +549,7 @@
       "PICKUP FOOTBALL · SUNDAY",
       "B-SIDE RECORDS · BUY SELL TRADE",
       "SUNRISE DELI · OPEN LATE",
-      "BROOKLYN · GOOD TO BE HOME"
+      "LATE SET · AVENUE A"
     ]
   }
 }

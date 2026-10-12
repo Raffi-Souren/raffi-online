@@ -182,7 +182,7 @@ export function createOvertimeScene(host: HTMLElement) {
     renderer.setSize(width, height, false)
     const aspect = width / height
     const portrait = aspect < 1
-    const shortLandscape = aspect > 3
+    const shortLandscape = aspect > 2.5
     const vertical = portrait ? Math.max(53, 41 / aspect) : Math.max(shortLandscape ? 24 : 37, 64 / aspect)
     camera.left = (-vertical * aspect) / 2
     camera.right = (vertical * aspect) / 2

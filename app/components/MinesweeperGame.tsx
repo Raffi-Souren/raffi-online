@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import ScoreEntry from "./ScoreEntry"
 import { useWindowActivity } from "../../components/ui/WindowShell"
@@ -18,6 +17,8 @@ interface Cell {
 
 export default function MinesweeperGame() {
   const { active } = useWindowActivity()
+  const [pageVisible, setPageVisible] = useState(true)
+  const gameActive = active && pageVisible
   const [grid, setGrid] = useState<Cell[][]>([])
   const [gameOver, setGameOver] = useState(false)
   const [gameWon, setGameWon] = useState(false)
@@ -26,7 +27,16 @@ export default function MinesweeperGame() {
   const [runId, setRunId] = useState(0)
   const startedAt = useRef<number | null>(null)
   const pausedAt = useRef<number | null>(null)
-  const touchStart = useRef<number | null>(null)
+  const [tapMode, setTapMode] = useState<"reveal" | "flag">("reveal")
+  const [largeCells, setLargeCells] = useState(false)
+  const touchStart = useRef<{ id: number; x: number; y: number } | null>(null)
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const suppressClick = useRef(false)
+  const clearHold = useCallback(() => {
+    if (holdTimer.current !== null) clearTimeout(holdTimer.current)
+    holdTimer.current = null
+    touchStart.current = null
+  }, [])
   const flagsLeft = NUM_MINES - grid.flat().filter((cell) => cell.state === "flagged").length
 
   const countNeighborMines = useCallback((grid: Cell[][], x: number, y: number) => {
@@ -80,6 +90,8 @@ export default function MinesweeperGame() {
   )
 
   const resetGame = useCallback(() => {
+    clearHold()
+    suppressClick.current = false
     setGrid(initializeGrid())
     setGameOver(false)
     setGameWon(false)
@@ -88,15 +100,29 @@ export default function MinesweeperGame() {
     pausedAt.current = null
     setElapsedMs(0)
     setRunId((id) => id + 1)
-  }, [initializeGrid])
+  }, [initializeGrid, clearHold])
 
   useEffect(() => {
     resetGame()
   }, [resetGame])
 
   useEffect(() => {
-    if (!active) {
-      touchStart.current = null
+    const blur = () => { clearHold(); setPageVisible(false) }
+    const focus = () => setPageVisible(!document.hidden)
+    const visibility = () => { if (document.hidden) blur(); else focus() }
+    window.addEventListener("blur", blur)
+    window.addEventListener("focus", focus)
+    document.addEventListener("visibilitychange", visibility)
+    return () => {
+      window.removeEventListener("blur", blur)
+      window.removeEventListener("focus", focus)
+      document.removeEventListener("visibilitychange", visibility)
+    }
+  }, [clearHold])
+
+  useEffect(() => {
+    if (!gameActive) {
+      clearHold()
       if (startedAt.current !== null && pausedAt.current === null) {
         pausedAt.current = performance.now()
         if (!gameOver && !gameWon) setElapsedMs(Math.round(pausedAt.current - startedAt.current))
@@ -106,15 +132,15 @@ export default function MinesweeperGame() {
       if (startedAt.current !== null) startedAt.current += performance.now() - pausedAt.current
       pausedAt.current = null
     }
-  }, [active, gameOver, gameWon])
+  }, [gameActive, gameOver, gameWon, clearHold])
 
   useEffect(() => {
-    if (!active || firstClick || gameOver || gameWon) return
+    if (!gameActive || firstClick || gameOver || gameWon) return
     const timer = window.setInterval(() => {
       if (startedAt.current !== null) setElapsedMs(Math.round(performance.now() - startedAt.current))
     }, 100)
     return () => window.clearInterval(timer)
-  }, [active, firstClick, gameOver, gameWon])
+  }, [gameActive, firstClick, gameOver, gameWon])
 
   const revealCell = useCallback((grid: Cell[][], x: number, y: number) => {
     const cell = grid[x][y]
@@ -138,7 +164,7 @@ export default function MinesweeperGame() {
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
-      if (!active || gameOver || gameWon || grid[x][y].state !== "hidden") return
+      if (!gameActive || gameOver || gameWon || grid[x][y].state !== "hidden") return
 
       let newGrid = grid.map((row) => row.map((cell) => ({ ...cell })))
 
@@ -185,12 +211,12 @@ export default function MinesweeperGame() {
 
       setGrid(newGrid)
     },
-    [active, grid, gameOver, gameWon, firstClick, initializeGrid, revealCell],
+    [gameActive, grid, gameOver, gameWon, firstClick, initializeGrid, revealCell],
   )
 
   const toggleFlag = useCallback(
     (x: number, y: number) => {
-      if (!active || gameOver || gameWon) return
+      if (!gameActive || gameOver || gameWon) return
 
       const newGrid = grid.map((row) => row.map((cell) => ({ ...cell })))
       const cell = newGrid[x][y]
@@ -203,30 +229,10 @@ export default function MinesweeperGame() {
 
       setGrid(newGrid)
     },
-    [active, grid, gameOver, gameWon, flagsLeft],
+    [gameActive, grid, gameOver, gameWon, flagsLeft],
   )
 
-  const handleCellTouch = useCallback(
-    (e: React.TouchEvent, x: number, y: number) => {
-      e.preventDefault()
-      if (touchStart.current === null) return
-      const touchDuration = Date.now() - touchStart.current
-      touchStart.current = null
-
-      if (touchDuration > 500) {
-        // Long press - flag/unflag
-        toggleFlag(x, y)
-      } else {
-        // Short press - reveal
-        handleCellClick(x, y)
-      }
-    },
-    [handleCellClick, toggleFlag],
-  )
-
-  const handleTouchStart = useCallback(() => {
-    touchStart.current = Date.now()
-  }, [])
+  useEffect(() => clearHold, [clearHold])
 
   const getCellContent = (cell: Cell) => {
     if (cell.state === "hidden") return ""
@@ -280,48 +286,102 @@ export default function MinesweeperGame() {
         </button>
       </div>
 
-      <div
-        className="w-fit mx-auto border-2 border-gray-600"
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 32px)`,
-          gap: 0,
-        }}
-      >
-        {grid.map((row, x) =>
-          row.map((cell, y) => (
-            <button
-              key={`${x}-${y}`}
-              aria-label={`Row ${x + 1}, column ${y + 1}: ${cell.state === "revealed" ? (cell.isMine ? "mine" : `${cell.neighborMines} adjacent mines`) : cell.state}`}
-              className={getCellStyle(cell)}
-              style={{
-                width: "32px",
-                height: "32px",
-                minWidth: "32px",
-                minHeight: "32px",
-              }}
-              onClick={() => handleCellClick(x, y)}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                toggleFlag(x, y)
-              }}
-              onKeyDown={(e) => {
-                if (e.key.toLowerCase() === "f") {
+      <div role="group" aria-label="Minesweeper touch options" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+        {(["reveal", "flag"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            aria-pressed={tapMode === mode}
+            onClick={() => setTapMode(mode)}
+            style={{ minHeight: 44, padding: "8px 12px", border: "1px solid #64748b", borderRadius: 5, background: tapMode === mode ? "#245ab5" : "#eef2f7", color: tapMode === mode ? "#fff" : "#1e293b", fontWeight: 700 }}
+          >
+            {mode === "reveal" ? "Tap to reveal" : "Tap to flag"}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-pressed={largeCells}
+          onClick={() => setLargeCells((value) => !value)}
+          style={{ minHeight: 44, padding: "8px 10px", border: "1px solid #64748b", borderRadius: 5, background: "#eef2f7", color: "#1e293b" }}
+        >
+          {largeCells ? "Fit board" : "Larger cells"}
+        </button>
+      </div>
+      <div style={{ width: "100%", maxWidth: 444, margin: "0 auto", overflowX: "auto", overscrollBehaviorX: "contain" }}>
+        <div
+          className="border-2 border-gray-600"
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+            width: largeCells ? 444 : "100%",
+            minWidth: 280,
+            gap: 0,
+          }}
+        >
+          {grid.map((row, x) =>
+            row.map((cell, y) => (
+              <button
+                key={`${x}-${y}`}
+                aria-label={`Row ${x + 1}, column ${y + 1}: ${cell.state === "revealed" ? (cell.isMine ? "mine" : `${cell.neighborMines} adjacent mines`) : cell.state}`}
+                className={getCellStyle(cell)}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1",
+                  minWidth: 0,
+                  padding: 0,
+                  fontSize: largeCells ? 16 : 13,
+                  touchAction: "manipulation",
+                  WebkitTouchCallout: "none",
+                  userSelect: "none",
+                }}
+                onClick={(event) => {
+                  if (event.detail > 0 && suppressClick.current) {
+                    suppressClick.current = false
+                    return
+                  }
+                  if (tapMode === "flag") toggleFlag(x, y)
+                  else handleCellClick(x, y)
+                }}
+                onContextMenu={(e) => {
                   e.preventDefault()
-                  toggleFlag(x, y)
-                }
-              }}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={(e) => handleCellTouch(e, x, y)}
-              onTouchCancel={() => {
-                touchStart.current = null
-              }}
-              disabled={gameOver || gameWon}
-            >
-              {getCellContent(cell)}
-            </button>
-          )),
-        )}
+                  if (!touchStart.current && !suppressClick.current) toggleFlag(x, y)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key.toLowerCase() === "f") {
+                    e.preventDefault()
+                    toggleFlag(x, y)
+                  }
+                }}
+                onPointerDown={(event) => {
+                  clearHold()
+                  suppressClick.current = false
+                  if (event.pointerType === "mouse") return
+                  touchStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
+                  holdTimer.current = setTimeout(() => {
+                    suppressClick.current = true
+                    toggleFlag(x, y)
+                    holdTimer.current = null
+                  }, 500)
+                }}
+                onPointerMove={(event) => {
+                  const touch = touchStart.current
+                  if (touch?.id === event.pointerId && Math.hypot(event.clientX - touch.x, event.clientY - touch.y) > 10) {
+                    suppressClick.current = true
+                    clearHold()
+                  }
+                }}
+                onPointerUp={clearHold}
+                onPointerCancel={() => {
+                  suppressClick.current = true
+                  clearHold()
+                }}
+                disabled={!gameActive || gameOver || gameWon}
+              >
+                {getCellContent(cell)}
+              </button>
+            )),
+          )}
+        </div>
       </div>
 
       {gameOver && (
@@ -340,8 +400,9 @@ export default function MinesweeperGame() {
       )}
 
       <div className="mt-4 text-xs text-gray-500 text-center">
-        <div className="md:block hidden">Click or Enter to reveal • Right click or F to flag</div>
-        <div className="md:hidden block">Tap to reveal • Long press to flag</div>
+        <div className="md:block hidden">Click / Enter uses selected mode • Right click / F flags</div>
+        <div className="md:hidden block">{tapMode === "flag" ? "Tap to flag or unflag" : "Tap to reveal"} • Hold to flag</div>
+        {largeCells && <div>Swipe sideways to see the whole board.</div>}
       </div>
     </div>
   )

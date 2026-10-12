@@ -6,6 +6,8 @@ import { useWindowActivity } from "../../components/ui/WindowShell"
 import { createRace, currentLap, formatRaceTime, racePosition, stepRace, type RaceStatus } from "../../lib/kart-race"
 import { createKartScene, trackBend } from "../../lib/kart-scene"
 import ScoreEntry from "./ScoreEntry"
+import GameJoystick from "../../components/ui/GameJoystick"
+import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
 
 type Control = "left" | "right" | "throttle" | "brake" | "drift"
 const KEY_CONTROLS: Record<string, Control> = {
@@ -37,11 +39,21 @@ const shellButton: CSSProperties = {
 
 export default function KartGame() {
   const { active } = useWindowActivity()
+  const [landscape, setLandscape] = useState(false)
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 600px) and (max-height: 540px)")
+    const sync = () => setLandscape(query.matches)
+    sync()
+    query.addEventListener("change", sync)
+    return () => query.removeEventListener("change", sync)
+  }, [])
   const hostRef = useRef<HTMLDivElement>(null)
   const raceRef = useRef(createRace())
   const runId = useRef(0)
   const keysRef = useRef(new Set<string>())
-  const touchRef = useRef(new Set<Control>())
+  const touchRef = useRef(new Map<number | string, Control>())
+  const stick = useRef({ x: 0, y: 0 })
+  const [controlMode, setControlMode] = useGameControlMode("borough-gp")
   const activeRef = useRef(active)
   const resumeStatus = useRef<RaceStatus>("racing")
   const [status, setStatus] = useState<RaceStatus>("ready")
@@ -50,6 +62,7 @@ export default function KartGame() {
   const [held, setHeld] = useState<Control[]>([])
   const [hud, setHud] = useState({
     lap: 1,
+    lane: 0,
     position: 6,
     speed: 0,
     time: "0:00.00",
@@ -63,6 +76,7 @@ export default function KartGame() {
   const clearControls = useCallback(() => {
     keysRef.current.clear()
     touchRef.current.clear()
+    stick.current = { x: 0, y: 0 }
     setHeld([])
   }, [])
 
@@ -84,9 +98,10 @@ export default function KartGame() {
   }, [clearControls])
 
   const resume = useCallback(() => {
+    clearControls()
     raceRef.current.status = resumeStatus.current
     setStatus(resumeStatus.current)
-  }, [])
+  }, [clearControls])
 
   useEffect(() => {
     activeRef.current = active
@@ -125,8 +140,8 @@ export default function KartGame() {
       previousTime = timestamp
       const race = raceRef.current
       const pressed = (control: Control) =>
-        touchRef.current.has(control) || Array.from(keysRef.current).some((key) => KEY_CONTROLS[key] === control)
-      const steer = Number(pressed("right")) - Number(pressed("left"))
+        Array.from(touchRef.current.values()).includes(control) || Array.from(keysRef.current).some((key) => KEY_CONTROLS[key] === control)
+      const steer = Math.max(-1, Math.min(1, stick.current.x + Number(pressed("right")) - Number(pressed("left"))))
       if (activeRef.current) {
         stepRace(
           race,
@@ -163,6 +178,7 @@ export default function KartGame() {
         previousHud = timestamp
         setHud({
           lap: currentLap(race),
+          lane: race.lane,
           position: racePosition(race),
           speed: Math.round(race.speed * 2.4),
           time: formatRaceTime(race.elapsed),
@@ -241,52 +257,57 @@ export default function KartGame() {
       type="button"
       aria-label={label}
       aria-pressed={held.includes(control)}
+      disabled={!active || (status !== "racing" && status !== "countdown")}
       className="game-touch focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 active:translate-y-px"
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault()
-        touchRef.current.add(control)
-        setHeld(Array.from(touchRef.current))
+        touchRef.current.set(event.pointerId, control)
+        setHeld(Array.from(touchRef.current.values()))
         try {
           event.currentTarget.setPointerCapture(event.pointerId)
         } catch {
           /* A finger that already lifted still releases through pointerup. */
         }
       }}
-      onPointerUp={() => {
-        touchRef.current.delete(control)
-        setHeld(Array.from(touchRef.current))
+      onPointerUp={(event) => {
+        touchRef.current.delete(event.pointerId)
+        setHeld(Array.from(touchRef.current.values()))
       }}
-      onPointerCancel={() => {
-        touchRef.current.delete(control)
-        setHeld(Array.from(touchRef.current))
+      onPointerCancel={(event) => {
+        touchRef.current.delete(event.pointerId)
+        setHeld(Array.from(touchRef.current.values()))
       }}
-      onLostPointerCapture={() => {
-        touchRef.current.delete(control)
-        setHeld(Array.from(touchRef.current))
+      onLostPointerCapture={(event) => {
+        touchRef.current.delete(event.pointerId)
+        setHeld(Array.from(touchRef.current.values()))
       }}
       onKeyDown={(event) => {
         if (event.key === " " || event.key === "Enter") {
           event.preventDefault()
-          touchRef.current.add(control)
-          setHeld(Array.from(touchRef.current))
+          event.stopPropagation()
+          touchRef.current.set(`key-${control}`, control)
+          setHeld(Array.from(touchRef.current.values()))
         }
       }}
       onKeyUp={(event) => {
         if (event.key === " " || event.key === "Enter") {
-          touchRef.current.delete(control)
-          setHeld(Array.from(touchRef.current))
+          event.stopPropagation()
+          touchRef.current.delete(`key-${control}`)
+          setHeld(Array.from(touchRef.current.values()))
         }
       }}
       onBlur={() => {
-        touchRef.current.delete(control)
-        setHeld(Array.from(touchRef.current))
+        touchRef.current.delete(`key-${control}`)
+        setHeld(Array.from(touchRef.current.values()))
       }}
       style={{
         ...shellButton,
         flex: accent ? "1.4 1 0" : "1 1 0",
+        flexDirection: control === "left" || control === "right" ? "row" : "column",
+        gap: 2,
         minWidth: 0,
-        padding: "10px 3px",
+        padding: landscape ? "5px 3px" : "10px 3px",
         minHeight: 48,
         touchAction: "none",
         userSelect: "none",
@@ -296,7 +317,7 @@ export default function KartGame() {
       }}
     >
       {icon}
-      <span className="hidden sm:inline">{label}</span>
+      <span className={control === "left" || control === "right" ? "hidden sm:inline" : undefined}>{label}</span>
     </button>
   )
 
@@ -304,13 +325,20 @@ export default function KartGame() {
   return (
     <section
       aria-label="Borough Grand Prix racing game"
+      data-game="borough-gp"
+      data-phase={status}
+      data-player-lane={hud.lane.toFixed(3)}
+      data-player-speed={hud.speed}
       className="game-touch"
+      data-landscape-controls={landscape || undefined}
       style={{
-        display: "flex",
+        display: landscape ? "grid" : "flex",
+        gridTemplateColumns: "160px minmax(0, 1fr) 104px",
+        gridTemplateRows: "auto minmax(0, 1fr)",
         flexDirection: "column",
         width: "100%",
         height: "100%",
-        minHeight: 350,
+        minHeight: 0,
         background: "#dce5e4",
         color: "#243f55",
         fontFamily: "'Trebuchet MS', Arial, sans-serif",
@@ -318,11 +346,12 @@ export default function KartGame() {
     >
       <div
         style={{
+          gridColumn: "1 / -1",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 8,
-          padding: "7px 12px",
+          padding: landscape ? "4px 12px" : "7px 12px",
           background: "#e8eddf",
           borderBottom: "2px solid #a8b8bc",
           flexShrink: 0,
@@ -364,7 +393,7 @@ export default function KartGame() {
       </div>
 
       <div
-        style={{ position: "relative", flex: "1 1 auto", minHeight: 210, overflow: "hidden", background: "#b9ddec" }}
+        style={{ position: "relative", gridColumn: 2, gridRow: 2, flex: "1 1 auto", minHeight: 100, overflow: "hidden", background: "#b9ddec" }}
       >
         <div ref={hostRef} style={{ position: "absolute", inset: 0 }} />
         <div
@@ -562,7 +591,7 @@ export default function KartGame() {
                     <strong>Shift + steer</strong> to drift. Release for a boost.
                   </div>
                   <div>Pick up gold record crates for extra speed.</div>
-                  <div style={{ color: "#496071" }}>Touch controls below. P pauses; R restarts.</div>
+                  <div style={{ color: "#496071" }}>Choose stick or arrows below; pause anytime to switch. Hold Gas and steer; add Drift for a boost. P pauses; R restarts.</div>
                 </div>
               )}
               {status === "finished" && (
@@ -635,21 +664,34 @@ export default function KartGame() {
       <div
         role="group"
         aria-label="Touch driving controls"
-        style={{
-          display: "flex",
-          gap: 7,
-          padding: "10px 12px calc(12px + env(safe-area-inset-bottom, 0px))",
-          background: "#e8eddf",
-          borderTop: "2px solid #a8b8bc",
-          flexShrink: 0,
-          touchAction: "none",
-        }}
+        style={{ display: landscape ? "contents" : "flex", alignItems: "center", gap: 10, padding: "6px 10px", background: "#e8eddf", borderTop: "2px solid #a8b8bc", flexShrink: 0 }}
       >
-        {touchButton("left", "Steer left", <ArrowLeft size={20} />)}
-        {touchButton("right", "Steer right", <ArrowRight size={20} />)}
-        {touchButton("drift", "Drift", <Zap size={19} />)}
-        {touchButton("brake", "Brake", <ArrowDown size={20} />)}
-        {touchButton("throttle", "Gas", <ArrowUp size={20} />, true)}
+        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: landscape ? 8 : 0, flexShrink: 0 }}>
+        {controlMode === "stick" ? (
+          <GameJoystick
+            label="Steer kart"
+            axis="horizontal"
+            size={88}
+            disabled={!active || (status !== "racing" && status !== "countdown")}
+            resetKey={runId.current}
+            onChange={(value) => { stick.current = value }}
+          />
+        ) : (
+          <div style={{ display: "flex", gap: 5, width: 120 }}>
+            {touchButton("left", "Steer left", <ArrowLeft size={20} />)}
+            {touchButton("right", "Steer right", <ArrowRight size={20} />)}
+          </div>
+        )}
+        {landscape && overlay && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
+        </div>
+        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", justifyContent: "center", padding: landscape ? "8px" : 0, gap: 6, flex: 1, minWidth: 0 }}>
+          {!landscape && overlay && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
+          <div style={{ display: "flex", flexDirection: landscape ? "column" : "row", gap: 5 }}>
+            {touchButton("drift", "Drift", <Zap size={19} />)}
+            {touchButton("brake", "Brake", <ArrowDown size={20} />)}
+            {touchButton("throttle", "Gas", <ArrowUp size={20} />, true)}
+          </div>
+        </div>
       </div>
       <span role="status" className="sr-only">
         {status === "finished"
