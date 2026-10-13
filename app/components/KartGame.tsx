@@ -8,6 +8,7 @@ import { createKartScene, trackBend } from "../../lib/kart-scene"
 import ScoreEntry from "./ScoreEntry"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
+import { useTouchControls } from "../../components/ui/useTouchControls"
 
 type Control = "left" | "right" | "throttle" | "brake" | "drift"
 const KEY_CONTROLS: Record<string, Control> = {
@@ -47,6 +48,9 @@ export default function KartGame() {
     query.addEventListener("change", sync)
     return () => query.removeEventListener("change", sync)
   }, [])
+  // Desktop gives the whole frame to the track; keyboard hints replace the touch pads.
+  const touch = useTouchControls()
+  const sideControls = landscape && touch
   const hostRef = useRef<HTMLDivElement>(null)
   const raceRef = useRef(createRace())
   const runId = useRef(0)
@@ -307,7 +311,7 @@ export default function KartGame() {
         flexDirection: control === "left" || control === "right" ? "row" : "column",
         gap: 2,
         minWidth: 0,
-        padding: landscape ? "5px 3px" : "10px 3px",
+        padding: sideControls ? "5px 3px" : "10px 3px",
         minHeight: 48,
         touchAction: "none",
         userSelect: "none",
@@ -330,9 +334,9 @@ export default function KartGame() {
       data-player-lane={hud.lane.toFixed(3)}
       data-player-speed={hud.speed}
       className="game-touch"
-      data-landscape-controls={landscape || undefined}
+      data-landscape-controls={sideControls || undefined}
       style={{
-        display: landscape ? "grid" : "flex",
+        display: sideControls ? "grid" : "flex",
         gridTemplateColumns: "160px minmax(0, 1fr) 104px",
         gridTemplateRows: "auto minmax(0, 1fr)",
         flexDirection: "column",
@@ -602,7 +606,11 @@ export default function KartGame() {
                       <strong>Shift + steer</strong> to drift. Release for a boost.
                     </div>
                     <div>Pick up gold record crates for extra speed.</div>
-                    <div style={{ color: "#496071" }}>Choose stick or arrows below; pause anytime to switch. Hold Gas and steer; add Drift for a boost. P pauses; R restarts.</div>
+                    <div style={{ color: "#496071" }}>
+                      {touch
+                        ? "Choose stick or arrows below; pause anytime to switch. Hold Gas and steer; add Drift for a boost."
+                        : "P pauses; R restarts."}
+                    </div>
                   </div>
                 )}
                 {status === "finished" && (
@@ -680,12 +688,12 @@ export default function KartGame() {
         )}
       </div>
 
-      <div
+      {touch && <div
         role="group"
         aria-label="Touch driving controls"
-        style={{ display: landscape ? "contents" : "flex", alignItems: "center", gap: 10, padding: "6px 10px", background: "#e8eddf", borderTop: "2px solid #a8b8bc", flexShrink: 0 }}
+        style={{ display: sideControls ? "contents" : "flex", alignItems: "center", gap: 10, padding: "6px 10px", background: "#e8eddf", borderTop: "2px solid #a8b8bc", flexShrink: 0 }}
       >
-        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: landscape ? 8 : 0, flexShrink: 0 }}>
+        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: sideControls ? 8 : 0, flexShrink: 0 }}>
         {controlMode === "stick" ? (
           <GameJoystick
             label="Steer kart"
@@ -701,17 +709,52 @@ export default function KartGame() {
             {touchButton("right", "Steer right", <ArrowRight size={20} />)}
           </div>
         )}
-        {landscape && overlay && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
+        {sideControls && overlay && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
         </div>
-        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", justifyContent: "center", padding: landscape ? "8px" : 0, gap: 6, flex: 1, minWidth: 0 }}>
-          {!landscape && overlay && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
-          <div style={{ display: "flex", flexDirection: landscape ? "column" : "row", gap: 5 }}>
+        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", justifyContent: "center", padding: sideControls ? "8px" : 0, gap: 6, flex: 1, minWidth: 0 }}>
+          {!sideControls && overlay && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
+          <div style={{ display: "flex", flexDirection: sideControls ? "column" : "row", gap: 5 }}>
             {touchButton("drift", "Drift", <Zap size={19} />)}
             {touchButton("brake", "Brake", <ArrowDown size={20} />)}
             {touchButton("throttle", "Gas", <ArrowUp size={20} />, true)}
           </div>
         </div>
-      </div>
+      </div>}
+      {!touch && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "2px 14px",
+            padding: "7px 12px",
+            fontSize: 12,
+            lineHeight: 1.5,
+            background: "#e8eddf",
+            borderTop: "2px solid #a8b8bc",
+            flexShrink: 0,
+          }}
+        >
+          <span>
+            <strong>↑ / W</strong> gas
+          </span>
+          <span>
+            <strong>↓ / S</strong> brake
+          </span>
+          <span>
+            <strong>← → / A D</strong> steer
+          </span>
+          <span>
+            <strong>Shift + steer</strong> drift
+          </span>
+          <span>
+            <strong>P</strong> pause
+          </span>
+          <span>
+            <strong>R</strong> restart
+          </span>
+        </div>
+      )}
       <span role="status" className="sr-only">
         {status === "finished"
           ? `Race finished in position ${hud.position} of six.`
