@@ -54,6 +54,9 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   const [controlMode, setControlMode] = useGameControlMode("brooklyn-dig")
   const [paused, setPaused] = useState(false)
   const [compact, setCompact] = useState(false)
+  // Start with touch controls so phones never flash the keyboard legend; fine pointers switch after mount.
+  const [touchUi, setTouchUi] = useState(true)
+  const [finePointer, setFinePointer] = useState(false)
   const runningRef = useRef(active && !minimized)
   const clearedRef = useRef(onCleared)
   const [hud, setHud] = useState({ phase: stateRef.current.phase, records: 0, total: stateRef.current.totalRecords, seconds: 0 })
@@ -69,6 +72,15 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
     sync()
     query.addEventListener("change", sync)
     return () => query.removeEventListener("change", sync)
+  }, [])
+
+  useEffect(() => {
+    const fine = window.matchMedia("(pointer: fine) and (hover: hover)").matches
+    setFinePointer(fine)
+    setTouchUi(!fine)
+    const onPointer = (event: PointerEvent) => { if (event.pointerType === "touch") setTouchUi(true) }
+    window.addEventListener("pointerdown", onPointer, { passive: true })
+    return () => window.removeEventListener("pointerdown", onPointer)
   }, [])
 
   useEffect(() => {
@@ -232,7 +244,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
     syncPressed()
   }
 
-  const release = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const release = (event: ReactPointerEvent<HTMLElement>) => {
     const control = touchesRef.current.get(event.pointerId)
     if (!touchesRef.current.delete(event.pointerId)) return
     if (control === "jump" && event.type !== "pointerup") jumpPendingRef.current = false
@@ -241,7 +253,24 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
 
   const start = () => startCrateRun(stateRef.current)
 
-  const controlButton = (control: Control, label: string, icon: ReactNode, width: number) => (
+  // A touch on the right half of the field counts as Jump, so one thumb can stay on the stick.
+  const pressField = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    start()
+    if (event.pointerType !== "touch" || !runningRef.current) return
+    const rect = event.currentTarget.getBoundingClientRect()
+    if (event.clientX - rect.left < rect.width / 2) return
+    event.preventDefault()
+    touchesRef.current.set(event.pointerId, "jump")
+    jumpPendingRef.current = true
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      // Capture can fail on a pointer that already lifted; the jump still registers.
+    }
+    syncPressed()
+  }
+
+  const controlButton = (control: Control, label: string, icon: ReactNode, width: number, height = 56) => (
     <button
       type="button"
       disabled={!active || minimized || paused || hud.phase === "cleared"}
@@ -275,9 +304,10 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
         alignItems: "center",
         justifyContent: "center",
         width,
-        height: 56,
+        height,
+        flexShrink: 0,
         border: `2px solid ${PALETTE.ink}`,
-        borderRadius: control === "jump" ? 28 : 10,
+        borderRadius: control === "jump" ? height / 2 : 10,
         background: pressed[control] ? PALETTE.amber : control === "jump" ? PALETTE.brick : PALETTE.navy,
         color: pressed[control] ? PALETTE.ink : PALETTE.cream,
         boxShadow: pressed[control] ? "none" : `0 4px 0 ${PALETTE.ink}`,
@@ -291,8 +321,33 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
     </button>
   )
 
+  const controlsDisabled = !active || minimized || paused || hud.phase === "cleared"
+  const sideControls = compact && touchUi
+  const runControl = controlMode === "stick" ? (
+    <GameJoystick label="Downtown Dig run stick" axis="horizontal" size={96} disabled={controlsDisabled} onChange={({ x }) => { stickRef.current = x }} />
+  ) : (
+    <div style={{ display: "flex", flexDirection: sideControls ? "column" : "row", gap: 10 }}>
+      {controlButton("left", "Move left", <ChevronLeft size={28} aria-hidden="true" />, 60)}
+      {controlButton("right", "Move right", <ChevronRight size={28} aria-hidden="true" />, 60)}
+    </div>
+  )
+  const jumpControl = controlButton("jump", "Jump", <ArrowUp size={30} aria-hidden="true" />, 76, 76)
+  const skipButton = (
+    <button
+      type="button"
+      onClick={onSkip}
+      className="hover:underline focus-visible:outline focus-visible:outline-2"
+      style={{ minHeight: 44, padding: "0 4px", border: 0, background: "transparent", color: PALETTE.amber, fontSize: 13, cursor: "pointer", outlineColor: PALETTE.amber }}
+    >
+      Skip to the crate
+    </button>
+  )
+  const kbd = (label: string) => (
+    <kbd style={{ padding: "1px 6px", borderRadius: 4, border: `1px solid ${PALETTE.navy}`, background: PALETTE.navyDeep, color: PALETTE.cream, fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12 }}>{label}</kbd>
+  )
+
   return (
-    <div data-game="brooklyn-dig" data-phase={paused ? "paused" : hud.phase} className="game-touch" style={{ display: "grid", height: compact ? "100%" : undefined, minHeight: 0, gridTemplateColumns: compact ? "minmax(0, 1fr) 190px" : "minmax(0, 1fr)", gridTemplateRows: compact ? "44px minmax(0, 1fr)" : "44px auto auto", gap: 10, background: PALETTE.ink, padding: 10 }}>
+    <div data-game="brooklyn-dig" data-phase={paused ? "paused" : hud.phase} className="game-touch" style={{ display: "grid", height: compact ? "100%" : undefined, minHeight: 0, gridTemplateColumns: sideControls ? "auto minmax(0, 1fr) auto" : "minmax(0, 1fr)", gridTemplateRows: sideControls ? "44px minmax(0, 1fr)" : compact ? "44px minmax(0, 1fr) auto" : "44px auto auto", gap: 10, background: PALETTE.ink, padding: 10 }}>
       <div
         style={{
           display: "flex",
@@ -303,7 +358,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
           fontSize: 13,
           letterSpacing: "0.04em",
-          gridColumn: compact ? "1 / -1" : undefined,
+          gridColumn: "1 / -1",
         }}
       >
         <span>
@@ -323,7 +378,13 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
         </button>
       </div>
 
-      <div ref={fieldRef} style={{ minWidth: 0, minHeight: 0, aspectRatio: compact ? undefined : `${viewW} / ${VIEW_H}`, maxHeight: compact ? undefined : "calc(100dvh - 330px)", display: "grid", placeItems: "center" }}>
+      {sideControls && (
+        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 8 }}>
+          {runControl}
+        </div>
+      )}
+
+      <div ref={fieldRef} style={{ gridColumn: sideControls ? 2 : "1 / -1", gridRow: 2, minWidth: 0, minHeight: 0, aspectRatio: compact ? undefined : `${viewW} / ${VIEW_H}`, maxHeight: compact ? undefined : "calc(100dvh - 330px)", display: "grid", placeItems: "center" }}>
       <div style={{ position: "relative", width: fieldSize.width, height: fieldSize.height, borderRadius: 6, overflow: "hidden", background: PALETTE.navyDeep, border: `2px solid ${PALETTE.navy}` }}>
         <canvas
           ref={canvasRef}
@@ -331,7 +392,10 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
           height={VIEW_H * RENDER_SCALE}
           role="img"
           aria-label="Downtown Dig: a side-scrolling street level ending at Raf's Records"
-          onPointerDown={start}
+          onPointerDown={pressField}
+          onPointerUp={release}
+          onPointerCancel={release}
+          onLostPointerCapture={release}
           style={{ display: "block", width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated", touchAction: "none" }}
         />
 
@@ -361,7 +425,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
             <p className="text-pretty" style={{ margin: 0, maxWidth: 260, fontSize: 13, lineHeight: 1.45 }}>
               Run to Raf&apos;s Records. Every record you grab makes the crate deeper.
             </p>
-            <GameControlChoice value={controlMode} onChange={(mode) => { touchesRef.current.clear(); jumpPendingRef.current = false; stickRef.current = 0; syncPressed(); setControlMode(mode) }} />
+            {touchUi && <GameControlChoice value={controlMode} onChange={(mode) => { touchesRef.current.clear(); jumpPendingRef.current = false; stickRef.current = 0; syncPressed(); setControlMode(mode) }} />}
             <button
               type="button"
               onClick={() => { setPaused(false); start() }}
@@ -410,31 +474,47 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
       </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0, gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        {controlMode === "stick" ? (
-          <GameJoystick label="Downtown Dig run stick" axis="horizontal" size={96} disabled={!active || minimized || paused || hud.phase === "cleared"} onChange={({ x }) => { stickRef.current = x }} />
-        ) : <div style={{ display: "flex", gap: 10 }}>
-          {controlButton("left", "Move left", <ChevronLeft size={28} aria-hidden="true" />, 60)}
-          {controlButton("right", "Move right", <ChevronRight size={28} aria-hidden="true" />, 60)}
-        </div>}
-        {controlButton("jump", "Jump", <ArrowUp size={28} aria-hidden="true" />, 76)}
-      </div>
+      {sideControls ? (
+        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 6, paddingBottom: 8 }}>
+          {jumpControl}
+          {skipButton}
+        </div>
+      ) : (
+        <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", minHeight: 0, gap: 8 }}>
+          {touchUi && (
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
+              {runControl}
+              {jumpControl}
+            </div>
+          )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <p style={{ margin: 0, fontSize: 12, lineHeight: 1.4, color: PALETTE.cream, opacity: 0.75 }}>
-          {compact ? "Run + Jump. P to pause." : `${controlMode === "stick" ? "Stick" : "Arrows"} to run; hold Jump for a higher leap. Keyboard: A D / Space. Pause to change controls.`}
-        </p>
-        <button
-          type="button"
-          onClick={onSkip}
-          className="hover:underline focus-visible:outline focus-visible:outline-2"
-          style={{ minHeight: 44, padding: "0 4px", border: 0, background: "transparent", color: PALETTE.amber, fontSize: 13, cursor: "pointer", outlineColor: PALETTE.amber }}
-        >
-          Skip to the crate
-        </button>
-      </div>
-      </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            {touchUi ? (
+              <p className="text-pretty" style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: PALETTE.cream, opacity: 0.8 }}>
+                {controlMode === "stick" ? "Stick" : "Arrows"} to run. Jump, or tap the right side of the street. Hold for a higher leap.
+              </p>
+            ) : (
+              <p style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 13, lineHeight: 1.6, color: PALETTE.cream }}>
+                {kbd("A")}{kbd("D")} or {kbd("\u2190")}{kbd("\u2192")} run <span aria-hidden="true">{"\u00b7"}</span> {kbd("Space")} jump <span aria-hidden="true">{"\u00b7"}</span> {kbd("P")} pause
+              </p>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {finePointer && (
+                <button
+                  type="button"
+                  aria-pressed={touchUi}
+                  onClick={() => setTouchUi((value) => !value)}
+                  className="hover:underline focus-visible:outline focus-visible:outline-2"
+                  style={{ minHeight: 44, padding: "0 4px", border: 0, background: "transparent", color: PALETTE.cream, fontSize: 13, cursor: "pointer", outlineColor: PALETTE.amber }}
+                >
+                  {touchUi ? "Hide touch controls" : "Show touch controls"}
+                </button>
+              )}
+              {skipButton}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
