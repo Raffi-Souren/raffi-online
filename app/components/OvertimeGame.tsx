@@ -86,6 +86,8 @@ export default function OvertimeGame() {
   const activeRef = useRef(active)
   const keyboard = useRef(new Set<string>())
   const touches = useRef(new Map<number | string, Control>())
+  // A quick tap can start and end between frames; keep its rising edge until a step uses it.
+  const jumpPending = useRef(false)
   const stick = useRef({ x: 0, y: 0 })
   const [controlMode, setControlMode] = useGameControlMode("overtime")
   const runId = useRef(0)
@@ -97,6 +99,7 @@ export default function OvertimeGame() {
   const clearControls = useCallback(() => {
     keyboard.current.clear()
     touches.current.clear()
+    jumpPending.current = false
     stick.current = { x: 0, y: 0 }
     setHeld([])
   }, [])
@@ -155,10 +158,11 @@ export default function OvertimeGame() {
             steer,
             throttle: throttle === 0 && steer !== 0 ? STEER_CRUISE * Math.abs(steer) : throttle,
             boost: pressed("boost"),
-            jump: pressed("jump"),
+            jump: jumpPending.current || pressed("jump"),
           },
           dt,
         )
+        jumpPending.current = false
         scene.render(match)
       }
       if (match.phase !== lastPhase) {
@@ -216,6 +220,7 @@ export default function OvertimeGame() {
         if (key === " " && event.target instanceof HTMLButtonElement) return
         event.preventDefault()
         keyboard.current.add(key)
+        if (KEY_MAP[key] === "jump" && !event.repeat) jumpPending.current = true
       }
     }
     const keyUp = (event: KeyboardEvent) => keyboard.current.delete(event.key.toLowerCase())
@@ -244,6 +249,7 @@ export default function OvertimeGame() {
         if (phase !== "playing" && phase !== "kickoff") return
         event.preventDefault()
         touches.current.set(event.pointerId, control)
+        if (control === "jump") jumpPending.current = true
         setHeld(Array.from(touches.current.values()))
         try {
           event.currentTarget.setPointerCapture(event.pointerId)
@@ -257,6 +263,8 @@ export default function OvertimeGame() {
       }}
       onPointerCancel={(event) => {
         touches.current.delete(event.pointerId)
+        // A cancelled touch (a scroll or system gesture) was not a tap.
+        if (control === "jump") jumpPending.current = false
         setHeld(Array.from(touches.current.values()))
       }}
       onLostPointerCapture={(event) => {
@@ -268,6 +276,7 @@ export default function OvertimeGame() {
           event.preventDefault()
           event.stopPropagation()
           touches.current.set(`key-${control}`, control)
+          if (control === "jump" && !event.repeat) jumpPending.current = true
           setHeld(Array.from(touches.current.values()))
         }
       }}

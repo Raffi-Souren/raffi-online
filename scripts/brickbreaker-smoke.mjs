@@ -146,6 +146,17 @@ try {
     assert.equal(await game.locator("[data-bb-score]").innerText(), "0")
     assert.match(await game.getByLabel("Game status").innerText(), /3\s*lives \/\s*0/)
     assert.equal((await position()).paddle, 180)
+    if (name === "desktop") {
+      // A Space tap that starts and ends between two frames must still launch.
+      const waiting = await position()
+      await canvas.evaluate((el) => {
+        el.focus()
+        el.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true }))
+        el.dispatchEvent(new KeyboardEvent("keyup", { key: " ", code: "Space", bubbles: true }))
+      })
+      await page.waitForTimeout(450)
+      assert.ok((await position()).y < waiting.y - 50, "a quick Space tap did not launch the ball")
+    }
     await game.getByRole("button", { name: "Pause Brickbreaker", exact: true }).click()
     await game.getByRole("button", { name: "Menu", exact: true }).click()
     await game.getByRole("button", { name: "Practice", exact: true }).click()
@@ -157,7 +168,7 @@ try {
     await game.getByText("PRACTICE · 01 / First contact", { exact: true }).waitFor()
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
     report.checks.push(
-      `${name}: waiting serve, keyboard/touch/stick steering, clean stick release, optional buttons, launch, pause, help, resume, fresh restart, locked practice levels, no horizontal overflow`,
+      `${name}: waiting serve, keyboard/touch/stick steering, clean stick release, optional buttons, launch, pause, help, resume, fresh restart${name === "desktop" ? ", quick-tap launch" : ""}, locked practice levels, no horizontal overflow`,
     )
     console.info("PASS " + report.checks.at(-1))
     await context.close()
