@@ -144,6 +144,26 @@ const VIEWPORT_GAMES = new Set<GameId>([
 ])
 const CATEGORIES = ["All games", "Originals", "Handhelds", "Desktop & arcade"] as const
 
+function prefersImmersiveGames() {
+  return typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches
+}
+
+const floatingButton = {
+  minHeight: 44,
+  minWidth: 44,
+  padding: "6px 12px",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 13,
+  fontWeight: 700,
+  color: "#f4ecd8",
+  background: "rgba(16, 24, 32, 0.78)",
+  border: "1px solid rgba(244, 236, 216, 0.35)",
+  borderRadius: 999,
+  backdropFilter: "blur(6px)",
+} as const
+
 export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All games")
@@ -224,18 +244,51 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                 : "1024px"
         }
       >
-        <GameShelfNav onBack={() => { setExpanded(false); setActiveGame(null) }} compact={viewport && !expanded}>
-          <button
-            type="button"
-            aria-pressed={expanded}
-            onClick={() => setExpanded(!expanded)}
-            className="hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
-            style={{ minHeight: 44, padding: "4px 9px", display: "inline-flex", alignItems: "center", gap: 5, color: "#294b67", fontSize: 12, borderRadius: 3 }}
+        {expanded ? (
+          <div
+            role="toolbar"
+            aria-label="Game controls"
+            style={{
+              position: "absolute",
+              zIndex: 20,
+              top: "calc(env(safe-area-inset-top, 0px) + 8px)",
+              left: "calc(env(safe-area-inset-left, 0px) + 8px)",
+              display: "flex",
+              gap: 8,
+            }}
           >
-            {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            {expanded ? "Exit expanded view" : "Expand game"}
-          </button>
-        </GameShelfNav>
+            <button
+              type="button"
+              onClick={() => { setExpanded(false); setActiveGame(null) }}
+              style={floatingButton}
+              className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-300"
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
+            <button
+              type="button"
+              aria-label="Exit expanded view"
+              onClick={() => setExpanded(false)}
+              style={floatingButton}
+              className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-300"
+            >
+              <Minimize2 size={16} />
+            </button>
+          </div>
+        ) : (
+          <GameShelfNav onBack={() => { setExpanded(false); setActiveGame(null) }} compact={viewport}>
+            <button
+              type="button"
+              aria-pressed={expanded}
+              onClick={() => setExpanded(!expanded)}
+              className="hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+              style={{ minHeight: 44, padding: "4px 9px", display: "inline-flex", alignItems: "center", gap: 5, color: "#294b67", fontSize: 12, borderRadius: 3 }}
+            >
+              {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              {expanded ? "Exit expanded view" : "Expand game"}
+            </button>
+          </GameShelfNav>
+        )}
         {viewport ? (
           <div
             style={{
@@ -437,7 +490,10 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                   if (game.id === "world") {
                     if (onOpenWorld) onOpenWorld()
                     else window.location.assign("/?app=world")
-                  } else setActiveGame(game.id)
+                  } else {
+                    setExpanded(prefersImmersiveGames())
+                    setActiveGame(game.id)
+                  }
                 }}
                 aria-label={`Play ${game.name}`}
                 style={{
