@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react"
 import { Flag, Hammer, HardHat, Pause, Play, RotateCcw, Shield, Warehouse } from "lucide-react"
 import ScoreEntry from "./ScoreEntry"
+import { useTouchControls } from "../../components/ui/useTouchControls"
 import {
   buildDockyard,
   createDockyard,
@@ -484,6 +485,20 @@ export default function DockyardGame() {
   })
   const [placement, setPlacement] = useState<"workshop" | "sentry" | null>(null)
   const [runId, setRunId] = useState(0)
+  const touch = useTouchControls()
+  // Phones held sideways leave little height, so the briefing switches to three narrow columns.
+  const [shortIntro, setShortIntro] = useState(false)
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const observer = new ResizeObserver(() => setShortIntro(root.clientHeight < 420))
+    observer.observe(root)
+    return () => observer.disconnect()
+  }, [])
+  useEffect(() => {
+    // The briefing covers the whole game, so start it from the top of the frame.
+    if (hud.phase !== "playing") rootRef.current?.scrollTo({ top: 0 })
+  }, [hud.phase])
 
   const refreshHud = () => {
     const state = stateRef.current
@@ -798,10 +813,11 @@ export default function DockyardGame() {
       style={{
         display: "flex",
         flexDirection: "column",
+        position: "relative",
         width: "100%",
         height: "100%",
         minHeight: 0,
-        overflow: "auto",
+        overflow: hud.phase === "playing" ? "auto" : "hidden",
         background: palette.sea,
         color: palette.paper,
         fontFamily: '"Trebuchet MS", sans-serif',
@@ -940,127 +956,6 @@ export default function DockyardGame() {
             touchAction: "none",
           }}
         />
-        {hud.phase !== "playing" && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-              background: "#102d34a8",
-              overflowY: "auto",
-            }}
-          >
-            <div
-              style={{
-                maxWidth: 405,
-                maxHeight: "100%",
-                overflowY: "auto",
-                padding: "22px 24px",
-                background: palette.paper,
-                color: palette.ink,
-                border: "3px solid #c6b277",
-                boxShadow: "6px 8px 0 #0b273a77",
-              }}
-            >
-              <h2 style={{ fontSize: 32, lineHeight: 1.05, fontWeight: 800, letterSpacing: -1 }}>
-                {hud.phase === "briefing"
-                  ? "Your dock. Your crew."
-                  : hud.phase === "paused"
-                    ? "Crew on break."
-                    : hud.phase === "won"
-                      ? "Waterfront secured."
-                      : "The dock went under."}
-              </h2>
-              <p style={{ fontSize: 13, lineHeight: 1.5, marginTop: 12 }}>
-                {hud.phase === "briefing"
-                  ? "Keep your HQ standing and destroy the red rival HQ across the pier. Salvage pays for every worker, building and guard."
-                  : hud.phase === "paused"
-                    ? "The simulation is paused. Your crew and the rivals will wait."
-                    : hud.phase === "won"
-                      ? `You reclaimed the pier in ${clock(hud.time)}${hud.wave ? ` after ${hud.wave} rival waves.` : ", before the first rival wave arrived."}`
-                      : "Keep workers gathering and build sentries near home before sending your guards across the pier."}
-              </p>
-              {hud.phase === "won" && (
-                <ScoreEntry
-                  key={`dockyard-${runId}`}
-                  gameName="dockyard"
-                  score={Math.round(hud.time * 1000)}
-                  level={hud.level}
-                />
-              )}
-              {(hud.phase === "briefing" || hud.phase === "won") && (
-                <div style={{ display: "grid", gap: 6, marginTop: 14 }} aria-label="Dockyard missions">
-                  {DOCKYARD_MISSIONS.map((mission, index) => (
-                    <button
-                      key={mission.name}
-                      className={focusClass}
-                      onClick={() => startMission(index + 1)}
-                      style={{ ...actionStyle, textAlign: "left", padding: 10 }}
-                    >
-                      <strong>
-                        {index + 1}. {mission.name}
-                      </strong>
-                      <span style={{ display: "block", fontSize: 11, marginTop: 3 }}>{mission.brief}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {hud.phase === "briefing" && (
-                <>
-                  <ol style={{ paddingLeft: 18, marginTop: 12, fontSize: 12, lineHeight: 1.8 }}>
-                    <li>
-                      <strong>Gather</strong> sends workers to collect and return salvage.
-                    </li>
-                    <li>
-                      <strong>Build a workshop</strong> inside your HQ supply radius.
-                    </li>
-                    <li>
-                      <strong>Train guards</strong> and send a squad at the rival HQ.
-                    </li>
-                  </ol>
-                  <p style={{ marginTop: 10, fontSize: 11, lineHeight: 1.5 }}>
-                    Tap crew, then tap a destination. W: workers · F: guards · G: gather · A: attack. Space pauses.
-                    Every command also has a touch button.
-                  </p>
-                </>
-              )}
-              <button
-                className={focusClass}
-                onClick={hud.phase === "paused" ? pause : restart}
-                style={{
-                  ...actionStyle,
-                  width: "100%",
-                  marginTop: 15,
-                  minHeight: 42,
-                  background: palette.crew,
-                  color: "white",
-                  borderColor: "#14505c",
-                  fontSize: 13,
-                }}
-              >
-                {hud.phase === "paused" ? <Play size={15} /> : <Flag size={15} />}
-                {hud.phase === "briefing"
-                  ? "Open the dock"
-                  : hud.phase === "paused"
-                    ? "Back to work"
-                    : "Run the dock again"}
-              </button>
-              {hud.phase === "paused" && (
-                <button
-                  className={focusClass}
-                  onClick={restart}
-                  style={{ ...actionStyle, width: "100%", marginTop: 7 }}
-                >
-                  <RotateCcw size={12} />
-                  Restart this run
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
       <div
         style={{
@@ -1189,6 +1084,168 @@ export default function DockyardGame() {
           {hud.message}
         </p>
       </div>
+      {hud.phase !== "playing" && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: shortIntro ? 6 : 16,
+            background: "#102d34e0",
+          }}
+        >
+          <div
+            style={{
+              width: hud.phase === "paused" || hud.phase === "lost" ? "min(100%, 405px)" : "min(100%, 880px)",
+              maxHeight: "100%",
+              overflowY: "auto",
+              overscrollBehavior: "contain",
+              padding: shortIntro ? "10px 14px" : "clamp(16px, 3vh, 22px) clamp(16px, 3vw, 24px)",
+              background: palette.paper,
+              color: palette.ink,
+              border: "3px solid #c6b277",
+              boxShadow: "6px 8px 0 #0b273a77",
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: shortIntro
+                  ? "minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr)"
+                  : "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+                gap: shortIntro ? "10px 16px" : "16px 24px",
+                alignItems: "start",
+              }}
+            >
+              <div>
+                <h2
+                  style={{
+                    fontSize: shortIntro ? "clamp(22px, 7vh, 32px)" : 32,
+                    lineHeight: 1.05,
+                    fontWeight: 800,
+                    letterSpacing: -1,
+                  }}
+                >
+                  {hud.phase === "briefing"
+                    ? "Your dock. Your crew."
+                    : hud.phase === "paused"
+                      ? "Crew on break."
+                      : hud.phase === "won"
+                        ? "Waterfront secured."
+                        : "The dock went under."}
+                </h2>
+                <p style={{ fontSize: 13, lineHeight: 1.5, marginTop: shortIntro ? 6 : 12 }}>
+                  {hud.phase === "briefing"
+                    ? "Keep your HQ standing and destroy the red rival HQ across the pier. Salvage pays for every worker, building and guard."
+                    : hud.phase === "paused"
+                      ? "The simulation is paused. Your crew and the rivals will wait."
+                      : hud.phase === "won"
+                        ? `You reclaimed the pier in ${clock(hud.time)}${hud.wave ? ` after ${hud.wave} rival waves.` : ", before the first rival wave arrived."}`
+                        : "Keep workers gathering and build sentries near home before sending your guards across the pier."}
+                </p>
+                {hud.phase === "won" && (
+                  <ScoreEntry
+                    key={`dockyard-${runId}`}
+                    gameName="dockyard"
+                    score={Math.round(hud.time * 1000)}
+                    level={hud.level}
+                  />
+                )}
+                <button
+                  className={focusClass}
+                  onClick={hud.phase === "paused" ? pause : restart}
+                  style={{
+                    ...actionStyle,
+                    width: "100%",
+                    marginTop: shortIntro ? 10 : 15,
+                    minHeight: 44,
+                    background: palette.crew,
+                    color: "white",
+                    borderColor: "#14505c",
+                    fontSize: 13,
+                  }}
+                >
+                  {hud.phase === "paused" ? <Play size={15} /> : <Flag size={15} />}
+                  {hud.phase === "briefing"
+                    ? "Open the dock"
+                    : hud.phase === "paused"
+                      ? "Back to work"
+                      : "Run the dock again"}
+                </button>
+                {hud.phase === "paused" && (
+                  <button
+                    className={focusClass}
+                    onClick={restart}
+                    style={{ ...actionStyle, width: "100%", marginTop: 7 }}
+                  >
+                    <RotateCcw size={12} />
+                    Restart this run
+                  </button>
+                )}
+              </div>
+              {(hud.phase === "briefing" || hud.phase === "won") && (
+                <div role="group" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 5 }} aria-label="Dockyard missions">
+                  {DOCKYARD_MISSIONS.map((mission, index) => (
+                    <button
+                      key={mission.name}
+                      className={focusClass}
+                      onClick={() => startMission(index + 1)}
+                      title={shortIntro ? mission.brief : undefined}
+                      style={{
+                        ...actionStyle,
+                        display: "block",
+                        textAlign: "left",
+                        padding: shortIntro ? "6px 9px" : 10,
+                      }}
+                    >
+                      <strong>
+                        {index + 1}. {mission.name}
+                      </strong>
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: 11,
+                          fontWeight: 400,
+                          marginTop: 3,
+                          // One line each when height is scarce; the full brief stays in the tooltip.
+                          whiteSpace: shortIntro ? "nowrap" : undefined,
+                          overflow: shortIntro ? "hidden" : undefined,
+                          textOverflow: shortIntro ? "ellipsis" : undefined,
+                        }}
+                      >
+                        {mission.brief}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {hud.phase === "briefing" && (
+                <div>
+                  <ol style={{ paddingLeft: 18, fontSize: 12, lineHeight: shortIntro ? 1.5 : 1.8 }}>
+                    <li>
+                      <strong>Gather</strong> sends workers to collect and return salvage.
+                    </li>
+                    <li>
+                      <strong>Build a workshop</strong> inside your HQ supply radius.
+                    </li>
+                    <li>
+                      <strong>Train guards</strong> and send a squad at the rival HQ.
+                    </li>
+                  </ol>
+                  <p style={{ marginTop: shortIntro ? 6 : 10, fontSize: 11, lineHeight: 1.5 }}>
+                    {touch
+                      ? "Tap crew, then tap a destination. Every command also has a touch button."
+                      : "Click crew, then click a destination. W: workers · F: guards · G: gather · A: attack. Space pauses."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

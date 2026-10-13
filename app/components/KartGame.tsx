@@ -528,17 +528,20 @@ export default function KartGame() {
               display: status === "finished" ? "block" : "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: 14,
+              padding: status === "finished" ? 14 : "clamp(8px, 2.5vh, 14px) 14px",
               background: "#24435740",
-              overflowY: "auto",
+              overflowY: status === "finished" ? "auto" : "hidden",
               overscrollBehavior: "contain",
             }}
           >
             <div
               style={{
                 width: "min(100%, 390px)",
-                margin: status === "finished" ? "0 auto" : "auto",
-                padding: "clamp(14px, 3vw, 26px)",
+                margin: status === "finished" ? "0 auto" : undefined,
+                // Short screens scroll the rules inside the card; the race button stays in view.
+                maxHeight: status === "finished" ? undefined : "100%",
+                display: "flex",
+                flexDirection: "column",
                 background: "#faf5e6",
                 border: "3px solid #f1b859",
                 borderRadius: 12,
@@ -546,97 +549,113 @@ export default function KartGame() {
                 textAlign: "center",
               }}
             >
-              <Flag size={25} style={{ margin: "0 auto 8px", color: "#bd654b" }} />
-              <h2
+              <div
                 style={{
-                  fontWeight: 900,
-                  fontSize: "clamp(24px, 4vw, 34px)",
-                  lineHeight: 1.03,
-                  margin: "0 0 10px",
-                  letterSpacing: "-1px",
+                  flex: "0 1 auto",
+                  minHeight: 0,
+                  overflowY: status === "finished" ? undefined : "auto",
+                  overscrollBehavior: "contain",
+                  padding: "clamp(12px, min(3vw, 3vh), 26px) clamp(14px, 3vw, 26px) 0",
                 }}
               >
-                {status === "ready"
-                  ? "Take the long way home."
-                  : status === "paused"
-                    ? "Pit stop."
-                    : hud.position === 1
-                      ? "The borough is yours."
-                      : `Finished ${hud.position}${hud.position === 2 ? "nd" : hud.position === 3 ? "rd" : "th"}.`}
-              </h2>
-              <p style={{ fontSize: 13, lineHeight: 1.5, margin: "0 0 14px" }}>
-                {status === "ready"
-                  ? "Three laps along the waterfront. Five rivals. A trunk full of records."
-                  : status === "paused"
-                    ? "Your race is right where you left it."
-                    : `${formatRaceTime(raceRef.current.elapsed)} · ${raceRef.current.pickups} records collected`}
-              </p>
-              {status === "ready" && (
-                <div
+                {!landscape && <Flag size={25} style={{ margin: "0 auto 8px", color: "#bd654b" }} />}
+                <h2
                   style={{
-                    textAlign: "left",
-                    fontSize: 12,
-                    padding: "10px 12px",
-                    background: "#e6eadd",
-                    borderRadius: 5,
-                    marginBottom: 15,
-                    lineHeight: 1.8,
+                    fontWeight: 900,
+                    fontSize: "clamp(24px, 4vw, 34px)",
+                    lineHeight: 1.03,
+                    margin: "0 0 10px",
+                    letterSpacing: "-1px",
                   }}
                 >
-                  <div>
-                    <strong>↑ / W</strong> gas &nbsp; <strong>↓ / S</strong> brake &nbsp; <strong>← → / A D</strong>{" "}
-                    steer
-                  </div>
-                  <div>
-                    <strong>Shift + steer</strong> to drift. Release for a boost.
-                  </div>
-                  <div>Pick up gold record crates for extra speed.</div>
-                  <div style={{ color: "#496071" }}>Choose stick or arrows below; pause anytime to switch. Hold Gas and steer; add Drift for a boost. P pauses; R restarts.</div>
-                </div>
-              )}
-              {status === "finished" && (
-                <div style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: 11, marginBottom: 15 }}>
-                  {raceRef.current.lapTimes.map((time, i) => (
-                    <span key={i}>
-                      Lap {i + 1}
-                      <br />
-                      <strong>{formatRaceTime(time)}</strong>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={status === "paused" ? resume : start}
-                style={{
-                  ...shellButton,
-                  background: "#27677d",
-                  color: "#fff5df",
-                  borderColor: "#194b61",
-                  boxShadow: "0 3px 0 #163f54",
-                  padding: "12px 26px",
-                  minHeight: 46,
-                }}
-                className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700"
-              >
-                <Play size={17} fill="currentColor" />
-                {status === "ready" ? "Start race" : status === "paused" ? "Back to the race" : "Race again"}
-              </button>
-              {best !== null && (
-                <p style={{ fontSize: 11, margin: "12px 0 0", color: "#5d6e76" }}>
-                  Your best race: {formatRaceTime(best)}
+                  {status === "ready"
+                    ? "Take the long way home."
+                    : status === "paused"
+                      ? "Pit stop."
+                      : hud.position === 1
+                        ? "The borough is yours."
+                        : `Finished ${hud.position}${hud.position === 2 ? "nd" : hud.position === 3 ? "rd" : "th"}.`}
+                </h2>
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "0 0 14px" }}>
+                  {status === "ready"
+                    ? "Three laps along the waterfront. Five rivals. A trunk full of records."
+                    : status === "paused"
+                      ? "Your race is right where you left it."
+                      : `${formatRaceTime(raceRef.current.elapsed)} · ${raceRef.current.pickups} records collected`}
                 </p>
-              )}
-              {status === "finished" && (
-                <div style={{ marginTop: 16 }}>
-                  <ScoreEntry
-                    key={`borough-gp-${runId.current}`}
-                    gameName="borough-gp"
-                    score={Math.round(raceRef.current.elapsed * 1000)}
-                    level={1}
-                  />
-                </div>
-              )}
+                {status === "ready" && (
+                  <div
+                    style={{
+                      textAlign: "left",
+                      fontSize: 12,
+                      padding: "10px 12px",
+                      background: "#e6eadd",
+                      borderRadius: 5,
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    <div>
+                      <strong>↑ / W</strong> gas &nbsp; <strong>↓ / S</strong> brake &nbsp; <strong>← → / A D</strong>{" "}
+                      steer
+                    </div>
+                    <div>
+                      <strong>Shift + steer</strong> to drift. Release for a boost.
+                    </div>
+                    <div>Pick up gold record crates for extra speed.</div>
+                    <div style={{ color: "#496071" }}>Choose stick or arrows below; pause anytime to switch. Hold Gas and steer; add Drift for a boost. P pauses; R restarts.</div>
+                  </div>
+                )}
+                {status === "finished" && (
+                  <div style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: 11 }}>
+                    {raceRef.current.lapTimes.map((time, i) => (
+                      <span key={i}>
+                        Lap {i + 1}
+                        <br />
+                        <strong>{formatRaceTime(time)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div
+                style={{
+                  flexShrink: 0,
+                  padding: `${status === "paused" ? 0 : 15}px clamp(14px, 3vw, 26px) clamp(12px, min(3vw, 3vh), 26px)`,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={status === "paused" ? resume : start}
+                  style={{
+                    ...shellButton,
+                    background: "#27677d",
+                    color: "#fff5df",
+                    borderColor: "#194b61",
+                    boxShadow: "0 3px 0 #163f54",
+                    padding: "12px 26px",
+                    minHeight: 46,
+                  }}
+                  className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700"
+                >
+                  <Play size={17} fill="currentColor" />
+                  {status === "ready" ? "Start race" : status === "paused" ? "Back to the race" : "Race again"}
+                </button>
+                {best !== null && (
+                  <p style={{ fontSize: 11, margin: "12px 0 0", color: "#5d6e76" }}>
+                    Your best race: {formatRaceTime(best)}
+                  </p>
+                )}
+                {status === "finished" && (
+                  <div style={{ marginTop: 16 }}>
+                    <ScoreEntry
+                      key={`borough-gp-${runId.current}`}
+                      gameName="borough-gp"
+                      score={Math.round(raceRef.current.elapsed * 1000)}
+                      level={1}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

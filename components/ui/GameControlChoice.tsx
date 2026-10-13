@@ -20,9 +20,22 @@ export function useGameControlMode(game: string): [GameControlMode, (mode: GameC
   return [mode, choose]
 }
 
-export default function GameControlChoice({ value, onChange }: { value: GameControlMode; onChange: (mode: GameControlMode) => void }) {
+export default function GameControlChoice({
+  value,
+  onChange,
+  vertical = false,
+}: {
+  value: GameControlMode
+  onChange: (mode: GameControlMode) => void
+  /** Stack the two choices, for narrow side columns. */
+  vertical?: boolean
+}) {
   return (
-    <div role="group" aria-label="Movement control style" style={{ display: "inline-flex", flexWrap: "wrap", gap: 3 }}>
+    <div
+      role="group"
+      aria-label="Movement control style"
+      style={{ display: "inline-flex", flexDirection: vertical ? "column" : "row", flexWrap: vertical ? "nowrap" : "wrap", gap: 3 }}
+    >
       {(["stick", "buttons"] as const).map((mode) => (
         <button
           key={mode}
