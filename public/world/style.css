@@ -929,3 +929,43 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
   min-height: 44px;
   min-width: 44px;
 }
+
+/* M7: keyboard hints only make sense with a keyboard. */
+@media (pointer: coarse) { .kbd-hint { display: none; } }
+
+/* M7: world buttons sit below every modal, at every screen size. */
+body:has(#cheat-menu:not(.hidden)) #side-activities,
+body:has(#save-menu:not(.hidden)) #side-activities,
+body:has(#world-map:not(.hidden)) #side-activities,
+body:has(#crib-garage:not([hidden]):not(.hidden)) #side-activities {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* M7: short landscape (844x390, 667x375). One top-right row for Heat-side
+   buttons, zoom as a column left of the action grid, minimap beside the label. */
+@media (max-height: 540px) and (orientation: landscape) {
+  #hud:has(#touch:not(.hidden)) #btn-pause { top: calc(10px + var(--safe-t)); right: calc(12px + var(--safe-r)); }
+  #hud:has(#touch:not(.hidden)) #game-question { top: calc(10px + var(--safe-t)); right: calc(90px + var(--safe-r)); }
+  #hud:has(#touch:not(.hidden)) #buttons { grid-template-columns: repeat(3, 54px); gap: 8px; right: calc(12px + var(--safe-r)); bottom: calc(12px + var(--safe-b)); }
+  #hud:has(#touch:not(.hidden)) #buttons .tbtn { width: 54px; height: 54px; font-size: 10px; }
+  #hud:has(#touch:not(.hidden)) #buttons .zoom,
+  #hud:has(#touch:not(.hidden)) #buttons #btn-zoom-in,
+  #hud:has(#touch:not(.hidden)) #buttons #btn-zoom-out { width: 44px; height: 44px; right: calc(100% + 8px); bottom: 0; font-size: 20px; }
+  #hud:has(#touch:not(.hidden)) #buttons #btn-zoom-in { bottom: 52px; }
+  #hud:has(#touch:not(.hidden)) ~ #side-activities,
+  body:has(#touch:not(.hidden)) #side-activities { top: calc(64px + var(--safe-t)); right: calc(12px + var(--safe-r)); max-width: 200px; font-size: 11px; }
+  #side-activities #garage-open { padding: 8px 10px; }
+  #hud:has(#touch:not(.hidden)) #minimap { top: calc(10px + var(--safe-t)); left: calc(12px + var(--safe-l)); width: 96px; height: 112px; }
+  #hud:has(#touch:not(.hidden)) #minimap-canvas { width: 96px; height: 96px; }
+  #hud:has(#touch:not(.hidden)) #minimap-distance { top: 72px; }
+  #hud:has(#touch:not(.hidden)) .hud-top-left { left: calc(118px + var(--safe-l)); max-width: calc(100vw - 118px - 160px - var(--safe-l) - var(--safe-r)); padding: 6px 9px; }
+
+  #boot { flex-direction: row; align-items: center; justify-content: flex-start; padding: calc(12px + var(--safe-t)) calc(20px + var(--safe-r)) calc(12px + var(--safe-b)) calc(20px + var(--safe-l)); }
+  #boot-inner { margin-top: 0; padding-top: 0; width: min(420px, 60vw); }
+  .boot-sub { margin: 0 0 4px; }
+  .boot-title { font-size: clamp(36px, 13vh, 56px); line-height: 0.92; }
+  .boot-description { margin: 8px 0; font-size: 12px; }
+  .boot-controls { display: none; }
+  #boot-start, #boot-continue { min-height: 44px; margin-top: 8px; }
+}
