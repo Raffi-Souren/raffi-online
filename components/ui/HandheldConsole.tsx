@@ -21,6 +21,36 @@ interface HandheldConsoleProps {
   controlsDisabled?: boolean
 }
 
+const landscapeLayout = `
+.hc-console { width: min(100%, 420px); }
+.hc-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+@media (orientation: landscape) and (max-height: 540px) {
+  .hc-console {
+    width: auto;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-areas: "choice screen actions" "pad screen actions";
+    grid-template-rows: auto 1fr;
+    align-items: center;
+    column-gap: 14px;
+    padding: 8px 14px !important;
+    border-radius: 18px 18px 40px 18px !important;
+  }
+  .hc-console > header, .hc-speaker { display: none !important; }
+  .hc-screen { grid-area: screen; }
+  .hc-screen > * {
+    width: auto !important;
+    height: min(calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)), 400px);
+    max-width: none !important;
+  }
+  .hc-choice { grid-area: choice; margin-top: 0 !important; }
+  .hc-controls { display: contents; }
+  .hc-pad { grid-area: pad; align-self: center; justify-self: center; }
+  .hc-actions { grid-area: actions; flex-direction: column !important; }
+}
+`
+
 export default function HandheldConsole({
   title,
   children,
@@ -43,9 +73,8 @@ export default function HandheldConsole({
   return (
     <section
       aria-label={`${title} handheld console`}
-      className="game-touch"
+      className="game-touch hc-console"
       style={{
-        width: "min(100%, 420px)",
         padding: "12px clamp(10px, 3vw, 22px) 14px",
         border: "1px solid #adb3aa",
         borderRadius: "18px 18px 52px 18px",
@@ -66,7 +95,9 @@ export default function HandheldConsole({
         <strong style={{ fontSize: 14, letterSpacing: -0.5 }}>raffi pocket</strong>
         <span style={{ fontSize: 10 }}>{title}</span>
       </header>
+      <style>{landscapeLayout}</style>
       <div
+        className="hc-screen"
         style={{
           position: "relative",
           border: "7px solid #626d67",
@@ -79,12 +110,13 @@ export default function HandheldConsole({
         {children}
       </div>
       {onControlModeChange && (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+        <div className="hc-choice" style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
           <GameControlChoice value={controlMode} onChange={onControlModeChange} />
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+      <div className="hc-controls">
         {controlMode === "stick" && onStick ? (
+          <div className="hc-pad">
           <GameJoystick
             label={`${title} movement stick`}
             axis={horizontalOnly ? "horizontal" : "both"}
@@ -93,8 +125,10 @@ export default function HandheldConsole({
             disabled={controlsDisabled}
             size={112}
           />
+          </div>
         ) : (
           <div
+            className="hc-pad"
             role="group"
             aria-label="Directional pad"
             style={{
@@ -160,7 +194,7 @@ export default function HandheldConsole({
               ))}
           </div>
         )}
-        <div style={{ display: "flex", flexDirection: horizontalOnly ? "row" : "column", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <div className="hc-actions" style={{ display: "flex", flexDirection: horizontalOnly ? "row" : "column", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <button
           type="button"
           onClick={onStart}
@@ -204,7 +238,7 @@ export default function HandheldConsole({
         </button>
         </div>
       </div>
-      <div aria-hidden="true" style={{ display: "flex", gap: 5, justifyContent: "flex-end", margin: "8px 6px 0" }}>
+      <div className="hc-speaker" aria-hidden="true" style={{ display: "flex", gap: 5, justifyContent: "flex-end", margin: "8px 6px 0" }}>
         {[0, 1, 2, 3, 4].map((slot) => (
           <span
             key={slot}
