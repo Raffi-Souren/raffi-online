@@ -1,5 +1,7 @@
 "use client"
 
+import HowToPlay from "@/components/ui/HowToPlay"
+
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import {
   ArrowDown,
@@ -436,6 +438,7 @@ export default function BlockPartyBrawl() {
             }}
           >
             <div
+              className="intro-card"
               style={{
                 width: "min(390px, 100%)",
                 margin: status === "won" || status === "lost" ? "0 auto" : "auto",
@@ -467,7 +470,7 @@ export default function BlockPartyBrawl() {
                       : `${hud.score.toLocaleString()} points. Watch for the warning rings, then jump or dodge.`}
               </p>
               {status === "ready" && (
-                <div
+                <HowToPlay
                   style={{
                     textAlign: "left",
                     background: "#e5d9c9",
@@ -487,13 +490,13 @@ export default function BlockPartyBrawl() {
                   <div>Jump + punch for a kick. Avoid warning rings.</div>
                   <div>Grab health drops. Follow the arrows between blocks.</div>
                   <div>Choose stick or arrows below; pause anytime to switch. Hold Punch for combos; combine with Jump for a kick. Esc pauses; R restarts.</div>
-                </div>
+                </HowToPlay>
               )}
               <button
                 type="button"
                 onClick={status === "paused" ? resume : start}
                 style={{ ...buttonStyle, background: "#925274", padding: "12px 24px", minHeight: 46 }}
-                className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-800"
+                className="intro-card-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-800"
               >
                 <Play size={16} fill="currentColor" />
                 {status === "ready" ? "Hit the street" : status === "paused" ? "Back to the block" : "Play again"}

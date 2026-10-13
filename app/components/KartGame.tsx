@@ -1,5 +1,7 @@
 "use client"
 
+import HowToPlay from "@/components/ui/HowToPlay"
+
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Flag, Pause, Play, RotateCcw, Zap } from "lucide-react"
 import { useWindowActivity } from "../../components/ui/WindowShell"
@@ -536,6 +538,7 @@ export default function KartGame() {
             }}
           >
             <div
+              className="intro-card"
               style={{
                 width: "min(100%, 390px)",
                 margin: status === "finished" ? "0 auto" : "auto",
@@ -573,7 +576,7 @@ export default function KartGame() {
                     : `${formatRaceTime(raceRef.current.elapsed)} · ${raceRef.current.pickups} records collected`}
               </p>
               {status === "ready" && (
-                <div
+                <HowToPlay
                   style={{
                     textAlign: "left",
                     fontSize: 12,
@@ -593,7 +596,7 @@ export default function KartGame() {
                   </div>
                   <div>Pick up gold record crates for extra speed.</div>
                   <div style={{ color: "#496071" }}>Choose stick or arrows below; pause anytime to switch. Hold Gas and steer; add Drift for a boost. P pauses; R restarts.</div>
-                </div>
+                </HowToPlay>
               )}
               {status === "finished" && (
                 <div style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: 11, marginBottom: 15 }}>
@@ -618,7 +621,7 @@ export default function KartGame() {
                   padding: "12px 26px",
                   minHeight: 46,
                 }}
-                className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700"
+                className="intro-card-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700"
               >
                 <Play size={17} fill="currentColor" />
                 {status === "ready" ? "Start race" : status === "paused" ? "Back to the race" : "Race again"}

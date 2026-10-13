@@ -1,5 +1,7 @@
 "use client"
 
+import HowToPlay from "@/components/ui/HowToPlay"
+
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Play, RotateCcw, Zap } from "lucide-react"
 import { useWindowActivity } from "../../components/ui/WindowShell"
@@ -467,6 +469,7 @@ export default function OvertimeGame() {
           }}
         >
           <div
+            className="intro-card"
             style={{
               width: "100%",
               maxWidth: 380,
@@ -506,7 +509,7 @@ export default function OvertimeGame() {
                       : "Blue car. Orange goal. One rival, 90 seconds. Drive through the ball to shoot; jump for a chip. A tie goes to golden goal."}
                 </p>
                 <div style={{ marginBottom: 12 }}><GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} /></div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className="intro-card-action" style={{ display: "flex", gap: 8, flexWrap: "wrap", background: "#203b4c", paddingBlock: 4 }}>
                   <button
                     type="button"
                     onClick={phase === "paused" ? resume : start}
@@ -524,7 +527,7 @@ export default function OvertimeGame() {
                   )}
                 </div>
                 {phase === "ready" && (
-                  <div style={{ marginTop: 16, fontSize: 12, lineHeight: 1.7, color: "#b3cbd5" }}>
+                  <HowToPlay style={{ marginTop: 16, fontSize: 12, lineHeight: 1.7, color: "#b3cbd5" }}>
                     <div>
                       <strong style={{ color: "#eef5ee" }}>W / ↑</strong> accelerate ·{" "}
                       <strong style={{ color: "#eef5ee" }}>S / ↓</strong> brake / reverse
@@ -535,7 +538,7 @@ export default function OvertimeGame() {
                       <strong style={{ color: "#eef5ee" }}>Space</strong> jump
                     </div>
                     <div>Use the stick to steer, accelerate or reverse, or choose arrow buttons. Steering alone rolls you forward. Gold pads refill boost.</div>
-                  </div>
+                  </HowToPlay>
                 )}
                 {finished && (
                   <div style={{ marginTop: 16 }}>

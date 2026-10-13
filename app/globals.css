@@ -617,3 +617,27 @@ html {
 .bb-cabinet button:disabled { opacity: .4; cursor: default; }
 .bb-cabinet button:not(:disabled):hover { filter: brightness(1.15); }
 .bb-cabinet :focus-visible { outline: 2px solid #a7d4ff; outline-offset: 2px; }
+
+/* M2: intro cards never grow past the viewport; the primary action stays pinned. */
+.intro-card {
+  max-height: calc(100% - 8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.intro-card .intro-card-action {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+.intro-howto > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+@media (max-height: 540px) {
+  .intro-card { padding-top: 12px !important; padding-bottom: 12px !important; }
+  .intro-card .intro-card-decor { display: none !important; }
+}

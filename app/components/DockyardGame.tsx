@@ -1,5 +1,7 @@
 "use client"
 
+import HowToPlay from "@/components/ui/HowToPlay"
+
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react"
 import { Flag, Hammer, HardHat, Pause, Play, RotateCcw, Shield, Warehouse } from "lucide-react"
 import ScoreEntry from "./ScoreEntry"
@@ -954,6 +956,7 @@ export default function DockyardGame() {
             }}
           >
             <div
+              className="intro-card"
               style={{
                 maxWidth: 405,
                 maxHeight: "100%",
@@ -1009,7 +1012,7 @@ export default function DockyardGame() {
                 </div>
               )}
               {hud.phase === "briefing" && (
-                <>
+                <HowToPlay>
                   <ol style={{ paddingLeft: 18, marginTop: 12, fontSize: 12, lineHeight: 1.8 }}>
                     <li>
                       <strong>Gather</strong> sends workers to collect and return salvage.
@@ -1025,10 +1028,10 @@ export default function DockyardGame() {
                     Tap crew, then tap a destination. W: workers · F: guards · G: gather · A: attack. Space pauses.
                     Every command also has a touch button.
                   </p>
-                </>
+                </HowToPlay>
               )}
               <button
-                className={focusClass}
+                className={`intro-card-action ${focusClass}`}
                 onClick={hud.phase === "paused" ? pause : restart}
                 style={{
                   ...actionStyle,
