@@ -16,6 +16,8 @@
   "include": [
     "lib/*engine.ts",
     "lib/*engine.test.ts",
+    "lib/crate-run-palette.ts",
+    "lib/crate-run-palette.test.ts",
     "lib/kart-race.ts",
     "lib/kart-race.test.ts",
     "lib/brawl-game.ts",
