@@ -49,6 +49,10 @@ export const DIG_COLORS = {
   // HUD
   hudText: "#f3e8bf",
   hudBg: "#121826",
+  // UI chrome and the crate dig (not part of the play-plane contrast checks)
+  uiNavy: "#1d2b4a",
+  uiBrick: "#a8452f",
+  uiBrickDark: "#7d3122",
 } as const
 
 export type DigColor = keyof typeof DIG_COLORS

@@ -24,6 +24,9 @@ interface CrateRunGameProps {
 
 const STEP = 1 / 60
 const RENDER_SCALE = 2
+/** Narrow portrait screens zoom the camera in so the player stays at least 24 CSS px tall. */
+const PHONE_VIEW_W = 192
+const PHONE_BREAKPOINT = 420
 const KEY_CONTROLS: Record<string, Control> = {
   ArrowLeft: "left",
   KeyA: "left",
@@ -42,6 +45,7 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fieldRef = useRef<HTMLDivElement>(null)
   const [fieldSize, setFieldSize] = useState({ width: 256, height: 160 })
+  const [viewW, setViewW] = useState(VIEW_W)
   const stateRef = useRef(createCrateRun())
   const keysRef = useRef<CrateRunInput>({ left: false, right: false, jump: false })
   const touchesRef = useRef(new Map<number, Control>())
@@ -71,8 +75,11 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
     const field = fieldRef.current
     if (!field) return
     const resize = () => {
-      const width = Math.min(field.clientWidth, field.clientHeight * VIEW_W / VIEW_H)
-      setFieldSize({ width, height: width * VIEW_H / VIEW_W })
+      const nextViewW = field.clientWidth < PHONE_BREAKPOINT ? PHONE_VIEW_W : VIEW_W
+      stateRef.current.viewW = nextViewW
+      setViewW(nextViewW)
+      const width = Math.min(field.clientWidth, field.clientHeight * nextViewW / VIEW_H)
+      setFieldSize({ width, height: width * VIEW_H / nextViewW })
     }
     resize()
     const observer = new ResizeObserver(resize)
@@ -113,8 +120,6 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext("2d")
     if (!canvas || !ctx) return
-    ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0)
-    ctx.imageSmoothingEnabled = false
 
     let frame = 0
     let previous = 0
@@ -153,7 +158,10 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
         accumulator = 0
       }
 
-      drawCrateRun(ctx, state)
+      // Resizing the canvas resets its context, so reapply the pixel transform every frame.
+      ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0)
+      ctx.imageSmoothingEnabled = false
+      drawCrateRun(ctx, state, state.viewW)
 
       setHud((current) => {
         const seconds = Math.floor(state.elapsed)
@@ -315,11 +323,11 @@ export default function CrateRunGame({ onCleared, onSkip }: CrateRunGameProps) {
         </button>
       </div>
 
-      <div ref={fieldRef} style={{ minWidth: 0, minHeight: 0, aspectRatio: compact ? undefined : `${VIEW_W} / ${VIEW_H}`, maxHeight: compact ? undefined : "calc(100dvh - 330px)", display: "grid", placeItems: "center" }}>
+      <div ref={fieldRef} style={{ minWidth: 0, minHeight: 0, aspectRatio: compact ? undefined : `${viewW} / ${VIEW_H}`, maxHeight: compact ? undefined : "calc(100dvh - 330px)", display: "grid", placeItems: "center" }}>
       <div style={{ position: "relative", width: fieldSize.width, height: fieldSize.height, borderRadius: 6, overflow: "hidden", background: PALETTE.navyDeep, border: `2px solid ${PALETTE.navy}` }}>
         <canvas
           ref={canvasRef}
-          width={VIEW_W * RENDER_SCALE}
+          width={viewW * RENDER_SCALE}
           height={VIEW_H * RENDER_SCALE}
           role="img"
           aria-label="Downtown Dig: a side-scrolling street level ending at Raf's Records"
