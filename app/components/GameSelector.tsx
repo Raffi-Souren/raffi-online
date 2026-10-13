@@ -164,6 +164,10 @@ const floatingButton = {
   backdropFilter: "blur(6px)",
 } as const
 
+// Expanded games float Back/Exit (left) and minimize/close (right) at the top;
+// reserve that strip so no game header sits underneath them.
+const FLOATING_CHROME_INSET = "calc(env(safe-area-inset-top, 0px) + 60px)"
+
 export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All games")
@@ -298,6 +302,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
               minHeight: 0,
               position: "relative",
               overflowY: "auto",
+              paddingTop: expanded ? FLOATING_CHROME_INSET : undefined,
             }}
           >
             <GameComponent />
@@ -311,7 +316,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
               minHeight: 360,
               alignItems: "flex-start",
               justifyContent: "center",
-              paddingTop: 12,
+              paddingTop: expanded ? FLOATING_CHROME_INSET : 12,
             }}
           >
             <GameComponent />
