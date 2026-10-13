@@ -72,7 +72,13 @@ try {
     for (let attempt = 0; attempt < 6 && (await position()).y > 14.3; attempt++) await step("ArrowUp", 800)
     const against = await position()
     assert.ok(against.y >= 14.06 - 1 / 48 && against.y < 14.3, "held input must reach and stop at Mara: " + JSON.stringify(against))
-    await quest.getByRole("button", { name: "Talk", exact: true }).click()
+    // Touch screens get a Talk button; desktop talks with the keyboard, as its hint says.
+    if (touch) await quest.getByRole("button", { name: "Talk", exact: true }).click()
+    else {
+      assert.equal(await quest.getByRole("button", { name: "Talk", exact: true }).count(), 0, "desktop must not show touch buttons")
+      await canvas.focus()
+      await page.keyboard.press("e")
+    }
     await quest.getByRole("region", { name: "Collector dialogue", exact: true }).waitFor()
     await quest.getByRole("button", { name: "Continue", exact: true }).first().click()
     await page.screenshot({ path: out + "/" + name + "-courtyard.png" })

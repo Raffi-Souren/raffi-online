@@ -288,6 +288,9 @@ export default function Brickbreaker() {
         if (event.code === "Space" && event.target instanceof HTMLButtonElement) return
         event.preventDefault()
         input.current.keys.add(event.code)
+        // A quick tap can start and end between frames. Latch its rising edge so the
+        // next step still launches or fires; the loop clears it once used.
+        if (event.code === "Space" && !event.repeat) input.current.shot = true
         if (event.code !== "Space") input.current.target = undefined
       }
     }

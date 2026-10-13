@@ -79,6 +79,15 @@ async function run() {
     await wait(220)
     assert.ok((await state(game)).height > 0.3)
     await p.keyboard.up("Space")
+    // A Space tap that starts and ends between two frames must still jump once the car lands.
+    for (let i = 0; i < 40 && (await state(game)).height > 0.02; i++) await wait(50)
+    assert.ok((await state(game)).height <= 0.02, "car must land before the quick-tap jump")
+    await p.evaluate(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space" }))
+      window.dispatchEvent(new KeyboardEvent("keyup", { key: " ", code: "Space" }))
+    })
+    await wait(220)
+    assert.ok((await state(game)).height > 0.3, "a quick Space tap did not jump")
     await p.keyboard.press("Escape")
     await p.getByRole("button", { name: "Resume match" }).waitFor()
     const paused = await state(game)

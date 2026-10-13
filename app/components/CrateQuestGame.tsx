@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react"
 import GhostDeckStation from "./GhostDeckStation"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
+import { useTouchControls } from "../../components/ui/useTouchControls"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Play, RotateCcw, X } from "lucide-react"
 import {
   createCrateQuest,
@@ -206,6 +207,9 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
   const [paused, setPaused] = useState(false)
   const [ghostOpen, setGhostOpen] = useState(false)
   const [compact, setCompact] = useState(false)
+  // Desktop walks with the keyboard, so the pad, stick and action button only show on touch.
+  const touch = useTouchControls()
+  const sidePanel = compact && touch
   const clearControls = () => { keys.current.clear(); touchKeys.current.clear(); stick.current = { x: 0, y: 0 } }
   const publish = () =>
     setSnapshot({ ...game.current, player: { ...game.current.player }, records: [...game.current.records] })
@@ -338,10 +342,10 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
         position: "relative",
         height: "100%",
         minHeight: 0,
-        display: compact ? "grid" : "flex",
+        display: sidePanel ? "grid" : "flex",
         flexDirection: "column",
-        gridTemplateColumns: compact ? "minmax(0, 1fr) 252px" : undefined,
-        gridTemplateRows: compact ? "auto auto minmax(0, 1fr)" : undefined,
+        gridTemplateColumns: sidePanel ? "minmax(0, 1fr) 252px" : undefined,
+        gridTemplateRows: sidePanel ? "auto auto minmax(0, 1fr)" : undefined,
         background: "#29433f",
         fontFamily: '"SFMono-Regular", Menlo, Consolas, monospace',
         color: ink,
@@ -356,8 +360,8 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           gap: 10,
           padding: compact ? "4px 8px" : "8px 12px",
           borderBottom: "3px solid #665d4e",
-          gridColumn: compact ? "1 / -1" : undefined,
-          gridRow: compact ? 1 : undefined,
+          gridColumn: sidePanel ? "1 / -1" : undefined,
+          gridRow: sidePanel ? 1 : undefined,
           flexShrink: 0,
         }}
       >
@@ -380,7 +384,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           <X size={16} />
         </button>
       </header>
-      <div aria-label="Collected set" style={{ display: "flex", gap: 6, padding: "7px 10px", background: "#d9caab", flexShrink: 0, gridColumn: compact ? 1 : undefined, gridRow: compact ? 2 : undefined }}>
+      <div aria-label="Collected set" style={{ display: "flex", gap: 6, padding: "7px 10px", background: "#d9caab", flexShrink: 0, gridColumn: sidePanel ? 1 : undefined, gridRow: sidePanel ? 2 : undefined }}>
         {QUEST_RECORDS.map((record) => (
           <div
             key={record.id}
@@ -413,8 +417,8 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
-          gridColumn: compact ? 1 : undefined,
-          gridRow: compact ? 3 : undefined,
+          gridColumn: sidePanel ? 1 : undefined,
+          gridRow: sidePanel ? 3 : undefined,
         }}
       >
         <canvas
@@ -486,7 +490,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                   <p style={{ fontSize: 11 }}>
                     Arrows / WASD to walk · E / Space to interact
                     <br />
-                    Touch: use the pad and Dig / talk button.
+                    {touch ? "Touch: use the pad and Dig / talk button." : "P pauses the hunt."}
                   </p>
                   <button
                     style={{ ...button, background: plum, color: cream }}
@@ -556,7 +560,7 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
           </div>
         )}
       </div>
-      <footer style={{ background: cream, borderTop: compact ? undefined : "3px solid #665d4e", borderLeft: compact ? "3px solid #665d4e" : undefined, padding: compact ? "8px" : "8px 12px", flexShrink: 0, minHeight: 0, overflowY: compact ? "auto" : undefined, gridColumn: compact ? 2 : undefined, gridRow: compact ? "2 / 4" : undefined }}>
+      <footer style={{ background: cream, borderTop: sidePanel ? undefined : "3px solid #665d4e", borderLeft: sidePanel ? "3px solid #665d4e" : undefined, padding: sidePanel ? "8px" : "8px 12px", flexShrink: 0, minHeight: 0, overflowY: sidePanel ? "auto" : undefined, gridColumn: sidePanel ? 2 : undefined, gridRow: sidePanel ? "2 / 4" : undefined }}>
         <div role="status" aria-live="polite" style={{ fontSize: 11, minHeight: 28, marginBottom: 5 }}>
           {snapshot.phase === "complete"
             ? "3 / 3 records · Set assembled"
@@ -566,8 +570,8 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                 ? "3 / 3 records · Return to Mara in the courtyard"
                 : snapshot.records.length + " / 3 records · Explore both shops and the courtyard"}
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          {controlMode === "stick" ? <GameJoystick label="Crate Quest walking stick" size={compact ? 88 : 96} resetKey={compact ? "landscape" : "portrait"} disabled={!active || paused || ghostOpen || snapshot.phase !== "playing"} onChange={(value) => { stick.current = value }} /> : <div
+        {touch && <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          {controlMode === "stick" ? <GameJoystick label="Crate Quest walking stick" size={sidePanel ? 88 : 96} resetKey={sidePanel ? "landscape" : "portrait"} disabled={!active || paused || ghostOpen || snapshot.phase !== "playing"} onChange={(value) => { stick.current = value }} /> : <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 44px)",
@@ -621,15 +625,20 @@ export default function CrateQuestGame({ onComplete, onExit, active = true }: Pr
                 snapshot.phase === "complete" ||
                 (snapshot.phase === "playing" && !target)
               }
-              style={{ ...button, background: gold, minWidth: compact ? 76 : 105, padding: compact ? "8px 6px" : button.padding }}
+              style={{ ...button, background: gold, minWidth: sidePanel ? 76 : 105, padding: sidePanel ? "8px 6px" : button.padding }}
               onClick={interact}
             >
               {snapshot.phase === "dialogue" ? "Continue" : target?.kind === "crate" ? "Dig crate" : "Talk"}
             </button>
             <div style={{ fontSize: 9, marginTop: 5 }}>WASD / arrows · E to interact · P to pause</div>
           </div>
-        </div>
-        <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />
+        </div>}
+        {touch && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
+        {!touch && (
+          <div style={{ fontSize: 11 }}>
+            <strong>Arrows / WASD</strong> walk · <strong>E / Space</strong> interact · <strong>P</strong> pause
+          </div>
+        )}
       </footer>
       <style jsx>{`
         .crate-quest button:hover:not(:disabled) {

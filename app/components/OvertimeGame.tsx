@@ -17,6 +17,7 @@ import { createOvertimeScene } from "../../lib/overtime-scene"
 import ScoreEntry from "./ScoreEntry"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
+import { useTouchControls } from "../../components/ui/useTouchControls"
 
 type Control = "left" | "right" | "forward" | "reverse" | "boost" | "jump"
 const STEER_CRUISE = 0.7
@@ -79,11 +80,16 @@ export default function OvertimeGame() {
     query.addEventListener("change", sync)
     return () => query.removeEventListener("change", sync)
   }, [])
+  // Desktop gives the whole frame to the pitch; keyboard hints replace the touch pads.
+  const touch = useTouchControls()
+  const sideControls = landscape && touch
   const hostRef = useRef<HTMLDivElement>(null)
   const gameRef = useRef(createMatch())
   const activeRef = useRef(active)
   const keyboard = useRef(new Set<string>())
   const touches = useRef(new Map<number | string, Control>())
+  // A quick tap can start and end between frames; keep its rising edge until a step uses it.
+  const jumpPending = useRef(false)
   const stick = useRef({ x: 0, y: 0 })
   const [controlMode, setControlMode] = useGameControlMode("overtime")
   const runId = useRef(0)
@@ -95,6 +101,7 @@ export default function OvertimeGame() {
   const clearControls = useCallback(() => {
     keyboard.current.clear()
     touches.current.clear()
+    jumpPending.current = false
     stick.current = { x: 0, y: 0 }
     setHeld([])
   }, [])
@@ -153,10 +160,11 @@ export default function OvertimeGame() {
             steer,
             throttle: throttle === 0 && steer !== 0 ? STEER_CRUISE * Math.abs(steer) : throttle,
             boost: pressed("boost"),
-            jump: pressed("jump"),
+            jump: jumpPending.current || pressed("jump"),
           },
           dt,
         )
+        jumpPending.current = false
         scene.render(match)
       }
       if (match.phase !== lastPhase) {
@@ -214,6 +222,7 @@ export default function OvertimeGame() {
         if (key === " " && event.target instanceof HTMLButtonElement) return
         event.preventDefault()
         keyboard.current.add(key)
+        if (KEY_MAP[key] === "jump" && !event.repeat) jumpPending.current = true
       }
     }
     const keyUp = (event: KeyboardEvent) => keyboard.current.delete(event.key.toLowerCase())
@@ -242,6 +251,7 @@ export default function OvertimeGame() {
         if (phase !== "playing" && phase !== "kickoff") return
         event.preventDefault()
         touches.current.set(event.pointerId, control)
+        if (control === "jump") jumpPending.current = true
         setHeld(Array.from(touches.current.values()))
         try {
           event.currentTarget.setPointerCapture(event.pointerId)
@@ -255,6 +265,8 @@ export default function OvertimeGame() {
       }}
       onPointerCancel={(event) => {
         touches.current.delete(event.pointerId)
+        // A cancelled touch (a scroll or system gesture) was not a tap.
+        if (control === "jump") jumpPending.current = false
         setHeld(Array.from(touches.current.values()))
       }}
       onLostPointerCapture={(event) => {
@@ -266,6 +278,7 @@ export default function OvertimeGame() {
           event.preventDefault()
           event.stopPropagation()
           touches.current.set(`key-${control}`, control)
+          if (control === "jump" && !event.repeat) jumpPending.current = true
           setHeld(Array.from(touches.current.values()))
         }
       }}
@@ -284,7 +297,7 @@ export default function OvertimeGame() {
       onContextMenu={(event) => event.preventDefault()}
       style={{
         ...buttonStyle,
-        width: landscape ? "100%" : "clamp(44px, 8vw, 58px)",
+        width: sideControls ? "100%" : "clamp(44px, 8vw, 58px)",
         minHeight: 44,
         padding: 6,
         touchAction: "none",
@@ -315,10 +328,10 @@ export default function OvertimeGame() {
       data-ball-z={hud.ballZ.toFixed(2)}
       data-hits={hud.hits}
       className="game-touch"
-      data-landscape-controls={landscape || undefined}
+      data-landscape-controls={sideControls || undefined}
       style={{
         position: "relative",
-        display: landscape ? "grid" : "flex",
+        display: sideControls ? "grid" : "flex",
         gridTemplateColumns: "160px minmax(0, 1fr) 104px",
         gridTemplateRows: "auto minmax(0, 1fr)",
         flexDirection: "column",
@@ -407,9 +420,9 @@ export default function OvertimeGame() {
           </div>
         )}
       </div>
-      <footer
+      {touch && <footer
         style={{
-          display: landscape ? "contents" : "flex",
+          display: sideControls ? "contents" : "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 8,
@@ -419,7 +432,7 @@ export default function OvertimeGame() {
           borderTop: "1px solid #59707c",
         }}
       >
-        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: landscape ? 8 : 0, flexShrink: 0 }}>
+        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: sideControls ? 8 : 0, flexShrink: 0 }}>
         {controlMode === "stick" ? (
           <GameJoystick
             label="Drive car: up accelerates, down reverses, left and right steer"
@@ -429,17 +442,17 @@ export default function OvertimeGame() {
             onChange={(value) => { stick.current = value }}
           />
         ) : (
-          <div style={{ display: "flex", flexWrap: landscape ? "wrap" : "nowrap", gap: 4, width: landscape ? 100 : undefined }}>
+          <div style={{ display: "flex", flexWrap: sideControls ? "wrap" : "nowrap", gap: 4, width: sideControls ? 100 : undefined }}>
             {touchButton("left", "Steer left", <ArrowLeft size={21} />)}
             {touchButton("right", "Steer right", <ArrowRight size={21} />)}
             {touchButton("reverse", "Brake or reverse", <ArrowDown size={20} />)}
           </div>
         )}
-        {landscape && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
+        {sideControls && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
         </div>
-        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", alignItems: landscape ? "stretch" : "flex-end", justifyContent: "center", padding: landscape ? 8 : 0, gap: 7 }}>
-          {!landscape && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
-          <div style={{ display: "flex", flexDirection: landscape ? "column" : "row", alignItems: landscape ? "stretch" : "center", gap: 8 }}>
+        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", alignItems: sideControls ? "stretch" : "flex-end", justifyContent: "center", padding: sideControls ? 8 : 0, gap: 7 }}>
+          {!sideControls && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
+          <div style={{ display: "flex", flexDirection: sideControls ? "column" : "row", alignItems: sideControls ? "stretch" : "center", gap: 8 }}>
             {touchButton("jump", "Jump", <span style={{ fontSize: 11 }}>Jump</span>)}
             <div style={{ position: "relative" }}>
               {touchButton("boost", "Boost", <Zap size={19} />, true)}
@@ -454,7 +467,56 @@ export default function OvertimeGame() {
             {touchButton("forward", "Accelerate", <ArrowUp size={23} />, true)}
           </div>
         </div>
-      </footer>
+      </footer>}
+      {!touch && (
+        <footer
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "4px 14px",
+            padding: "7px 12px",
+            flexShrink: 0,
+            fontSize: 12,
+            lineHeight: 1.5,
+            color: "#b3cbd5",
+            background: "#263f50",
+            borderTop: "1px solid #59707c",
+          }}
+        >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 14px" }}>
+            <span>
+              <strong style={{ color: "#eef5ee" }}>W / ↑</strong> accelerate
+            </span>
+            <span>
+              <strong style={{ color: "#eef5ee" }}>S / ↓</strong> brake / reverse
+            </span>
+            <span>
+              <strong style={{ color: "#eef5ee" }}>A D / ← →</strong> steer
+            </span>
+            <span>
+              <strong style={{ color: "#eef5ee" }}>Shift</strong> boost
+            </span>
+            <span>
+              <strong style={{ color: "#eef5ee" }}>Space</strong> jump
+            </span>
+            <span>
+              <strong style={{ color: "#eef5ee" }}>Esc</strong> pause
+            </span>
+          </div>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            Boost
+            <meter
+              aria-label="Boost fuel"
+              min={0}
+              max={100}
+              value={hud.fuel}
+              style={{ width: 96, height: 10, accentColor: "#ffd77d" }}
+            />
+          </span>
+        </footer>
+      )}
       {overlay && (
         <div
           style={{
@@ -508,7 +570,7 @@ export default function OvertimeGame() {
                       ? "The clock is stopped. Pick up where you left off."
                       : "Blue car. Orange goal. One rival, 90 seconds. Drive through the ball to shoot; jump for a chip. A tie goes to golden goal."}
                 </p>
-                <div style={{ marginBottom: 12 }}><GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} /></div>
+                {touch && <div style={{ marginBottom: 12 }}><GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} /></div>}
                 <div className="intro-card-action" style={{ display: "flex", gap: 8, flexWrap: "wrap", background: "#203b4c", paddingBlock: 4 }}>
                   <button
                     type="button"
@@ -537,7 +599,11 @@ export default function OvertimeGame() {
                       <strong style={{ color: "#eef5ee" }}>Shift</strong> boost ·{" "}
                       <strong style={{ color: "#eef5ee" }}>Space</strong> jump
                     </div>
-                    <div>Use the stick to steer, accelerate or reverse, or choose arrow buttons. Steering alone rolls you forward. Gold pads refill boost.</div>
+                    <div>
+                      {touch
+                        ? "Use the stick to steer, accelerate or reverse, or choose arrow buttons. Steering alone rolls you forward. Gold pads refill boost."
+                        : "Steering alone rolls you forward. Gold pads refill boost. Esc pauses."}
+                    </div>
                   </HowToPlay>
                 )}
                 {finished && (

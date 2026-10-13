@@ -33,6 +33,8 @@ type GameView = "menu" | "playing" | "paused" | "gameover" | "leaderboard"
 
 const GRID_SIZE = 20
 const CANVAS_SIZE = 400
+// The compact pause bar (68px) plus the 12px gap under it.
+const PLAY_BAR_HEIGHT = 80
 
 export default function SnakeGame() {
   const { active } = useWindowActivity()
@@ -342,7 +344,7 @@ export default function SnakeGame() {
   }, [gameView, snake, food, obstacles, score, level, highScore])
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto px-2">
+    <div className="flex flex-col items-center gap-3 w-full max-w-[760px] mx-auto px-2">
       {(gameView === "playing" || gameView === "paused") && (
         <GameControls
           compact
@@ -358,6 +360,9 @@ export default function SnakeGame() {
       )}
 
       <HandheldConsole
+        screenAspect={1}
+        // Keep room for the pause bar so pressing START does not resize the console.
+        reserveHeight={gameView === "playing" || gameView === "paused" ? 0 : PLAY_BAR_HEIGHT}
         title="Snake"
         controlMode={controlMode}
         onControlModeChange={(mode) => {
