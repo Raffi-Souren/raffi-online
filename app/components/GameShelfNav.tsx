@@ -34,7 +34,7 @@ export default function GameShelfNav({ onBack, compact = false, children }: Game
           display: "inline-flex",
           gap: 6,
           alignItems: "center",
-          minHeight: compact ? 36 : 44,
+          minHeight: 44,
           padding: "4px 10px",
           fontSize: 12,
           color: "#294b67",

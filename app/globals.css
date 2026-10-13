@@ -591,8 +591,8 @@ html {
 @media (hover: none), (pointer: coarse) { .bb-play-controls kbd { display: none; } }
 .bb-status { min-height: 15px; color: #e3cd94; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bb-powers { color: #a5d4ed; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; }
-.bb-aim { display: flex; align-items: center; gap: 5px; color: #bbc9de; font-size: 10px; min-height: 24px; }
-.bb-aim input { min-width: 0; width: 100%; accent-color: #86b7f6; }
+.bb-aim { display: flex; align-items: center; gap: 5px; color: #bbc9de; font-size: 12px; min-height: 44px; }
+.bb-aim input { min-width: 0; width: 100%; min-height: 44px; touch-action: none; accent-color: #86b7f6; }
 .bb-preferences { border: 0; border-top: 1px solid #667487; padding: 8px 0 0; margin: 0; }
 .bb-preferences legend { font-size: 11px; padding: 0 6px; color: #c9d8e8; }
 .bb-preferences > div { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 5px; }

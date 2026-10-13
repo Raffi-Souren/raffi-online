@@ -338,7 +338,8 @@ export default function BlockPartyBrawl() {
             onClick={status === "paused" ? resume : pause}
             style={{
               ...buttonStyle,
-              minHeight: 34,
+              minHeight: 44,
+              minWidth: 44,
               padding: "5px 9px",
               opacity: status !== "playing" && status !== "paused" ? 0.4 : 1,
             }}
@@ -349,7 +350,7 @@ export default function BlockPartyBrawl() {
             type="button"
             aria-label="Restart brawl"
             onClick={start}
-            style={{ ...buttonStyle, minHeight: 34, padding: "5px 9px" }}
+            style={{ ...buttonStyle, minHeight: 44, minWidth: 44, padding: "5px 9px" }}
           >
             <RotateCcw size={16} />
           </button>

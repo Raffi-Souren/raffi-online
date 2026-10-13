@@ -923,3 +923,9 @@ button:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
 }
 
 #graphics-light[hidden] { display: none !important; }
+
+/* Touch targets: at least 44x44 CSS px. */
+#garage-open {
+  min-height: 44px;
+  min-width: 44px;
+}

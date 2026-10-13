@@ -363,7 +363,7 @@ export default function OvertimeGame() {
           aria-label="Pause Overtime"
           onClick={pause}
           disabled={overlay}
-          style={{ ...buttonStyle, minHeight: 32, padding: 6, background: "#dbe8e9", opacity: overlay ? 0.45 : 1 }}
+          style={{ ...buttonStyle, minHeight: 44, minWidth: 44, padding: 6, background: "#dbe8e9", opacity: overlay ? 0.45 : 1 }}
           className={focusClass}
         >
           <Pause size={16} />

@@ -372,7 +372,8 @@ export default function KartGame() {
             aria-label={status === "paused" ? "Resume race" : "Pause race"}
             style={{
               ...shellButton,
-              minHeight: 34,
+              minHeight: 44,
+              minWidth: 44,
               padding: "5px 9px",
               opacity: status === "ready" || status === "finished" ? 0.45 : 1,
             }}
@@ -384,7 +385,7 @@ export default function KartGame() {
             type="button"
             onClick={start}
             aria-label="Restart race"
-            style={{ ...shellButton, minHeight: 34, padding: "5px 9px" }}
+            style={{ ...shellButton, minHeight: 44, minWidth: 44, padding: "5px 9px" }}
             className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
           >
             <RotateCcw size={16} />

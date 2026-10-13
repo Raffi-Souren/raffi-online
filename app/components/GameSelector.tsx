@@ -164,7 +164,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
               display: "inline-flex",
               alignItems: "center",
               gap: 5,
-              minHeight: 40,
+              minHeight: 44,
               padding: "6px 8px",
               color: "#294b67",
               fontSize: 13,
