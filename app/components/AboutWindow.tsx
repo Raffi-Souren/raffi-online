@@ -46,19 +46,12 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
             😎 ABOUT
           </h2>
           <p className="text-gray-700 leading-relaxed">
-            I’m Raffi. I DJ, build things, and like bringing people together. Music runs through a lot of
-            it—from co-founding indify to throwing events and making things with Bad Company, the
-            creative collective I co-founded.
+            I’m Raffi. I DJ, build things, and like bringing people together. Music runs through most of it,
+            from co-founding indify to throwing events with BADCOMPANY. I also advise Nameless.
           </p>
           <p style={{ color: "#374151", lineHeight: 1.625, marginTop: 12 }}>
-            New York is home, on both sides of the East River. This desktop is a place for the records,
-            games, experiments, and ideas I pick up along the way. Some things are finished. Others
-            I’m still making and breaking.
-          </p>
-          <p style={{ color: "#374151", lineHeight: 1.625, marginTop: 16 }}>
-            For work, I’m a Field CTO and Account Technical Leader at IBM, helping financial services
-            teams put AI and automation into production. I also research how to make AI more reliable
-            and advise Nameless.
+            New York is home, on both sides of the East River. This desktop holds the records, games, and
+            experiments I pick up along the way. Some are finished. Others I’m still making and breaking.
           </p>
           <a
             href="https://www.raffisourenkhatchadourian.com/"
