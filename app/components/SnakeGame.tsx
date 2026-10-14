@@ -58,7 +58,20 @@ export default function SnakeGame() {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const directionRef = useRef<SnakeDirection>("RIGHT")
   const turnsRef = useRef<SnakeDirection[]>([])
+  // After START the snake holds still until the first direction, so nobody runs into the
+  // wall while still finding the controls. That first press moves it at once.
+  const [waitingForMove, setWaitingForMove] = useState(false)
+  const waitingRef = useRef(false)
+  const firstStepRef = useRef(false)
   const queueTurn = useCallback((next: SnakeDirection) => {
+    if (waitingRef.current) {
+      waitingRef.current = false
+      directionRef.current = next
+      turnsRef.current = []
+      firstStepRef.current = true
+      setWaitingForMove(false)
+      return
+    }
     turnsRef.current = queueSnakeTurn(directionRef.current, turnsRef.current, next)
   }, [])
 
@@ -96,10 +109,10 @@ export default function SnakeGame() {
 
   // Timer
   useEffect(() => {
-    if (gameView !== "playing") return
+    if (gameView !== "playing" || waitingForMove) return
     const timer = setInterval(() => setTimeElapsed((t) => t + 1), 1000)
     return () => clearInterval(timer)
-  }, [gameView])
+  }, [gameView, waitingForMove])
 
   const getLevelConfig = (lvl: number) => {
     return SNAKE_LEVELS[Math.min(lvl - 1, SNAKE_LEVELS.length - 1)]
@@ -122,6 +135,9 @@ export default function SnakeGame() {
     setObstacles(initialObstacles)
     directionRef.current = "RIGHT"
     turnsRef.current = []
+    waitingRef.current = true
+    firstStepRef.current = false
+    setWaitingForMove(true)
     setTimeElapsed(0)
     setIsNewHighScore(false)
     setBoardCleared(false)
@@ -253,11 +269,11 @@ export default function SnakeGame() {
 
   // Game loop
   useEffect(() => {
-    if (gameView !== "playing" || !active) return
+    if (gameView !== "playing" || !active || waitingForMove) return
 
     const config = getLevelConfig(level)
 
-    const interval = setInterval(() => {
+    const tick = () => {
       directionRef.current = turnsRef.current.shift() ?? directionRef.current
       const next = moveSnake(snakeRef.current, directionRef.current, food, obstacles, CANVAS_SIZE, GRID_SIZE)
       if (next.collision) {
@@ -276,14 +292,19 @@ export default function SnakeGame() {
         setScore(finalScore)
         setFood(nextFood)
       }
-    }, config.speed)
+    }
+    if (firstStepRef.current) {
+      firstStepRef.current = false
+      tick()
+    }
+    const interval = setInterval(tick, config.speed)
     gameLoopRef.current = interval
 
     return () => {
       clearInterval(interval)
       if (gameLoopRef.current === interval) gameLoopRef.current = undefined
     }
-  }, [gameView, food, level, score, obstacles, handleGameOver, active])
+  }, [gameView, food, level, score, obstacles, handleGameOver, active, waitingForMove])
 
   // Draw game
   useEffect(() => {
@@ -340,8 +361,19 @@ export default function SnakeGame() {
       ctx.fillText(`Score: ${score}`, 10, 22)
       ctx.textAlign = "right"
       ctx.fillText(`Level ${level}`, CANVAS_SIZE - 10, 22)
+
+      if (gameView === "playing" && waitingForMove) {
+        ctx.fillStyle = "#1b3a12d9"
+        ctx.fillRect(0, CANVAS_SIZE / 2 + 34, CANVAS_SIZE, 66)
+        ctx.fillStyle = "#e9f5c8"
+        ctx.textAlign = "center"
+        ctx.font = "bold 18px monospace"
+        ctx.fillText("Pick a direction to go", CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 62)
+        ctx.font = "14px monospace"
+        ctx.fillText("Arrows, swipe or stick", CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 86)
+      }
     }
-  }, [gameView, snake, food, obstacles, score, level, highScore])
+  }, [gameView, snake, food, obstacles, score, level, highScore, waitingForMove])
 
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-[760px] mx-auto px-2">
