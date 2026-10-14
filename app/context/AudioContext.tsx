@@ -17,6 +17,8 @@ export interface AudioEngine {
   startInGesture: (url: string) => boolean
   /** True when the player itself failed and a retry needs a fresh one. */
   needsRebuild: () => boolean
+  /** Loads `url` quietly so a later tap can start it at once. Never interrupts a selected track. */
+  warm: (url: string) => void
 }
 
 interface AudioContextType {
@@ -60,6 +62,7 @@ interface AudioContextType {
   clearError: () => void
   /** The player registers itself here so taps can start audio in the same gesture. */
   registerEngine: (engine: AudioEngine | null) => void
+  warmTrack: (url: string) => void
   toggleShuffle: () => void
   cycleRepeatMode: () => void
 }
@@ -84,6 +87,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [seekRequest, setSeekRequest] = useState<AudioContextType["seekRequest"]>(null)
   const engineRef = useRef<AudioEngine | null>(null)
 
+  const warmTrack = useCallback((url: string) => engineRef.current?.warm(url), [])
   const registerEngine = useCallback((engine: AudioEngine | null) => {
     engineRef.current = engine
   }, [])
@@ -295,6 +299,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         toggleShuffle,
         cycleRepeatMode,
         registerEngine,
+        warmTrack,
       }}
     >
       {children}

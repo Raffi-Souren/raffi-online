@@ -24,7 +24,9 @@ const PHASE_TITLES: Record<CratePhase, string> = {
 }
 
 export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: DiggingInTheCratesProps) {
-  const { currentTrack, isPlaying, isLoading, error, playTrack, setPlaylist, togglePlay } = useAudio()
+  const { currentTrack, isPlaying, isLoading, needsTap, error, playTrack, setPlaylist, togglePlay } = useAudio()
+  // Playing means sound is coming out; a press while it loads or waits for a tap starts it.
+  const audible = isPlaying && !isLoading && !needsTap
   // Minimize keeps this session mounted, so restoring resumes the same phase.
   const [phase, setPhase] = useState<CratePhase>("level")
   const [recordsFound, setRecordsFound] = useState(0)
@@ -147,8 +149,8 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
               </p>
 
               <button
-                onClick={togglePlay}
-                aria-label={isPlaying ? "Pause" : "Play"}
+                onClick={() => (error && currentTrack ? playTrack(currentTrack) : togglePlay())}
+                aria-label={audible ? "Pause" : "Play"}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -164,7 +166,7 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
                   marginBottom: "0.5rem",
                 }}
               >
-                {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+                {audible ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
               </button>
 
               <div
@@ -190,7 +192,9 @@ export default function DiggingInTheCrates({ isOpen, onClose, onWorldCheat }: Di
                 >
                   {error
                     ? "Track unavailable. Try Shuffle or Play to retry."
-                    : isLoading
+                    : needsTap
+                      ? "Tap play to start"
+                      : isLoading
                       ? "Loading your track…"
                       : isPlaying
                         ? "Playing on SoundCloud"

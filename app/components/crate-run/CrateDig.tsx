@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react"
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react"
+import { useAudio } from "../../context/AudioContext"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { SOUNDCLOUD_TRACKS, type Track } from "@/data/audio-library"
 import { crateSizeFor } from "@/lib/crate-run-engine"
@@ -84,6 +85,15 @@ export default function CrateDig({ records, onPull }: CrateDigProps) {
   const [direction, setDirection] = useState<1 | -1>(1)
   const dragRef = useRef<{ x: number; id: number } | null>(null)
   const track = crate[index]
+  const { warmTrack } = useAudio()
+
+  // Load the record in view, so pulling it starts inside the tap. Safari and iOS
+  // block audio that starts after the tap ends, which left it stuck on pause.
+  useEffect(() => {
+    if (!track?.url) return
+    const timer = window.setTimeout(() => warmTrack(track.url), 250)
+    return () => window.clearTimeout(timer)
+  }, [track?.url, warmTrack])
 
   const flip = (step: 1 | -1) => {
     setDirection(step)
