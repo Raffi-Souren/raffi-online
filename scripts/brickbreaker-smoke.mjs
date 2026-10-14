@@ -128,10 +128,20 @@ try {
     await page.screenshot({ path: `${out}/${name}-playing.png` })
     const fieldBounds = await canvas.boundingBox()
     const fireBounds = await game.getByRole("button", { name: "Launch or fire", exact: true }).boundingBox()
-    assert.ok(fieldBounds.y >= 0 && fieldBounds.y + fieldBounds.height <= height - 40, "playfield is clipped by the taskbar")
-    assert.ok(fireBounds.y + fireBounds.height <= height - 40, "fire control is clipped by the taskbar")
+    // Touch screens open games expanded, covering the taskbar; keep clear of it only when it shows.
+    const bottomLimit = await page.evaluate(() =>
+      document.elementFromPoint(innerWidth / 2, innerHeight - 4)?.closest('[aria-label="Desktop taskbar"]') ? innerHeight - 40 : innerHeight,
+    )
+    assert.ok(fieldBounds.y >= 0 && fieldBounds.y + fieldBounds.height <= bottomLimit, "playfield is clipped by the taskbar")
+    assert.ok(fireBounds.y + fireBounds.height <= bottomLimit, "fire control is clipped by the taskbar")
     if (name !== "landscape") assert.ok(fieldBounds.width >= (name === "desktop" ? 360 : 250), `${name} playfield is too small: ${fieldBounds.width}`)
-    const initialArea = fieldBounds.width * fieldBounds.height
+    // Compare the expanded board with the windowed one, whichever view the game opened in.
+    if (!(await page.getByRole("button", { name: "Expand game", exact: true }).count())) {
+      await page.getByRole("button", { name: "Exit expanded view", exact: true }).click()
+      await page.waitForTimeout(250)
+    }
+    const windowedBounds = await canvas.boundingBox()
+    const initialArea = windowedBounds.width * windowedBounds.height
     await page.getByRole("button", { name: "Expand game", exact: true }).click()
     await page.waitForTimeout(250)
     const expandedBounds = await canvas.boundingBox()
