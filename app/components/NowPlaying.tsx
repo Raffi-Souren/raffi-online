@@ -15,6 +15,7 @@ export default function NowPlaying() {
     currentTime,
     duration,
     isLoading,
+    needsTap,
     error,
     shuffle,
     repeatMode,
@@ -97,10 +98,11 @@ export default function NowPlaying() {
             type="button"
             onClick={togglePlay}
             className="hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#FF5500] rounded-full"
-            aria-label={isPlaying ? "Pause" : "Play"}
+            aria-label={isPlaying && !isLoading ? "Pause" : "Play"}
             style={controlStyle}
           >
-            {isPlaying ? (
+            {/* Until the stream starts, a press starts it (see togglePlay), so show Play. */}
+            {isPlaying && !isLoading ? (
               <Pause size={22} fill="currentColor" />
             ) : (
               <Play size={22} fill="currentColor" className="ml-0.5" />
@@ -172,7 +174,7 @@ export default function NowPlaying() {
                   }}
                 />
                 <span style={{ fontSize: "9px", opacity: 0.9 }}>
-                  {error ? "Stream unavailable" : isLoading ? "Loading stream" : isPlaying ? "Now playing" : "Paused"}
+                  {error ? "Stream unavailable" : needsTap ? "Tap play" : isLoading ? "Loading stream" : isPlaying ? "Now playing" : "Paused"}
                 </span>
               </div>
               <div style={{ fontSize: "9px", fontFamily: "monospace", opacity: 0.9 }}>

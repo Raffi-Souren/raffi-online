@@ -14,7 +14,7 @@ interface DesktopWelcomeProps {
 
 export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollapsed, onAbout, onExplore }: DesktopWelcomeProps) {
   const titleRef = useRef<HTMLButtonElement>(null)
-  const { currentTrack, isPlaying, isLoading, error, setPlaylist, playTrack, togglePlay } = useAudio()
+  const { currentTrack, isPlaying, isLoading, needsTap, error, setPlaylist, playTrack, togglePlay } = useAudio()
   const mixSelected = Boolean(currentTrack && BADCOMPANY_MIXES.some((mix) => mix.id === currentTrack.id))
   const playingMix = mixSelected && isPlaying
 
@@ -89,7 +89,7 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
           <button
             type="button"
             onClick={playMix}
-            aria-label={mixSelected && error ? "Retry mix" : playingMix ? "Pause mix" : mixSelected ? "Resume mix" : "Play a mix"}
+            aria-label={mixSelected && error ? "Retry mix" : mixSelected && needsTap ? "Tap to play" : mixSelected && isLoading ? "Tuning in…" : playingMix ? "Pause mix" : mixSelected ? "Resume mix" : "Play a mix"}
             className="group hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
             style={{ display: "flex", alignItems: "center", gap: 9, minHeight: 48, padding: "6px 10px", border: "1px solid #202b36", borderRadius: 5, background: "#303b46", color: "#fffbee", cursor: "pointer", marginRight: 3, boxShadow: "inset 0 1px 0 #ffffff25, 0 2px 0 #00000015" }}
           >
@@ -97,8 +97,8 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
             <span style={{ display: "grid", textAlign: "left", gap: 2 }}>
               <span style={{ fontSize: 9, letterSpacing: ".08em", color: "#d9c5a4" }}>BADCO · SIDE A</span>
               <span style={{ display: "flex", gap: 5, alignItems: "center", fontSize: 12 }}>
-                {mixSelected && isLoading ? <LoaderCircle size={11} className="motion-safe:animate-spin" aria-hidden="true" /> : playingMix ? <Pause size={11} aria-hidden="true" /> : <Play size={11} aria-hidden="true" />}
-                {mixSelected && error ? "Try again" : mixSelected && isLoading ? "Tuning in…" : playingMix ? "Pause mix" : mixSelected ? "Resume mix" : "Play a mix"}
+                {mixSelected && isLoading && !needsTap ? <LoaderCircle size={11} className="motion-safe:animate-spin" aria-hidden="true" /> : playingMix && !needsTap ? <Pause size={11} aria-hidden="true" /> : <Play size={11} aria-hidden="true" />}
+                {mixSelected && error ? "Try again" : mixSelected && needsTap ? "Tap to play" : mixSelected && isLoading ? "Tuning in…" : playingMix ? "Pause mix" : mixSelected ? "Resume mix" : "Play a mix"}
               </span>
             </span>
           </button>
@@ -108,7 +108,7 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
             <button type="button" onClick={onAbout} className={focusClass} style={actionStyle}>About me</button>
           </span>
         </div>
-        {mixSelected && error && <p role="status" style={{ fontSize: 11, lineHeight: 1.5, color: "#92400e", margin: "8px 0 0" }}>The mix couldn’t connect. Tap to try again.</p>}
+        {mixSelected && error && <p role="status" style={{ fontSize: 11, lineHeight: 1.5, color: "#92400e", margin: "8px 0 0" }}>The mix didn’t start. Tap to try again.</p>}
       </div>
     </section>
   )

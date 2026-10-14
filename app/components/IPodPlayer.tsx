@@ -207,7 +207,7 @@ export default function IPodPlayer() {
     isPlaying,
     playTrack,
     pauseTrack,
-    resumeTrack,
+    togglePlay,
     nextTrack,
     previousTrack,
     playlist,
@@ -219,6 +219,7 @@ export default function IPodPlayer() {
     toggleShuffle,
     cycleRepeatMode,
     isLoading,
+    needsTap,
     error,
     volume,
     setVolume,
@@ -404,8 +405,8 @@ export default function IPodPlayer() {
   const handlePlayPause = () => {
     if (gameActive) gameRef.current?.playPause()
     else if (currentScreen === "videoPlayer") handleVideoPlayPause()
-    else if (isPlaying) pauseTrack()
-    else if (currentTrack) resumeTrack()
+    // While a stream is still starting, the button shows Play and a press starts it.
+    else if (currentTrack) togglePlay()
     else playMusic(BADCOMPANY_MIXES, 0)
   }
 
@@ -993,8 +994,10 @@ export default function IPodPlayer() {
                         >
                           {error
                             ? "Unavailable — try next track"
-                            : isLoading
-                              ? "Connecting to SoundCloud…"
+                            : needsTap
+                              ? "Press play to start"
+                              : isLoading
+                                ? "Connecting to SoundCloud…"
                               : `${trackNumber} of ${queueLength}`}
                         </p>
                         <div
