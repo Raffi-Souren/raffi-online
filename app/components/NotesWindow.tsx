@@ -173,6 +173,7 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
     title: "Forecasting Future Language: Context Design for Mention Markets",
     url: "https://arxiv.org/abs/2602.21229",
     date: "Feb 2026",
+    venue: "Poster · Advances in Financial AI Workshop at ICLR 2026, Rio de Janeiro",
     coAuthors:
       "Sumin Kim, Jihoon Kwon, Yoon Kim, Nicole Kagan, Raffi Khatchadourian, Wonbin Ahn, Alejandro Lopez-Lira, Jaewon Lee, Yoontae Hwang, Oscar Levy, Yongjae Lee, Chanyeol Choi",
   },
@@ -185,6 +186,7 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
     title: "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows",
     url: "https://arxiv.org/abs/2511.07585",
     date: "Nov 2025",
+    venue: "AI4F Workshop at ACM ICAIF 2025, Singapore",
   },
   {
     title: "Impact of External Forces and the Digital Age on the Turkish Narrative of Armenians in Turkey's Textbooks",
