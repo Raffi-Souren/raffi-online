@@ -82,7 +82,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
               },
               {
                 name: "Colgate University",
-                years: "2017",
+                years: "2013–2017",
                 note: "B.A. in Mathematical Economics, minor in Political Science.",
               },
               {
