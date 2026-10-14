@@ -47,11 +47,10 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
           </h2>
           <p className="text-gray-700 leading-relaxed">
             I’m Raffi. I DJ, build things, and like bringing people together. Music runs through most of it,
-            from co-founding indify to throwing events with BADCOMPANY. I also advise Nameless.
+            from co-founding indify to throwing events with BADCOMPANY. I also advise startups.
           </p>
           <p style={{ color: "#374151", lineHeight: 1.625, marginTop: 12 }}>
-            New York is home, on both sides of the East River. This desktop holds the records, games, and
-            experiments I pick up along the way. Some are finished. Others I’m still making and breaking.
+            This desktop holds the records, games, and experiments I pick up along the way. Some are finished. Others I’m still making and breaking.
           </p>
           <a
             href="https://www.raffisourenkhatchadourian.com/"
@@ -80,6 +79,11 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
                 name: "YesGoodMusic",
                 years: "2011–2014",
                 note: "Interviews with Logic (2011) and more. Coverage of Kendrick Lamar, Swedish House Mafia and Bon Iver.",
+              },
+              {
+                name: "Colgate University",
+                years: "2017",
+                note: "B.A. in Mathematical Economics, minor in Political Science.",
               },
               {
                 name: "BADCOMPANY",
