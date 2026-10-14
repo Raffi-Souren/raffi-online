@@ -1,11 +1,23 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react"
 import { type Track, getRandomTrackIndex } from "@/data/audio-library"
 import { resolveTrackEnd, type RepeatMode } from "@/lib/audio-engine"
 
 export type { Track }
 export type { RepeatMode }
+
+/**
+ * The hidden player, as seen from a tap. Safari and iOS only let audio start inside the
+ * user's own gesture, so play controls call `startInGesture` synchronously instead of
+ * waiting for React effects or a network round trip.
+ */
+export interface AudioEngine {
+  /** Starts `url` now if it is already loaded in the player. Returns false otherwise. */
+  startInGesture: (url: string) => boolean
+  /** True when the player itself failed and a retry needs a fresh one. */
+  needsRebuild: () => boolean
+}
 
 interface AudioContextType {
   isPlaying: boolean
@@ -14,6 +26,8 @@ interface AudioContextType {
   duration: number
   currentTime: number
   isLoading: boolean
+  /** The stream is loaded but the browser held playback until the next tap (Safari, iOS). */
+  needsTap: boolean
   error: string | null
   shuffle: boolean
   repeatMode: RepeatMode
@@ -41,8 +55,11 @@ interface AudioContextType {
   setDuration: (duration: number) => void
   setCurrentTime: (time: number) => void
   setLoading: (loading: boolean) => void
+  setNeedsTap: (needsTap: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
+  /** The player registers itself here so taps can start audio in the same gesture. */
+  registerEngine: (engine: AudioEngine | null) => void
   toggleShuffle: () => void
   cycleRepeatMode: () => void
 }
@@ -56,6 +73,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [needsTap, setNeedsTap] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [shuffle, setShuffle] = useState(false)
   // Default "all" preserves the original wrap-around behavior.
@@ -64,6 +82,19 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [retryToken, setRetryToken] = useState(0)
   const [volume, updateVolume] = useState(80)
   const [seekRequest, setSeekRequest] = useState<AudioContextType["seekRequest"]>(null)
+  const engineRef = useRef<AudioEngine | null>(null)
+
+  const registerEngine = useCallback((engine: AudioEngine | null) => {
+    engineRef.current = engine
+  }, [])
+
+  // After a failure, rebuild the player only if it broke; a stream that merely stalled
+  // (or was blocked until a tap) just needs this tap to start.
+  const recoverFromError = useCallback(() => {
+    if (!error) return
+    setIsLoading(true)
+    if (!engineRef.current || engineRef.current.needsRebuild()) setRetryToken((token) => token + 1)
+  }, [error])
 
   const setVolume = useCallback((value: number) => {
     if (Number.isFinite(value)) updateVolume(Math.max(0, Math.min(100, value)))
@@ -93,15 +124,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const playTrack = useCallback(
     (track: Track) => {
+      recoverFromError()
       setError(null)
-      if (error) {
-        setRetryToken((token) => token + 1)
-        setIsLoading(true)
-      }
+      setNeedsTap(false)
 
       // If it's the same track, just resume
       if (currentTrack?.id === track.id) {
         setIsPlaying(true)
+        engineRef.current?.startInGesture(track.url)
         return
       }
 
@@ -112,34 +142,44 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setCurrentTime(0)
       setDuration(0)
       setSeekRequest(null)
+      // Starts at once when the player already holds this stream (it warms the first mix).
+      engineRef.current?.startInGesture(track.url)
     },
-    [currentTrack, error],
+    [currentTrack, recoverFromError],
   )
 
   const pauseTrack = useCallback(() => {
     setIsPlaying(false)
+    setNeedsTap(false)
   }, [])
 
   const resumeTrack = useCallback(() => {
     if (currentTrack) {
-      if (error) {
-        setRetryToken((token) => token + 1)
-        setIsLoading(true)
-      }
+      recoverFromError()
       setError(null)
+      setNeedsTap(false)
       setIsPlaying(true)
+      engineRef.current?.startInGesture(currentTrack.url)
     }
-  }, [currentTrack, error])
+  }, [currentTrack, recoverFromError])
 
   const togglePlay = useCallback(() => {
+    // A press while the stream is still starting means "start", not "pause": when a browser
+    // blocked the first attempt, this tap is the gesture it was waiting for.
+    if (isPlaying && isLoading && currentTrack) {
+      setNeedsTap(false)
+      engineRef.current?.startInGesture(currentTrack.url)
+      return
+    }
     if (isPlaying) pauseTrack()
     else resumeTrack()
-  }, [isPlaying, pauseTrack, resumeTrack])
+  }, [isPlaying, isLoading, currentTrack, pauseTrack, resumeTrack])
 
   const stopTrack = useCallback(() => {
     setIsPlaying(false)
     setCurrentTrack(null)
     setIsLoading(false)
+    setNeedsTap(false)
     setError(null)
     setCurrentTime(0)
     setDuration(0)
@@ -227,6 +267,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         duration,
         currentTime,
         isLoading,
+        needsTap,
         error,
         shuffle,
         repeatMode,
@@ -248,10 +289,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setDuration,
         setCurrentTime,
         setLoading: setIsLoading,
+        setNeedsTap,
         setError,
         clearError,
         toggleShuffle,
         cycleRepeatMode,
+        registerEngine,
       }}
     >
       {children}

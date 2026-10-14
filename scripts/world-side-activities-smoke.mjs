@@ -28,7 +28,8 @@ try {
     await page.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
     await page.waitForTimeout(200)
     await page.screenshot({ path: `${out}/${name}-world.png` })
-    await page.getByRole("button", { name: "Crib Garage · G" }).click()
+    // Touch screens hide the " · G" key hint, so match the label alone.
+    await page.getByRole("button", { name: /^Crib Garage/ }).click()
     const dialog = page.getByRole("dialog", { name: "The Crib Garage" })
     await dialog.getByRole("button", { name: "Miami", exact: true }).click()
     assert.match(await dialog.getByRole("status").first().innerText(), /Miami applied/)
@@ -42,7 +43,7 @@ try {
     assert.equal(await dialog.evaluate((el) => el.scrollWidth > el.clientWidth + 1), false)
     await dialog.getByRole("button", { name: "Return to World" }).click()
     assert.equal(await dialog.count(), 0)
-    await page.getByRole("button", { name: "Crib Garage · G" }).click()
+    await page.getByRole("button", { name: /^Crib Garage/ }).click()
     await dialog.getByRole("button", { name: "Start street time trial" }).click()
     await page.waitForTimeout(200)
     const before = await page.evaluate(async () => {

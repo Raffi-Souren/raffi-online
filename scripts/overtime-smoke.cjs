@@ -234,9 +234,13 @@ async function run() {
       assert.equal(await p.getByRole("button", { name: "Boost", exact: true }).getAttribute("aria-pressed"), "false")
       await p.getByRole("button", { name: "Buttons", exact: true }).click()
       await p.screenshot({ path: out + `/${name}-playing.png` })
+      // Touch screens open games expanded over the taskbar; keep clear of it only when it shows.
+      const bottomLimit = await p.evaluate(() =>
+        document.elementFromPoint(innerWidth / 2, innerHeight - 4)?.closest('[aria-label="Desktop taskbar"]') ? innerHeight - 25 : innerHeight,
+      )
       for (const label of ["Steer left", "Steer right", "Brake or reverse", "Jump", "Boost", "Accelerate"]) {
         const box = await p.getByRole("button", { name: label, exact: true }).boundingBox()
-        assert.ok(box.x >= 0 && box.x + box.width <= w && box.y + box.height <= h - 25, `${label} fits`)
+        assert.ok(box.x >= 0 && box.x + box.width <= w && box.y + box.height <= bottomLimit, `${label} fits`)
       }
       await p.evaluate(() => window.dispatchEvent(new Event("blur")))
       await p.getByRole("button", { name: "Resume match" }).waitFor()

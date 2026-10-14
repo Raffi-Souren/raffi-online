@@ -15,6 +15,7 @@ interface ResearchPaper {
   url: string
   date: string
   coAuthors?: string
+  venue?: string
 }
 
 interface Event {
@@ -23,8 +24,10 @@ interface Event {
   location: string
   description: string
   url?: string
+  /** Link text for upcoming events; defaults to the Luma RSVP. */
+  linkLabel?: string
   status: "upcoming" | "previous"
-  type: "speaking" | "keynote" | "panel" | "dj" | "other" | "events"
+  type: "speaking" | "keynote" | "panel" | "dj" | "other" | "events" | "poster"
 }
 
 interface PressItem {
@@ -156,6 +159,12 @@ const ARTICLES: Article[] = [
 
 const RESEARCH_PAPERS: ResearchPaper[] = [
   {
+    title: "When Replay Agreement Misleads: Capture Loss and Cancellation in Local Agents",
+    url: "https://lnkd.in/p/gsz3S5Tm",
+    date: "Dec 2026",
+    venue: "Poster · SLM-Agents Workshop at NeurIPS 2026, Paris",
+  },
+  {
     title: "DFAH-Bench: Benchmarking Observable Agent Instability in Financial Decision-Making",
     url: "https://arxiv.org/abs/2607.20491",
     date: "Jun 2026",
@@ -195,6 +204,17 @@ const RESEARCH_PAPERS: ResearchPaper[] = [
 ]
 
 const EVENTS: Event[] = [
+  {
+    title: "SLM-Agents Workshop @ NeurIPS 2026",
+    date: "Dec 13, 2026",
+    location: "Paris",
+    description:
+      "Presenting my poster, When Replay Agreement Misleads: Capture Loss and Cancellation in Local Agents",
+    url: "https://slmw2026.github.io/",
+    linkLabel: "Workshop site",
+    status: "upcoming",
+    type: "poster",
+  },
   {
     title: "AI4F @ ACM ICAIF",
     date: "Nov 15, 2025",
@@ -289,8 +309,18 @@ interface NotesWindowProps {
   onClose: () => void
 }
 
+type NotesTab = "articles" | "research" | "events" | "podcasts"
+const NOTES_TABS: readonly NotesTab[] = ["articles", "research", "events", "podcasts"]
+
+// Old routes (/events, /writing) land here with ?tab= so the right list opens first.
+function initialTab(): NotesTab {
+  if (typeof window === "undefined") return "articles"
+  const tab = new URLSearchParams(window.location.search).get("tab")
+  return NOTES_TABS.find((name) => name === tab) ?? "articles"
+}
+
 export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
-  const [activeTab, setActiveTab] = useState<"articles" | "research" | "events" | "podcasts">("articles")
+  const [activeTab, setActiveTab] = useState<NotesTab>(initialTab)
 
   if (!isOpen) return null
 
@@ -309,6 +339,8 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
         return "SPEAKING"
       case "events":
         return "EVENTS"
+      case "poster":
+        return "POSTER"
       default:
         return "EVENT"
     }
@@ -577,6 +609,9 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                           </span>
                         </div>
                         <h4 style={{ fontWeight: "600", color: "#111827" }}>{paper.title}</h4>
+                        {paper.venue && (
+                          <p style={{ fontSize: "0.8125rem", color: "#6b21a8", marginTop: "0.25rem" }}>{paper.venue}</p>
+                        )}
                         {paper.coAuthors && (
                           <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
                             Co-authors: {paper.coAuthors}
@@ -610,6 +645,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
             <div>
               <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 {/* Upcoming Events */}
+                {upcomingEvents.length > 0 && (
                 <div>
                   <div
                     style={{
@@ -674,13 +710,14 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
                             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                           >
-                            RSVP on Luma →
+                            {event.linkLabel ?? "RSVP on Luma"} →
                           </a>
                         )}
                       </div>
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* Previous Events */}
                 {previousEvents.length > 0 && (

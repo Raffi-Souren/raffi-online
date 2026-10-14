@@ -1,7 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { BADCOMPANY_MIXES } from "@/data/audio-library"
 import { useAudio } from "../context/AudioContext"
+
+// "Play a mix" on the welcome card starts this stream, so it is the one worth warming up.
+const WARM_URL = BADCOMPANY_MIXES[0]?.url
 
 interface SoundCloudProgress {
   currentPosition?: number
@@ -84,6 +88,9 @@ export default function GlobalAudioPlayer() {
     setDuration,
     setLoading,
     setError,
+    registerEngine,
+    needsTap,
+    setNeedsTap,
   } = useAudio()
 
   const [playerUrl, setPlayerUrl] = useState<string | null>(null)
@@ -94,6 +101,10 @@ export default function GlobalAudioPlayer() {
   const widgetRef = useRef<SoundCloudWidget | null>(null)
   const loadedUrlRef = useRef<string | null>(null)
   const readyUrlRef = useRef<string | null>(null)
+  // The player itself failed (script or widget error), so a retry needs a fresh iframe.
+  const brokenRef = useRef(false)
+  // Set when play() had to run outside a tap; if nothing plays soon, ask for one.
+  const nudgeRef = useRef<number | null>(null)
 
   // Keep the latest callbacks/state in refs so the widget's bound listeners
   // always use fresh values without needing to rebind.
@@ -113,6 +124,71 @@ export default function GlobalAudioPlayer() {
   useEffect(() => {
     handleTrackEndRef.current = handleTrackEnd
   }, [handleTrackEnd])
+
+  // play() outside a tap starts on Chrome, but Safari and iOS hold it. If the stream has
+  // not started shortly after, say so, rather than leaving "Tuning in…" up.
+  const clearNudge = useCallback(() => {
+    if (nudgeRef.current !== null) window.clearTimeout(nudgeRef.current)
+    nudgeRef.current = null
+  }, [])
+  const playOutsideTap = useCallback(
+    (widget: SoundCloudWidget, url: string) => {
+      widget.play()
+      clearNudge()
+      nudgeRef.current = window.setTimeout(() => {
+        nudgeRef.current = null
+        if (currentUrlRef.current === url && isPlayingRef.current) setNeedsTap(true)
+      }, 3000)
+    },
+    [clearNudge, setNeedsTap],
+  )
+  useEffect(() => clearNudge, [clearNudge])
+
+  // Taps call this synchronously. Safari and iOS only start audio inside the user's own
+  // gesture, so waiting for an effect or a network round trip would need a second tap.
+  useEffect(() => {
+    registerEngine({
+      startInGesture: (url) => {
+        const widget = widgetRef.current
+        if (!widget || readyUrlRef.current !== url) return false
+        try {
+          clearNudge()
+          widget.play()
+          return true
+        } catch {
+          return false
+        }
+      },
+      needsRebuild: () => brokenRef.current,
+    })
+    return () => registerEngine(null)
+  }, [registerEngine, clearNudge])
+
+  // Warm the player once the page settles, so the first "Play a mix" starts inside its tap.
+  // Visitors who asked to save data only load it when they press play.
+  useEffect(() => {
+    if (playerUrl || !WARM_URL) return
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection
+    if (connection?.saveData || /2g$/.test(connection?.effectiveType ?? "")) return
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+      cancelIdleCallback?: (handle: number) => void
+    }
+    let idle: number | null = null
+    const warm = () => {
+      if (loadedUrlRef.current) return
+      loadedUrlRef.current = WARM_URL
+      setPlayerUrl(WARM_URL)
+    }
+    const timer = window.setTimeout(() => {
+      if (idleWindow.requestIdleCallback) idle = idleWindow.requestIdleCallback(warm, { timeout: 3000 })
+      else warm()
+    }, 1500)
+    return () => {
+      window.clearTimeout(timer)
+      if (idle !== null) idleWindow.cancelIdleCallback?.(idle)
+    }
+  }, [playerUrl])
 
   // Mount the hidden iframe once, using the first track that gets selected.
   useEffect(() => {
@@ -141,23 +217,29 @@ export default function GlobalAudioPlayer() {
         const events = SC.Widget.Events
 
         widget.bind(events.READY, () => {
+          brokenRef.current = false
           setWidgetReady(true)
-          if (currentUrlRef.current !== playerUrl || loadedUrlRef.current !== playerUrl) return
-          const readyUrl = currentUrlRef.current
+          // A different stream was requested while the iframe booted; the load effect takes it.
+          if (loadedUrlRef.current !== playerUrl) return
+          const readyUrl = playerUrl
           readyUrlRef.current = readyUrl
           widget.setVolume(volumeRef.current)
+          // Warmed before anyone pressed play: stay quiet until a track is chosen.
+          if (currentUrlRef.current !== readyUrl) return
           widget.getDuration((d: number) => {
-            if (widgetRef.current === widget && currentUrlRef.current === readyUrl && readyUrl && d && d > 0) {
+            if (widgetRef.current === widget && currentUrlRef.current === readyUrl && d && d > 0) {
               setDuration(d / 1000)
             }
           })
-          if (isPlayingRef.current) widget.play()
+          if (isPlayingRef.current) playOutsideTap(widget, readyUrl)
           else setLoading(false)
         })
 
         widget.bind(events.PLAY, () => {
           if (!isPlayingRef.current) return widget.pause()
           if (!readyUrlRef.current || readyUrlRef.current !== currentUrlRef.current) return
+          clearNudge()
+          setNeedsTap(false)
           setLoading(false)
           setError(null)
         })
@@ -179,6 +261,7 @@ export default function GlobalAudioPlayer() {
         })
 
         widget.bind(events.ERROR, () => {
+          brokenRef.current = true
           setError("Unable to play this track. Try another one or shuffle.")
           setLoading(false)
           pauseTrack()
@@ -198,6 +281,7 @@ export default function GlobalAudioPlayer() {
       })
       .catch(() => {
         if (cancelled) return
+        brokenRef.current = true
         setError("Could not load the audio player.")
         setLoading(false)
         pauseTrack()
@@ -210,17 +294,18 @@ export default function GlobalAudioPlayer() {
       readyUrlRef.current = null
       setWidgetReady(false)
     }
-  }, [playerUrl, retryToken, setLoading, setDuration, setCurrentTime, setError, pauseTrack])
+  }, [playerUrl, retryToken, setLoading, setDuration, setCurrentTime, setError, pauseTrack, playOutsideTap, clearNudge, setNeedsTap])
 
   useEffect(() => {
-    if (!isLoading) return
+    // A stream waiting for a tap is fine as it is; the timeout is for streams that never load.
+    if (!isLoading || needsTap) return
     const timeout = window.setTimeout(() => {
       pauseTrack()
       setLoading(false)
       setError("This stream did not start. Press play to retry or choose another track.")
     }, 20000)
     return () => window.clearTimeout(timeout)
-  }, [isLoading, currentTrack?.id, retryToken, pauseTrack, setLoading, setError])
+  }, [isLoading, needsTap, currentTrack?.id, retryToken, pauseTrack, setLoading, setError])
 
   // When the track changes, stream the new one in-place via widget.load (no remount).
   // Depends on `widgetReady` so a track selected before the widget came up still
@@ -229,12 +314,29 @@ export default function GlobalAudioPlayer() {
     const url = currentTrack?.url
     const widget = widgetRef.current
     if (!url) {
-      loadedUrlRef.current = null
-      readyUrlRef.current = null
+      // Stopped: keep the stream loaded (it stays warm) but rewind it for next time.
+      if (widget && widgetReady) {
+        try {
+          widget.pause()
+          widget.seekTo(0)
+        } catch {
+          // The widget went away; the next selection reloads it.
+        }
+      }
       return
     }
     if (!widget || !widgetReady) return
-    if (loadedUrlRef.current === url) return
+    if (loadedUrlRef.current === url) {
+      // Already in the player (warmed, or the iframe's first stream): nothing to load,
+      // but the duration was never read for this selection.
+      if (readyUrlRef.current === url) {
+        widget.setVolume(volumeRef.current)
+        widget.getDuration((d: number) => {
+          if (widgetRef.current === widget && currentUrlRef.current === url && d && d > 0) setDuration(d / 1000)
+        })
+      }
+      return
+    }
 
     loadedUrlRef.current = url
     readyUrlRef.current = null
@@ -253,11 +355,11 @@ export default function GlobalAudioPlayer() {
         widget.getDuration((d: number) => {
           if (currentUrlRef.current === url && d && d > 0) setDuration(d / 1000)
         })
-        if (isPlayingRef.current) widget.play()
+        if (isPlayingRef.current) playOutsideTap(widget, url)
         else setLoading(false)
       },
     })
-  }, [currentTrack?.url, widgetReady, setLoading, setCurrentTime, setDuration])
+  }, [currentTrack?.url, widgetReady, setLoading, setCurrentTime, setDuration, playOutsideTap])
 
   // Reflect play/pause toggles onto the widget.
   useEffect(() => {
