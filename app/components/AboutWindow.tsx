@@ -26,6 +26,9 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
             <h1 className="text-2xl font-bold text-gray-900">
               RAFFI
             </h1>
+            <p style={{ color: "#1f2937", fontSize: 14, fontWeight: 600, marginTop: 2 }}>
+              Field CTO & Account Technical Leader · IBM Financial Services
+            </p>
             <p className="text-gray-600">
               DJ, builder, and a few things in between.
             </p>
@@ -68,6 +71,45 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
           </a>
         </div>
 
+        {/* Timeline, as on the about slide */}
+        <div
+          className="bg-white p-6 shadow-sm"
+          style={{ border: "1px solid #b9c7d9", borderRadius: 6 }}
+        >
+          <h2
+            className="text-lg font-semibold text-gray-900 mb-3 border-b-2 border-blue-400 pb-1 inline-block"
+          >
+            🗂️ RAF.TXT
+          </h2>
+          <dl style={{ display: "grid", gap: 14, margin: 0 }}>
+            {[
+              {
+                name: "YesGoodMusic",
+                years: "2011–2014",
+                note: "Interviews with Logic (2011) and more. Coverage of Kendrick Lamar, Swedish House Mafia and Bon Iver.",
+              },
+              {
+                name: "BADCOMPANY",
+                years: "2018–2024",
+                note: "DJing with friends in NYC. A childhood ticket business funded my DJ equipment.",
+              },
+              {
+                name: "Research",
+                years: "2024–present",
+                note: "AI agents, output drift and replayable systems.",
+              },
+            ].map((entry) => (
+              <div key={entry.name}>
+                <dt style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 8 }}>
+                  <strong style={{ color: "#111827" }}>{entry.name}</strong>
+                  <span style={{ color: "#4b5563", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{entry.years}</span>
+                </dt>
+                <dd style={{ margin: "2px 0 0", color: "#374151", lineHeight: 1.6 }}>{entry.note}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
         {/* Contact Section */}
         <div
           className="bg-white p-6 shadow-sm"
@@ -89,7 +131,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
               </a>
             </p>
             <p className="text-gray-700">
-              <span className="font-semibold">Location:</span> New York
+              <span className="font-semibold">Location:</span> Brooklyn, NY
             </p>
           </div>
         </div>
