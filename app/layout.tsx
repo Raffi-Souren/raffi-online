@@ -5,10 +5,16 @@ import { Analytics } from "@vercel/analytics/next"
 import { AudioProvider } from "./context/AudioContext"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
 
+const SITE_TITLE = "Raffi Khatchadourian | raffi.computer"
+const SITE_DESCRIPTION =
+  "Field CTO and Account Technical Leader at IBM Financial Services. Research on AI agents, output drift and replayable systems. DJ and BADCOMPANY co-founder in Brooklyn, NY."
+// A real capture of the desktop, so a shared link shows the site rather than a stock wallpaper.
+const SHARE_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "Raffi’s desktop at raffi.computer" }
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://raffi.computer"),
-  title: "Raffi WW Web",
-  description: "IBM CTO and entrepreneur based in NYC",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   icons: {
     icon: "/icon.svg",
     apple: "/apple-icon.png",
@@ -16,21 +22,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://raffi.computer/",
-    title: "Raffi Web",
-    description: "IBM CTO and entrepreneur based in NYC",
-    images: [
-      {
-        url: "/windows-2000-background.png",
-        alt: "Windows XP desktop background",
-      },
-    ],
-    siteName: "Raffi Web",
+    title: "Raffi Khatchadourian",
+    description: SITE_DESCRIPTION,
+    images: [SHARE_IMAGE],
+    siteName: "raffi.computer",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Raffi Web",
-    description: "IBM CTO and entrepreneur based in NYC",
-    images: ["/windows-2000-background.png"],
+    title: "Raffi Khatchadourian",
+    description: SITE_DESCRIPTION,
+    images: [SHARE_IMAGE.url],
   },
 }
 
