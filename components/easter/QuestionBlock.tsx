@@ -8,7 +8,9 @@ interface QuestionBlockProps {
   active?: boolean
 }
 
-const BLOCK_SIZE = 56
+// 64px hit area around the 56px block art.
+const BLOCK_SIZE = 64
+const BLOCK_PADDING = 4
 // Let the block disappear just beyond an edge before bouncing back into view.
 const EDGE_OVERSHOOT = BLOCK_SIZE + 16
 
@@ -153,8 +155,9 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           left: 0,
           width: BLOCK_SIZE,
           height: BLOCK_SIZE,
+          boxSizing: "border-box",
           border: 0,
-          padding: 0,
+          padding: BLOCK_PADDING,
           background: "transparent",
           pointerEvents: active ? "auto" : "none",
           cursor: "pointer",
@@ -187,7 +190,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           <Disc3
             className="found-record"
             size={38}
-            style={{ position: "absolute", top: -12, left: 9, color: "#ffe878", fill: "#243549" }}
+            style={{ position: "absolute", top: -12, left: 13, color: "#ffe878", fill: "#243549" }}
           />
         )}
       </button>
@@ -204,14 +207,14 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
             display: "inline-flex",
             gap: 5,
             alignItems: "center",
-            minHeight: 32,
-            padding: "4px 8px",
+            minHeight: 44,
+            padding: "4px 10px",
             border: "1px solid #ffffff65",
             borderRadius: 4,
             background: "#173e6199",
             color: "white",
             fontFamily: "Tahoma, sans-serif",
-            fontSize: 10,
+            fontSize: 12,
             pointerEvents: active ? "auto" : "none",
           }}
           className="hover:brightness-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"

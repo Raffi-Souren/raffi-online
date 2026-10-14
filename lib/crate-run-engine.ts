@@ -94,6 +94,8 @@ export interface CrateRunState {
   checkpoint: number
   checkpointsLit: boolean[]
   cameraX: number
+  /** Visible world width; narrower on phones so the camera zooms instead of the world shrinking. */
+  viewW: number
   elapsed: number
   time: number
 }
@@ -235,6 +237,7 @@ export function createCrateRun(): CrateRunState {
     checkpoint: 0,
     checkpointsLit: CHECKPOINT_COLUMNS.map((_, index) => index === 0),
     cameraX: 0,
+    viewW: VIEW_W,
     elapsed: 0,
     time: 0,
   }
@@ -434,7 +437,7 @@ export function stepCrateRun(state: CrateRunState, input: CrateRunInput, dt: num
 
   for (const enemy of state.enemies) {
     if (!enemy.alive) continue
-    if (!enemy.active && enemy.x < state.cameraX + VIEW_W + 24) enemy.active = true
+    if (!enemy.active && enemy.x < state.cameraX + state.viewW + 24) enemy.active = true
     if (!enemy.active) continue
     moveEnemy(state, enemy, dt)
     if (!overlaps(player.x, player.y, PLAYER_W, PLAYER_H, enemy.x, enemy.y, ENEMY_SIZE, ENEMY_SIZE)) continue
@@ -457,8 +460,8 @@ export function stepCrateRun(state: CrateRunState, input: CrateRunInput, dt: num
     }
   })
 
-  const target = player.x + PLAYER_W / 2 - VIEW_W * 0.42
-  state.cameraX = Math.max(0, Math.min(LEVEL_W - VIEW_W, target))
+  const target = player.x + PLAYER_W / 2 - state.viewW * 0.42
+  state.cameraX = Math.max(0, Math.min(LEVEL_W - state.viewW, target))
 
   if (player.onGround && player.x + PLAYER_W >= GOAL_COLUMN * TILE + 2) {
     state.phase = "cleared"

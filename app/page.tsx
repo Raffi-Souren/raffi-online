@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import QuestionBlock from "../components/easter/QuestionBlock"
@@ -49,9 +49,14 @@ const WINDOW_SLOTS = [
   "counter",
 ] as const
 
+const WELCOME_COLLAPSED_KEY = "raffi:welcome-collapsed"
+
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false)
+  // First-time visitors still get to meet the "?" block once, even with welcome.txt open.
+  const [blockPeek, setBlockPeek] = useState(false)
+  const previousActiveWindowRef = useRef<string | null>(null)
   const [openWindows, setOpenWindows] = useState<Record<string, boolean>>({
     about: false,
     games: false,
@@ -157,6 +162,30 @@ export default function Home() {
     if (openWindows[name] && !minimizedWindows[name]) {
       activeWindow = name
       break
+    }
+  }
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(WELCOME_COLLAPSED_KEY) === "1") setWelcomeCollapsed(true)
+    } catch {
+      // Storage can be unavailable in private modes; the welcome card simply stays open.
+    }
+    const peek = setTimeout(() => setBlockPeek(true), 10_000)
+    return () => clearTimeout(peek)
+  }, [])
+
+  useEffect(() => {
+    if (previousActiveWindowRef.current && activeWindow === null) setBlockPeek(true)
+    previousActiveWindowRef.current = activeWindow
+  }, [activeWindow])
+
+  const changeWelcomeCollapsed = (collapsed: boolean) => {
+    setWelcomeCollapsed(collapsed)
+    try {
+      window.localStorage.setItem(WELCOME_COLLAPSED_KEY, collapsed ? "1" : "0")
+    } catch {
+      // Not persisting is fine; the choice still applies for this visit.
     }
   }
 
@@ -301,7 +330,7 @@ export default function Home() {
       <DesktopContextMenu onOpenWindow={openWindow} />
 
       <div data-desktop-icons="true" className="desktop-shortcuts">
-        <DesktopWelcome collapsed={welcomeCollapsed} onCollapsedChange={setWelcomeCollapsed} onAbout={() => openWindow("about")} onExplore={() => {
+        <DesktopWelcome collapsed={welcomeCollapsed} onCollapsedChange={changeWelcomeCollapsed} onAbout={() => openWindow("about")} onExplore={() => {
           document.querySelector<HTMLButtonElement>('[data-desktop-app="ipod"] button')?.focus({ preventScroll: false })
         }} />
         {DESKTOP_SHORTCUTS.map((shortcut) => (
@@ -311,7 +340,7 @@ export default function Home() {
         ))}
       </div>
 
-      <QuestionBlock active={welcomeCollapsed && activeWindow === null && !showStartMenu} onClick={handleEasterEggClick} />
+      <QuestionBlock active={(welcomeCollapsed || blockPeek) && activeWindow === null && !showStartMenu} onClick={handleEasterEggClick} />
 
       {/* Now Playing Component */}
       <NowPlaying />

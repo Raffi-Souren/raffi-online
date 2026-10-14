@@ -1,5 +1,7 @@
 "use client"
 
+import HowToPlay from "@/components/ui/HowToPlay"
+
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import {
   ArrowDown,
@@ -19,6 +21,7 @@ import { drawBrawl } from "../../lib/brawl-scene"
 import ScoreEntry from "./ScoreEntry"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
+import { useTouchControls } from "../../components/ui/useTouchControls"
 
 type Control = "left" | "right" | "up" | "down" | "attack" | "jump" | "dodge"
 const KEYS: Record<string, Control> = {
@@ -60,6 +63,9 @@ export default function BlockPartyBrawl() {
     query.addEventListener("change", sync)
     return () => query.removeEventListener("change", sync)
   }, [])
+  // Desktop gives the whole frame to the street; keyboard hints replace the touch pads.
+  const touch = useTouchControls()
+  const sideControls = landscape && touch
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef(createBrawl())
   const runId = useRef(0)
@@ -267,7 +273,7 @@ export default function BlockPartyBrawl() {
         minWidth: 44,
         minHeight: 44,
         flex: 1,
-        flexDirection: !landscape && (control === "attack" || control === "jump" || control === "dodge") ? "column" : "row",
+        flexDirection: !sideControls && (control === "attack" || control === "jump" || control === "dodge") ? "column" : "row",
         gap: 2,
         padding: "7px 4px",
         background: held.includes(control) ? "#383248" : color || "#625b72",
@@ -302,9 +308,9 @@ export default function BlockPartyBrawl() {
       data-player-x={hud.x.toFixed(3)}
       data-player-y={hud.y.toFixed(3)}
       className="game-touch"
-      data-landscape-controls={landscape || undefined}
+      data-landscape-controls={sideControls || undefined}
       style={{
-        display: landscape ? "grid" : "flex",
+        display: sideControls ? "grid" : "flex",
         gridTemplateColumns: "160px minmax(0, 1fr) 104px",
         gridTemplateRows: "auto minmax(0, 1fr)",
         flexDirection: "column",
@@ -338,7 +344,8 @@ export default function BlockPartyBrawl() {
             onClick={status === "paused" ? resume : pause}
             style={{
               ...buttonStyle,
-              minHeight: 34,
+              minHeight: 44,
+              minWidth: 44,
               padding: "5px 9px",
               opacity: status !== "playing" && status !== "paused" ? 0.4 : 1,
             }}
@@ -349,7 +356,7 @@ export default function BlockPartyBrawl() {
             type="button"
             aria-label="Restart brawl"
             onClick={start}
-            style={{ ...buttonStyle, minHeight: 34, padding: "5px 9px" }}
+            style={{ ...buttonStyle, minHeight: 44, minWidth: 44, padding: "5px 9px" }}
           >
             <RotateCcw size={16} />
           </button>
@@ -435,6 +442,7 @@ export default function BlockPartyBrawl() {
             }}
           >
             <div
+              className="intro-card"
               style={{
                 width: "min(390px, 100%)",
                 margin: status === "won" || status === "lost" ? "0 auto" : "auto",
@@ -466,7 +474,7 @@ export default function BlockPartyBrawl() {
                       : `${hud.score.toLocaleString()} points. Watch for the warning rings, then jump or dodge.`}
               </p>
               {status === "ready" && (
-                <div
+                <HowToPlay
                   style={{
                     textAlign: "left",
                     background: "#e5d9c9",
@@ -485,14 +493,18 @@ export default function BlockPartyBrawl() {
                   </div>
                   <div>Jump + punch for a kick. Avoid warning rings.</div>
                   <div>Grab health drops. Follow the arrows between blocks.</div>
-                  <div>Choose stick or arrows below; pause anytime to switch. Hold Punch for combos; combine with Jump for a kick. Esc pauses; R restarts.</div>
-                </div>
+                  <div>
+                    {touch
+                      ? "Choose stick or arrows below; pause anytime to switch. Hold Punch for combos; combine with Jump for a kick."
+                      : "Hold J for punch combos. Esc pauses; R restarts."}
+                  </div>
+                </HowToPlay>
               )}
               <button
                 type="button"
                 onClick={status === "paused" ? resume : start}
                 style={{ ...buttonStyle, background: "#925274", padding: "12px 24px", minHeight: 46 }}
-                className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-800"
+                className="intro-card-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-800"
               >
                 <Play size={16} fill="currentColor" />
                 {status === "ready" ? "Hit the street" : status === "paused" ? "Back to the block" : "Play again"}
@@ -511,8 +523,8 @@ export default function BlockPartyBrawl() {
           </div>
         )}
       </div>
-      <div style={{ display: landscape ? "contents" : "flex", gap: 10, alignItems: "center", padding: "6px 10px", borderTop: "2px solid #342e45", flexShrink: 0 }}>
-        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: landscape ? 8 : 0, flexShrink: 0 }}>
+      {touch && <div style={{ display: sideControls ? "contents" : "flex", gap: 10, alignItems: "center", padding: "6px 10px", borderTop: "2px solid #342e45", flexShrink: 0 }}>
+        <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: sideControls ? 8 : 0, flexShrink: 0 }}>
         {controlMode === "stick" ? (
           <GameJoystick
             label="Move brawler"
@@ -531,11 +543,11 @@ export default function BlockPartyBrawl() {
             {controlButton("right", "Move right", <ArrowRight size={18} />)}
           </div>
         )}
-        {landscape && status !== "playing" && <GameControlChoice value={controlMode} onChange={(mode) => { clearInput(); setControlMode(mode) }} />}
+        {sideControls && status !== "playing" && <GameControlChoice value={controlMode} onChange={(mode) => { clearInput(); setControlMode(mode) }} />}
         </div>
-        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", justifyContent: "center", padding: landscape ? 8 : 0, gap: 6, flex: 1, minWidth: 0 }}>
-          {!landscape && status !== "playing" && <GameControlChoice value={controlMode} onChange={(mode) => { clearInput(); setControlMode(mode) }} />}
-          <div style={{ display: "flex", flexDirection: landscape ? "column" : "row", gap: 5 }}>
+        <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", justifyContent: "center", padding: sideControls ? 8 : 0, gap: 6, flex: 1, minWidth: 0 }}>
+          {!sideControls && status !== "playing" && <GameControlChoice value={controlMode} onChange={(mode) => { clearInput(); setControlMode(mode) }} />}
+          <div style={{ display: "flex", flexDirection: sideControls ? "column" : "row", gap: 5 }}>
             {controlButton("dodge", "Dodge", <ChevronsRight size={20} />, "#5c7890")}
             {controlButton("jump", "Jump", <ArrowUp size={20} />, "#817087")}
             {controlButton("attack", "Punch", <Zap size={20} />, "#a65e7b")}
@@ -544,7 +556,43 @@ export default function BlockPartyBrawl() {
             {hud.dodge > 0 ? "Dodge recharging…" : "Dodge ready"}
           </span>
         </div>
-      </div>
+      </div>}
+      {!touch && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "4px 14px",
+            padding: "7px 12px",
+            borderTop: "2px solid #342e45",
+            fontSize: 12,
+            lineHeight: 1.5,
+            color: "#e6dcea",
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 14px" }}>
+            <span>
+              <strong style={{ color: "#fcf1d6" }}>Arrows / WASD</strong> move
+            </span>
+            <span>
+              <strong style={{ color: "#fcf1d6" }}>J</strong> punch
+            </span>
+            <span>
+              <strong style={{ color: "#fcf1d6" }}>Space</strong> jump
+            </span>
+            <span>
+              <strong style={{ color: "#fcf1d6" }}>K</strong> dodge
+            </span>
+            <span>
+              <strong style={{ color: "#fcf1d6" }}>Esc</strong> pause
+            </span>
+          </div>
+          <span>{hud.dodge > 0 ? "Dodge recharging…" : "Dodge ready"}</span>
+        </div>
+      )}
       <span role="status" className="sr-only">
         {status === "won"
           ? "All five blocks cleared. You win."

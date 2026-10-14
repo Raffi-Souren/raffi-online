@@ -319,7 +319,7 @@ export default function WindowShell({
               minHeight: terminalChrome || compact ? "44px" : "52px",
               borderBottom: terminalChrome ? "1px solid #34433a" : crateChrome ? "1px solid #c59621" : "1px solid #17449f",
               boxShadow: terminalChrome ? undefined : "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
-              display: immersive ? "none" : "flex",
+              display: "flex",
               alignItems: "center",
               justifyContent: "center",
               borderTopLeftRadius: "9px",
@@ -328,6 +328,23 @@ export default function WindowShell({
               position: "sticky",
               top: 0,
               zIndex: 10,
+              // Immersive games drop the title bar, but minimize and close must
+              // stay reachable, so the controls float as a safe-area pill.
+              ...(immersive
+                ? {
+                    position: "absolute",
+                    top: "calc(env(safe-area-inset-top, 0px) + 8px)",
+                    right: "calc(env(safe-area-inset-right, 0px) + 8px)",
+                    zIndex: 21,
+                    minHeight: 44,
+                    padding: "0 2px",
+                    background: "rgba(16, 24, 32, 0.78)",
+                    border: "1px solid rgba(244, 236, 216, 0.35)",
+                    borderRadius: 999,
+                    boxShadow: "none",
+                    backdropFilter: "blur(6px)",
+                  }
+                : null),
             }}
           >
             <div
@@ -402,6 +419,7 @@ export default function WindowShell({
             </div>
             <h2
               title={title}
+              className={immersive ? "sr-only" : undefined}
               style={{
                 fontWeight: "bold",
                 fontSize: terminalChrome ? "14px" : "1rem",
@@ -420,7 +438,7 @@ export default function WindowShell({
             </h2>
             <span
               aria-hidden="true"
-              className="hidden min-[640px]:block"
+              className={immersive ? "hidden" : "hidden min-[640px]:block"}
               style={{ width: windowActions.length * 44, flexShrink: 0 }}
             />
           </div>

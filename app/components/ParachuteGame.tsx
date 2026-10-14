@@ -29,6 +29,8 @@ type GameView = "menu" | "playing" | "paused" | "gameover" | "leaderboard"
 
 const CANVAS_WIDTH = 400
 const CANVAS_HEIGHT = 500
+// The compact pause bar (68px) plus the 12px gap under it.
+const PLAY_BAR_HEIGHT = 80
 const PLAYER_SIZE = 14
 const HELICOPTER_WIDTH = 32
 const HELICOPTER_HEIGHT = 14
@@ -309,7 +311,7 @@ export default function ParachuteGame() {
   }, [gameView, player, helicopters, missiles, score, lives, level, landings])
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto px-2">
+    <div className="flex flex-col items-center gap-3 w-full max-w-[760px] mx-auto px-2">
       {(gameView === "playing" || gameView === "paused") && (
         <GameControls
           compact
@@ -326,6 +328,9 @@ export default function ParachuteGame() {
       )}
 
       <HandheldConsole
+        screenAspect={CANVAS_WIDTH / CANVAS_HEIGHT}
+        // Keep room for the pause bar so pressing START does not resize the console.
+        reserveHeight={gameView === "playing" || gameView === "paused" ? 0 : PLAY_BAR_HEIGHT}
         title="Parachute"
         controlMode={controlMode}
         onControlModeChange={(mode) => {

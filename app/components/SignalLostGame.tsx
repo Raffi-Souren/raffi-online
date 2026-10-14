@@ -21,7 +21,8 @@ const EMPTY_INPUT: SignalInput = { forward: 0, strafe: 0, turn: 0, sprint: false
 const panel: CSSProperties = { background: "rgba(18,31,41,.9)", border: "1px solid #63736f", color: "#ecdfbd" }
 const button: CSSProperties = {
   ...panel,
-  minHeight: 36,
+  minHeight: 44,
+  minWidth: 44,
   padding: "7px 12px",
   display: "inline-flex",
   alignItems: "center",

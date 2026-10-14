@@ -591,8 +591,8 @@ html {
 @media (hover: none), (pointer: coarse) { .bb-play-controls kbd { display: none; } }
 .bb-status { min-height: 15px; color: #e3cd94; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bb-powers { color: #a5d4ed; font: 10px/1.5 Menlo, Consolas, monospace; text-align: center; }
-.bb-aim { display: flex; align-items: center; gap: 5px; color: #bbc9de; font-size: 10px; min-height: 24px; }
-.bb-aim input { min-width: 0; width: 100%; accent-color: #86b7f6; }
+.bb-aim { display: flex; align-items: center; gap: 5px; color: #bbc9de; font-size: 12px; min-height: 44px; }
+.bb-aim input { min-width: 0; width: 100%; min-height: 44px; touch-action: none; accent-color: #86b7f6; }
 .bb-preferences { border: 0; border-top: 1px solid #667487; padding: 8px 0 0; margin: 0; }
 .bb-preferences legend { font-size: 11px; padding: 0 6px; color: #c9d8e8; }
 .bb-preferences > div { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 5px; }
@@ -617,3 +617,27 @@ html {
 .bb-cabinet button:disabled { opacity: .4; cursor: default; }
 .bb-cabinet button:not(:disabled):hover { filter: brightness(1.15); }
 .bb-cabinet :focus-visible { outline: 2px solid #a7d4ff; outline-offset: 2px; }
+
+/* M2: intro cards never grow past the viewport; the primary action stays pinned. */
+.intro-card {
+  max-height: calc(100% - 8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.intro-card .intro-card-action {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+.intro-howto > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+@media (max-height: 540px) {
+  .intro-card { padding-top: 12px !important; padding-bottom: 12px !important; }
+  .intro-card .intro-card-decor { display: none !important; }
+}

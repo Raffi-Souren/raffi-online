@@ -61,7 +61,7 @@ export function initSideActivities(scene, vehicles) {
   panel = document.createElement('div')
   panel.id = 'side-activities'
   panel.innerHTML =
-    '<button type="button" id="garage-open">Crib Garage · G</button><div id="sprint-status" role="status"></div><button type="button" id="sprint-cancel" hidden>End sprint</button>'
+    '<button type="button" id="garage-open" aria-keyshortcuts="G">Crib Garage<span class="kbd-hint"> · G</span></button><div id="sprint-status" role="status"></div><button type="button" id="sprint-cancel" hidden>End sprint</button>'
   document.body.append(panel)
   panel.querySelector('#garage-open').addEventListener('click', openGarage)
   panel.querySelector('#sprint-cancel').addEventListener('click', () => {
