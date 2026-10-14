@@ -160,9 +160,38 @@ export default function GlobalAudioPlayer() {
         }
       },
       needsRebuild: () => brokenRef.current,
+      warm: (url) => {
+        // Leave a selected track alone: replacing it would break resume.
+        if (currentUrlRef.current || loadedUrlRef.current === url) return
+        const widget = widgetRef.current
+        if (!widget) {
+          if (loadedUrlRef.current) return
+          loadedUrlRef.current = url
+          setPlayerUrl(url)
+          return
+        }
+        if (!readyUrlRef.current) return
+        loadedUrlRef.current = url
+        readyUrlRef.current = null
+        try {
+          widget.load(url, {
+            auto_play: false,
+            show_artwork: false,
+            callback: () => {
+              if (widgetRef.current !== widget || loadedUrlRef.current !== url) return
+              readyUrlRef.current = url
+              widget.setVolume(volumeRef.current)
+              // Picked while it was still loading: start it now.
+              if (currentUrlRef.current === url && isPlayingRef.current) playOutsideTap(widget, url)
+            },
+          })
+        } catch {
+          loadedUrlRef.current = null
+        }
+      },
     })
     return () => registerEngine(null)
-  }, [registerEngine, clearNudge])
+  }, [registerEngine, clearNudge, playOutsideTap])
 
   // Warm the player once the page settles, so the first "Play a mix" starts inside its tap.
   // Visitors who asked to save data only load it when they press play.
