@@ -219,4 +219,10 @@ export const BADCOMPANY_MIXES: Track[] = [
     artist: "raf",
     url: "https://api.soundcloud.com/tracks/459410418",
   },
+  {
+    id: "bc-15",
+    title: "Ritter Butzke, Berlin (10.10.26)",
+    artist: "Anahit Vardanyan",
+    url: "https://api.soundcloud.com/tracks/2424146928",
+  },
 ]
