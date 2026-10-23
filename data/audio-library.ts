@@ -219,10 +219,73 @@ export const BADCOMPANY_MIXES: Track[] = [
     artist: "raf",
     url: "https://api.soundcloud.com/tracks/459410418",
   },
+]
+
+export const CURATED_MIXES: Track[] = [
   {
-    id: "bc-15",
+    id: "cm-1",
     title: "Ritter Butzke, Berlin (10.10.26)",
     artist: "Anahit Vardanyan",
     url: "https://api.soundcloud.com/tracks/2424146928",
+  },
+  {
+    id: "cm-2",
+    title: "CASTS OF A DREAMER [FULL TAPE]",
+    artist: "454",
+    url: "https://api.soundcloud.com/tracks/1927724273",
+  },
+  {
+    id: "cm-3",
+    title: "Mark Ronson DJ Set @ Fool's Gold 15",
+    artist: "Fool's Gold Records",
+    url: "https://api.soundcloud.com/tracks/1605402414",
+  },
+  {
+    id: "cm-4",
+    title: "TWO STEP VERIFICATION vol. 13: (The 'Sco)",
+    artist: "Swami Sound",
+    url: "https://api.soundcloud.com/tracks/1388609128",
+  },
+  {
+    id: "cm-5",
+    title: "CD GOSSIP #4 - HalfMoonBK Mix 10.27.22 [Ambient Jungle/Misc.]",
+    artist: "dwells",
+    url: "https://api.soundcloud.com/tracks/1371434563",
+  },
+  {
+    id: "cm-6",
+    title: "FAST TRAX 3",
+    artist: "454",
+    url: "https://api.soundcloud.com/tracks/1336781329",
+  },
+  {
+    id: "cm-7",
+    title: "Baltra w/ RAPRAVE - December 2021",
+    artist: "Balamii",
+    url: "https://api.soundcloud.com/tracks/1183579285",
+  },
+  {
+    id: "cm-8",
+    title: "AMCO presents: It's Up w/ RAPRAVE 210222",
+    artist: "NTS Monday",
+    url: "https://api.soundcloud.com/tracks/1219937326",
+  },
+  {
+    id: "cm-9",
+    title: "Diplo - Robot Heart - Free Burn 2021",
+    artist: "Robot Heart",
+    url: "https://api.soundcloud.com/tracks/1252901056",
+  },
+  {
+    id: "cm-10",
+    title: "I Know Nigo! Live Set",
+    artist: "Cory Townes",
+    url: "https://api.soundcloud.com/tracks/1240273102",
+  },
+  {
+    id: "cm-11",
+    title: "Get Well Soon Mixtape 2002",
+    artist: "Kanye West",
+    url: "https://api.soundcloud.com/tracks/907027270",
   },
 ]

@@ -18,7 +18,7 @@ import {
   Volume2,
 } from "lucide-react"
 import { useAudio, type Track } from "../context/AudioContext"
-import { BADCOMPANY_MIXES, FEATURED_RAFS_CRATE } from "@/data/audio-library"
+import { BADCOMPANY_MIXES, CURATED_MIXES, FEATURED_RAFS_CRATE } from "@/data/audio-library"
 import IPodGame, { IPOD_GAMES, type IPodGameHandle, type IPodGameId } from "./IPodGames"
 
 interface Video {
@@ -151,6 +151,7 @@ type MenuScreen =
   | "music"
   | "playlists"
   | "badcompany"
+  | "curatedMixes"
   | "rafscrate"
   | "nowPlaying"
   | "videos"
@@ -327,6 +328,7 @@ export default function IPodPlayer() {
       case "playlists":
         return [
           { label: "BadCompany Mixes", submenu: "badcompany" },
+          { label: "Curated Mixes", submenu: "curatedMixes" },
           { label: "RAF's Crate", submenu: "rafscrate" },
         ]
       case "videos":
@@ -358,6 +360,11 @@ export default function IPodPlayer() {
         return BADCOMPANY_MIXES.map((track, index) => ({
           label: track.title,
           action: () => playMusic(BADCOMPANY_MIXES, index),
+        }))
+      case "curatedMixes":
+        return CURATED_MIXES.map((track, index) => ({
+          label: `${track.title} — ${track.artist}`,
+          action: () => playMusic(CURATED_MIXES, index),
         }))
       case "rafscrate":
         return FEATURED_RAFS_CRATE.map((track, index) => ({
@@ -684,6 +691,7 @@ export default function IPodPlayer() {
     music: "Music",
     playlists: "Playlists",
     badcompany: "BadCompany",
+    curatedMixes: "Curated Mixes",
     rafscrate: "RAF's Crate",
     nowPlaying: "Now Playing",
     videos: "Videos",
@@ -704,7 +712,9 @@ export default function IPodPlayer() {
   const playlistName =
     playlist === BADCOMPANY_MIXES
       ? "BadCompany Mixes"
-      : playlist === FEATURED_RAFS_CRATE
+      : playlist === CURATED_MIXES
+        ? "Curated Mixes"
+        : playlist === FEATURED_RAFS_CRATE
         ? "RAF's Crate"
         : "Raffi Radio"
   const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0
