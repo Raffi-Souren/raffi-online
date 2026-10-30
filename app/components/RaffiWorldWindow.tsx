@@ -54,10 +54,13 @@ export default function RaffiWorldWindow({ isOpen, onClose, onOpenShelf, cheatRe
   openLabRef.current = onOpenLab
   const questRef = useRef<HTMLDivElement>(null)
   const { active } = useWindowActivity()
-  const { isPlaying, pauseTrack, currentTrack, playTrack, setPlaylist } = useAudio()
+  const { isPlaying, pauseTrack, currentTrack, playTrack, setPlaylist, volume, setVolume } = useAudio()
   // BADCO FM in the World plays real mixes through this shared player. Only a
   // mix the World started is stopped when it tunes away.
   const worldMixRef = useRef<string | null>(null)
+  const worldBaseVolumeRef = useRef<number | null>(null)
+  const volumeRef = useRef(volume)
+  volumeRef.current = volume
   const nextMixRef = useRef(0)
   const currentTrackRef = useRef(currentTrack)
   currentTrackRef.current = currentTrack
@@ -94,13 +97,19 @@ export default function RaffiWorldWindow({ isOpen, onClose, onOpenShelf, cheatRe
           ? playing
           : BADCOMPANY_MIXES[nextMixRef.current++ % BADCOMPANY_MIXES.length]
         worldMixRef.current = mix.id
+        if (worldBaseVolumeRef.current === null) worldBaseVolumeRef.current = volumeRef.current
         setPlaylist(BADCOMPANY_MIXES)
         playTrack(mix)
         iframeRef.current?.contentWindow?.postMessage({ type: "raffi-world:radio-now", title: mix.title.slice(0, 140) }, window.location.origin)
       }
       if (event.data.type === "raffi-world:radio-mix" && event.data.action === "stop") {
-        if (worldMixRef.current && currentTrackRef.current?.id === worldMixRef.current) pauseTrack()
+        if (worldMixRef.current && BADCOMPANY_MIXES.some((mix) => mix.id === currentTrackRef.current?.id)) pauseTrack()
+        if (worldBaseVolumeRef.current !== null) setVolume(worldBaseVolumeRef.current)
+        worldBaseVolumeRef.current = null
         worldMixRef.current = null
+      }
+      if (event.data.type === "raffi-world:radio-volume" && typeof event.data.volume === "number" && Number.isFinite(event.data.volume) && event.data.volume >= 0 && event.data.volume <= 1 && worldBaseVolumeRef.current !== null) {
+        setVolume(worldBaseVolumeRef.current * event.data.volume)
       }
       if (event.data.type === "raffi-world:crate-quest" && event.data.action === "open") setQuestOpen(true)
       if (event.data.type === "raffi-world:open-lab" && typeof event.data.slug === "string") {
@@ -110,7 +119,15 @@ export default function RaffiWorldWindow({ isOpen, onClose, onOpenShelf, cheatRe
     }
     window.addEventListener("message", receive)
     return () => window.removeEventListener("message", receive)
-  }, [pauseTrack, playTrack, setPlaylist])
+  }, [pauseTrack, playTrack, setPlaylist, setVolume])
+
+  // A different desktop track takes ownership back, with its original volume.
+  useEffect(() => {
+    if (!worldMixRef.current || !currentTrack || BADCOMPANY_MIXES.some((mix) => mix.id === currentTrack.id)) return
+    if (worldBaseVolumeRef.current !== null) setVolume(worldBaseVolumeRef.current)
+    worldBaseVolumeRef.current = null
+    worldMixRef.current = null
+  }, [currentTrack, setVolume])
 
   useEffect(() => {
     if (!questOpen || !isOpen || !active) return

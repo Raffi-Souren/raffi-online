@@ -19,6 +19,8 @@ function loadVolume() {
   try { volume = normalizeVolume(localStorage.getItem('raffi-world-volume'), 1) } catch {}
 }
 export function getVolume() { loadVolume(); return volume }
+/** The same gain applies to a mix played by the desktop host. */
+export function getOutputVolume() { return muted ? 0 : getVolume() }
 export function setVolume(value) {
   loadVolume(); volume = normalizeVolume(value, volume)
   try { localStorage.setItem('raffi-world-volume', String(volume)) } catch {}

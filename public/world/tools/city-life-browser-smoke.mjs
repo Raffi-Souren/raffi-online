@@ -228,6 +228,75 @@ try {
   assert.equal(await paused(), false)
   await context.close()
 
+  // ---- real desktop host: phone tuning while paused, mute/volume, Lab bridge.
+  // Stub only SoundCloud's public widget boundary; the actual React audio
+  // context and World iframe still handle every message and control change.
+  const appBase = process.env.RAFFI_APP_URL || new URL(base).origin
+  const appOrigin = new URL(appBase).origin
+  context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+  await context.addInitScript(() => {
+    localStorage.setItem('raffi:tapes-found', '["bc-1"]')
+    localStorage.setItem('raffi:welcome-dismissed', '1')
+  })
+  await context.route('**/*', async (route) => {
+    const requestUrl = new URL(route.request().url())
+    if (requestUrl.hostname === 'w.soundcloud.com' && requestUrl.pathname === '/player/api.js') {
+      return route.fulfill({ contentType: 'application/javascript', body: `(() => {
+        const events = { READY: 'READY', PLAY: 'PLAY', PLAY_PROGRESS: 'PLAY_PROGRESS', FINISH: 'FINISH', ERROR: 'ERROR' };
+        const evidence = window.__cityAudio = { volume: null, playing: false };
+        function Widget() {
+          const listeners = new Map();
+          const emit = (event) => setTimeout(() => listeners.get(event)?.({}), 0);
+          return {
+            bind(event, listener) { listeners.set(event, listener); if (event === events.READY) emit(event); },
+            unbind(event) { listeners.delete(event); },
+            play() { evidence.playing = true; emit(events.PLAY); },
+            pause() { evidence.playing = false; },
+            setVolume(value) { evidence.volume = value; },
+            getDuration(callback) { callback(180000); },
+            seekTo() {},
+            load(url, options) { setTimeout(options.callback, 0); }
+          };
+        }
+        Widget.Events = events; window.SC = { Widget };
+      })();` })
+    }
+    if (requestUrl.hostname === 'w.soundcloud.com') return route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Silent audio fixture</title>' })
+    if (requestUrl.origin !== appOrigin || requestUrl.pathname.startsWith('/api/')) return route.abort()
+    return route.continue()
+  })
+  page = await context.newPage()
+  page.on('pageerror', (error) => errors.push(error.message))
+  const hostUrl = new URL(appBase)
+  hostUrl.searchParams.set('app', 'world')
+  hostUrl.searchParams.set('auto', '1')
+  hostUrl.searchParams.set('seed', 'FIXED')
+  if (process.env.RAFFI_FUNCTIONAL_TIER) hostUrl.searchParams.set('tier', process.env.RAFFI_FUNCTIONAL_TIER)
+  await page.goto(hostUrl.href, { waitUntil: 'domcontentloaded', timeout: 120_000 })
+  const worldFrame = await (await page.waitForSelector('iframe[title="RAFFI WORLD"]')).contentFrame()
+  await worldFrame.waitForFunction(() => window.RAFFI_WORLD?.ready && window.RAFFI_WORLD.stats().drawCalls > 0, null, { timeout: 120_000 })
+  await worldFrame.locator('#desktop-phone').click()
+  await worldFrame.locator('#phone-panel button', { hasText: 'BADCO FM' }).click()
+  await page.waitForFunction(() => window.__cityAudio?.playing && window.__cityAudio.volume === 80)
+  assert.equal(await worldFrame.locator('#phone').isVisible(), true, 'tuning should play while the phone remains open')
+  await worldFrame.locator('#phone-close').click()
+  await worldFrame.locator('#desktop-pause').click()
+  await worldFrame.getByRole('button', { name: 'Sound: On', exact: true }).click()
+  await page.waitForFunction(() => window.__cityAudio.volume === 0, null, { timeout: 10_000 })
+  await worldFrame.getByRole('button', { name: 'Sound: Off', exact: true }).click()
+  await page.waitForFunction(() => window.__cityAudio.volume === 80)
+  await worldFrame.locator('#sound-volume').evaluate((input) => { input.value = '25'; input.dispatchEvent(new Event('input', { bubbles: true })) })
+  await page.waitForFunction(() => window.__cityAudio.volume === 20)
+  await worldFrame.getByRole('button', { name: 'Back to the block', exact: true }).click()
+  await worldFrame.locator('#desktop-phone').click()
+  await worldFrame.locator('#phone-tabs button', { hasText: 'Lab' }).click()
+  await worldFrame.locator('#phone-panel button', { hasText: 'Research papers' }).click()
+  await page.locator('[data-lab-post="research"]').waitFor({ timeout: 30_000 })
+  await page.waitForFunction(() => !window.__cityAudio.playing && window.__cityAudio.volume === 80, null, { timeout: 10_000 })
+  await page.screenshot({ path: `${out}/host-phone-to-lab.png` })
+  report.hosted = { phonePlaysWhilePaused: true, mute: true, volume: true, restoredDesktopVolume: true, phoneOpensLab: true, audio: 'Silent SoundCloud API fixture; no external stream.' }
+  await context.close()
+
   assert.deepEqual(errors, [], 'page errors')
   report.ok = true
 } finally {

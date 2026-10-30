@@ -62,7 +62,7 @@ import {
 } from '../game/pursuit.js'
 import { initDebug, updateDebugCamera, updateDebugReadout, debugState, exposeAuditApi } from './debug.js'
 import { updateOpaqueFogCull } from './cull-opaque.js'
-import { unlockAudio, updateAudio, setAudioActive, audioBeat, audioSnapshot, toggleMute, playSfx, setHostMusicPlaying, requestMusicFocus, resetAudioTransport, getVolume, setVolume } from './audio.js'
+import { unlockAudio, updateAudio, setAudioActive, audioBeat, audioSnapshot, toggleMute, playSfx, setHostMusicPlaying, requestMusicFocus, resetAudioTransport, getVolume, getOutputVolume, setVolume } from './audio.js'
 import { hostPlaysStation } from './audio-core.js'
 import { initWorldMap, showWorldMap, hideWorldMap, isWorldMapOpen } from '../game/world-map.js'
 import { initCheats, showCheats, hideCheats, cheatsOpen } from '../game/cheats.js'
@@ -128,6 +128,8 @@ window.addEventListener('message', (event) => {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 2 || value.type !== 'raffi-world:activity' || typeof value.active !== 'boolean') return
   hostActive = value.active
   setAudioActive(hostActive && !document.hidden && (!state.paused || state.storyPlayingMusic || state.sportsPlayingSound))
+  // A hidden iframe may stop receiving animation frames entirely.
+  syncHostedMix()
   if (!hostActive) resetInput()
 })
 
@@ -340,12 +342,19 @@ function cycleStation(dir = 1) {
  * own page there is no host, and the station's synth plays instead.
  */
 let hostedMix = false
+let hostedVolume = null
 function syncHostedMix() {
   const station = data.radio?.stations[state.radio.stationIndex]
-  const want = hostActive && state.radio.on && hostPlaysStation(station, { hosted: window.parent !== window, storyPlayingMusic: state.storyPlayingMusic })
-  if (want === hostedMix) return
-  hostedMix = want
-  window.parent.postMessage({ type: 'raffi-world:radio-mix', action: want ? 'play' : 'stop' }, location.origin)
+  const want = hostActive && !document.hidden && !graphicsFailed && !world.crateQuestActive && state.radio.on && hostPlaysStation(station, { hosted: window.parent !== window, storyPlayingMusic: state.storyPlayingMusic })
+  if (want !== hostedMix) {
+    hostedMix = want
+    hostedVolume = null
+    window.parent.postMessage({ type: 'raffi-world:radio-mix', action: want ? 'play' : 'stop' }, location.origin)
+  }
+  if (want && hostedVolume !== getOutputVolume()) {
+    hostedVolume = getOutputVolume()
+    window.parent.postMessage({ type: 'raffi-world:radio-volume', volume: hostedVolume }, location.origin)
+  }
 }
 
 // ----------------------------------------------------------------- grade ---
@@ -1273,7 +1282,10 @@ function showGraphicsError(error, contextLost = false) {
 }
 
 document.getElementById('graphics-retry')?.addEventListener('click', () => location.reload())
-document.addEventListener('visibilitychange', () => setAudioActive(!document.hidden && hostActive && (!state.paused || state.storyPlayingMusic || state.sportsPlayingSound)))
+document.addEventListener('visibilitychange', () => {
+  setAudioActive(!document.hidden && hostActive && (!state.paused || state.storyPlayingMusic || state.sportsPlayingSound))
+  syncHostedMix()
+})
 window.addEventListener('pointerdown', () => { if (state.paused) pausedFrameDirty = true; if (state.ready && !state.paused) void unlockAudio() })
 window.addEventListener('keydown', () => { if (state.ready && !state.paused) void unlockAudio() })
 document.getElementById('graphics-light')?.addEventListener('click', () => {
