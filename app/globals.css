@@ -645,7 +645,41 @@ html {
 
 /* The welcome is a quiet desktop note; only its playing cassette moves. */
 .welcome-deck:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.04);
+}
+/* Deck status lamp: dark at rest, green while a mix plays, amber tuning in, red on a miss. */
+.welcome-led {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #6b7179;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.welcome-deck[data-deck="playing"] .welcome-led {
+  background: #35d06a;
+  box-shadow: 0 0 5px rgba(53, 208, 106, 0.85), inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+}
+.welcome-deck[data-deck="loading"] .welcome-led {
+  background: #f1b33a;
+  box-shadow: 0 0 5px rgba(241, 179, 58, 0.8), inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+}
+.welcome-deck[data-deck="error"] .welcome-led {
+  background: #e5533d;
+  box-shadow: 0 0 5px rgba(229, 83, 61, 0.8), inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+}
+/* The play key stands proud at rest and sits down while the tape runs. */
+.welcome-key {
+  background: linear-gradient(180deg, #ffffff 0%, #dde2e7 100%);
+  border: 1px solid #6d7782;
+  box-shadow: inset 0 1px 0 #ffffff, 0 2px 0 #7b848e;
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+}
+.welcome-deck[data-deck="playing"] .welcome-key,
+.welcome-deck:active .welcome-key {
+  transform: translateY(2px);
+  background: linear-gradient(180deg, #d2d8de 0%, #eef1f4 100%);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 #7b848e;
 }
 /* Reels turn only while a mix plays, and stop where they are on pause. */
 .welcome-reel {
@@ -667,7 +701,8 @@ html {
 .welcome-eq span {
   width: 2px;
   height: 100%;
-  background: #dcc8a6;
+  /* Drawn in the display's own ink. */
+  background: currentColor;
   transform-origin: bottom;
   animation: welcome-eq 0.9s ease-in-out infinite;
 }
@@ -689,5 +724,8 @@ html {
   .welcome-reel,
   .welcome-eq span {
     animation: none;
+  }
+  .welcome-key {
+    transition: none;
   }
 }
