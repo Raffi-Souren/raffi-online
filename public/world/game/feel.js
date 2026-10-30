@@ -65,6 +65,11 @@ export function setFeelIntensity(value) {
   return feelState.intensity
 }
 
+/** Whether an event happened within `window` seconds; a stamp ahead of a rewound clock is stale. */
+function recent(event, now, window) {
+  return !!event && now >= event.time && now - event.time < window
+}
+
 /** Shake scaled by the player's intensity; camera.addShake drops it under reduced motion. */
 function shake(amount) {
   if (amount > 0 && feelState.intensity > 0) addShake(amount * feelState.intensity)
@@ -83,12 +88,13 @@ export function feelProp(collider, normalX, normalZ, impact) {
   const reaction = PROP_REACTIONS[collider.tag]
   if (!reaction || impact < 0.4) return
   const now = state.time
-  if (feelState.lastPropEvent?.collider === collider && now - feelState.lastPropEvent.time < 0.6) return
+  if (feelState.lastPropEvent?.collider === collider && recent(feelState.lastPropEvent, now, 0.6)) return
   feelState.lastPropEvent = { collider, tag: collider.tag, reaction, impact, time: now }
   feelState.events++
   bus.emit('sfx', reaction === 'wobble' ? 'pole-tonk' : 'bump-thud')
-  if (reaction !== 'wobble') return
-  const amplitude = Math.min(WOBBLE.maxDeg, impact * WOBBLE.perImpactDeg) * Math.PI / 180
+  // The sway is motion on screen: reduced motion keeps the tonk and skips it.
+  if (reaction !== 'wobble' || !motionAllowed()) return
+  const amplitude = Math.min(WOBBLE.maxDeg, impact * WOBBLE.perImpactDeg) * Math.PI / 180 * feelState.intensity
   let wobble = feelState.wobbles.find((entry) => entry.collider === collider)
   if (!wobble) {
     wobble = { collider, x: collider.x, z: collider.z, dirX: 0, dirZ: 0, angle: 0, velocity: 0, peak: 0, baseY: 0, ...poleReach(collider.tag) }
@@ -106,7 +112,7 @@ export function feelProp(collider, normalX, normalZ, impact) {
 export function feelCarImpact(impact) {
   if (!(impact > 2)) return
   const now = state.time
-  if (feelState.lastImpactEvent && now - feelState.lastImpactEvent.time < 0.35) return
+  if (recent(feelState.lastImpactEvent, now, 0.35)) return
   feelState.lastImpactEvent = { impact, time: now }
   feelState.events++
   shake(Math.max(0.05, Math.min(0.6, impact * 0.05)))
@@ -116,6 +122,8 @@ export function feelCarImpact(impact) {
 /** Advances pole sways (a damped spring per pole); call once per frame. */
 export function updateFeel(dt) {
   if (!(dt > 0)) return
+  // Turning on reduced motion mid-sway stills every pole at once.
+  if (!motionAllowed()) { feelState.wobbles.length = 0; return }
   const { omega, zeta } = WOBBLE
   for (let index = feelState.wobbles.length - 1; index >= 0; index--) {
     const wobble = feelState.wobbles[index]

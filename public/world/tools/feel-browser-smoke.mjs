@@ -340,10 +340,12 @@ try {
   stop = await record('reduced', `const cam = ctx.camera.cam; return { shake: cam.shake, bob: cam.bob }`)
   await hold(['Shift', 'w'], 1.6)
   samples = await stop()
-  report.reducedMotion = { maxShake: Math.max(...samples.map((s) => s.shake)), maxBob: Math.max(...samples.map((s) => Math.abs(s.bob))), event: (await page.evaluate(() => window.RAFFI_WORLD.feel())).lastPropEvent?.time }
+  const reducedFeel = await page.evaluate(() => window.RAFFI_WORLD.feel())
+  report.reducedMotion = { maxShake: Math.max(...samples.map((s) => s.shake)), maxBob: Math.max(...samples.map((s) => Math.abs(s.bob))), event: reducedFeel.lastPropEvent?.time, wobbles: reducedFeel.wobbles.length }
   await page.evaluate(() => window.__FEEL__.camera.setReducedMotion(false))
   assert.equal(report.reducedMotion.maxShake, 0, 'shake under reduced motion: ' + JSON.stringify(report.reducedMotion))
   assert.equal(report.reducedMotion.maxBob, 0, 'head bob under reduced motion: ' + JSON.stringify(report.reducedMotion))
+  assert.equal(report.reducedMotion.wobbles, 0, 'pole sway under reduced motion: ' + JSON.stringify(report.reducedMotion))
 
   assert.deepEqual(errors, [])
   report.passed = true
