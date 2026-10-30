@@ -30,11 +30,13 @@ try {
     url.searchParams.set("seed", "FIXED")
     if (process.env.RAFFI_FUNCTIONAL_TIER) url.searchParams.set("tier", process.env.RAFFI_FUNCTIONAL_TIER)
     await page.goto(url.href, { waitUntil: "domcontentloaded" })
+    await page.bringToFront()
     await page.waitForFunction(() => window.RAFFI_WORLD?.ready, null, { timeout: 120_000 })
     await page.addStyleTag({ content: "#debug { display: none !important; }" })
     await page.evaluate(() => window.RAFFI_WORLD.dismissDialogue())
     await page.waitForTimeout(800)
-    await page.screenshot({ path: `${out}/${name}-initial-classic.png` })
+    await page.bringToFront()
+    await page.screenshot({ path: `${out}/${name}-initial-classic.png`, timeout: 60_000 })
     await page.evaluate(() => {
       window.RAFFI_WORLD.dismissDialogue()
       window.RAFFI_WORLD.teleport(-438, -101)
@@ -75,9 +77,18 @@ try {
     }
     await page.evaluate(() => window.RAFFI_WORLD.setCameraMode("classic"))
     await page.addStyleTag({ content: "#debug { display: none !important; }" })
-    await page.waitForTimeout(500)
-    await page.screenshot({ path: `${out}/${name}.png` })
-    await page.locator("#minimap").screenshot({ path: `${out}/${name}-map.png` })
+    await page.bringToFront()
+    // Match the measured modes: wait for rendered frames after restoring the
+    // camera instead of assuming a CPU-rendered CI frame fits within 500ms.
+    const captureFrame = await page.evaluate(() => window.__MINIMAP_STATE__.frame + 3)
+    await page.waitForFunction(
+      (target) => window.__MINIMAP_STATE__.frame >= target && window.RAFFI_WORLD.getCameraMode().id === "classic",
+      captureFrame,
+      { timeout: 60_000 },
+    )
+    await page.screenshot({ path: `${out}/${name}.png`, timeout: 60_000 })
+    await page.bringToFront()
+    await page.locator("#minimap").screenshot({ path: `${out}/${name}-map.png`, timeout: 60_000 })
     await page.evaluate(async () => {
       const { setWaypoint } = await import("/world/game/hud.js")
       setWaypoint(null)
