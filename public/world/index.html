@@ -57,7 +57,7 @@
     </div>
 
     <button type="button" id="game-question" aria-label="Raf’s cheat sheet and radio">?</button>
-    <div id="play-tools"><button type="button" id="desktop-camera">Change view <kbd>C</kbd></button><button type="button" id="desktop-pause">Pause <kbd>Esc</kbd></button></div>
+    <div id="play-tools"><button type="button" id="desktop-camera">Change view <kbd>C</kbd></button><button type="button" id="desktop-phone">Phone <kbd>P</kbd></button><button type="button" id="desktop-pause">Pause <kbd>Esc</kbd></button></div>
     <div id="toast"></div>
     <div id="subtitle" role="status" aria-live="polite">
       <div id="subtitle-kicker"></div>
@@ -69,6 +69,7 @@
     <!-- Touch controls -->
     <div id="touch" class="hidden">
       <button id="btn-pause" class="tbtn pause-btn" aria-label="Pause game">PAUSE</button>
+      <button id="btn-phone" class="tbtn pause-btn" aria-label="Open Raf’s phone">PHONE</button>
       <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
       <div id="buttons">
         <button id="btn-action" class="tbtn primary">ENTER</button>
@@ -160,6 +161,18 @@
       <div id="cheat-actions"></div>
       <form id="cheat-form"><label for="cheat-code">Got a code?</label><div><input id="cheat-code" name="code" autocomplete="off" autocapitalize="characters" maxlength="24" placeholder="WHIP"/><button type="submit">Use code</button></div></form>
       <h3>Radio</h3><div id="cheat-stations"></div>
+    </section>
+  </div>
+
+  <div id="phone" class="hidden" role="dialog" aria-modal="true" aria-labelledby="phone-title" aria-hidden="true">
+    <section class="phone-body">
+      <div class="phone-lid" aria-hidden="true"><span class="phone-speaker"></span><span id="phone-clock">00:00</span><span class="phone-carrier">BADCO</span></div>
+      <div class="phone-screen">
+        <div class="phone-title"><h2 id="phone-title">Raf’s phone</h2><button type="button" id="phone-close" aria-label="Close phone">Close</button></div>
+        <nav id="phone-tabs" aria-label="Phone apps"></nav>
+        <div id="phone-panel" aria-live="polite"></div>
+      </div>
+      <div class="phone-hinge" aria-hidden="true"></div>
     </section>
   </div>
 

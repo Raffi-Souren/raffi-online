@@ -318,6 +318,7 @@ export default function Home() {
             isOpen={openWindows.world}
             cheatRequest={worldCheatRequest}
             onClose={() => closeWindow("world")}
+            onOpenLab={(slug) => openWindow("lab", slug)}
             onOpenShelf={() => {
               minimizeWindow("world")
               openWindow("games")

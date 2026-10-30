@@ -2,7 +2,7 @@
  * The audio clock schedules ahead of rendering. No downloaded recordings.
  */
 import { data, state, bus, clamp } from './state.js'
-import { normalizeVolume, stepFootsteps, vehicleMotorSignature } from './audio-core.js'
+import { hostPlaysStation, normalizeVolume, stepFootsteps, vehicleMotorSignature } from './audio-core.js'
 
 let context, master, music, engine, ambience, filter, analyser, noise
 let motor, motorGain, motorFilter, windGain, hum, humGain
@@ -19,6 +19,8 @@ function loadVolume() {
   try { volume = normalizeVolume(localStorage.getItem('raffi-world-volume'), 1) } catch {}
 }
 export function getVolume() { loadVolume(); return volume }
+/** The same gain applies to a mix played by the desktop host. */
+export function getOutputVolume() { return muted ? 0 : getVolume() }
 export function setVolume(value) {
   loadVolume(); volume = normalizeVolume(value, volume)
   try { localStorage.setItem('raffi-world-volume', String(volume)) } catch {}
@@ -129,6 +131,8 @@ function schedule() {
   if (!context || context.state !== 'running' || !active || muted || volume === 0 || (!state.radio.on && !state.storyPlayingMusic) || (state.paused && !state.storyPlayingMusic)) return
   const station = currentStation()
   if (!station) return
+  // BADCO FM is the desktop's real mix when there is a desktop; the synth is only its standalone fallback.
+  if (hostPlaysStation(station, { hosted: window.parent !== window, storyPlayingMusic: state.storyPlayingMusic })) return
   if (stationId !== station.id) {
     stationId = station.id
     step = 0

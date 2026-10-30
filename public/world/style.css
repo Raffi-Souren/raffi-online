@@ -969,3 +969,30 @@ body:has(#crib-garage:not([hidden]):not(.hidden)) #side-activities {
   .boot-controls { display: none; }
   #boot-start, #boot-continue { min-height: 44px; margin-top: 8px; }
 }
+
+/* ---------------------------------------------------------- flip phone --- */
+#btn-phone { position: absolute; top: calc(128px + var(--safe-t)); right: calc(14px + var(--safe-r)); width: 68px; height: 44px; border-radius: 3px; border-color: rgba(119, 214, 255, 0.72); color: #9fe3ff; background: rgba(8, 12, 20, 0.76); font-size: 9px; pointer-events: auto; }
+#phone { position: absolute; inset: 0; z-index: 54; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) 16px; background: #071019c9; }
+#phone.hidden { display: none; }
+.phone-body { width: min(340px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 14px 14px 22px; border-radius: 30px 30px 24px 24px; background: linear-gradient(160deg, #cfd6df, #8d97a5 55%, #6c7584); border: 1px solid #e9eef5; box-shadow: inset 0 2px 0 #fff8, inset 0 -3px 0 #0003, 0 24px 70px #000a; color: #10213d; }
+.phone-lid { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 12px 10px; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #1d2d48; }
+.phone-speaker { width: 44px; height: 6px; border-radius: 4px; background: repeating-linear-gradient(90deg, #2a3446 0 3px, transparent 3px 6px); }
+.phone-screen { display: flex; flex-direction: column; min-height: 0; flex: 1; border-radius: 12px; border: 3px solid #1b2333; background: linear-gradient(180deg, #2a6be0 0 44px, #ece9d8 44px); overflow: hidden; }
+.phone-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 6px 0 12px; color: #fff; }
+.phone-title h2 { margin: 0; font-size: 15px; text-shadow: 0 1px 0 #0006; }
+#phone button { min-height: 44px; font: inherit; cursor: pointer; }
+#phone-close { min-width: 64px; padding: 0 12px; color: #fff; background: linear-gradient(#e5826b, #c0412b); border: 1px solid #fff9; border-radius: 6px; font-size: 12px; font-weight: 700; }
+#phone-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px 8px 4px; }
+#phone-tabs button { padding: 0 2px; font-size: 11px; color: #10213d; background: linear-gradient(#fff, #d8d4c4); border: 1px solid #8a8670; border-radius: 4px; }
+#phone-tabs button[aria-pressed="true"] { background: linear-gradient(#ffe7a1, #f2bd45); border-color: #8a5a00; font-weight: 700; }
+#phone-panel { display: flex; flex-direction: column; gap: 6px; padding: 6px 10px 12px; overflow: auto; min-height: 0; max-height: min(52dvh, 420px); }
+#phone-panel h3 { margin: 4px 0 0; font-size: 14px; }
+#phone-panel p { margin: 0 0 4px; font-size: 12px; line-height: 1.5; color: #3a4252; }
+.phone-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 10px; text-align: left; color: #10213d; background: #fffdf4; border: 1px solid #b7b29c; border-radius: 5px; }
+.phone-row strong { font-size: 13px; }
+.phone-row span { font-size: 11px; color: #4d5565; }
+.phone-row[aria-pressed="true"] { background: #dbe8ff; border-color: #2a6be0; }
+.phone-row:disabled { cursor: default; opacity: .72; }
+#phone button:focus-visible { outline: 3px solid #f2bd45; outline-offset: 1px; }
+.phone-hinge { height: 10px; margin: 12px 30px 0; border-radius: 6px; background: linear-gradient(#5b6372, #a3acb9); }
+#touch.dialogue #btn-phone { display: none; }

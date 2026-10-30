@@ -14,6 +14,7 @@ import { setComplianceTier } from './compliance.js'
 import { onComplianceCleared } from './pursuit.js'
 import { stopCompare, beginRecordingRun } from './replay.js'
 import { setRadio, toast } from './hud.js'
+import { applyTapeUnlocks } from './tapes.js'
 import { resetFeel } from './feel.js'
 import { SAVE_VERSION, SAVE_SLOTS, SAVE_PREFIX, validateSaveRecord, saveSummary } from './save-core.js'
 
@@ -144,6 +145,8 @@ export function loadGame(slot = 'auto') {
   state.radio.on = save.radio.on
   state.radio.stationIndex = data.radio.stations.findIndex((station) => station.id === save.radio.station)
   for (const station of data.radio.stations) station.unlocked = save.radio.unlocked.includes(station.id)
+  // Found tapes belong to the visitor, not the save: BADCO FM stays open after any load.
+  applyTapeUnlocks()
   const station = data.radio.stations[state.radio.stationIndex]
   state.radio.bpm = station.bpm
   state.radio.beat = 0

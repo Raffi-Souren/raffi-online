@@ -67,7 +67,7 @@ jobs:
           done
 
           curl --fail --silent http://127.0.0.1:3100/world/index.html > /dev/null
-          mkdir -p /tmp/raffi-world-smoke /tmp/raffi-world-collisions /tmp/raffi-world-feel /tmp/raffi-world-minimap /tmp/raffi-signal-smoke /tmp/raffi-camera-budget /tmp/raffi-replay-smoke
+          mkdir -p /tmp/raffi-world-smoke /tmp/raffi-world-collisions /tmp/raffi-world-feel /tmp/raffi-world-city-life /tmp/raffi-world-minimap /tmp/raffi-signal-smoke /tmp/raffi-camera-budget /tmp/raffi-replay-smoke
           export RAFFI_WORLD_URL=http://127.0.0.1:3100/world/index.html
           export RAFFI_APP_URL=http://127.0.0.1:3100
           # GitHub's CPU-only SwiftShader runs gameplay in Low. The independent
@@ -86,6 +86,8 @@ jobs:
           pnpm run test:world:collisions
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-feel
           pnpm run test:world:feel
+          export RAFFI_SMOKE_OUT=/tmp/raffi-world-city-life
+          pnpm run test:world:city
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-minimap
           pnpm run test:world:minimap
           export RAFFI_SMOKE_OUT=/tmp/raffi-signal-smoke
@@ -105,6 +107,7 @@ jobs:
             /tmp/raffi-world-smoke
             /tmp/raffi-world-collisions
             /tmp/raffi-world-feel
+            /tmp/raffi-world-city-life
             /tmp/raffi-world-minimap
             /tmp/raffi-signal-smoke
             /tmp/raffi-camera-budget

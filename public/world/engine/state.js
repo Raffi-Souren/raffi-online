@@ -132,6 +132,8 @@ export const query = {
   /** Audit harness hook: skips the start gate so screenshots need no click. */
   auto: params.get('auto') === '1',
   hour: params.has('hour') ? Number(params.get('hour')) : null,
+  /** `local` keeps the visitor's own clock; by default the city runs on New York time. */
+  clock: params.get('clock') === 'local' ? 'local' : 'nyc',
   lowfi: params.get('lowfi') === '1',
 }
 
@@ -146,7 +148,7 @@ export const device = {
 
 // -------------------------------------------------------------- data ---
 
-const DATA_FILES = ['world', 'blocks', 'props', 'vehicles', 'npcs', 'dialogue', 'missions', 'radio', 'cheats', 'conversations', 'traffic', 'sports', 'movement']
+const DATA_FILES = ['world', 'blocks', 'props', 'vehicles', 'npcs', 'dialogue', 'missions', 'radio', 'cheats', 'conversations', 'traffic', 'sports', 'movement', 'tapes']
 
 export const data = {}
 
@@ -236,9 +238,30 @@ export function initState() {
 }
 
 /** Local hour, overridable by ?hour= for deterministic audits. */
-export function currentHour() {
+export function currentHour(now = new Date()) {
   if (query.hour !== null && !Number.isNaN(query.hour)) return clamp(query.hour, 0, 23)
-  return new Date().getHours()
+  if (query.clock === 'local') return now.getHours()
+  return newYorkHour(now)
+}
+
+/** The hour in Brooklyn, whatever the visitor's own time zone (24h, 0–23). */
+const newYorkClock = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+
+export function newYorkHour(now = new Date()) {
+  try {
+    const hour = Number(newYorkClock.formatToParts(now).find((part) => part.type === 'hour')?.value)
+    return Number.isFinite(hour) ? hour % 24 : now.getHours()
+  } catch {
+    return now.getHours()
+  }
+}
+
+/** Keep both clock fields in the same zone, including visitors at half-hour offsets. */
+export function clockText(now = new Date()) {
+  if (query.clock !== 'local') {
+    try { return newYorkClock.format(now) } catch {}
+  }
+  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
 }
 
 /** Maps an hour to a grade using world.json's cycle table. */

@@ -348,3 +348,47 @@ corner hold, a sprint bump, a pole sway and settle, a car impact with reverse
 escape, and reduced motion, all in simulation time. Frame-rate independence is
 pinned in `locomotion-core.test.mjs` (30 vs 144 Hz) rather than in the browser,
 where CI renders at a few frames per second.
+
+## October 30 city life (Phase 2: radio, tapes, phone, Lab fronts)
+
+**BADCO FM.** A seventh station (`BDCO` in `data/radio.json`) plays the real
+BADCOMPANY mixes. The World never decodes audio itself. When it is embedded in
+the desktop it asks the host with `raffi-world:radio-mix` (`play` / `stop`), and
+`RaffiWorldWindow` plays a mix through the desktop's shared SoundCloud player
+and answers with `raffi-world:radio-now` (the title, shown as a toast). Opened on
+its own page, offline from the desktop, or while a story scene owns the music,
+the station's synth plays instead (`hostPlaysStation` in `engine/audio-core.js`).
+Cars remember the station they were left on and play it again when you climb back in.
+
+**Tapes.** Fourteen cassettes, one per mix in `data/audio-library.ts`, sit on
+sidewalks and stoops (`data/tapes.json`, ids and titles checked against the
+library). Two instanced meshes draw the whole set. Walking within 1.4 m (2.3 m
+in a vehicle) picks one up once: a pop, the pickup sound and a count. The found
+list is saved under localStorage `raffi:tapes-found`, which the Lab's Tape Shelf
+reads to stamp a gold sticker on that cassette. Finding a tape never locks or
+unlocks a mix anywhere on the site. The first tape opens BADCO FM; after that the
+remaining tapes show on the minimap and the world map.
+
+**Raf's phone.** P, the PHONE button on touch, or the desktop Phone button opens
+an XP-styled flip phone that pauses the street like the other overlays. Its apps:
+Radio (tune any unlocked station, or turn it off), Tapes (your count; unfound
+tapes show only their district), Contacts (whoever has work; picking one sets a
+road route and objective), Lab, and Map. Escape, P or Close puts it away.
+
+**Lab storefronts.** A lit sign for each Lab room stands on a sidewalk
+(`labFronts` in `data/world.json`). Walk up, press E, and that room opens in the
+desktop's Lab window (`raffi-world:open-lab`, slug validated against
+`data/lab`). On its own page the room opens in a new tab. The rooms live on the
+desktop, so the street points at them instead of copying them indoors.
+
+**Clock and pins.** The HUD clock, phone clock and default sky grade follow
+America/New_York time (`?clock=local` keeps your own; `?hour=` still forces one).
+A click, tap or right-click on the world map drops a pin on the nearest street,
+and the pin survives entering and leaving an interior.
+
+Evidence: `pnpm run test:world:city` (in the release gate) walks up to a tape,
+stands on it again, reloads, tunes BADCO FM on the phone with no desktop, opens a
+Lab storefront, pins the map by right-click through an interior round trip, and
+works the phone by touch. `city-life.test.mjs` covers pickup idempotency,
+storage tolerance, BADCO FM's fallback rule, New York time across daylight
+saving and the storefront slugs.

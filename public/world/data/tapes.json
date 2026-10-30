@@ -1,0 +1,146 @@
+{
+  "$comment": "Fourteen BADCOMPANY tapes hidden on sidewalks and stoops, one per mix in data/audio-library.ts (ids and titles must match; public/world/tools/city-life.test.mjs checks). Finding one is saved under localStorage 'raffi:tapes-found', shared with the Lab's Tape Shelf; it never locks a mix. Spots were sampled clear of every solid.",
+  "pickupRadius": 1.4,
+  "tapes": [
+    {
+      "id": "bc-1",
+      "title": "BadCompany Radio",
+      "district": "heights",
+      "street": "Bluff St",
+      "at": {
+        "x": -326,
+        "z": -257
+      }
+    },
+    {
+      "id": "bc-2",
+      "title": "Writing On The Wall Set 8.13.22",
+      "district": "heights",
+      "street": "9th Ave",
+      "at": {
+        "x": -566,
+        "z": -92
+      }
+    },
+    {
+      "id": "bc-3",
+      "title": "Andromeda by sweeterman",
+      "district": "heights",
+      "street": "Promenade St",
+      "at": {
+        "x": -566,
+        "z": -383
+      }
+    },
+    {
+      "id": "bc-4",
+      "title": "Feed The Streets vol. I",
+      "district": "downtown",
+      "street": "Promenade St",
+      "at": {
+        "x": 160,
+        "z": -371
+      }
+    },
+    {
+      "id": "bc-5",
+      "title": "ISLA BÉRT [DRIP OR DROWN V4 SET]",
+      "district": "downtown",
+      "street": "Harbor St",
+      "at": {
+        "x": -158,
+        "z": -113
+      }
+    },
+    {
+      "id": "bc-6",
+      "title": "🖤🖤🖤TRISTAN THOMPSON 🖤🖤🖤BY BRiE",
+      "district": "downtown",
+      "street": "2nd Ave",
+      "at": {
+        "x": 226,
+        "z": -92
+      }
+    },
+    {
+      "id": "bc-7",
+      "title": "JAM with brie",
+      "district": "strip",
+      "street": "Vantage Ave",
+      "at": {
+        "x": 52,
+        "z": 267
+      }
+    },
+    {
+      "id": "bc-8",
+      "title": "VDAY💔",
+      "district": "strip",
+      "street": "Centre St",
+      "at": {
+        "x": 307,
+        "z": 12
+      }
+    },
+    {
+      "id": "bc-9",
+      "title": "\"SKYFALL\" - NYE 2020 Set",
+      "district": "strip",
+      "street": "3rd Ave",
+      "at": {
+        "x": -107,
+        "z": -48
+      }
+    },
+    {
+      "id": "bc-10",
+      "title": "🕵️🕵️🕵️WHATS THE MOVE ??? 🕵️🕵️🕵️ with BRiE",
+      "district": "yards",
+      "street": "Pier Ave",
+      "at": {
+        "x": 547,
+        "z": 127
+      }
+    },
+    {
+      "id": "bc-11",
+      "title": "BAKED GOOD Set @ HAUNTED HOTEL (10.26.18)",
+      "district": "yards",
+      "street": "Stadium St",
+      "at": {
+        "x": 352,
+        "z": 307
+      }
+    },
+    {
+      "id": "bc-12",
+      "title": "ESCONDIDO X BADCO with sweeterman",
+      "district": "bowl",
+      "street": "5th Ave",
+      "at": {
+        "x": -254,
+        "z": 198
+      }
+    },
+    {
+      "id": "bc-13",
+      "title": "BAD BUSINESS (BAKED GOOD Set 07.28.18)",
+      "district": "bowl",
+      "street": "9th Ave",
+      "at": {
+        "x": -566,
+        "z": -48
+      }
+    },
+    {
+      "id": "bc-14",
+      "title": "Palm Trees in NYC (BSAP x sweeterman)",
+      "district": "bowl",
+      "street": "9th Ave",
+      "at": {
+        "x": -566,
+        "z": 303
+      }
+    }
+  ]
+}

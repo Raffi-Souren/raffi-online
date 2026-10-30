@@ -6,7 +6,7 @@
  * up in style.css.
  */
 
-import { state, bus, data, device } from '../engine/state.js'
+import { state, bus, data, device, clockText } from '../engine/state.js'
 import { mapPlaces, drawMapDetails } from './minimap-details.js'
 
 let els = {}
@@ -174,12 +174,23 @@ export function updateHud(dt) {
     if (toastTimer <= 0) els.toast?.classList.remove('show')
   }
   if (els.clock && state.frame % 30 === 0) {
-    const d = new Date()
-    els.clock.textContent =
-      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+    // The city keeps Brooklyn time unless ?clock=local asks for the visitor's own.
+    els.clock.textContent = clockText()
   }
 
   if (state.frame % 3 === 0) drawMinimap()
+}
+
+/** Tapes still out there, once the first has been found (game/tapes.js). */
+function drawTapeMarkers(ctx, px, pz, cx, cy, scale, reach) {
+  for (const tape of state.tapeMarkers || []) {
+    const dx = tape.x - px, dz = tape.z - pz
+    if (Math.hypot(dx, dz) > reach) continue
+    const x = cx + dx * scale, y = cy + dz * scale
+    ctx.fillStyle = '#23282f'; ctx.fillRect(x - 5, y - 3.5, 10, 7)
+    ctx.fillStyle = '#e8692f'; ctx.fillRect(x - 3.5, y - 2.5, 7, 2.5)
+    ctx.strokeStyle = '#f0e2bd'; ctx.lineWidth = 1; ctx.strokeRect(x - 5, y - 3.5, 10, 7)
+  }
 }
 
 function drawMinimap() {
@@ -222,6 +233,8 @@ function drawMinimap() {
   const nearby = state.interior ? [] : drawMapDetails(ctx, places, {
     x: px, z: pz, cx, cy, scale: pixelsPerMetre, radius, waypoint, cameraYaw: state.camera.yaw,
   })
+
+  if (!state.interior) drawTapeMarkers(ctx, px, pz, cx, cy, pixelsPerMetre, worldRadius)
 
   if (waypoint) {
     if (!routePoints.length || Math.hypot(px - routeOrigin.x, pz - routeOrigin.z) > 18) {

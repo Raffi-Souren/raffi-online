@@ -26,3 +26,12 @@ export function stepFootsteps(previous, player, enabled, config) {
   const count = Math.min(4, Math.floor(accumulated / stride))
   return { state: { ...fresh, distance: accumulated % stride, total: fresh.total + count }, count }
 }
+
+/**
+ * BADCO FM plays real mixes through the desktop's player. Only a World
+ * embedded in the desktop has that player; on its own page, or while a story
+ * scene owns the music, the station's synth plays instead.
+ */
+export function hostPlaysStation(station, { hosted = false, storyPlayingMusic = false } = {}) {
+  return !!station?.hostMixes && hosted && !storyPlayingMusic
+}
