@@ -37,6 +37,7 @@ try {
     await page.waitForTimeout(800)
     await page.bringToFront()
     await page.screenshot({ path: `${out}/${name}-initial-classic.png`, timeout: 60_000 })
+    const functionalQuality = await page.evaluate(() => window.RAFFI_WORLD.stats().quality)
     await page.evaluate(() => {
       window.RAFFI_WORLD.dismissDialogue()
       window.RAFFI_WORLD.teleport(-438, -101)
@@ -75,6 +76,9 @@ try {
       assert.ok(sample.drawCalls < 250 && sample.visibleTriangles < 150_000,
         `${name}/${mode}: Medium budget exceeded (${sample.drawCalls} draws, ${sample.visibleTriangles} visible triangles)`)
     }
+    // The Medium budget is measured. The rest of the run returns to the tier it
+    // started in, so the waypoint redraw below does not wait on Medium frames.
+    await page.evaluate((quality) => window.RAFFI_WORLD.setQuality(quality), functionalQuality)
     await page.evaluate(() => window.RAFFI_WORLD.setCameraMode("classic"))
     await page.addStyleTag({ content: "#debug { display: none !important; }" })
     await page.bringToFront()
@@ -86,9 +90,17 @@ try {
       captureFrame,
       { timeout: 60_000 },
     )
-    await page.screenshot({ path: `${out}/${name}.png`, timeout: 60_000 })
-    await page.bringToFront()
-    await page.locator("#minimap").screenshot({ path: `${out}/${name}-map.png`, timeout: 60_000 })
+    // Hold that frame for the evidence captures, the way the desktop pauses a
+    // background World. While a CPU renderer keeps drawing, Chromium's capture
+    // waits behind the queued frames and element stability checks starve.
+    const setWorldActive = (active) =>
+      page.evaluate((active) => window.postMessage({ type: "raffi-world:activity", active }, location.origin), active)
+    await setWorldActive(false)
+    await page.screenshot({ path: `${out}/${name}.png`, timeout: 120_000 })
+    const map = await page.locator("#minimap").boundingBox()
+    assert.ok(map, `${name}: minimap is not on screen`)
+    await page.screenshot({ path: `${out}/${name}-map.png`, clip: map, timeout: 60_000 })
+    await setWorldActive(true)
     await page.evaluate(async () => {
       const { setWaypoint } = await import("/world/game/hud.js")
       setWaypoint(null)
@@ -98,7 +110,7 @@ try {
     await page.waitForFunction(
       () => /Free roam\. Nearby:/.test(document.querySelector("#minimap")?.getAttribute("aria-label") || ""),
       null,
-      { timeout: 15_000 },
+      { timeout: 60_000 },
     )
     assert.match(await page.locator("#minimap").getAttribute("aria-label"), /Free roam\. Nearby:/)
     await context.close()
