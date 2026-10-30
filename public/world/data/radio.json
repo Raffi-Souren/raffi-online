@@ -154,7 +154,8 @@
         "chord": { "steps": "0010000000100000", "type": "triangle", "octave": 4, "voicing": [0, 4, 7, 11], "decay": 1.6, "lpf": 2200, "gain": 0.2 },
         "lead": { "steps": "0000000000001000", "type": "sine", "octave": 5, "notes": [11, 9, 7, 4], "decay": 0.8, "gain": 0.12, "vibrato": { "hz": 4.5, "cents": 14 } }
       }
-    }
+    },
+    {"id": "BDCO", "name": "BADCO FM", "tagline": "The tapes you found, on the real deck", "bpm": 120, "grade": "night", "unlocked": false, "unlockedBy": "tape:first", "$hostComment": "Plays real BADCOMPANY mixes through the desktop's shared player (raffi-world:radio-mix). Opened on its own page, the World falls back to this synth.", "hostMixes": true, "idLine": "radio-id-wgrd", "ads": [], "key": "A", "scale": "minorPentatonic", "stems": [], "synth": {"kick": {"steps": "1000000010000000", "type": "sine", "hz": 52, "decay": 0.34, "pitchEnv": 2.6, "gain": 0.9}, "snare": {"steps": "0000100000001000", "type": "noise", "decay": 0.16, "hpf": 1400, "gain": 0.55}, "hat": {"steps": "0010001000100010", "type": "noise", "decay": 0.045, "hpf": 7000, "gain": 0.22}, "bass": {"steps": "1000010010000100", "type": "triangle", "octave": 2, "notes": [0, 0, 3, 5], "decay": 0.4, "gain": 0.45}, "chord": {"steps": "0010000000100000", "type": "sawtooth", "octave": 4, "voicing": [0, 3, 7, 10], "decay": 1.1, "lpf": 1800, "gain": 0.16}, "lead": null}}
   ],
 
   "$ambientComment": "Per-district ambient beds, also synthesised. Crossfaded on district transition.",

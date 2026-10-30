@@ -772,6 +772,13 @@
     }
   ],
   "$interiorComment": "Interiors are separate small scenes swapped in at a door trigger. THE MAINFRAME disables fog entirely \u2014 that contrast is deliberate.",
+  "$labFrontsComment": "Lab storefront signs on the street. E opens that Lab room in the desktop Lab window. Spots sampled clear of solids (1.5 m) beside a kerbside object; ry turns the sign face away from it.",
+  "labFronts": [
+    {"slug": "tape-shelf", "name": "Tape Shelf", "note": "The BADCO archive", "district": "yards", "street": "Pier Ave", "x": 547, "z": 135, "ry": 3.14},
+    {"slug": "gear-anatomy", "name": "At the controls", "note": "Two decks, two setups", "district": "downtown", "street": "Harbor St", "x": -158, "z": -145, "ry": 5.89},
+    {"slug": "research", "name": "Research papers", "note": "The reading room", "district": "bowl", "street": "5th Ave", "x": -255.5, "z": 206, "ry": 4.32},
+    {"slug": "architecture-studio", "name": "Architecture Studio", "note": "How the research works", "district": "strip", "street": "Vantage Ave", "x": 52, "z": 259, "ry": 0}
+  ],
   "interiors": [
     {
       "id": "mainframe",

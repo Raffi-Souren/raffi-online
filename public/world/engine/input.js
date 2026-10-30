@@ -6,7 +6,7 @@
  * situation, plus a secondary. In a vehicle the right side becomes accelerate
  * and brake and the stick becomes steering only.
  *
- * Desktop: WASD move, Space handbrake / micro-ride exit, E context, R radio, Tab pause,
+ * Desktop: WASD move, Space handbrake / micro-ride exit, E context, R radio, P phone, Tab pause,
  * Q / X rotate the view 90°.
  *
  * There is no gyroscope binding. The camera is fixed, so gyro has nothing to
@@ -44,6 +44,7 @@ const keyMap = {
   KeyJ: 'punch',
   KeyR: 'radio',
   KeyM: 'map',
+  KeyP: 'phone',
   Backquote: 'cheats',
   Tab: 'pause', Escape: 'pause',
   KeyQ: 'rotate-left',
@@ -286,6 +287,7 @@ export function initInput(elements) {
   bindButton(els.cam, 'cam')
   bindButton(els.exit, 'exit')
   bindButton(els.pauseButton, 'pause')
+  bindButton(els.phoneButton, 'phone')
 
   for (const [id, delta] of [['btn-zoom-in', -.12], ['btn-zoom-out', .12]]) {
     document.getElementById(id)?.addEventListener('click', () => { if(state.paused)return; input.pinch=Math.max(.75,Math.min(1.6,input.pinch+delta));bus.emit('pinch',input.pinch) })

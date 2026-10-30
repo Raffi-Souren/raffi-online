@@ -10,6 +10,8 @@ interface TapeShelfProps {
   motionPaused?: boolean
 }
 
+/** Shared with public/world/game/tapes-core.js (TAPES_KEY). */
+const WORLD_TAPES_KEY = "raffi:tapes-found"
 const PAPER = "#eee8d8"
 const INK = "#242424"
 const MONO = '"IBM Plex Mono", ui-monospace, monospace'
@@ -219,6 +221,28 @@ export default function TapeShelf({ active = true, motionPaused = false }: TapeS
     return () => preference.removeEventListener("change", update)
   }, [])
 
+  // Tapes picked up in Raffi World (same origin, shared list). Finding one
+  // only marks it here; every mix stays playable either way.
+  const [foundInWorld, setFoundInWorld] = useState<ReadonlySet<string>>(() => new Set())
+  useEffect(() => {
+    const read = () => {
+      try {
+        const parsed: unknown = JSON.parse(window.localStorage.getItem(WORLD_TAPES_KEY) || "[]")
+        setFoundInWorld(new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []))
+      } catch {
+        setFoundInWorld(new Set())
+      }
+    }
+    read()
+    window.addEventListener("storage", read)
+    window.addEventListener("focus", read)
+    return () => {
+      window.removeEventListener("storage", read)
+      window.removeEventListener("focus", read)
+    }
+  }, [])
+  const foundCount = BADCOMPANY_MIXES.filter((track) => foundInWorld.has(track.id)).length
+
   useEffect(() => {
     const index = BADCOMPANY_MIXES.findIndex((track) => matchesTrack(currentTrack, track))
     if (index >= 0) setSelectedIndex(index)
@@ -323,7 +347,7 @@ export default function TapeShelf({ active = true, motionPaused = false }: TapeS
                   key={track.id}
                   ref={(node) => { spineRefs.current[index] = node }}
                   type="button"
-                  aria-label={`Select tape ${index + 1}: ${track.title}`}
+                  aria-label={`Select tape ${index + 1}: ${track.title}${foundInWorld.has(track.id) ? ", found in Raffi World" : ""}`}
                   aria-pressed={selected}
                   data-tape-id={track.id}
                   onClick={() => setSelectedIndex(index)}
@@ -360,6 +384,7 @@ export default function TapeShelf({ active = true, motionPaused = false }: TapeS
                   <span aria-hidden="true" style={{ position: "absolute", bottom: 6, left: 0, right: 0, textAlign: "center", fontFamily: NUMERALS, fontSize: 23, lineHeight: 1 }}>{String(index + 1).padStart(2, "0")}</span>
                   {/* Clear case: edge highlights and a soft gloss over the print. */}
                   <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0 2px, rgba(255, 255, 255, 0.12) 2px 9px, transparent 16px calc(100% - 6px), rgba(0, 0, 0, 0.28) calc(100% - 3px))", pointerEvents: "none" }} />
+                  {foundInWorld.has(track.id) && <span aria-hidden="true" data-found-in-world style={{ position: "absolute", left: 4, bottom: 34, width: 9, height: 9, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #fff3c4, #d8a93b 60%, #9a7426)", boxShadow: "0 0 0 1px rgba(40, 30, 10, 0.6)" }} />}
                   {isCurrent && <span aria-hidden="true" style={{ position: "absolute", right: 4, top: 14, width: 6, height: 6, borderRadius: "50%", background: isPlaying && !isLoading && !needsTap && !error ? "#30d07f" : "#e5b947", boxShadow: "0 0 0 1px #252b2d, 0 0 6px rgba(48, 208, 127, 0.7)" }} />}
                 </button>
               )
@@ -390,7 +415,12 @@ export default function TapeShelf({ active = true, motionPaused = false }: TapeS
             {[palette.ink, palette.accent, palette.stripe, palette.accent].map((color, stripe) => <span key={stripe} style={{ background: color, flex: stripe === palette.band ? 3 : 1 }} />)}
           </div>
           <h3 data-tape-title style={{ margin: "0 0 6px", fontFamily: CONDENSED, fontStretch: "condensed", fontSize: "clamp(20px, 3.2vw, 28px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: -0.2, overflowWrap: "anywhere" }}>{selectedTrack.title}</h3>
-          <p style={{ margin: "0 0 18px", fontSize: 12, lineHeight: 1.5, color: "#625b4e", overflowWrap: "anywhere" }}>{selectedTrack.artist}</p>
+          <p style={{ margin: foundInWorld.has(selectedTrack.id) || foundCount ? "0 0 6px" : "0 0 18px", fontSize: 12, lineHeight: 1.5, color: "#625b4e", overflowWrap: "anywhere" }}>{selectedTrack.artist}</p>
+          {foundCount > 0 && (
+            <p data-world-tapes={foundCount} style={{ margin: "0 0 14px", fontFamily: MONO, fontSize: 10, letterSpacing: 0.4, color: "#7a5a1c" }}>
+              {foundInWorld.has(selectedTrack.id) ? "FOUND IN RAFFI WORLD" : "STILL OUT IN RAFFI WORLD"} · {foundCount}/{BADCOMPANY_MIXES.length} FOUND
+            </p>
+          )}
           <div style={{ display: "flex", alignItems: "stretch", flexWrap: "wrap", gap: 8 }}>
             <button
               type="button"

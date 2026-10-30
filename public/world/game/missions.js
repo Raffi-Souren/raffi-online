@@ -117,6 +117,11 @@ function isSupported(mission) {
   })
 }
 
+/** Missions open right now, for the phone's contacts. */
+export function openMissions() {
+  return availableMissions().map((mission) => ({ id: mission.id, name: mission.name, district: mission.district, marker: mission.marker }))
+}
+
 function availableMissions() {
   return data.missions.missions.filter((mission) =>
     unlocked.has(mission.id) &&

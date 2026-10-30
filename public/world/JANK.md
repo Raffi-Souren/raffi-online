@@ -194,3 +194,21 @@ Evidence (session, not committed): `/tmp/raffi-world-feel/report.json` and
 | Bump lines | Pedestrians do not say "watch it" yet; the reaction is body language and sound. | charm | Deferred — needs a bark slot that cannot stack with captions |
 | Car into pole | Cars do not start pole sways. | charm | Deferred — stepVehicle does not report which collider it hit |
 | Pole shadows | A swaying pole's shadow stays still. | charm | Kept — the shadow pass does not run the sway |
+
+## Phase 5 — city life (October 30)
+
+Evidence (session, not committed): `/tmp/raffi-world-city-life/report.json`,
+`phone-tapes.png`, `lab-front.png` and `phone-touch-contacts.png` from
+`pnpm run test:world:city`.
+
+| Area | Issue | Severity | Fixed |
+|---|---|---|---|
+| Radio | Stations were synth loops only; the real mixes lived on the desktop. | charm | Yes — BADCO FM asks the desktop player, synth fallback on its own page |
+| Cars | Leaving a car forgot what it was playing. | charm | Yes — each car keeps its station |
+| Exploration | Nothing to find off the mission path. | charm | Yes — fourteen tapes shared with the Lab's Tape Shelf |
+| Navigation | Routes only came from the map or a mission marker. | charm | Yes — Contacts on the phone set a route; right-click pins on the map |
+| Clock | The HUD clock followed the visitor's own time zone. | charm | Yes — America/New_York, `?clock=local` to opt out |
+| Lab rooms | The World and the Lab did not know about each other. | charm | Partly — storefront signs and the phone open Lab rooms; walk-in interiors are deferred |
+| Side gigs | No data-driven side gig yet. | charm | Deferred — needs its own pass with a payout and fail state |
+| Phone camera and texts | The phone has no camera or text thread yet. | charm | Deferred — the camera needs the photo-mode pass |
+| Waypoint long-press | Touch pins with a tap; there is no separate long-press on the street. | charm | Kept — a long-press would fight the stick |

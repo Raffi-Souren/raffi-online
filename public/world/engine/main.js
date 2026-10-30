@@ -22,6 +22,7 @@ import { CollisionWorld, resolveCircle, moveCircle, clampToBounds, slideStats } 
 import { bufferPress, consumeBuffered, createActionBuffer } from '../game/locomotion-core.js'
 import { feelSnapshot, feelState, setFeelIntensity, updateFeel } from '../game/feel.js'
 import { updatePropWobble } from './prop-wobble.js'
+import { initTapes, tapesSnapshot, updateTapes } from '../game/tapes.js'
 import { buildAtlas } from '../gen/atlas.js'
 import { buildWorld } from '../gen/world.js'
 import { findOpenSpots } from '../gen/blocks.js'
@@ -62,8 +63,11 @@ import {
 import { initDebug, updateDebugCamera, updateDebugReadout, debugState, exposeAuditApi } from './debug.js'
 import { updateOpaqueFogCull } from './cull-opaque.js'
 import { unlockAudio, updateAudio, setAudioActive, audioBeat, audioSnapshot, toggleMute, playSfx, setHostMusicPlaying, requestMusicFocus, resetAudioTransport, getVolume, setVolume } from './audio.js'
+import { hostPlaysStation } from './audio-core.js'
 import { initWorldMap, showWorldMap, hideWorldMap, isWorldMapOpen } from '../game/world-map.js'
 import { initCheats, showCheats, hideCheats, cheatsOpen } from '../game/cheats.js'
+import { initPhone, showPhone, hidePhone, isPhoneOpen } from '../game/phone.js'
+import { initLabFronts, labFrontContext, labFrontsSnapshot } from '../game/lab-fronts.js'
 import { createPlayerCharacter } from './player-character.js'
 import { createNearCharacters } from './near-characters.js'
 import { prepareHeroVehicle } from './hero-vehicle.js'
@@ -116,6 +120,11 @@ window.addEventListener('message', (event) => {
   if (event.source !== window.parent || event.origin !== location.origin) return
   const value = event.data
   if (value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 2 && value.type === 'raffi-world:host-audio' && typeof value.playing === 'boolean') { setHostMusicPlaying(value.playing); return }
+  if (value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 2 && value.type === 'raffi-world:radio-now' && typeof value.title === 'string' && value.title.length <= 140) {
+    const station = data.radio?.stations?.[state.radio.stationIndex]
+    if (state.radio.on && station?.hostMixes) toast(`${station.id} — ${station.name} · ${value.title}`)
+    return
+  }
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 2 || value.type !== 'raffi-world:activity' || typeof value.active !== 'boolean') return
   hostActive = value.active
   setAudioActive(hostActive && !document.hidden && (!state.paused || state.storyPlayingMusic || state.sportsPlayingSound))
@@ -195,6 +204,7 @@ function grab() {
     subtitleNext: $('subtitle-next'),
     touchRoot: $('touch'),
     pauseButton: $('btn-pause'),
+    phoneButton: $('btn-phone'),
     zone: $('stick-zone'),
     base: $('stick-base'),
     knob: $('stick-knob'),
@@ -308,19 +318,34 @@ function updateTransport(dt) {
 }
 
 function cycleStation(dir = 1) {
-  requestMusicFocus()
   const stations = data.radio.stations.filter((s) => s.unlocked)
   if (!stations.length) return
   const current = data.radio.stations[state.radio.stationIndex]
   let i = stations.indexOf(current)
   i = (i + dir + stations.length) % stations.length
   const next = stations[i]
+  // BADCO FM plays through the desktop's player, so it keeps the host's focus.
+  if (!next.hostMixes) requestMusicFocus()
   state.radio.stationIndex = data.radio.stations.indexOf(next)
   state.radio.on = true
   setRadio(next)
   // A station may override the world grade while it plays.
   if (next.grade && !state.grade.forced) requestGrade(next.grade)
   toast(next.id + ' — ' + next.name)
+}
+
+/**
+ * BADCO FM: real BADCOMPANY mixes through the desktop's shared player. The
+ * World only asks; the host plays the mix and reports its title. Opened on its
+ * own page there is no host, and the station's synth plays instead.
+ */
+let hostedMix = false
+function syncHostedMix() {
+  const station = data.radio?.stations[state.radio.stationIndex]
+  const want = hostActive && state.radio.on && hostPlaysStation(station, { hosted: window.parent !== window, storyPlayingMusic: state.storyPlayingMusic })
+  if (want === hostedMix) return
+  hostedMix = want
+  window.parent.postMessage({ type: 'raffi-world:radio-mix', action: want ? 'play' : 'stop' }, location.origin)
 }
 
 // ----------------------------------------------------------------- grade ---
@@ -372,6 +397,7 @@ function setPaused(paused) {
   els.pause?.setAttribute('aria-hidden', String(!state.paused))
   if (!state.paused) hideWorldMap()
   if (!state.paused) hideCheats()
+  if (!state.paused) hidePhone()
   if (!state.paused) hideSaveMenu()
   if (state.paused) {
     player.blockedTime = 0
@@ -414,6 +440,7 @@ function initPauseMenu() {
   }
   syncQuality()
   document.getElementById('desktop-pause')?.addEventListener('click', () => setPaused(true))
+  document.getElementById('desktop-phone')?.addEventListener('click', () => openPhone())
   document.getElementById('game-question')?.addEventListener('click', () => openCheatMenu())
   document.getElementById('desktop-camera')?.addEventListener('click', () => {
     if (!state.paused) toast(cycleCameraMode().label, 2)
@@ -452,15 +479,46 @@ function initPauseMenu() {
 function openWorldMap() {
   hideSaveMenu()
   hideCheats()
+  hidePhone()
   setPaused(true)
   els.pause?.classList.add('hidden')
   showWorldMap()
+}
+
+function openPhone() {
+  hideSaveMenu()
+  hideCheats()
+  hideWorldMap()
+  setPaused(true)
+  els.pause?.classList.add('hidden')
+  showPhone()
+}
+
+/** Lab rooms open in the desktop's Lab window; on its own page, in a new tab. */
+function openLabRoom(slug) {
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'raffi-world:open-lab', slug }, location.origin)
+    toast('Opened in the Lab', 2)
+  } else {
+    window.open('/lab/' + encodeURIComponent(slug), '_blank', 'noopener')
+  }
+}
+
+function tuneStation(index) {
+  const station = data.radio.stations[index]
+  if (!station?.unlocked) return
+  if (!station.hostMixes) requestMusicFocus()
+  state.radio.stationIndex = index
+  state.radio.on = true
+  setRadio(station)
+  if (station.grade && !state.grade.forced) requestGrade(station.grade)
 }
 
 function openCheatMenu(code = null) {
   hideSaveMenu()
   if (world.crateQuestActive) return
   hideWorldMap()
+  hidePhone()
   setPaused(true)
   els.pause?.classList.add('hidden')
   showCheats(code)
@@ -507,7 +565,7 @@ function applyCheat(cheat) {
     state.radio.on = true
     state.radio.stationIndex = 0
     setRadio(data.radio.stations[0])
-    return 'All six stations unlocked. Choose a frequency below.'
+    return 'Every station unlocked. Choose a frequency below.'
   }
   if (cheat.action === 'grade') {
     state.grade.forced = cheat.grade
@@ -599,6 +657,14 @@ async function beginFastTravel(transit) {
 }
 
 function onRideMounted(vehicle) {
+  const remembered = data.radio.stations[vehicle.radioStation]
+  if (remembered?.unlocked && (!state.radio.on || remembered !== data.radio.stations[state.radio.stationIndex])) {
+    state.radio.stationIndex = vehicle.radioStation
+    state.radio.on = true
+    if (!remembered.hostMixes) requestMusicFocus()
+    setRadio(remembered)
+    toast(remembered.id + ' — ' + remembered.name)
+  }
   // Choosing a crib ride begins navigation. Mounting a mission loaner must
   // preserve the active stop and an explicit map choice, including park/print pins.
   const mapPinned = getWaypoint()?.source === 'map'
@@ -669,6 +735,8 @@ async function boot() {
   initCamera(aspect)
   setCameraMode('chase')
   initPlayer(gfx.scene, materials, atlas)
+  initTapes(gfx.scene)
+  initLabFronts({ scene: world.cityRoot, collision })
   playerCharacter = await createPlayerCharacter(player, { tier: getQuality().tier, surfaceRoot: world.cityRoot })
   streetCombat = createStreetCombat({scene:gfx.scene,state,collision,moveCircle,character:playerCharacter,onHit:() => { bus.emit('sfx','ui-deny');toast('BACK OFF. · Give them some space.',2);setComplianceTier(Math.max(1,state.compliance.tier),state.compliance.heat+8) }})
   spawnParkedCars(gfx.scene, materials, atlas)
@@ -683,17 +751,23 @@ async function boot() {
     action: els.action, second: els.second, radio: els.btnRadio, cam: els.cam,
     exit: els.exit, punch: els.punch, handbrake: els.handbrake,
     pauseButton: els.pauseButton,
+    phoneButton: els.phoneButton,
     touchRoot: els.touchRoot,
   })
   initPauseMenu()
   initWorldMap(world.graph, () => { hideWorldMap(); setPaused(true) })
-  initCheats({ close: () => setPaused(false), apply: applyCheat, station: (index) => {
-    requestMusicFocus()
-    state.radio.stationIndex = index
-    state.radio.on = true
-    setRadio(data.radio.stations[index])
-    if (!state.grade.forced) requestGrade(data.radio.stations[index].grade)
-  } })
+  initCheats({ close: () => setPaused(false), apply: applyCheat, station: tuneStation })
+  initPhone({
+    close: () => setPaused(false),
+    tune: tuneStation,
+    radioOff: () => {
+      state.radio.on = false
+      setRadio(null)
+      if (!state.grade.forced) requestGrade(automaticGrade())
+    },
+    openLab: openLabRoom,
+    openMap: openWorldMap,
+  })
   initHud({
     root: els.hud, district: els.district, objective: els.objective,
     compliance: els.compliance, pips: els.pips, clock: els.clock,
@@ -812,6 +886,9 @@ async function boot() {
     setFeelIntensity,
     /** The live static collision world, for smokes that place test fixtures. */
     collision: () => world.collision,
+    tapes: tapesSnapshot,
+    labFronts: labFrontsSnapshot,
+    phone: () => ({ open: isPhoneOpen() }),
     triangleTotal: built.triangles,
     setWaypoint,
     getWaypoint,
@@ -922,6 +999,8 @@ function loop(now) {
   const realDt = Math.max(0, (now - last) / 1000)
   const dt = Math.min(realDt, 0.05)
   last = now
+  // Every frame, paused or not: tuning BADCO FM on the phone plays at once, and a hidden World stops it.
+  syncHostedMix()
   if (!hostActive || graphicsFailed || document.hidden || world.crateQuestActive) { simulation.reset(); previousPlayer = null; renderPoses.reset(); return }
   state.stats.frameMs = realDt * 1000
   frameElapsed += realDt
@@ -959,6 +1038,10 @@ function loop(now) {
     if (isWorldMapOpen()) { hideWorldMap(); setPaused(true) }
     else openWorldMap()
   }
+  if (consume('phone') && !world.crateQuestActive && !isStoryOpen()) {
+    if (isPhoneOpen()) setPaused(false)
+    else openPhone()
+  }
   if (consume('cheats') && !world.crateQuestActive && !isStoryOpen()) {
     if (cheatsOpen()) setPaused(false)
     else openCheatMenu()
@@ -982,7 +1065,7 @@ function loop(now) {
 
     // Context priority: dialogue → mission/transit → nearby ride. Touch GAS
     // is a distinct input from keyboard E, so it can never eject the rider.
-    const ctx = contextAction(world.vehicles, [recordShopQuest(), storyContext(), sportsContext(), printStudioContext(), missionContext(), transitAction(), interiorDoorContext()])
+    const ctx = contextAction(world.vehicles, [recordShopQuest(), storyContext(), sportsContext(), printStudioContext(), missionContext(), transitAction(), interiorDoorContext(), labFrontContext()])
     const controls = player.vehicle?.controls
     const dialogueBlocking = isDialogueBlocking()
     const missionAction = missionActionLabel()
@@ -1035,7 +1118,11 @@ function loop(now) {
         noteMissionPulse()
         noteMissionKick()
       } else if ((keyboardAction || exitPressed || spaceMicroExit) && state.mode === 'vehicle') {
-        if (!isBoardTrickActive()) exitVehicle(world.collision)
+        if (!isBoardTrickActive()) {
+          // A car remembers what it was playing for the next time you get in.
+          if (player.vehicle) player.vehicle.radioStation = state.radio.on ? state.radio.stationIndex : -1
+          exitVehicle(world.collision)
+        }
       } else if ((keyboardAction || touchPrimary || spaceAction) && state.mode !== 'vehicle') {
         if (ctx.kind === 'enter' && enterVehicle(ctx.target)) onRideMounted(ctx.target)
         else if (ctx.kind === 'transit') void beginFastTravel(ctx.target)
@@ -1046,6 +1133,7 @@ function loop(now) {
         else if (ctx.kind === 'crate-quest') openCrateQuest()
         else if (ctx.kind === 'interior-enter') enterInterior(ctx.target)
         else if (ctx.kind === 'interior-exit') exitInterior()
+        else if (ctx.kind === 'lab-door') openLabRoom(ctx.target)
       }
     }
 
@@ -1067,6 +1155,7 @@ function loop(now) {
       if (!flying && !world.transitBusy && !isDialogueBlocking()) {
         streetCombat?.update(dt)
         updatePlayer(dt, input, world.collision, state.radio.beatPhase)
+        updateTapes()
       }
 
       if (!world.transitBusy && !isDialogueBlocking()) { updateMissions(dt); updateSideActivities(dt) }

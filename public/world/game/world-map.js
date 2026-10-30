@@ -23,7 +23,7 @@ export function initWorldMap(roadGraph, close) {
     list.append(button)
   }
   document.getElementById('world-map-back').addEventListener('click', onClose)
-  canvas.addEventListener('click', (event) => {
+  const pinAt = (event) => {
     const rect = canvas.getBoundingClientRect()
     const view = projection()
     const x = ((event.clientX - rect.left) * canvas.width / rect.width - view.ox) / view.scale
@@ -37,7 +37,10 @@ export function initWorldMap(roadGraph, close) {
       if (d < distance) { distance = d; closest = point }
     }
     if (closest) markDestination(closest, 'YOUR MAP PIN')
-  })
+  }
+  // A click or tap drops a pin on the nearest street; so does a right-click.
+  canvas.addEventListener('click', pinAt)
+  canvas.addEventListener('contextmenu', (event) => { event.preventDefault(); pinAt(event) })
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'Tab') return
     const buttons = Array.from(root.querySelectorAll('button:not(:disabled)'))
@@ -100,6 +103,10 @@ function draw() {
   for (const place of places) {
     ctx.fillStyle = place.kind === 'paint' ? '#a6dbab' : '#efc978'
     ctx.beginPath(); ctx.arc(x(place.x), y(place.z), Math.max(3, canvas.width / 180), 0, Math.PI * 2); ctx.fill()
+  }
+  for (const tape of state.tapeMarkers || []) {
+    ctx.fillStyle = '#e8692f'; ctx.strokeStyle = '#f0e2bd'; ctx.lineWidth = 1.5
+    ctx.fillRect(x(tape.x) - 6, y(tape.z) - 4, 12, 8); ctx.strokeRect(x(tape.x) - 6, y(tape.z) - 4, 12, 8)
   }
   const target = getWaypoint()
   if (target) {
