@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
 import { ArrowLeft, ArrowRight, Building2, ExternalLink, Minus, Plus, RotateCcw, RotateCw } from "lucide-react"
 import { getResearchArchitecture, RESEARCH_ARCHITECTURES, type ResearchArchitecture, type ResearchArchitectureId } from "@/data/research-architectures"
-import type { ArchitectureSceneController, ArchitectureSceneState } from "./architecture-scene"
+import type { ArchitectureSceneController, ArchitectureSceneState, RoomLabelPoint } from "./architecture-scene"
 
 const focus = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#225fa5]"
 const button: CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 36, border: "1px solid #afbecb", background: "#fff", color: "#2b4860", borderRadius: 3, padding: "7px 10px", fontSize: 12, cursor: "pointer" }
@@ -58,6 +58,42 @@ export default function ResearchArchitecture({ active = true, motionPaused = fal
   const enterRef = useRef<(index: number) => void>(() => {})
   selectRef.current = (index) => setSelectedIndex(index)
   enterRef.current = (index) => { setSelectedIndex(index); setEntered(true) }
+  const stageRef = useRef<HTMLDivElement>(null)
+  const labelRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const placeLabelsRef = useRef<(points: RoomLabelPoint[]) => void>(() => {})
+  // Narrow stages show numbers only, except for the selected room.
+  const [compactLabels, setCompactLabels] = useState(false)
+  // The scene calls this every frame it draws; labels move without a React render.
+  placeLabelsRef.current = (points) => {
+    const stageWidth = stageRef.current?.clientWidth ?? 0
+    points.forEach((point, index) => {
+      const label = labelRefs.current[index]
+      if (!label) return
+      label.style.visibility = point.visible ? "visible" : "hidden"
+      label.style.transform = `translate(${point.x.toFixed(1)}px, ${point.y.toFixed(1)}px) translate(-50%, -100%)`
+      label.style.zIndex = String(index === selectedIndex ? 100 : Math.round(50 - point.depth * 40))
+      // The pin stays on the room; only its card slides to stay on the stage.
+      const card = label.firstElementChild as HTMLElement | null
+      if (!card || !stageWidth) return
+      const half = card.offsetWidth / 2 + 6
+      const shift = Math.min(Math.max(point.x, half), Math.max(half, stageWidth - half)) - point.x
+      card.style.transform = shift ? `translateX(${shift.toFixed(1)}px)` : ""
+    })
+  }
+
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const observer = new ResizeObserver(([entry]) => setCompactLabels(entry.contentRect.width < 700))
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }, [])
+
+  // Labels mount after the scene's first frame, and change width in compact
+  // mode; ask for one more frame so they are placed and kept on the stage.
+  useEffect(() => {
+    if (ready) controllerRef.current?.update(stateRef.current)
+  }, [ready, compactLabels])
 
   useEffect(() => {
     const preference = matchMedia("(prefers-reduced-motion: reduce)")
@@ -74,7 +110,14 @@ export default function ResearchArchitecture({ active = true, motionPaused = fal
     setUnavailable(false)
     import("./architecture-scene").then(({ createArchitectureScene }) => {
       if (cancelled || !hostRef.current) return
-      controllerRef.current = createArchitectureScene(hostRef.current, stateRef.current, (index) => selectRef.current(index), (index) => enterRef.current(index), () => { if (!cancelled) setUnavailable(true) })
+      controllerRef.current = createArchitectureScene(
+        hostRef.current,
+        stateRef.current,
+        (index) => selectRef.current(index),
+        (index) => enterRef.current(index),
+        () => { if (!cancelled) setUnavailable(true) },
+        (points) => placeLabelsRef.current(points),
+      )
       setReady(true)
     }).catch(() => { if (!cancelled) setUnavailable(true) })
     return () => {
@@ -118,11 +161,44 @@ export default function ResearchArchitecture({ active = true, motionPaused = fal
       </div>
 
       <div className="research-architecture-body" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)" }}>
-        <div style={{ minWidth: 0, background: "#e8edf2" }}>
-          <div style={{ position: "relative", height: "clamp(280px, 48vw, 430px)", minWidth: 0 }}>
+        <div style={{ minWidth: 0, background: "#dde5ec" }}>
+          <div ref={stageRef} style={{ position: "relative", height: "clamp(300px, 50vw, 460px)", minWidth: 0 }}>
             {view === "3d" ? <>
               <div ref={hostRef} data-testid="architecture-stage" role="img" aria-label={`${architecture.label}, six connected rooms in a cutaway research mall`} style={{ width: "100%", height: "100%", overflow: "hidden" }} />
-              {(!ready || unavailable) && <div role="status" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center", padding: 24, background: "#e8edf2", color: "#547087", fontSize: 13 }}>
+              {ready && !unavailable && (
+                // Visual twins of the room directory below, which is the keyboard and screen-reader route.
+                <div aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+                  {architecture.stations.map((entry, index) => {
+                    const selected = index === selectedIndex
+                    const inside = selected && entered
+                    const titled = selected || (!compactLabels && !entered)
+                    const tone = selected ? "#1f5b9e" : "#7d95aa"
+                    return (
+                      <button
+                        key={`${architecture.id}-${entry.id}`}
+                        ref={(node) => { labelRefs.current[index] = node }}
+                        type="button"
+                        tabIndex={-1}
+                        data-room-label={index + 1}
+                        onClick={() => enter(index)}
+                        className="hover:brightness-110"
+                        style={{ position: "absolute", left: 0, top: 0, visibility: "hidden", pointerEvents: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: 0, border: 0, background: "none", cursor: "pointer", opacity: entered && !selected ? 0.5 : 1, transition: "opacity 160ms ease-out" }}
+                      >
+                        <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, whiteSpace: "nowrap", padding: inside ? "8px 12px 9px" : "5px 9px", background: selected ? "#1f5b9e" : "#ffffff", color: selected ? "#ffffff" : "#1b3044", border: `1px solid ${selected ? "#17497f" : "#90a7ba"}`, borderRadius: 3, boxShadow: "0 1px 0 rgba(27, 48, 68, 0.2), 0 6px 14px rgba(27, 48, 68, 0.16)", fontFamily: "Tahoma, Verdana, sans-serif", fontSize: inside ? 15 : 12.5, fontWeight: 700, lineHeight: 1.2, textAlign: "left" }}>
+                          <span style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+                            <span style={{ fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontSize: inside ? 12 : 11, color: selected ? "#cde0f6" : "#225fa5" }}>{String(index + 1).padStart(2, "0")}</span>
+                            {titled && <span>{entry.title}</span>}
+                          </span>
+                          {inside && <span style={{ fontSize: 12, fontWeight: 400, color: "#dce9f7" }}>{entry.subtitle}</span>}
+                        </span>
+                        <span style={{ width: 2, height: inside ? 14 : 10, background: tone }} />
+                        <span style={{ width: 8, height: 8, marginTop: -1, borderRadius: "50%", background: tone, boxShadow: "0 0 0 2px #ffffff" }} />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {(!ready || unavailable) && <div role="status" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center", padding: 24, background: "#dde5ec", color: "#547087", fontSize: 13 }}>
                 <Building2 size={30} color="#6487a5" aria-hidden="true" />
                 <span>{unavailable ? "The 3D view is unavailable. The diagram and room directory still work." : "Opening the architecture studio…"}</span>
                 {unavailable && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center" }}><button type="button" onClick={() => setView("2d")} className={focus} style={button}>Show 2D diagram</button><button type="button" onClick={() => setAttempt((value) => value + 1)} className={focus} style={button}>Retry 3D</button></div>}
@@ -130,7 +206,7 @@ export default function ResearchArchitecture({ active = true, motionPaused = fal
             </> : <WorkflowDiagram architecture={architecture} selectedIndex={selectedIndex} onEnter={enter} />}
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 9, padding: "8px 12px", minHeight: 52, borderTop: "1px solid #c3ced8", fontSize: 10, color: "#61798d" }}>
-            <span>{view === "3d" ? "Drag to orbit · scroll to zoom · double-click a room to enter" : "The same workflow, shown as a diagram"}</span>
+            <span>{view === "3d" ? "Drag to orbit · scroll or pinch to zoom · tap a room’s label to step inside" : "The same workflow, shown as a diagram"}</span>
             {view === "3d" && <div role="group" aria-label="Studio camera controls" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
               <button type="button" disabled={!ready || unavailable} aria-label="Rotate studio left" onClick={() => controllerRef.current?.rotate(-1)} className={focus} style={{ ...button, padding: 7 }}><RotateCcw size={13} /></button>
               <button type="button" disabled={!ready || unavailable} aria-label="Rotate studio right" onClick={() => controllerRef.current?.rotate(1)} className={focus} style={{ ...button, padding: 7 }}><RotateCw size={13} /></button>

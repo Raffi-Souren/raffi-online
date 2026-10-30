@@ -67,7 +67,6 @@ export function createGearScene(host: HTMLDivElement, onContextLost: () => void)
   renderer.domElement.style.display = "block"
   renderer.domElement.style.width = "100%"
   renderer.domElement.style.height = "100%"
-  renderer.domElement.style.touchAction = "pan-y"
   renderer.domElement.setAttribute("aria-hidden", "true")
   host.appendChild(renderer.domElement)
 
@@ -83,6 +82,9 @@ export function createGearScene(host: HTMLDivElement, onContextLost: () => void)
   controls.autoRotateSpeed = 0.6
   controls.touches.ONE = THREE.TOUCH.ROTATE
   controls.touches.TWO = THREE.TOUCH.DOLLY_PAN
+  // OrbitControls claims every touch gesture when it connects. Hand vertical
+  // swipes back to the page so the Lab still scrolls past the stage on a phone.
+  renderer.domElement.style.touchAction = "pan-y"
 
   const fixedResources = new Resources()
   let rigResources = new Resources()
@@ -373,7 +375,8 @@ export function createGearScene(host: HTMLDivElement, onContextLost: () => void)
   function reset(top = false) {
     camera.position.set(top ? 0.01 : 8.5, top ? 18 : 12, top ? 0 : 12)
     controls.target.set(0, 0.75, 0)
-    camera.zoom = 1
+    // The three-quarter view fills the stage with the decks rather than the floor grid.
+    camera.zoom = top ? 1 : 1.2
     camera.updateProjectionMatrix()
     controls.update()
     requestRender()
