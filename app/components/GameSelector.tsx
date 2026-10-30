@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import dynamic from "next/dynamic"
-import { ArrowLeft, Gamepad2, Search, Trophy, Maximize2, Minimize2 } from "lucide-react"
+import { ArrowLeft, ExternalLink, Gamepad2, Search, Trophy, Maximize2, Minimize2 } from "lucide-react"
 import WindowShell from "../../components/ui/WindowShell"
 import GameShelfNav from "./GameShelfNav"
 import Leaderboard from "./Leaderboard"
@@ -21,7 +21,7 @@ const GAME_COMPONENTS = {
 
 type GameId = keyof typeof GAME_COMPONENTS
 
-type GameCategory = "Originals" | "Handhelds" | "Desktop & arcade"
+type GameCategory = "Originals" | "Handhelds" | "Desktop & arcade" | "On the web"
 
 interface Game {
   id: GameId | "world"
@@ -31,6 +31,13 @@ interface Game {
   description: string
   icon: string
   color: string
+}
+
+// Classics hosted on other sites. They open in a new tab: the host decides
+// whether it can be framed, and the shelf never ships or embeds their code.
+interface WebGame extends Omit<Game, "id"> {
+  id: string
+  url: string
 }
 
 interface GameSelectorProps {
@@ -132,6 +139,29 @@ const GAMES: Game[] = [
   },
 ]
 
+const WEB_GAMES: WebGame[] = [
+  {
+    id: "def-jam-fight-for-ny",
+    name: "Def Jam: Fight for NY",
+    device: "defjamfightforny.fun",
+    category: "On the web",
+    description: "The 2004 hip-hop brawler. Underground fights across New York with a rap-legend roster.",
+    icon: "🎤",
+    color: "#d7c0a6",
+    url: "https://defjamfightforny.fun/",
+  },
+  {
+    id: "pes-6",
+    name: "Pro Evolution Soccer 6",
+    device: "pes6.optijuegos.net",
+    category: "On the web",
+    description: "PES 6, the 2006 football classic. Still the one people argue about.",
+    icon: "🥅",
+    color: "#b9d3b4",
+    url: "https://pes6.optijuegos.net/",
+  },
+]
+
 // Canvas games need a definite viewport height. Device-shaped games keep their
 // intrinsic height and a top-aligned scroll origin so every control is reachable.
 const VIEWPORT_GAMES = new Set<GameId>([
@@ -142,7 +172,7 @@ const VIEWPORT_GAMES = new Set<GameId>([
   "overtime",
   "brickbreaker",
 ])
-const CATEGORIES = ["All games", "Originals", "Handhelds", "Desktop & arcade"] as const
+const CATEGORIES = ["All games", "Originals", "Handhelds", "Desktop & arcade", "On the web"] as const
 
 function prefersImmersiveGames() {
   return typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches
@@ -327,7 +357,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
   }
 
   const query = searchTerm.trim().toLowerCase()
-  const filtered = GAMES.filter(
+  const filtered = [...GAMES, ...WEB_GAMES].filter(
     (game) =>
       (category === "All games" || game.category === category) &&
       `${game.name} ${game.device} ${game.description}`.toLowerCase().includes(query),
@@ -487,35 +517,23 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}
         >
           {filtered.map((game) => {
-            return (
-              <button
-                key={game.id}
-                type="button"
-                onClick={() => {
-                  if (game.id === "world") {
-                    if (onOpenWorld) onOpenWorld()
-                    else window.location.assign("/?app=world")
-                  } else {
-                    setExpanded(prefersImmersiveGames())
-                    setActiveGame(game.id)
-                  }
-                }}
-                aria-label={`Play ${game.name}`}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "stretch",
-                  gap: 0,
-                  minWidth: 0,
-                  padding: 7,
-                  textAlign: "left",
-                  background: "#e6e7df",
-                  border: "1px solid #b1bab5",
-                  borderRadius: "7px 7px 14px 7px",
-                  boxShadow: "inset 1px 1px 0 #fff, inset -2px -2px 0 #ced2c8, 0 3px 0 #c3c9c0",
-                }}
-                className="hover:brightness-105 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
-              >
+            const cardStyle = {
+              position: "relative",
+              display: "flex",
+              alignItems: "stretch",
+              gap: 0,
+              minWidth: 0,
+              padding: 7,
+              textAlign: "left",
+              background: "#e6e7df",
+              border: "1px solid #b1bab5",
+              borderRadius: "7px 7px 14px 7px",
+              boxShadow: "inset 1px 1px 0 #fff, inset -2px -2px 0 #ced2c8, 0 3px 0 #c3c9c0",
+            } as const
+            const cardClass =
+              "hover:brightness-105 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+            const body = (
+              <>
                 <div
                   aria-hidden="true"
                   style={{
@@ -544,8 +562,11 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                     borderRadius: "0 3px 6px 0",
                   }}
                 >
-                  <span style={{ display: "block", fontSize: 10, color: "#687972", marginBottom: 4 }}>
+                  <span
+                    style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#687972", marginBottom: 4 }}
+                  >
                     {game.device}
+                    {"url" in game && <ExternalLink size={11} aria-hidden="true" />}
                   </span>
                   <span
                     style={{
@@ -563,6 +584,41 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                     {game.description}
                   </span>
                 </div>
+              </>
+            )
+            if ("url" in game) {
+              return (
+                <a
+                  key={game.id}
+                  href={game.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Play ${game.name} on ${game.device} (opens in a new tab)`}
+                  style={{ ...cardStyle, textDecoration: "none" }}
+                  className={cardClass}
+                >
+                  {body}
+                </a>
+              )
+            }
+            return (
+              <button
+                key={game.id}
+                type="button"
+                onClick={() => {
+                  if (game.id === "world") {
+                    if (onOpenWorld) onOpenWorld()
+                    else window.location.assign("/?app=world")
+                  } else {
+                    setExpanded(prefersImmersiveGames())
+                    setActiveGame(game.id)
+                  }
+                }}
+                aria-label={`Play ${game.name}`}
+                style={cardStyle}
+                className={cardClass}
+              >
+                {body}
               </button>
             )
           })}
