@@ -309,3 +309,42 @@ The review page, direct captures, uncut silent videos and machine-readable repor
 are kept outside the public game payload at `artifacts/raffi-world-review/`. See
 JANK.md for preservation evidence and remaining visual limits. No deployment is
 included in this pass.
+
+## October 30 feel pass (Phase 1: movement and collisions)
+
+Walking keeps its 2.8 / 6.0 m/s contract but now has weight. `game/locomotion-core.js`
+(pure, tuned in `data/movement.json`) accelerates toward the wanted velocity at
+12 / 14 m/s² and stops at 16 m/s². Facing turns on an exact critically damped
+spring capped at 540°/s walking and 360°/s running, so a 180° input plants and
+pivots instead of popping. Reversing at speed brakes at 22 m/s² first. The body
+leans into turns and tips forward when accelerating; animation rate is
+stride-matched within 0.7–1.4×.
+
+The walking player uses `slideCircle` (collide-and-slide) in `engine/physics.js`.
+Motion is projected onto every surface already touched, so a wall keeps the
+speed along it and a concave corner stops cleanly. A body that starts more than
+5 cm inside a solid is pushed out first and counted in `slideStats.stuckEvents`.
+`moveCircle` and `resolveCircle` keep their exact results for NPCs, cars and
+street combat, and hash insertion order is unchanged for replay.
+
+Collisions stay polite (section 2). Walking into someone is a brush, a stumble or
+a sprint buckle by closing speed (`game/bump-core.js`). They are shoved 0.35–1.2 m,
+turn to look, and push back a bounded share; a sprint adds a 1.5 s wary retreat.
+Each person reacts once per 1.2 s. A bump never adds Heat, never hurts and never
+knocks anyone down. Lamp posts, neon poles and signals sway on a damped spring
+(at most 4°) in the merged city geometry (`engine/prop-wobble.js`, no extra draw
+calls); hydrants and bollards clang. Car impacts over 2 m/s into the surface now
+shake the camera and play a hit, louder over 9 m/s.
+
+All juice goes through `game/feel.js`: shake is scaled by a 0..1 feel intensity
+and dropped under reduced motion, which also zeroes the on-foot head bob. The
+on-foot camera follows on a critically damped spring; cars keep the tight
+follow. No effect changes simulation time, so there is no hit-stop and replay
+determinism is untouched. Kickflips buffer a press for 120 ms and allow a pop
+within 100 ms of rolling off a rail.
+
+Evidence: `pnpm run test:world:feel` (in the release gate) measures wall slide,
+corner hold, a sprint bump, a pole sway and settle, a car impact with reverse
+escape, and reduced motion, all in simulation time. Frame-rate independence is
+pinned in `locomotion-core.test.mjs` (30 vs 144 Hz) rather than in the browser,
+where CI renders at a few frames per second.

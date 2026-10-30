@@ -195,6 +195,10 @@
     "door": { "type": "noise", "decay": 0.3, "lpf": 700, "gain": 0.3 },
     "crash": { "type": "noise", "decay": 0.42, "hpf": 300, "gain": 0.45, "distort": 0.4 },
     "squeal": { "type": "noise", "decay": 0.5, "bpf": 1800, "q": 7.5, "gain": 0.3 },
+    "bump-brush": { "type": "noise", "decay": 0.12, "lpf": 900, "gain": 0.2 },
+    "bump-thud": { "type": "sine", "hz": 92, "decay": 0.16, "pitchEnv": 1.7, "gain": 0.34 },
+    "pole-tonk": { "type": "triangle", "hz": 520, "decay": 0.38, "pitchEnv": 1.25, "gain": 0.22 },
+    "car-hit": { "type": "noise", "decay": 0.24, "lpf": 520, "gain": 0.4, "distort": 0.25 },
     "compliance-up": { "type": "square", "hz": 220, "decay": 0.3, "gain": 0.24, "slideTo": 330 },
     "compliance-clear": { "type": "sine", "hz": 523, "decay": 0.5, "gain": 0.28, "arp": [0, 4, 7, 12] },
     "beat-flash": { "type": "sine", "hz": 1200, "decay": 0.03, "gain": 0.05 }

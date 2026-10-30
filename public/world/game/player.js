@@ -7,17 +7,21 @@
  */
 
 import * as THREE from 'three'
-import { state, data, damp, clamp, bus } from '../engine/state.js'
+import { state, data, clamp, bus } from '../engine/state.js'
 import { movementBasis, getCameraMode } from '../engine/camera.js'
-import { resolveCircle, moveCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
+import { resolveCircle, slideCircle, clampToBounds, stepVehicle } from '../engine/physics.js'
 import { actorCollisionBodies } from '../engine/actor-collisions.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { kickflipPose, catchGrind, stepGrind } from './skate-core.js'
 import { makeVehicle, animateVehicle } from '../gen/vehicles.js'
+import { createLocomotion, movementTuning, stepLocomotion, withinCoyote } from './locomotion-core.js'
+import { canBump, planBump } from './bump-core.js'
+import { feelBump, feelCarImpact, feelProp } from './feel.js'
 
 const WALK_SPEED = 2.8
-const RUN_SPEED = 6.0
 const PLAYER_RADIUS = 0.45
+/** People the player bumped, and when, so each reacts once per cooldown. */
+const bumpedAt = new WeakMap()
 
 export const player = {
   group: null,
@@ -41,6 +45,14 @@ export const player = {
    * we already were instead of flip-flopping ("haywire" taps).
    */
   steerBias: 0,
+  /** On-foot momentum, facing and posture (game/locomotion-core.js). */
+  loco: createLocomotion(0),
+  /** Seconds left of a bump stagger (reduced stride). */
+  stagger: 0,
+  /** Whether the last step slid along a wall (a brush slows the stride a touch). */
+  wallContact: false,
+  /** When the board last left a rail; a pop shortly after still counts (coyote time). */
+  grindLeftAt: -Infinity,
 }
 
 const KICKFLIP = {
@@ -189,7 +201,11 @@ export function tryKickflip() {
   const v = player.vehicle
   if (!v || v.kind !== 'skateboard') return false
   if (player.grind) { finishGrind(); return true }
-  if (player.trick || player.skateLanding) return false
+  // Coyote time: a pop just after rolling off the end of a rail still lands the
+  // trick, even though the landing from the rail has begun.
+  const offRail = player.skateLanding && withinCoyote(player.grindLeftAt, state.time, movementTuning(data.movement).coyoteMs)
+  if (player.trick || (player.skateLanding && !offRail)) return false
+  if (offRail) player.skateLanding = null
   if (Math.abs(v.speed) < KICKFLIP.minSpeed) return false
 
   player.trick = {
@@ -321,25 +337,43 @@ function updateWalking(dt, input, world, beatPhase) {
   const wantX = basis.rx * input.move.x + basis.fx * input.move.y
   const wantZ = basis.rz * input.move.x + basis.fz * input.move.y
   const mag = Math.hypot(wantX, wantZ)
+  const tuning = movementTuning(data.movement)
 
-  const target = input.run ? RUN_SPEED : WALK_SPEED
-  const desiredX = mag > 0.001 ? (wantX / mag) * target * Math.min(1, mag) : 0
-  const desiredZ = mag > 0.001 ? (wantZ / mag) * target * Math.min(1, mag) : 0
+  // Momentum and facing come from the locomotion core. Anything that moved the
+  // player since the last step (teleport, dismount, a shove) is picked up here.
+  const loco = player.loco
+  loco.vx = p.vx
+  loco.vz = p.vz
+  loco.yaw = p.yaw
+  player.stagger = Math.max(0, player.stagger - dt)
+  stepLocomotion(loco, {
+    x: mag > 0.001 ? wantX / mag : 0,
+    z: mag > 0.001 ? wantZ / mag : 0,
+    magnitude: mag,
+    run: !!input.run,
+    scale: (player.stagger > 0 ? 0.5 : 1) * (player.wallContact ? tuning.wallBrush : 1),
+  }, dt, tuning)
+  p.vx = loco.vx
+  p.vz = loco.vz
 
-  // Snappier accel/stop — the old damp rate felt like ice-skating. A stronger
-  // stop rate kills the residual slide when the stick is released.
-  const blend = mag > 0.01 ? 12 : 24
-  p.vx = damp(p.vx, desiredX, blend, dt)
-  p.vz = damp(p.vz, desiredZ, blend, dt)
-
-  const heading = Math.atan2(p.vx, p.vz)
   const startX = p.x, startZ = p.z
+  const approachX = p.vx, approachZ = p.vz
   const bodies = actorCollisionBodies(player.group.parent?.children, p.x, p.z, player.group, 12, p.y)
-  const res = moveCircle(world, p.x, p.z, p.vx * dt, p.vz * dt, PLAYER_RADIUS, bodies)
-  if (res.hit) {
-    const into = p.vx * res.normalX + p.vz * res.normalZ
-    if (into < 0) { p.vx -= res.normalX * into; p.vz -= res.normalZ * into }
+  const res = slideCircle(world, p.x, p.z, p.vx * dt, p.vz * dt, PLAYER_RADIUS, bodies)
+  let wall = false
+  for (const contact of res.touched) {
+    // Keep only the velocity that runs along each surface.
+    const into = p.vx * contact.x + p.vz * contact.z
+    if (into < 0) { p.vx -= contact.x * into; p.vz -= contact.z * into }
+    const closing = -(approachX * contact.x + approachZ * contact.z)
+    const collider = contact.collider
+    if (collider.tag === 'pedestrian') bumpPedestrian(collider.source, contact, closing)
+    else if (collider.tag !== 'vehicle') {
+      wall = true
+      feelProp(collider, contact.x, contact.z, closing)
+    }
   }
+  player.wallContact = wall
   const bounded = clampToBounds(res.x, res.z, data.world.bounds, 6)
   p.x = bounded.x
   p.z = bounded.z
@@ -349,14 +383,43 @@ function updateWalking(dt, input, world, beatPhase) {
   player.blockedTime = mag > 0.1 && res.hit && p.speed < 0.25
     ? player.blockedTime + dt
     : 0
-  // Face movement; if almost stopped keep last facing.
-  if (p.speed > 0.35 && mag > 0.01) p.yaw = heading
+  // Facing turns on the core's spring; it never snaps to a new heading.
+  p.yaw = loco.yaw
+  p.lean = loco.lean
+  p.pitch = loco.pitch
+  p.stride = loco.stride
+  p.runBlend = loco.runBlend
 
   syncPlayerVisual()
 
   const st = p.speed < 0.25 ? 'idle' : p.speed > WALK_SPEED + 0.5 ? 'run' : 'walk'
   player.animState = st
   animatePed(player.ped, data.npcs, st, dt, p.speed, beatPhase)
+}
+
+/**
+ * Walking into someone: they turn, step aside or stumble by how fast you were
+ * going, and push back a little. Never Heat, never a knockdown (bump-core).
+ */
+function bumpPedestrian(mesh, contact, closing) {
+  if (!mesh?.userData) return
+  const now = state.time
+  if (!canBump(bumpedAt.get(mesh), now)) return
+  const plan = planBump(closing, contact, now)
+  if (!plan) return
+  bumpedAt.set(mesh, now)
+  plan.fromX = state.player.x
+  plan.fromZ = state.player.z
+  mesh.userData.bump = plan
+  // Bigger bumps reuse the street reaction: a spine flinch, and for a sprint a
+  // short wary retreat. Neither touches Heat, unlike a deliberate jab.
+  if (plan.tier >= 2) mesh.userData.streetReaction = { start: now, until: plan.startleUntil, x: plan.fromX, z: plan.fromZ, strength: plan.tier }
+  const p = state.player
+  const keep = 1 - plan.playerSlow
+  p.vx = p.vx * keep + contact.x * plan.playerKick
+  p.vz = p.vz * keep + contact.z * plan.playerKick
+  player.stagger = Math.max(player.stagger, plan.stagger)
+  feelBump(plan, closing)
 }
 
 /** NPCs and mission actors move after the player; settle their final contacts before rendering. */
@@ -460,6 +523,7 @@ function updateDriving(dt, input, world, beatPhase = 0) {
   const ridingAir=v.kind==='skateboard'&&(player.trick||player.skateLanding)
   const contactWorld=ridingAir?{query:(x,z,r,out)=>world.query(x,z,r,out).filter(c=>c.tag!=='skate-rail')}:world
   stepVehicle(v, v.handling, ctl, dt, contactWorld, bodies)
+  if (v.kind !== 'skateboard') feelCarImpact(v.lastImpact || 0)
   const groundHeight = v.y || 0
 
   const bounded = clampToBounds(v.x, v.z, data.world.bounds, 6)
@@ -537,7 +601,7 @@ function finishGrind(){
   const points=g.distance>=2?Math.floor(g.distance)*25:0
   player.trickScore+=points
   bus.emit('toast',points?`CLEAN GRIND · +${points} · ${player.trickScore} PTS`:'ROLL OUT · LINE IT UP AGAIN')
-  player.skateLanding={height:v.y,time:0};player.grind=null
+  player.skateLanding={height:v.y,time:0};player.grind=null;player.grindLeftAt=state.time
   v.x+=Math.sin(v.yaw)*.7;v.z+=Math.cos(v.yaw)*.7
 }
 

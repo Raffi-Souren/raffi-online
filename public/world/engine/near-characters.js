@@ -170,9 +170,11 @@ export async function createNearCharacters(scene, { tier = 'medium', surfaceRoot
         rig.elapsed += dt
         if (rig.lod === 'near' || rig.elapsed >= 1 / 12) { rig.mixer.update(rig.elapsed); rig.elapsed = 0; stats.mixerUpdates++ }
         const reaction=source.userData.streetReaction
-        if(reaction && state.time-reaction.start<.7){
+        // A sprint bump (strength 3) buckles longer and deeper than a jab or stumble.
+        const flinchSpan=reaction?.strength>=3?.9:.7, flinchDepth=reaction?.strength>=3?.32:.18
+        if(reaction && state.time-reaction.start<flinchSpan){
           rig.flinchBone ||= rig.model.getObjectByName('spine_03')
-          if(rig.flinchBone){rig.flinchRest=rig.flinchBone.quaternion.clone();rig.flinchBone.rotation.x-=Math.sin(Math.max(0,state.time-reaction.start)/.7*Math.PI)*.18}
+          if(rig.flinchBone){rig.flinchRest=rig.flinchBone.quaternion.clone();rig.flinchBone.rotation.x-=Math.sin(Math.max(0,state.time-reaction.start)/flinchSpan*Math.PI)*flinchDepth}
         }else rig.flinchRest=null
         if (entry.accessory) {
           rig.model.updateMatrixWorld(true)

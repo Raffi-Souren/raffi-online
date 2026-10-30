@@ -22,6 +22,8 @@ export function actorCollisionBodies(objects, x, z, ignored = null, reach = 12, 
         z: position.z,
         r: (info.rig === 'quadruped' ? 0.55 : 0.4) * Math.max(sx, sz),
         tag: 'pedestrian',
+        // The person behind the body, so a bump can make them react.
+        source: object,
       })
     } else {
       bodies.push({

@@ -175,3 +175,22 @@ Full camera sweep with ambient NPC pool: max **83** draws / **44,537** tris.
 No blocker: REWIND starts unavailable, enables after a valid run, ghosts dispose on
 stop, empty streams show `--%`, metrics finite 0–100 when ready. Getting caught
 remains a calendar invite (unchanged).
+
+## Phase 4 — feel pass (October 30)
+
+Evidence (session, not committed): `/tmp/raffi-world-feel/report.json` and
+`pole-sway.png` from `pnpm run test:world:feel`.
+
+| Area | Issue | Severity | Fixed |
+|---|---|---|---|
+| Turning | Body snapped to the new heading; a 180° popped. | jank | Yes — spring turn with a rate cap and a planted pivot |
+| Starts and stops | Binary walk/run swap and a damped glide. | jank | Yes — linear acceleration and braking curves |
+| Walls | Averaged push-outs could trade back and forth in corners. | jank | Yes — collide-and-slide; corner oscillation measured 0 |
+| Pedestrians | Walking into someone just stopped you; they ignored it. | jank | Yes — brush, stumble or buckle, shove and push-back, no Heat |
+| Street poles | Solid but lifeless. | charm | Yes — damped sway and a metal tonk |
+| Car crashes | `lastImpact` computed but unused; no shake or sound. | jank | Yes — impact shake and hit sound |
+| Plant pose | The reverse pivot brakes and leans but has no dedicated plant or turn-in-place clip. | charm | Deferred — needs a CC0 clip retargeted to the rig |
+| Foot grounding | No stance-phase hip drop or foot IK on stoops and ramps. | charm | Deferred — WORLD-BIBLE keeps full foot IK out of scope |
+| Bump lines | Pedestrians do not say "watch it" yet; the reaction is body language and sound. | charm | Deferred — needs a bark slot that cannot stack with captions |
+| Car into pole | Cars do not start pole sways. | charm | Deferred — stepVehicle does not report which collider it hit |
+| Pole shadows | A swaying pole's shadow stays still. | charm | Kept — the shadow pass does not run the sway |

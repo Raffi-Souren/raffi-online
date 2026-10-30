@@ -94,9 +94,11 @@ export function resolveCircle(world, x, z, r, iterations = 2, bodies = []) {
 
   for (let iter = 0; iter < iterations; iter++) {
     const near = world.query(px, pz, r + 1, scratch)
-    // Static geometry gets the final correction when an actor crowds a wall.
-    near.unshift(...bodies)
-    for (const c of near) {
+    // Static geometry gets the final correction when an actor crowds a wall:
+    // actor bodies resolve first, then the hash results, without copying either.
+    const count = bodies.length + near.length
+    for (let index = 0; index < count; index++) {
+      const c = index < bodies.length ? bodies[index] : near[index - bodies.length]
       if (c.type === 'circle') {
         const dx = px - c.x
         const dz = pz - c.z
@@ -173,6 +175,168 @@ export function moveCircle(world, x, z, dx, dz, r, bodies = []) {
   }
   const length = Math.hypot(normalX, normalZ)
   return { ...result, hit, normalX: length ? normalX / length : 0, normalZ: length ? normalZ / length : 0 }
+}
+
+// ------------------------------------------------------- collide-and-slide ---
+
+/** Contacts closer than this count as touching, so a wall is felt before it is entered. */
+export const SKIN = 0.02
+/** Times a slide began embedded deeper than 5 cm and had to be pushed out first. */
+export const slideStats = { stuckEvents: 0 }
+const contactPool = Array.from({ length: 24 }, () => ({ x: 0, z: 0, depth: 0, collider: null }))
+const slideNear = []
+const touched = []
+
+/**
+ * Fills contactPool with the solids within `skin` of a circle: outward normals
+ * and depth (positive = overlapping). Ramps are ground, not walls.
+ */
+function gatherContacts(world, px, pz, r, bodies, skin) {
+  let count = 0
+  const near = world.query(px, pz, r + 1, slideNear)
+  const total = bodies.length + near.length
+  for (let index = 0; index < total && count < contactPool.length; index++) {
+    const c = index < bodies.length ? bodies[index] : near[index - bodies.length]
+    let nx, nz, gap
+    if (c.type === 'circle') {
+      const dx = px - c.x
+      const dz = pz - c.z
+      const dist = Math.hypot(dx, dz)
+      gap = dist - r - c.r
+      if (gap >= skin) continue
+      nx = dist > 0.0001 ? dx / dist : 1
+      nz = dist > 0.0001 ? dz / dist : 0
+    } else if (c.type === 'ramp') {
+      continue
+    } else {
+      const angle = c.ry || 0
+      const cos = Math.cos(-angle)
+      const sin = Math.sin(-angle)
+      const ox = px - c.x
+      const oz = pz - c.z
+      const lx = ox * cos - oz * sin
+      const lz = ox * sin + oz * cos
+      const dx = lx - clamp(lx, -c.hx, c.hx)
+      const dz = lz - clamp(lz, -c.hz, c.hz)
+      const distSq = dx * dx + dz * dz
+      let localX, localZ
+      if (distSq > 0.000001) {
+        const dist = Math.sqrt(distSq)
+        gap = dist - r
+        if (gap >= skin) continue
+        localX = dx / dist
+        localZ = dz / dist
+      } else {
+        const outX = c.hx - Math.abs(lx)
+        const outZ = c.hz - Math.abs(lz)
+        if (outX < outZ) { localX = Math.sign(lx) || 1; localZ = 0; gap = -(outX + r) }
+        else { localX = 0; localZ = Math.sign(lz) || 1; gap = -(outZ + r) }
+      }
+      const back = Math.cos(angle)
+      const side = Math.sin(angle)
+      nx = localX * back - localZ * side
+      nz = localX * side + localZ * back
+    }
+    const contact = contactPool[count++]
+    contact.x = nx
+    contact.z = nz
+    contact.depth = -gap
+    contact.collider = c
+  }
+  return count
+}
+
+/**
+ * Collide-and-slide for the walking player. Each sub-step's motion is projected
+ * onto every surface it already touches: along one wall it keeps its tangential
+ * speed, into a concave corner it stops instead of trading push-outs between
+ * the two faces, and an actor that starts embedded is pushed out first. The
+ * iterative push-out still finishes every sub-step, so the result never rests
+ * inside a solid and lands exactly where resolveCircle would.
+ *
+ * `touched` in the result is a shared array of { collider, x, z } (outward
+ * normal) for each solid contacted; read it before the next call.
+ * @returns {{x, y, z, hit, normalX, normalZ, stuck, touched}}
+ */
+export function slideCircle(world, x, z, dx, dz, r, bodies = [], skin = SKIN) {
+  let px = x
+  let pz = z
+  let stuck = false
+  touched.length = 0
+  let count = gatherContacts(world, px, pz, r, bodies, skin)
+  for (let index = 0; index < count; index++) {
+    if (contactPool[index].depth <= 0.05) continue
+    const freed = resolveCircle(world, px, pz, r, 6, bodies)
+    px = freed.x
+    pz = freed.z
+    stuck = true
+    slideStats.stuckEvents++
+    break
+  }
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / Math.max(0.1, r * 0.5)))
+  const stepX = dx / steps
+  const stepZ = dz / steps
+  let hit = false, normalX = 0, normalZ = 0, y = 0
+  for (let step = 0; step < steps; step++) {
+    count = gatherContacts(world, px, pz, r, bodies, skin)
+    let mx = stepX
+    let mz = stepZ
+    // A surface within the skin still lets the body close its remaining gap, so
+    // it comes to rest exactly in contact rather than hovering at the skin.
+    for (let pass = 0; pass < 4; pass++) {
+      let blocked = false
+      for (let index = 0; index < count; index++) {
+        const contact = contactPool[index]
+        const allowed = Math.max(0, -contact.depth)
+        const into = mx * contact.x + mz * contact.z
+        if (into < -allowed - 1e-12) {
+          const correction = into + allowed
+          mx -= contact.x * correction
+          mz -= contact.z * correction
+          blocked = true
+        }
+      }
+      if (!blocked) break
+    }
+    // Two faces that still disagree form a crease with no free direction: stop.
+    for (let index = 0; index < count; index++) {
+      const contact = contactPool[index]
+      if (mx * contact.x + mz * contact.z < -Math.max(0, -contact.depth) - 1e-9) { mx = 0; mz = 0; break }
+    }
+    for (let index = 0; index < count; index++) {
+      const contact = contactPool[index]
+      hit = true
+      normalX += contact.x
+      normalZ += contact.z
+      noteTouched(contact.collider, contact.x, contact.z)
+    }
+    const res = resolveCircle(world, px + mx, pz + mz, r, 4, bodies)
+    px = res.x
+    pz = res.z
+    y = res.y
+    if (res.hit) {
+      hit = true
+      normalX += res.normalX
+      normalZ += res.normalZ
+      const after = gatherContacts(world, px, pz, r, bodies, skin)
+      for (let index = 0; index < after; index++) noteTouched(contactPool[index].collider, contactPool[index].x, contactPool[index].z)
+    }
+  }
+  const length = Math.hypot(normalX, normalZ)
+  return { x: px, y, z: pz, hit, normalX: length ? normalX / length : 0, normalZ: length ? normalZ / length : 0, stuck, touched }
+}
+
+function noteTouched(collider, x, z) {
+  for (const entry of touched) if (entry.collider === collider) return
+  touched.push({ collider, x, z })
+}
+
+/** Deepest overlap between a circle and any solid (0 when clear). For tests and diagnostics. */
+export function penetrationDepth(world, x, z, r, bodies = []) {
+  const count = gatherContacts(world, x, z, r, bodies, 0)
+  let deepest = 0
+  for (let index = 0; index < count; index++) deepest = Math.max(deepest, contactPool[index].depth)
+  return deepest
 }
 
 function worldToLocal(dx, dz, ry) {

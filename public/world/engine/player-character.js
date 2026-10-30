@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { clone } from '../vendor/utils/SkeletonUtils.js'
 import { createBoardPose } from './humanoid-pose.js'
 import { loadPopulationTemplate } from './population.js'
+import { strideTimeScale } from '../game/locomotion-core.js'
 
 const ONE_SHOTS = new Set(['interact', 'enter', 'exit', 'jab'])
 
@@ -180,7 +181,8 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
         groundOffset += (height - groundOffset) * (1 - Math.exp(-18 * dt))
         stats.groundOffset = groundOffset
         target.set(p.x, (p.y || 0) + groundOffset, p.z)
-        turn.set(0, p.yaw, 0)
+        // Lean into turns and tip forward when accelerating (locomotion-core).
+        turn.set(p.pitch || 0, p.yaw, -(p.lean || 0), 'YXZ')
         rotation.setFromEuler(turn)
       }
       if (transition) {
@@ -198,7 +200,7 @@ export async function createPlayerCharacter(player, { tier = 'medium', surfaceRo
         const name = car ? 'drive' : vehicle ? 'idle' : speed < 0.18 ? 'idle' : speed > 5.4 ? 'sprint' : speed > 3.1 ? 'run' : 'walk'
         const action = select(name)
         const authoredSpeed = name === 'sprint' ? 5.7 : name === 'run' ? 3.8 : name === 'walk' ? 1.85 : 1
-        if (['walk', 'run', 'sprint'].includes(name)) action.setEffectiveTimeScale(Math.max(0.55, Math.min(1.5, speed / authoredSpeed)))
+        if (['walk', 'run', 'sprint'].includes(name)) action.setEffectiveTimeScale(strideTimeScale(speed, authoredSpeed))
       }
       mixer.update(dt)
       if (skating) boardPose.update(player.skatePose || {}, Math.abs(p.speed || 0), state.time || 0)

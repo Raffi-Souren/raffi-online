@@ -9,6 +9,7 @@ import { createPostPass } from './post.js'
 import { CSM } from '../vendor/csm/CSM.js'
 import { applyUrbanSurfaceShader } from './urban-assets.js'
 import { createFoliageMaterial, addFoliageMotion, updateFoliageCell, foliageTime, foliageWind } from '../gen/foliage.js'
+import { addPropWobble } from './prop-wobble.js'
 import { data, state, device, query, lerp, clamp } from './state.js'
 
 export const gfx = {
@@ -384,6 +385,8 @@ export function initMaterials(atlasTexture, channels = {}) {
     foliage: createVertexLitMaterial({ map: gfx.materials.foliage.map, alphaTest: 0.42, transparent: false, depthWrite: true, side: THREE.DoubleSide, fog: true }, 'foliage'),
   }
   addFoliageMotion(low.foliage)
+  // Bumped street poles sway in the merged city geometry (game/feel.js).
+  for (const material of [gfx.materials.opaque, low.opaque, gfx.materials.emissive]) addPropWobble(material)
   gfx.materialSets = { physical: { opaque: gfx.materials.opaque, actor: gfx.materials.actor, water: gfx.materials.water, foliage: gfx.materials.foliage }, low }
   for (const set of Object.values(gfx.materialSets)) for (const [role, material] of Object.entries(set)) material.userData.worldRole = role
   for (const material of Object.values(gfx.materialSets.physical)) {

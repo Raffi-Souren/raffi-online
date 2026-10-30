@@ -47,6 +47,23 @@ export const cam = {
   modeId: 'classic',
   drivingView: 'chase',
   reducedMotion: false,
+  /** 0..1 game-feel intensity (game/feel.js); 0 turns bob off like reduced motion. */
+  feelIntensity: 1,
+  /** On-foot follow spring velocity, and the eased aim height under the bob. */
+  followVelocityX: 0,
+  followVelocityZ: 0,
+  aimY: null,
+  bob: 0,
+  lastTargetX: 0,
+  lastTargetZ: 0,
+}
+
+/** Exact critically damped spring step (no overshoot on a step, frame-rate independent). */
+function springStep(value, velocity, target, omega, dt) {
+  const offset = value - target
+  const j1 = velocity + offset * omega
+  const decay = Math.exp(-omega * dt)
+  return [decay * (offset + j1 * dt) + target, decay * (velocity - j1 * omega * dt)]
 }
 
 export function initCamera(aspect) {
@@ -276,9 +293,35 @@ export function updateCamera(dt, focus, velocity, aspect, collisionWorld = null)
     : (persp ? Math.max(c.followLerp, 10) : c.followLerp)
   // Aim the follow point slightly *above* the deck/roof so look-at isn't floor-level.
   const aimLift = persp ? (mounted ? 1.4 : c.footFocusHeight ?? 1.45) : 0
-  cam.target.x = damp(cam.target.x, focus.x + ax, follow, dt)
-  cam.target.z = damp(cam.target.z, focus.z + az, follow, dt)
-  cam.target.y = damp(cam.target.y, focusY + aimLift, follow, dt)
+  // Teleports, saves and fast travel snap the target directly; start fresh there.
+  if (cam.target.x !== cam.lastTargetX || cam.target.z !== cam.lastTargetZ) {
+    cam.followVelocityX = cam.followVelocityZ = 0
+    cam.aimY = null
+  }
+  if (persp && !mounted) {
+    // On foot the follow point rides a critically damped spring, so starts and
+    // stops ease in instead of cutting. Cars keep the tight damp: a softer
+    // spring would leave a fast car trailing out of frame.
+    ;[cam.target.x, cam.followVelocityX] = springStep(cam.target.x, cam.followVelocityX, focus.x + ax, 18, dt)
+    ;[cam.target.z, cam.followVelocityZ] = springStep(cam.target.z, cam.followVelocityZ, focus.z + az, 18, dt)
+  } else {
+    cam.target.x = damp(cam.target.x, focus.x + ax, follow, dt)
+    cam.target.z = damp(cam.target.z, focus.z + az, follow, dt)
+    cam.followVelocityX = cam.followVelocityZ = 0
+  }
+  cam.aimY = damp(cam.aimY ?? cam.target.y, focusY + aimLift, follow, dt)
+  // A small head bob locked to footfalls: two dips per stride, scaled by gait.
+  const speed = Math.abs(state.player.speed || 0)
+  const bobAllowed = persp && !mounted && !cam.reducedMotion && cam.feelIntensity > 0 && speed > 0.3
+  const bob = data.movement?.headBob || { walk: 0.012, run: 0.025 }
+  const amplitude = (bob.walk + (bob.run - bob.walk) * (state.player.runBlend || 0)) * cam.feelIntensity
+  // Stopping eases the bob out; reduced motion or zero intensity removes it at once.
+  const bobOff = cam.reducedMotion || cam.feelIntensity <= 0
+  cam.bob = bobAllowed ? -amplitude * Math.abs(Math.sin((state.player.stride || 0) * Math.PI * 2)) : bobOff ? 0 : damp(cam.bob, 0, 12, dt)
+  if (Math.abs(cam.bob) < 1e-5) cam.bob = 0
+  cam.target.y = cam.aimY + cam.bob
+  cam.lastTargetX = cam.target.x
+  cam.lastTargetZ = cam.target.z
 
   let sx = 0
   let sy = 0
