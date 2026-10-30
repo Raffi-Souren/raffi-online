@@ -245,13 +245,23 @@ export function currentHour(now = new Date()) {
 }
 
 /** The hour in Brooklyn, whatever the visitor's own time zone (24h, 0–23). */
+const newYorkClock = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+
 export function newYorkHour(now = new Date()) {
   try {
-    const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(now))
+    const hour = Number(newYorkClock.formatToParts(now).find((part) => part.type === 'hour')?.value)
     return Number.isFinite(hour) ? hour % 24 : now.getHours()
   } catch {
     return now.getHours()
   }
+}
+
+/** Keep both clock fields in the same zone, including visitors at half-hour offsets. */
+export function clockText(now = new Date()) {
+  if (query.clock !== 'local') {
+    try { return newYorkClock.format(now) } catch {}
+  }
+  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
 }
 
 /** Maps an hour to a grade using world.json's cycle table. */

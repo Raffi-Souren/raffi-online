@@ -8,7 +8,7 @@
  * keyboard, touch and screen reader.
  */
 
-import { state, data, newYorkHour, query } from '../engine/state.js'
+import { state, data, clockText } from '../engine/state.js'
 import { setObjective, setWaypoint } from './hud.js'
 import { openMissions } from './missions.js'
 import { tapesSnapshot } from './tapes.js'
@@ -78,9 +78,7 @@ function show(id) {
   current = id
   for (const tab of tabs) tab.setAttribute('aria-pressed', String(tab.dataset.phoneApp === id))
   if (clock) {
-    const now = new Date()
-    const hour = query.clock === 'local' ? now.getHours() : newYorkHour(now)
-    clock.textContent = String(hour).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
+    clock.textContent = clockText()
   }
   panel.replaceChildren()
   panel.dataset.phoneApp = id

@@ -6,7 +6,7 @@
  * up in style.css.
  */
 
-import { state, bus, data, device, query, newYorkHour } from '../engine/state.js'
+import { state, bus, data, device, clockText } from '../engine/state.js'
 import { mapPlaces, drawMapDetails } from './minimap-details.js'
 
 let els = {}
@@ -175,9 +175,7 @@ export function updateHud(dt) {
   }
   if (els.clock && state.frame % 30 === 0) {
     // The city keeps Brooklyn time unless ?clock=local asks for the visitor's own.
-    const d = new Date()
-    const hour = query.clock === 'local' ? d.getHours() : newYorkHour(d)
-    els.clock.textContent = String(hour).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+    els.clock.textContent = clockText()
   }
 
   if (state.frame % 3 === 0) drawMinimap()

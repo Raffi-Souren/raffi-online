@@ -8,7 +8,7 @@ globalThis.window = { devicePixelRatio: 1 }
 globalThis.screen = { width: 1280, height: 720 }
 
 const { TAPES_KEY, collectTape, readFound, tapeInReach, writeFound } = await import('../game/tapes-core.js')
-const { newYorkHour } = await import('../engine/state.js')
+const { newYorkHour, clockText } = await import('../engine/state.js')
 const { hostPlaysStation } = await import('../engine/audio-core.js')
 
 const read = (path) => JSON.parse(fs.readFileSync(new URL(path, import.meta.url), 'utf8'))
@@ -103,6 +103,19 @@ test('the World clock is New York time, across daylight saving', () => {
   assert.equal(newYorkHour(new Date('2026-07-15T03:30:00Z')), 23)
   assert.equal(newYorkHour(new Date('2026-11-01T05:30:00Z')), 1)
   assert.equal(newYorkHour(new Date('2026-11-01T06:30:00Z')), 1)
+})
+
+test('New York clock minutes do not inherit a visitor’s fractional time-zone offset', () => {
+  const previousZone = process.env.TZ
+  try {
+    process.env.TZ = 'Asia/Kathmandu'
+    const now = new Date('2026-07-15T12:17:00Z')
+    assert.equal(now.getMinutes(), 2, 'probe must use the visitor’s 45-minute offset')
+    assert.equal(clockText(now), '08:17')
+  } finally {
+    if (previousZone === undefined) delete process.env.TZ
+    else process.env.TZ = previousZone
+  }
 })
 
 test('every Lab storefront points at a real Lab room inside the city', () => {
