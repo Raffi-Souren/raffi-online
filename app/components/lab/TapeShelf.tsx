@@ -66,7 +66,7 @@ function Reel({ spinning, reverse = false }: { spinning: boolean; reverse?: bool
 }
 
 /** The brown tape wound on a hub; it grows or shrinks as the mix plays through. */
-function TapePack({ fill }: { fill: number }) {
+function TapePack({ fill, motionPaused }: { fill: number; motionPaused: boolean }) {
   const size = `${Math.round(52 + fill * 46)}%`
   return (
     <span
@@ -81,13 +81,13 @@ function TapePack({ fill }: { fill: number }) {
         borderRadius: "50%",
         background: "radial-gradient(circle, #3b2a1d 0 52%, #5a3f2a 53%, #4a3322 70%, #5e432c 71%, #3d2b1e 100%)",
         boxShadow: "inset 0 0 0 1px #1d140d, 0 1px 0 rgba(255, 255, 255, 0.08)",
-        transition: "width 900ms linear",
+        transition: motionPaused ? "none" : "width 900ms linear",
       }}
     />
   )
 }
 
-function Cassette({ track, index, spinning, progress }: { track: Track; index: number; spinning: boolean; progress: number }) {
+function Cassette({ track, index, spinning, progress, motionPaused }: { track: Track; index: number; spinning: boolean; progress: number; motionPaused: boolean }) {
   const palette = packaging(track)
   return (
     <div
@@ -162,7 +162,7 @@ function Cassette({ track, index, spinning, progress }: { track: Track; index: n
           <span style={{ position: "absolute", left: "22%", right: "22%", bottom: "16%", height: 2, background: "#5a3f2a", opacity: 0.85 }} />
           {[1 - progress, progress].map((fill, side) => (
             <span key={side} style={{ position: "relative", width: "30%", aspectRatio: "1", display: "grid", placeItems: "center", zIndex: 1 }}>
-              <TapePack fill={fill} />
+              <TapePack fill={fill} motionPaused={motionPaused} />
               <span style={{ position: "relative", width: "62%", aspectRatio: "1" }}><Reel spinning={spinning} reverse={side === 1} /></span>
             </span>
           ))}
@@ -375,7 +375,7 @@ export default function TapeShelf({ active = true, motionPaused = false }: TapeS
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", alignItems: "center", gap: "24px 28px", padding: "28px clamp(14px, 3vw, 28px) 24px", background: "radial-gradient(ellipse 80% 90% at 28% 30%, #f7f1e2, #e8dfc9 70%, #ded3ba)" }}>
         <div data-selected-cassette={selectedTrack.id} key={selectedTrack.id} className={pausedMotion ? undefined : "tape-shelf-pull"} style={{ minWidth: 0 }}>
-          <Cassette track={selectedTrack} index={selectedIndex} spinning={playingSelection && !isLoading && active && !pausedMotion} progress={progress} />
+          <Cassette track={selectedTrack} index={selectedIndex} spinning={playingSelection && !isLoading && active && !pausedMotion} progress={progress} motionPaused={pausedMotion || !active} />
         </div>
         {/* The J-card insert: the details and controls for the pulled tape. */}
         <div style={{ position: "relative", minWidth: 0, padding: "16px 18px 14px", backgroundColor: "#fbf7ec", backgroundImage: PAPER_GRAIN, border: "1px solid #d3c9b1", borderLeft: `6px solid ${palette.accent}`, borderRadius: 2, boxShadow: "0 1px 0 #fff inset, 0 8px 18px rgba(60, 45, 20, 0.14), 0 2px 3px rgba(60, 45, 20, 0.12)" }}>
