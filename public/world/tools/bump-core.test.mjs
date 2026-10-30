@@ -40,3 +40,8 @@ test('the shove is symmetric and bounded', () => {
   assert.equal(shoveFraction(plan, 2 + plan.duration), 1)
   assert.ok(shoveFraction(plan, 2 + plan.duration / 2) > 0.5, 'the shove eases out')
 })
+
+test('a stamp ahead of a rewound clock does not block the next bump', () => {
+  // An older save loads: the clock goes back to 40 s while the last bump says 300 s.
+  assert.equal(canBump(300, 40), true)
+})

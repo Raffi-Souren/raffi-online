@@ -28,9 +28,12 @@ export function bumpTier(impact) {
   return BUMP_TIERS.find((tier) => impact < tier.max) || BUMP_TIERS[BUMP_TIERS.length - 1]
 }
 
-/** One reaction per person per cooldown, so a held stick doesn't jitter them. */
+/**
+ * One reaction per person per cooldown, so a held stick doesn't jitter them.
+ * A stamp ahead of the clock (an older save loaded, a replay rewound) is stale.
+ */
 export function canBump(lastAt, now, cooldown = BUMP_COOLDOWN) {
-  return !Number.isFinite(lastAt) || now - lastAt >= cooldown
+  return !Number.isFinite(lastAt) || now < lastAt || now - lastAt >= cooldown
 }
 
 /**
