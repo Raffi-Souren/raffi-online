@@ -8,7 +8,7 @@ globalThis.matchMedia = () => ({ matches: false })
 globalThis.window = { devicePixelRatio: 1 }
 globalThis.screen = { width: 1280, height: 720 }
 
-const { CollisionWorld, resolveCircle, moveCircle } = await import('../engine/physics.js')
+const { CollisionWorld, resolveCircle, moveCircle, slideCircle, penetrationDepth, slideStats, SKIN } = await import('../engine/physics.js')
 const { actorCollisionBodies } = await import('../engine/actor-collisions.js')
 const { emitProp } = await import('../gen/props.js')
 const { buildLandmarks } = await import('../gen/world.js')
@@ -298,4 +298,93 @@ test('all authored neighborhood errand paths clear first-block walls, trees and 
       }
     }
   }
+})
+
+// ------------------------------------------------------- collide-and-slide ---
+
+test('running diagonally into a wall keeps most of the speed along it', () => {
+  const wall = collisionWorld({ type: 'box', x: 0, z: 0, hx: 0.2, hz: 40 })
+  for (const degrees of [30, 45, 60]) {
+    const angle = degrees * Math.PI / 180
+    // Approach the wall's face (x = -0.2) at `degrees` from the wall plane.
+    const vx = Math.sin(angle) * 6, vz = Math.cos(angle) * 6
+    let x = -0.66, z = -10
+    let travelled = 0
+    for (let i = 0; i < 60; i++) {
+      const res = slideCircle(wall, x, z, vx / 60, vz / 60, 0.45)
+      travelled += res.z - z
+      x = res.x; z = res.z
+      assert.ok(penetrationDepth(wall, x, z, 0.45) <= SKIN + 0.005)
+    }
+    assert.ok(travelled >= vz * 0.7, `${degrees}°: kept ${(travelled / vz).toFixed(2)} of tangential speed`)
+  }
+})
+
+test('holding into a concave corner neither penetrates nor jitters', () => {
+  const corner = collisionWorld(
+    { type: 'box', x: 0, z: 5, hx: 5, hz: 0.2 },
+    { type: 'box', x: 5, z: 0, hx: 0.2, hz: 5 },
+  )
+  let x = 2, z = 2
+  const positions = []
+  for (let i = 0; i < 300; i++) {
+    const res = slideCircle(corner, x, z, 6 / 60 * Math.SQRT1_2, 6 / 60 * Math.SQRT1_2, 0.45)
+    x = res.x; z = res.z
+    assert.ok(penetrationDepth(corner, x, z, 0.45) <= 0.02, `step ${i} penetrated`)
+    positions.push([x, z])
+  }
+  for (const [px, pz] of positions.slice(-60)) {
+    assert.ok(Math.hypot(px - x, pz - z) <= 0.01, 'the body oscillated in the corner')
+  }
+})
+
+test('a body that starts embedded is freed within one step and stays free', () => {
+  const box = collisionWorld({ type: 'box', x: 0, z: 0, hx: 1, hz: 1 })
+  const before = slideStats.stuckEvents
+  // Centre 0.2 m inside the face at x = 1 (0.65 m of overlap with a 0.45 m radius).
+  const first = slideCircle(box, 0.8, 0, 0.05, 0, 0.45)
+  assert.equal(first.stuck, true)
+  assert.ok(penetrationDepth(box, first.x, first.z, 0.45) <= 1e-6)
+  assert.equal(slideStats.stuckEvents, before + 1)
+  let x = first.x, z = first.z
+  for (let i = 0; i < 120; i++) {
+    const res = slideCircle(box, x, z, Math.cos(i) * 0.08, Math.sin(i) * 0.08, 0.45)
+    x = res.x; z = res.z
+  }
+  assert.equal(slideStats.stuckEvents, before + 1, 'later steps became stuck again')
+})
+
+test('5,000 random moves through block layouts never rest inside a wall', () => {
+  let seed = 7
+  const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296)
+  for (let layout = 0; layout < 10; layout++) {
+    const boxes = []
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        if (random() < 0.25) continue
+        // Blocks sit on a 6 m grid with at least a 1.6 m street between them.
+        boxes.push({ type: 'box', x: col * 6, z: row * 6, hx: 1 + random() * 1.2, hz: 1 + random() * 1.2, ry: (random() - 0.5) * 0.6 })
+      }
+    }
+    const world = collisionWorld(...boxes)
+    let x = -3, z = -3
+    for (let move = 0; move < 500; move++) {
+      const angle = random() * Math.PI * 2
+      const distance = random() * 0.3
+      const res = slideCircle(world, x, z, Math.cos(angle) * distance, Math.sin(angle) * distance, 0.45)
+      x = res.x; z = res.z
+      const depth = penetrationDepth(world, x, z, 0.45)
+      assert.ok(depth <= SKIN + 0.005, `layout ${layout}, move ${move}: ${depth.toFixed(4)} m inside a wall`)
+    }
+  }
+})
+
+test('the slide reports the people and props it touched', () => {
+  const world = collisionWorld({ type: 'circle', x: 3, z: 0, r: 0.3, tag: 'neon-pole' })
+  const bodies = actorCollisionBodies([pedAt(0, 2)], 0, 0)
+  const pole = slideCircle(world, 2, 0, 0.5, 0, 0.45)
+  assert.equal(pole.touched[0].collider.tag, 'neon-pole')
+  close(pole.touched[0].x, -1)
+  const person = slideCircle(world, 0, 0.5, 0, 1, 0.45, bodies)
+  assert.equal(person.touched[0].collider.tag, 'pedestrian')
 })

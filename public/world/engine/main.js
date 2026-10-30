@@ -18,7 +18,10 @@ import {
   cycleCameraMode, getCameraMode, setCameraMode, orbitView, getDrivingView, setDrivingView, setReducedMotion,
 } from './camera.js'
 import { initInput, updateInput, endInputFrame, input, consume, resetInput, setActionLabel, setSecondLabel, setCamLabel } from './input.js'
-import { CollisionWorld, resolveCircle, moveCircle, clampToBounds } from './physics.js'
+import { CollisionWorld, resolveCircle, moveCircle, clampToBounds, slideStats } from './physics.js'
+import { bufferPress, consumeBuffered, createActionBuffer } from '../game/locomotion-core.js'
+import { feelSnapshot, feelState, setFeelIntensity, updateFeel } from '../game/feel.js'
+import { updatePropWobble } from './prop-wobble.js'
 import { buildAtlas } from '../gen/atlas.js'
 import { buildWorld } from '../gen/world.js'
 import { findOpenSpots } from '../gen/blocks.js'
@@ -94,6 +97,8 @@ let gameStarted = false
 let pendingCheat = null
 let lastCheatRequest = 0
 const simulation = createFixedClock()
+/** A kickflip pressed a moment before the board can pop still fires (input buffer). */
+const kickflipBuffer = createActionBuffer()
 const renderPoses = createRenderPoses()
 let previousPlayer = null
 window.addEventListener('message', (event) => {
@@ -802,6 +807,11 @@ async function boot() {
   exposeAuditApi({
     ready: true,
     stats: () => state.stats,
+    /** Read-only game-feel evidence: last bump, pole sways, impacts, shake. */
+    feel: () => ({ ...feelSnapshot(), stuckEvents: slideStats.stuckEvents }),
+    setFeelIntensity,
+    /** The live static collision world, for smokes that place test fixtures. */
+    collision: () => world.collision,
     triangleTotal: built.triangles,
     setWaypoint,
     getWaypoint,
@@ -1008,9 +1018,11 @@ function loop(now) {
     const dialogueHandled = dialogueBlocking &&
       (keyboardAction || touchPrimary || spaceAction) && advanceDialogue()
 
-    // Skateboard: F / secondary button = kickflip (need a little speed).
-    if (!dialogueHandled && !isDialogueBlocking() && secondPressed) {
-      tryKickflip()
+    // Skateboard: F / secondary button = kickflip (need a little speed). A press
+    // that lands just before the board can pop (mid-landing) is buffered briefly.
+    if (!dialogueHandled && !isDialogueBlocking()) {
+      if (secondPressed && !tryKickflip()) bufferPress(kickflipBuffer, state.time)
+      else if (!secondPressed && consumeBuffered(kickflipBuffer, state.time, !isBoardTrickActive())) tryKickflip()
     }
 
     // All context inputs are edge-triggered, so a time lock is unnecessary.
@@ -1048,6 +1060,8 @@ function loop(now) {
       renderPoses.capture(gfx.scene)
       state.dt = dt
       state.time += dt
+      // Pole sways run on simulation time, so they pause and settle with the game.
+      updateFeel(dt)
       updateTransport(dt)
       if (!world.transitBusy && !state.interior) updateTraffic(dt)
       if (!flying && !world.transitBusy && !isDialogueBlocking()) {
@@ -1112,6 +1126,7 @@ function loop(now) {
       : displayedPlayer
     const vel = flying ? { x: 0, z: 0 } : { x: state.player.vx, z: state.player.vz }
     updateCamera(dt, focus, vel, aspect, flying ? null : world.collision)
+    updatePropWobble(feelState.wobbles)
     updateGrade(dt)
   } else {
     simulation.reset()

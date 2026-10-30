@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import { state, data, makeRng } from '../engine/state.js'
 import { resolveCircle, moveCircle, clampToBounds } from '../engine/physics.js'
+import { shoveFraction } from './bump-core.js'
 import { makePed, animatePed } from '../gen/peds.js'
 import { decidePolicy, verbDuration, reconsiderIn } from './npc-policy-core.js'
 import { pedestrianDetour } from './npc-navigation.js'
@@ -149,6 +150,7 @@ export function resetNpcToStart() {
     a.target = null
     a.blockedFor = 0; a.detour = null; a.recoverUntil = 0; a.recoveries = 0; a.routeAgainAt = 0
     delete a.mesh.userData.streetReaction
+    delete a.mesh.userData.bump
     a.decisionIndex = 0
     if (a.activity) a.activityState = createActivityState()
     a.verbEndsAt = simTime
@@ -373,6 +375,25 @@ export function updateNpcSim(dt, ctx = {}) {
         a.x = separated.x
         a.z = separated.z
       }
+    }
+
+    // A bump from the player (bump-core): the shove eases out along the push,
+    // walls still win, and they turn to see who it was.
+    const bump = a.mesh.userData.bump
+    if (bump) {
+      const done = shoveFraction(bump, state.time)
+      const step = (done - (bump.applied || 0)) * bump.distance
+      bump.applied = done
+      if (step > 0) {
+        const pushed = resolveCircle(collisionRef, a.x + bump.dirX * step, a.z + bump.dirZ * step, NPC_RADIUS, 3)
+        a.x = pushed.x
+        a.z = pushed.z
+      }
+      if (state.time < bump.lookUntil) {
+        const yaw = Math.atan2(bump.fromX - a.x, bump.fromZ - a.z)
+        a.yaw += Math.atan2(Math.sin(yaw - a.yaw), Math.cos(yaw - a.yaw)) * Math.min(1, dt * 10)
+      }
+      if (done >= 1 && state.time >= bump.lookUntil) delete a.mesh.userData.bump
     }
 
     // Stationary neighbors need personal space too; previously only walking
