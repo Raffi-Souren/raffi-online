@@ -10,7 +10,7 @@ const out = process.env.RAFFI_QA_OUTPUT_DIR || "/tmp/raffi-lab-qa"
 await fs.mkdir(out, { recursive: true })
 
 const report = {
-  checks: [], failures: [], errors: [], screenshots: [], gear: [], architecture: [], limits: [], interceptedScoreWrites: 0,
+  checks: [], failures: [], errors: [], screenshots: [], gear: [], architecture: [], limits: [], interceptedScoreWrites: 0, interceptedRafOsWrites: 0,
   audio: "SoundCloud widget API is stubbed. This checks shared-player integration, not external stream availability or audible playback.",
 }
 
@@ -181,7 +181,10 @@ try {
           if (!["GET", "HEAD"].includes(request.method())) report.interceptedScoreWrites++
           return route.fulfill({ json: { scores: [], success: true } })
         }
-        if (url.pathname === "/api/raf-os") return route.fulfill({ json: { available: false, providers: [] } })
+        if (url.pathname === "/api/raf-os") {
+          if (!["GET", "HEAD"].includes(request.method())) report.interceptedRafOsWrites++
+          return route.fulfill({ json: { available: false, providers: [] } })
+        }
         return route.continue()
       }
       if (url.hostname === "w.soundcloud.com" && url.pathname === "/player/api.js") {
@@ -191,6 +194,35 @@ try {
         return route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Silent SoundCloud test fixture</title>" })
       }
       return route.abort()
+    })
+
+    // Each viewport starts in a fresh context: this covers first visit, a saved
+    // dismissal after reload, and the visible Start-menu route back to welcome.
+    await check("welcome-dismiss-reload-and-restore", viewport, page, async () => {
+      const response = await page.goto(base, { waitUntil: "domcontentloaded" })
+      assert.equal(response?.status(), 200)
+      const welcome = page.locator('[data-desktop-welcome="true"]')
+      await welcome.waitFor({ state: "visible" })
+      assert.equal(await welcome.getAttribute("data-collapsed"), "false")
+      await welcome.getByRole("button", { name: "Dismiss welcome", exact: true }).click()
+      await welcome.waitFor({ state: "hidden" })
+      await page.reload({ waitUntil: "domcontentloaded" })
+      const start = page.getByRole("region", { name: "Desktop taskbar", exact: true }).getByRole("button", { name: "Start menu", exact: true })
+      await start.click()
+      const menu = page.getByRole("menu", { name: "Start menu", exact: true })
+      await menu.waitFor({ state: "visible" })
+      // Opening the menu confirms that the reloaded desktop has hydrated before
+      // checking that the dismissed welcome did not return.
+      assert.equal(await welcome.count(), 0, "Reload brought back the dismissed welcome")
+      await menu.getByRole("menuitem", { name: "welcome.txt", exact: true }).click()
+      await welcome.waitFor({ state: "visible" })
+      assert.equal(await welcome.getAttribute("data-collapsed"), "false", "Start must restore the expanded welcome")
+      await page.reload({ waitUntil: "domcontentloaded" })
+      await welcome.waitFor({ state: "visible" })
+      assert.equal(await welcome.getAttribute("data-collapsed"), "false", "Restored welcome did not survive reload")
+      await welcome.getByRole("button", { name: "Open Lab", exact: true }).click()
+      await dialog(page).waitFor({ state: "visible" })
+      assert.equal(new URL(page.url()).pathname, "/lab/tape-shelf", "Welcome did not open the Lab")
     })
 
     await check("permalink-window-and-start-bounds", viewport, page, async () => {
@@ -219,7 +251,59 @@ try {
       assert.ok(evidence.radius >= 6, "Start button lost its rounded corners")
       assert.ok(evidence.childrenFit, "Start text or logo is clipped inside the button")
       assert.deepEqual(evidence.clippedBy, [], "Start button is clipped by an overflow ancestor")
+      const navigation = dialog(page).getByRole("navigation", { name: "Lab collection", exact: true })
+      assert.deepEqual(await navigation.getByRole("link").evaluateAll((links) => links.map((link) => link.getAttribute("href"))), [
+        "/lab/tape-shelf", "/lab/gear-anatomy", "/lab/research", "/lab/architecture-studio",
+      ], "The four experiment doors must stay available")
+      if (viewport !== "desktop") {
+        const row = await navigation.locator("a, button").evaluateAll((items) => items.map((item) => {
+          const box = item.getBoundingClientRect()
+          return { x: box.x, y: box.y, height: box.height }
+        }))
+        assert.equal(row.length, 4, "Expected the four experiment links")
+        assert.ok(row.every((item) => Math.abs(item.y - row[0].y) <= 1 && item.height >= 44), "Phone Lab navigation wrapped or lost usable tap targets")
+        assert.ok(row.every((item, index) => index === 0 || item.x > row[index - 1].x), "Phone Lab navigation must remain a horizontal row")
+        assert.equal(await dialog(page).locator(".lab-subtitle").isVisible(), false, "Phone subtitle crowds the compact Lab header")
+      }
       await screenshot(page, `${viewport}-tape-shelf`)
+    })
+
+    await check("standalone-raf-os-preserves-draft-without-submitting", viewport, page, async () => {
+      await openLab(page)
+      assert.equal(await page.locator('[data-desktop-app="startup"]').count(), 1, "RAF OS should retain its standalone desktop shortcut")
+      assert.equal(await dialog(page).getByRole("button", { name: "Open RAF OS pitch review", exact: true }).count(), 0, "RAF OS should not appear as a Lab tool")
+      const writesBefore = report.interceptedRafOsWrites
+      const start = page.getByRole("region", { name: "Desktop taskbar", exact: true }).getByRole("button", { name: "Start menu", exact: true })
+      await start.click()
+      await Promise.all([
+        page.waitForResponse((response) => new URL(response.url()).pathname === "/api/raf-os" && response.request().method() === "GET"),
+        page.getByRole("menu", { name: "Start menu", exact: true }).getByRole("menuitem", { name: "RAF OS", exact: true }).click(),
+      ])
+      const terminal = page.locator('[role="dialog"][data-window-id="startup"]')
+      await terminal.waitFor({ state: "visible" })
+      await terminal.getByRole("heading", { name: "VENTURE REVIEW", exact: true }).waitFor()
+      const pitch = terminal.getByRole("textbox", { name: "Your pitch", exact: true })
+      assert.equal(await pitch.inputValue(), "", "Opening RAF OS should not invent or submit a pitch")
+      const draft = "A local smoke-test draft. Do not submit."
+      await pitch.fill(draft)
+      await terminal.getByRole("group", { name: "Window controls", exact: true }).getByRole("button", { name: /^Minimize / }).click()
+      await terminal.waitFor({ state: "hidden" })
+      const terminalTask = page.locator('[data-window-task="startup"]')
+      await terminalTask.click()
+      await terminal.waitFor({ state: "visible" })
+      assert.equal(await terminal.count(), 1, "Taskbar restoration opened a duplicate terminal")
+      assert.equal(await pitch.inputValue(), draft, "Restoring RAF OS lost the existing terminal session")
+      assert.equal(await terminalTask.getAttribute("data-window-state"), "active")
+      await start.click()
+      await page.getByRole("menu", { name: "Start menu", exact: true }).getByRole("menuitem", { name: "welcome.txt", exact: true }).click()
+      await page.locator('[data-desktop-welcome="true"]').waitFor({ state: "visible" })
+      await terminal.waitFor({ state: "hidden" })
+      assert.equal(await terminalTask.getAttribute("data-window-state"), "minimized", "Welcome restoration should reveal the desktop without closing the terminal")
+      assert.equal(await page.locator('[data-desktop-welcome="true"]').getAttribute("data-collapsed"), "false")
+      await terminalTask.click()
+      await terminal.waitFor({ state: "visible" })
+      assert.equal(await pitch.inputValue(), draft, "Restoring the terminal after welcome lost its draft")
+      assert.equal(report.interceptedRafOsWrites, writesBefore, "Opening or restoring RAF OS submitted a review request")
     })
 
     await check("silent-browsing-and-shared-playback", viewport, page, async () => {
@@ -264,19 +348,54 @@ try {
       await assertBounds(page)
     })
 
-    await check("shared-motion-pause", viewport, page, async () => {
-      await openLab(page)
-      await tape(page).waitFor()
-      await dialog(page).getByRole("button", { name: "Pause movement", exact: true }).click()
-      assert.equal(await tape(page).getAttribute("data-motion-paused"), "true")
-      await minimize(page)
-      const resume = page.getByRole("button", { name: "Resume mystery box movement", exact: true })
-      await resume.waitFor()
-      assert.equal(await resume.getAttribute("aria-pressed"), "true")
-      await resume.click()
-      await restore(page)
-      await dialog(page).getByRole("button", { name: "Pause movement", exact: true }).waitFor()
-      await page.waitForFunction(() => document.querySelector('[data-lab-experiment="tape-shelf"]')?.getAttribute("data-motion-paused") === "false")
+    await check("automatic-os-reduced-motion-across-desktop-and-lab", viewport, page, async () => {
+      // Set the OS preference before navigating, so the fresh document sees it
+      // during hydration rather than relying on an in-app motion toggle.
+      await page.emulateMedia({ reducedMotion: "reduce" })
+      try {
+        await openLab(page)
+        await tape(page).waitFor()
+        assert.equal(await tape(page).getAttribute("data-motion-paused"), "true")
+        assert.equal(await page.getByRole("button", { name: /^(Pause|Resume) (movement|mystery box movement)$/ }).count(), 0, "Manual movement controls should not crowd the site")
+        const tapePackTransitions = await tape(page).locator(".tape-shelf-reel").evaluateAll((reels) => reels.map((reel) => {
+          const pack = reel.parentElement?.previousElementSibling
+          return pack ? getComputedStyle(pack).transitionDuration : null
+        }))
+        assert.deepEqual(tapePackTransitions, ["0s", "0s"], "Reduced-motion tape packs should update progress without animating")
+        await tape(page).getByRole("button", { name: "Play selected mix", exact: true }).click()
+        await tape(page).getByRole("button", { name: "Pause selected mix", exact: true }).waitFor()
+        const reelMotion = await tape(page).locator(".tape-shelf-reel").evaluateAll((reels) => reels.map((reel) => getComputedStyle(reel).animationPlayState))
+        assert.deepEqual(reelMotion, ["paused", "paused"], "Playing audio must not animate tape reels under reduced motion")
+        await minimize(page)
+        const start = page.getByRole("region", { name: "Desktop taskbar", exact: true }).getByRole("button", { name: "Start menu", exact: true })
+        await start.click()
+        await page.getByRole("menu", { name: "Start menu", exact: true }).getByRole("menuitem", { name: "welcome.txt", exact: true }).click()
+        const welcome = page.locator('[data-desktop-welcome="true"]')
+        await welcome.waitFor({ state: "visible" })
+        await welcome.locator('.welcome-deck[data-deck="playing"]').waitFor()
+        assert.equal(await welcome.getAttribute("data-motion-paused"), "true")
+        const welcomeMotion = await welcome.locator(".welcome-reel, .welcome-eq span").evaluateAll((items) => items.map((item) => getComputedStyle(item).animationName))
+        assert.ok(welcomeMotion.length >= 2 && welcomeMotion.every((name) => name === "none"), "Playing welcome cassette must respect reduced motion")
+        await welcome.getByRole("button", { name: "Dismiss welcome", exact: true }).click()
+        const mystery = page.locator('[data-mystery-chase="true"]')
+        await mystery.waitFor({ state: "visible" })
+        const stationary = await mystery.getByRole("button", { name: "Question block: unlock a secret level", exact: true }).evaluate(async (block) => {
+          const before = getComputedStyle(block).transform
+          await new Promise((resolve) => {
+            let frames = 0
+            const step = () => { if (++frames === 6) resolve(); else requestAnimationFrame(step) }
+            requestAnimationFrame(step)
+          })
+          return before === getComputedStyle(block).transform
+        })
+        assert.equal(stationary, true, "Mystery block moved despite the OS reduced-motion preference")
+        await restore(page)
+        await dialog(page).getByRole("navigation", { name: "Lab collection", exact: true }).locator('a[href="/lab/gear-anatomy"]').click()
+        await gear(page).waitFor()
+        assert.equal(await gear(page).getByRole("checkbox", { name: /Auto-rotate/ }).isDisabled(), true)
+      } finally {
+        await page.emulateMedia({ reducedMotion: "no-preference" })
+      }
     })
 
     await check("blocked-playback-recovery-tap", viewport, page, async () => {
@@ -461,15 +580,24 @@ try {
       await screenshot(page, `${viewport}-architecture-diagram`)
     })
 
-    await check("reduced-motion-path", viewport, page, async () => {
-      await page.emulateMedia({ reducedMotion: "reduce" })
-      await openLab(page)
-      await tape(page).waitFor()
-      assert.equal(await tape(page).getAttribute("data-motion-paused"), "true")
-      await dialog(page).getByRole("navigation", { name: "Lab collection", exact: true }).locator('a[href="/lab/gear-anatomy"]').click()
-      await gear(page).waitFor()
-      assert.equal(await gear(page).getByRole("checkbox", { name: /Auto-rotate/ }).isDisabled(), true)
+    await check("os-motion-preference-updates-live", viewport, page, async () => {
       await page.emulateMedia({ reducedMotion: "no-preference" })
+      await openLab(page, "gear-anatomy")
+      await gear(page).waitFor()
+      const autoRotate = gear(page).getByRole("checkbox", { name: /Auto-rotate/ })
+      await page.waitForFunction(() => document.querySelector('[data-lab-experiment="gear-anatomy"] input[type="checkbox"]')?.disabled === false)
+      try {
+        await page.emulateMedia({ reducedMotion: "reduce" })
+        await page.waitForFunction(() => document.querySelector('[data-lab-experiment="gear-anatomy"] input[type="checkbox"]')?.disabled === true)
+        assert.equal(await autoRotate.isDisabled(), true)
+        await dialog(page).getByRole("navigation", { name: "Lab collection", exact: true }).locator('a[href="/lab/tape-shelf"]').click()
+        await tape(page).waitFor()
+        assert.equal(await tape(page).getAttribute("data-motion-paused"), "true")
+        await page.emulateMedia({ reducedMotion: "no-preference" })
+        await page.waitForFunction(() => document.querySelector('[data-lab-experiment="tape-shelf"]')?.getAttribute("data-motion-paused") === "false")
+      } finally {
+        await page.emulateMedia({ reducedMotion: "no-preference" })
+      }
     })
 
     await check("unknown-experiment-404", viewport, page, async () => {
@@ -493,4 +621,4 @@ console.info(JSON.stringify({
   limits: report.limits,
   report: `${out}/report.json`,
 }, null, 2))
-if (report.failures.length || report.errors.length || report.interceptedScoreWrites) process.exitCode = 1
+if (report.failures.length || report.errors.length || report.interceptedScoreWrites || report.interceptedRafOsWrites) process.exitCode = 1

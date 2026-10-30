@@ -11,6 +11,7 @@ export interface ResearchPaper {
   codeUrl?: string
   sourceNote?: string
   sourceUrl?: string
+  linkLabel?: string
 }
 
 const replayExplorer = "https://ibm-client-engineering.github.io/output-drift-financial-llms/explorer/"
@@ -23,7 +24,8 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
   {
     id: "when-replay-agreement-misleads",
     title: "When Replay Agreement Misleads: Capture Loss and Cancellation in Local Agents",
-    url: "https://lnkd.in/p/gsz3S5Tm",
+    url: "https://www.linkedin.com/posts/raffi-khatchadourian_neurips2026-slmagents-agentevaluation-share-7515811298912239616-CM-o/",
+    linkLabel: "Poster (LinkedIn)",
     date: "Dec 2026",
     venue: "Poster · SLM-Agents Workshop at NeurIPS 2026, Paris",
   },
@@ -90,10 +92,30 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
   },
 ]
 
-// Reading recommendations from the bibliographies of the existing research,
+// Collected reading from saved papers and the existing research bibliographies,
 // with titles, authors and dates checked against their primary arXiv pages.
 // These are not authored by Raffi and stay out of Notes' own-paper catalogue.
 export const RESEARCH_READING: ResearchPaper[] = [
+  {
+    id: "self-evolving-agent-systems",
+    title: "Next-Generation Agentic Reinforcement Learning Systems Enable Self-Evolving Agents",
+    url: "https://arxiv.org/abs/2607.01120",
+    date: "Jul 2026",
+    authors: "Ran Yan, Wei Fu, Jiale Li, Shusheng Xu, and collaborators",
+    summary:
+      "This position paper proposes shared trajectory data, a governed data proxy, and an evolution control plane for learning from deployed agent work. AReaL2.0 illustrates one branch of the proposed online learning loop; the broader architecture remains a research direction.",
+    sourceNote: "Collected reading on governed learning from agent trajectories.",
+  },
+  {
+    id: "gamut",
+    title: "Two-Level Meta-Rubrics for Evaluating Open-Ended Generation: GAMUT, a Benchmark for Factual Completeness",
+    url: "https://arxiv.org/abs/2607.19322",
+    date: "Jul 2026 · revised Aug 2026",
+    authors: "Xilun Chen, Zhaleh Feizollahi, Ross Goodwin, Seungwhan Moon, Scott Yih, Pinar Donmez, Babak Damavandi, Luna Dong",
+    summary:
+      "GAMUT evaluates factual completeness in long-form answers grounded in wearable imagery. Its structured meta-rubrics compile into binary checks, separating the richness needed to describe a good answer from the simpler checks used to grade it.",
+    sourceNote: "Collected reading on factual completeness and evaluation rubrics.",
+  },
   {
     id: "react",
     title: "ReAct: Synergizing Reasoning and Acting in Language Models",

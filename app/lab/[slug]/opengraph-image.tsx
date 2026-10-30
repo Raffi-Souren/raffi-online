@@ -128,21 +128,47 @@ export default function Image({ params }: { params: { slug: string } }) {
 
   return new ImageResponse(
     (
-      <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", padding: "42px 48px 34px", background: "#f2efe6", color: "#273d31", fontFamily: "sans-serif" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 20, borderBottom: "2px solid #bfc7b5" }}>
-          <div style={{ display: "flex", fontSize: 22, fontWeight: 700, letterSpacing: 4 }}>RAFFI / LAB</div>
-          <div style={{ display: "flex", fontSize: 17, color: "#61735d" }}>{post.medium}</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flex: 1 }}>
-          <div style={{ display: "flex", flexDirection: "column", width: 570, paddingRight: 18 }}>
-            <div style={{ display: "flex", fontSize: 72, fontWeight: 700, lineHeight: 1.05, letterSpacing: -3 }}>{post.title}</div>
-            <div style={{ display: "flex", marginTop: 24, fontSize: 25, lineHeight: 1.4, color: "#64705e" }}>{post.caption}</div>
+      <div style={{ display: "flex", width: "100%", height: "100%", padding: 30, background: "linear-gradient(145deg, #367de9, #245edb 55%, #1645ae)", color: "#222222", fontFamily: "sans-serif" }}>
+        <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", border: "3px solid #0751d1", borderRadius: 11, overflow: "hidden", background: "#ece9d8", boxShadow: "8px 12px 0 rgba(0, 30, 102, 0.24)" }}>
+          <div style={{ display: "flex", height: 55, flexShrink: 0, alignItems: "center", justifyContent: "space-between", padding: "0 9px 0 14px", background: "linear-gradient(180deg, #65a5ff, #1666ef 17%, #0053df 70%, #003db5)", color: "#ffffff" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 25, fontWeight: 700 }}>
+              <svg width="27" height="29" viewBox="0 0 27 29">
+                <path d="M10 3h9M12 3v9L4 25h20l-8-13V3" fill="#c7e3ff" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M8 20h12l3 5H5z" fill="#57a82b" />
+              </svg>
+              <div style={{ display: "flex" }}>{post.title} — Lab</div>
+            </div>
+            <div style={{ display: "flex", gap: 5 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 31, border: "1px solid #ffffff", borderRadius: 4, background: "linear-gradient(135deg, #85baff, #246ae4)", boxShadow: "inset 1px 1px 0 #b2d5ff" }}><svg width="17" height="17" viewBox="0 0 17 17"><path d="M3 13h10" stroke="#ffffff" strokeWidth="3" /></svg></div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 31, border: "1px solid #ffffff", borderRadius: 4, background: "linear-gradient(135deg, #85baff, #246ae4)", boxShadow: "inset 1px 1px 0 #b2d5ff" }}><svg width="17" height="17" viewBox="0 0 17 17"><rect x="3" y="3" width="11" height="11" fill="none" stroke="#ffffff" strokeWidth="2" /><path d="M3 5h11" stroke="#ffffff" strokeWidth="2" /></svg></div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 31, border: "1px solid #ffffff", borderRadius: 4, background: "linear-gradient(135deg, #ef9c86, #d6371e)", boxShadow: "inset 1px 1px 0 #ffc5b5" }}><svg width="17" height="17" viewBox="0 0 17 17"><path d="M4 4l9 9M13 4l-9 9" stroke="#ffffff" strokeWidth="2.5" /></svg></div>
+            </div>
           </div>
-          <div style={{ display: "flex", width: 480, height: 350, flexShrink: 0 }}><Artwork slug={post.slug} /></div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 14, borderTop: "1px solid #c8ccbd", fontSize: 16, color: "#64705e" }}>
-          <div style={{ display: "flex" }}>raffi.computer</div>
-          <div style={{ display: "flex" }}>/lab/{post.slug}</div>
+          <div style={{ display: "flex", height: 34, flexShrink: 0, alignItems: "center", gap: 27, padding: "0 17px", borderBottom: "1px solid #d4d0c8", fontSize: 17 }}>
+            <div style={{ display: "flex" }}>File</div>
+            <div style={{ display: "flex" }}>View</div>
+            <div style={{ display: "flex" }}>Favorites</div>
+            <div style={{ display: "flex" }}>Help</div>
+          </div>
+          <div style={{ display: "flex", height: 47, flexShrink: 0, alignItems: "center", gap: 12, padding: "6px 12px", borderBottom: "1px solid #b7b4a8", fontSize: 17 }}>
+            <div style={{ display: "flex", color: "#555555" }}>Address</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, height: 31, padding: "0 10px", background: "#ffffff", border: "1px solid #7f9db9" }}>
+              <svg width="23" height="20" viewBox="0 0 23 20"><path d="M1 3h8l3 3h10v12H1z" fill="#ffd45a" stroke="#b58b25" /><path d="M1 8h21l-3 10H1z" fill="#ffe795" stroke="#b58b25" /></svg>
+              <div style={{ display: "flex" }}>raffi.computer/lab/{post.slug}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flex: 1, minHeight: 0, padding: "16px 24px 16px 29px", background: "#ffffff" }}>
+            <div style={{ display: "flex", flexDirection: "column", width: 555, paddingRight: 17 }}>
+              <div style={{ display: "flex", marginBottom: 15, fontSize: 19, color: "#526785" }}>{post.medium}</div>
+              <div style={{ display: "flex", fontSize: 67, fontWeight: 700, lineHeight: 1.07, letterSpacing: -2.3, color: "#003399" }}>{post.title}</div>
+              <div style={{ display: "flex", marginTop: 22, fontSize: 24, lineHeight: 1.35, color: "#3a4759" }}>{post.caption}</div>
+            </div>
+            <div style={{ display: "flex", width: 480, height: 350, flexShrink: 0 }}><Artwork slug={post.slug} /></div>
+          </div>
+          <div style={{ display: "flex", height: 31, flexShrink: 0, alignItems: "center", justifyContent: "space-between", margin: "0 3px 3px", borderTop: "1px solid #9f9d94", background: "#ece9d8", fontSize: 15, color: "#414141" }}>
+            <div style={{ display: "flex", alignItems: "center", alignSelf: "stretch", flex: 1, padding: "0 12px", borderRight: "1px solid #b7b4a8" }}>Filed under play</div>
+            <div style={{ display: "flex", padding: "0 16px" }}>raffi.computer</div>
+          </div>
         </div>
       </div>
     ),

@@ -8,6 +8,15 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  async redirects() {
+    return [
+      {
+        source: '/lab/research-architecture',
+        destination: '/lab/architecture-studio',
+        permanent: true,
+      },
+    ]
+  },
   async headers() {
     return [
       {

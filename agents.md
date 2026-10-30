@@ -2,6 +2,10 @@
 
 > Guidelines for AI coding agents working on this project (Claude Code, Cursor, v0.app, Copilot, etc.)
 
+## Browser preference
+
+Use the in-app browser and reuse its signed-in tabs. Do not open or control an external browser, use shell browser commands, or access browser profiles, cookies, or credentials as a fallback. If the in-app browser is unavailable, report the limitation. Purpose-built connected APIs remain appropriate.
+
 ## Project Overview
 
 Windows XP-themed personal portfolio site for Raffi Khatchadourian — Field CTO, DJ, and entrepreneur based in Brooklyn, NY. Live at [raffi.computer](https://raffi.computer).
@@ -53,12 +57,11 @@ app/
   context/AudioContext.tsx — Global audio state for SoundCloud playback
   components/             — All feature components (windows, taskbar, games, etc.)
   api/scores/             — Game leaderboard API (Neon Postgres)
-  api/soundcloud/         — SoundCloud API proxy
 components/
   ui/                     — Shared UI primitives (WindowShell, DesktopIcon, StartMenu, Button, etc.)
   easter/                 — QuestionBlock easter egg
 data/
-  articles.json           — Notes window article content
+  research-papers.ts       — Shared authored papers and collected reading
   crates-tracks.ts        — 233 SoundCloud tracks for DiggingInTheCrates
 ```
 
@@ -74,7 +77,9 @@ data/
 | GameSelector | `app/components/GameSelector.tsx` | Game launcher hub. |
 | AboutWindow | `app/components/AboutWindow.tsx` | Bio + Vimeo keynote embeds. |
 | BlogrollWindow | `app/components/BlogrollWindow.tsx` | Curated links with search/filter. |
-| NotesWindow | `app/components/NotesWindow.tsx` | Articles from `data/articles.json`. |
+| NotesWindow | `app/components/NotesWindow.tsx` | Inline `ARTICLES` and shared `data/research-papers.ts`. |
+| LabWindow | `app/components/LabWindow.tsx` | Four experiments. RAF OS is a separate desktop/Start app at `/?app=startup`. |
+| GlobalAudioPlayer | `app/components/GlobalAudioPlayer.tsx` | Shared SoundCloud widget; no SoundCloud API proxy. |
 | IPodWindow | `app/components/IPodWindow.tsx` | iPod-style music player. |
 | ProjectsWindow | `app/components/ProjectsWindow.tsx` | Portfolio project cards. |
 | QuestionBlock | `components/easter/QuestionBlock.tsx` | Mario easter egg — opens DiggingInTheCrates. |
@@ -104,7 +109,7 @@ These components look unused at first glance but **are imported by game componen
 Add to `blogrollItems` array in `app/components/BlogrollWindow.tsx` with the next sequential `id`.
 
 ### New article/note
-Add to `data/articles.json`.
+Add to `ARTICLES` in `app/components/NotesWindow.tsx`. Research belongs in `data/research-papers.ts`, which is shared by Notes and the Lab.
 
 ### New SoundCloud track
 Add to `SOUNDCLOUD_TRACKS` array in `data/crates-tracks.ts` with `{ id, title, artist, url }`.

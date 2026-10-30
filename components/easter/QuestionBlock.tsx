@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Disc3, Pause, Play } from "lucide-react"
+import { Disc3 } from "lucide-react"
 import { useMotionPreference } from "@/app/context/MotionContext"
 
 interface QuestionBlockProps {
@@ -16,33 +16,18 @@ const BLOCK_PADDING = 4
 const EDGE_OVERSHOOT = BLOCK_SIZE + 16
 
 export default function QuestionBlock({ onClick, active = true }: QuestionBlockProps) {
+  const { reducedMotion } = useMotionPreference()
   const fieldRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef<HTMLButtonElement>(null)
-  const motionRef = useRef({ active, paused: false, focused: false, reduced: false, revealing: false, settled: false })
+  const motionRef = useRef({ active, focused: false, reduced: reducedMotion, revealing: false, settled: false })
+  motionRef.current.active = active
+  motionRef.current.reduced = reducedMotion
   const rewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [settled, setSettled] = useState(false)
-  const { paused, setPaused } = useMotionPreference()
-  const [reducedMotion, setReducedMotion] = useState(false)
   const [revealing, setRevealing] = useState(false)
   const [motionReady, setMotionReady] = useState(false)
 
   useEffect(() => {
-    motionRef.current.active = active
-  }, [active])
-
-  useEffect(() => {
-    motionRef.current.paused = paused
-  }, [paused])
-
-  useEffect(() => {
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const syncPreference = () => {
-      motionRef.current.reduced = preference.matches
-      setReducedMotion(preference.matches)
-    }
-    syncPreference()
-    preference.addEventListener("change", syncPreference)
-
     const field = fieldRef.current
     const block = blockRef.current
     if (!field || !block) return
@@ -70,7 +55,6 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       const state = motionRef.current
       if (
         state.active &&
-        !state.paused &&
         !state.focused &&
         !state.reduced &&
         !state.revealing &&
@@ -98,7 +82,6 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
     return () => {
       cancelAnimationFrame(animation)
       resize.disconnect()
-      preference.removeEventListener("change", syncPreference)
       if (rewardTimerRef.current) clearTimeout(rewardTimerRef.current)
     }
   }, [])
@@ -122,12 +105,6 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
       },
       motionRef.current.reduced ? 250 : 800,
     )
-  }
-
-  const toggleMotion = () => {
-    const next = !motionRef.current.paused
-    motionRef.current.paused = next
-    setPaused(next)
   }
 
   return (
@@ -199,35 +176,6 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
           />
         )}
       </button>
-      {!reducedMotion && (
-        <button
-          type="button"
-          onClick={toggleMotion}
-          aria-pressed={paused}
-          aria-label={paused ? "Resume mystery box movement" : "Pause mystery box movement"}
-          style={{
-            position: "absolute",
-            bottom: 8,
-            left: "max(12px, env(safe-area-inset-left, 0px))",
-            display: "inline-flex",
-            gap: 5,
-            alignItems: "center",
-            minHeight: 44,
-            padding: "4px 10px",
-            border: "1px solid #ffffff65",
-            borderRadius: 4,
-            background: "#173e6199",
-            color: "white",
-            fontFamily: "Tahoma, sans-serif",
-            fontSize: 12,
-            pointerEvents: active ? "auto" : "none",
-          }}
-          className="hover:brightness-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-        >
-          {paused ? <Play size={12} /> : <Pause size={12} />}
-          {paused ? "Resume movement" : "Pause movement"}
-        </button>
-      )}
       <div
         role="status"
         aria-live="polite"

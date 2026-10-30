@@ -32,7 +32,7 @@ const DESKTOP_SHORTCUTS = [
   { action: "notes", icon: "📝", label: "NOTES", description: "Writing, research & talks" },
   { action: "ipod", icon: "🎧", label: "iPod", description: "Mixes & music" },
   { action: "projects", icon: "🛠️", label: "PROJECTS", description: "Things I’m making" },
-  { action: "startup", icon: "💡", label: "RAF OS TERMINAL", description: "Try my pitch-review tool" },
+  { action: "startup", icon: "💡", label: "RAF OS", description: "AI pitch review" },
   { action: "lab", icon: "🧪", label: "LAB", description: "Experiments, papers & architecture" },
 ] as const
 
@@ -54,10 +54,13 @@ const WINDOW_SLOTS = [
 ] as const
 
 const WELCOME_COLLAPSED_KEY = "raffi:welcome-collapsed"
+const WELCOME_DISMISSED_KEY = "raffi:welcome-dismissed"
 
 export default function Home() {
   const [showStartMenu, setShowStartMenu] = useState(false)
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false)
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false)
+  const [welcomeReady, setWelcomeReady] = useState(false)
   // First-time visitors still get to meet the "?" block once, even with welcome.txt open.
   const [blockPeek, setBlockPeek] = useState(false)
   const previousActiveWindowRef = useRef<string | null>(null)
@@ -209,9 +212,11 @@ export default function Home() {
   useEffect(() => {
     try {
       if (window.localStorage.getItem(WELCOME_COLLAPSED_KEY) === "1") setWelcomeCollapsed(true)
+      if (window.localStorage.getItem(WELCOME_DISMISSED_KEY) === "1") setWelcomeDismissed(true)
     } catch {
-      // Storage can be unavailable in private modes; the welcome card simply stays open.
+      // Storage can be unavailable; the controls still work for this visit.
     }
+    setWelcomeReady(true)
     const peek = setTimeout(() => setBlockPeek(true), 10_000)
     return () => clearTimeout(peek)
   }, [])
@@ -228,6 +233,29 @@ export default function Home() {
     } catch {
       // Not persisting is fine; the choice still applies for this visit.
     }
+  }
+
+  const dismissWelcome = () => {
+    setWelcomeDismissed(true)
+    try { window.localStorage.setItem(WELCOME_DISMISSED_KEY, "1") } catch { /* Visit-only dismissal. */ }
+    document.querySelector<HTMLButtonElement>('button[aria-label="Start menu"]')?.focus({ preventScroll: true })
+  }
+
+  const showWelcome = () => {
+    setWelcomeDismissed(false)
+    changeWelcomeCollapsed(false)
+    setShowStartMenu(false)
+    setWindowNotice(null)
+    setMinimizedWindows((previous) => {
+      const next = { ...previous }
+      for (const name of WINDOW_SLOTS) if (openWindows[name]) next[name] = true
+      return next
+    })
+    try { window.localStorage.removeItem(WELCOME_DISMISSED_KEY) } catch { /* Visit-only restore. */ }
+    document.querySelector('[data-desktop-icons="true"]')?.scrollTo({ top: 0, behavior: "auto" })
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('[data-desktop-welcome] button[aria-controls="desktop-welcome-content"]')?.focus({ preventScroll: true })
+    })
   }
 
   useEffect(() => {
@@ -380,9 +408,7 @@ export default function Home() {
       <DesktopContextMenu onOpenWindow={openWindow} />
 
       <div data-desktop-icons="true" className="desktop-shortcuts">
-        <DesktopWelcome collapsed={welcomeCollapsed} onCollapsedChange={changeWelcomeCollapsed} onAbout={() => openWindow("about")} onExplore={() => {
-          document.querySelector<HTMLButtonElement>('[data-desktop-app="ipod"] button')?.focus({ preventScroll: false })
-        }} />
+        {welcomeReady && !welcomeDismissed && <DesktopWelcome collapsed={welcomeCollapsed} onCollapsedChange={changeWelcomeCollapsed} onDismiss={dismissWelcome} onAbout={() => openWindow("about")} onExplore={() => openWindow("lab")} />}
         {DESKTOP_SHORTCUTS.map((shortcut) => (
           <div key={shortcut.action} data-desktop-app={shortcut.action} className={`desktop-shortcut desktop-shortcut-${shortcut.action}`}>
             <DesktopIcon label={shortcut.label} description={shortcut.description} icon={shortcut.icon} onClick={() => handleIconClick(shortcut.action)} />
@@ -390,7 +416,7 @@ export default function Home() {
         ))}
       </div>
 
-      <QuestionBlock active={(welcomeCollapsed || blockPeek) && activeWindow === null && !showStartMenu} onClick={handleEasterEggClick} />
+      <QuestionBlock active={(welcomeDismissed || welcomeCollapsed || blockPeek) && activeWindow === null && !showStartMenu} onClick={handleEasterEggClick} />
 
       {/* Now Playing Component */}
       <NowPlaying />
@@ -412,7 +438,7 @@ export default function Home() {
             style={{ position: "fixed", inset: 0, zIndex: 9000, backgroundColor: "transparent" }}
             onClick={() => setShowStartMenu(false)}
           />
-          <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} />
+          <StartMenu isOpen={showStartMenu} onClose={() => setShowStartMenu(false)} onOpenWindow={openWindow} onShowWelcome={showWelcome} />
         </>
       )}
 

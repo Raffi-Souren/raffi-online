@@ -7,9 +7,10 @@ interface StartMenuProps {
   isOpen: boolean
   onClose: () => void
   onOpenWindow: (windowName: string) => void
+  onShowWelcome?: () => void
 }
 
-export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuProps) {
+export default function StartMenu({ isOpen, onClose, onOpenWindow, onShowWelcome }: StartMenuProps) {
   const firstItemRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -40,7 +41,8 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
     { icon: "🛠️", label: "Projects", description: "Things I’m making", action: () => onOpenWindow("projects") },
     { icon: "🧪", label: "Lab", description: "Music, hardware & research experiments", action: () => onOpenWindow("lab") },
     { icon: "📝", label: "Notes", description: "Writing, research & talks", action: () => onOpenWindow("notes") },
-    { icon: "💡", label: "RAF OS TERMINAL", description: "Try my pitch-review tool", action: () => onOpenWindow("startup") },
+    { icon: "💡", label: "RAF OS", description: "AI pitch review", action: () => onOpenWindow("startup") },
+    ...(onShowWelcome ? [{ icon: "📄", label: "welcome.txt", description: "Reopen the welcome cassette", action: onShowWelcome }] : []),
   ]
 
   return (
