@@ -11,6 +11,7 @@ export interface ResearchPaper {
   codeUrl?: string
   sourceNote?: string
   sourceUrl?: string
+  linkLabel?: string
 }
 
 const replayExplorer = "https://ibm-client-engineering.github.io/output-drift-financial-llms/explorer/"
@@ -23,7 +24,8 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
   {
     id: "when-replay-agreement-misleads",
     title: "When Replay Agreement Misleads: Capture Loss and Cancellation in Local Agents",
-    url: "https://lnkd.in/p/gsz3S5Tm",
+    url: "https://www.linkedin.com/posts/raffi-khatchadourian_neurips2026-slmagents-agentevaluation-share-7515811298912239616-CM-o/",
+    linkLabel: "Poster (LinkedIn)",
     date: "Dec 2026",
     venue: "Poster · SLM-Agents Workshop at NeurIPS 2026, Paris",
   },

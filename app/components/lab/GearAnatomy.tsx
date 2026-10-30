@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { Box, Layers, Minus, Plus, RotateCcw, RotateCw } from "lucide-react"
+import { useMotionPreference } from "@/app/context/MotionContext"
 import type { GearSceneController, GearSceneState, GearSetup } from "./gear-scene"
 
 const PARTS = [
@@ -25,21 +26,14 @@ export default function GearAnatomy({ active = true, motionPaused = false }: { a
   const [separation, setSeparation] = useState(0)
   const [selectedLayer, setSelectedLayer] = useState(4)
   const [autoRotate, setAutoRotate] = useState(false)
-  const [reducedMotion, setReducedMotion] = useState(false)
+  const { reducedMotion } = useMotionPreference()
   const [ready, setReady] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const stateRef = useRef<GearSceneState>({ setup, separation, selectedLayer, active, motionPaused, autoRotate })
+  // The shared preference keeps motion off until the visitor's OS setting is read.
   const effectivePause = motionPaused || reducedMotion
+  const stateRef = useRef<GearSceneState>({ setup, separation, selectedLayer, active, motionPaused: effectivePause, autoRotate })
   stateRef.current = { setup, separation, selectedLayer, active, motionPaused: effectivePause, autoRotate }
-
-  useEffect(() => {
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const update = () => setReducedMotion(preference.matches)
-    update()
-    preference.addEventListener("change", update)
-    return () => preference.removeEventListener("change", update)
-  }, [])
 
   useEffect(() => {
     let cancelled = false

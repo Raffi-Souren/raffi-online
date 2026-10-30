@@ -25,7 +25,7 @@ try {
       }
     })
     await page.goto(base, { waitUntil: "load" })
-    await page.getByRole("button", { name: "Explore", exact: true }).tap()
+    await page.getByRole("button", { name: "Dismiss welcome", exact: true }).tap()
     await page.getByRole("button", { name: "Question block: unlock a secret level", exact: true }).tap()
     const game = page.locator('[data-game="brooklyn-dig"]')
     await game.waitFor()

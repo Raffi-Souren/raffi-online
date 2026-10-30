@@ -590,7 +590,7 @@ export default function NotesWindow({ isOpen, onClose, initialTab, tabRequest, o
                         onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                         onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                       >
-                        View →
+                        {paper.linkLabel ?? "View →"}
                       </a>
                     </div>
                   </div>

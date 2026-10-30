@@ -1,15 +1,12 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
 const MotionContext = createContext<{
-  paused: boolean
-  setPaused: Dispatch<SetStateAction<boolean>>
   reducedMotion: boolean
-}>({ paused: false, setPaused: () => {}, reducedMotion: true })
+}>({ reducedMotion: true })
 
 export function MotionProvider({ children }: { children: ReactNode }) {
-  const [paused, setPaused] = useState(false)
   // Keep movement off until the visitor’s preference has been read.
   const [reducedMotion, setReducedMotion] = useState(true)
   useEffect(() => {
@@ -19,7 +16,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     preference.addEventListener("change", sync)
     return () => preference.removeEventListener("change", sync)
   }, [])
-  return <MotionContext.Provider value={{ paused, setPaused, reducedMotion }}>{children}</MotionContext.Provider>
+  return <MotionContext.Provider value={{ reducedMotion }}>{children}</MotionContext.Provider>
 }
 
 export function useMotionPreference() {

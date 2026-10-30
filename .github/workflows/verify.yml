@@ -78,6 +78,8 @@ jobs:
           pnpm run test:windows:browser
           export RAFFI_QA_OUTPUT_DIR=/tmp/raffi-raf-os-flow
           pnpm run test:raf-os:browser
+          export RAFFI_QA_OUTPUT_DIR=/tmp/raffi-lab-qa
+          pnpm run test:lab:browser
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-smoke
           pnpm run test:world:browser
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-collisions
@@ -106,5 +108,6 @@ jobs:
             /tmp/raffi-replay-smoke
             /tmp/raffi-window-qa
             /tmp/raffi-raf-os-flow
+            /tmp/raffi-lab-qa
           if-no-files-found: ignore
           retention-days: 14

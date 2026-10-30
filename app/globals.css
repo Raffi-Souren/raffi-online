@@ -57,9 +57,9 @@
 
 .desktop-welcome {
   grid-column: 1 / -1;
-  width: min(100%, 360px);
+  width: min(100%, 320px);
   justify-self: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 @media (min-width: 768px) {
@@ -83,10 +83,9 @@
 
   .desktop-welcome {
     position: absolute;
-    top: 48%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 380px;
+    top: 14rem;
+    right: 2rem;
+    width: 320px;
     margin: 0;
     z-index: 21;
   }
@@ -644,20 +643,7 @@ html {
   .intro-card .intro-card-decor { display: none !important; }
 }
 
-/* Welcome card. Plain CSS so it is in the server HTML: the caret shows from
-   the first paint and the card fades in once, without waiting for hydration. */
-.desktop-welcome {
-  animation: welcome-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-.welcome-caret {
-  display: inline-block;
-  width: 0.45em;
-  height: 1em;
-  margin-left: 3px;
-  vertical-align: -0.15em;
-  background: currentColor;
-  animation: welcome-caret 1.1s steps(1) infinite;
-}
+/* The welcome is a quiet desktop note; only its playing cassette moves. */
 .welcome-deck:hover {
   filter: brightness(1.1);
 }
@@ -688,12 +674,9 @@ html {
 .welcome-eq span:nth-child(2) { animation-delay: -0.45s; }
 .welcome-eq span:nth-child(3) { animation-delay: -0.2s; }
 .welcome-eq span:nth-child(4) { animation-delay: -0.65s; }
-/* `translate` composes with the centering transform on desktop. */
-@keyframes welcome-in {
-  from { opacity: 0; translate: 0 8px; }
-}
-@keyframes welcome-caret {
-  50% { opacity: 0; }
+.desktop-welcome[data-motion-paused="true"] .welcome-reel,
+.desktop-welcome[data-motion-paused="true"] .welcome-eq span {
+  animation-play-state: paused;
 }
 @keyframes welcome-reel {
   to { transform: rotate(360deg); }
@@ -703,8 +686,6 @@ html {
   50% { transform: scaleY(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .desktop-welcome,
-  .welcome-caret,
   .welcome-reel,
   .welcome-eq span {
     animation: none;
