@@ -28,6 +28,7 @@ const WINDOW_TITLES: Record<string, string> = {
   world: "RAFFI WORLD",
   startup: "RAF OS TERMINAL",
   counter: "BY THE NUMBERS",
+  lab: "LAB",
 }
 
 export default function Taskbar({
@@ -138,16 +139,18 @@ export default function Taskbar({
         overflow: "hidden",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, overflow: "hidden", paddingBlock: "3px" }}>
         <button
           type="button"
           onClick={onStartClick}
-          className="rounded-r-lg rounded-tl-lg rounded-bl-lg transition-all active:translate-y-px hover:brightness-110"
+          className="transition-[filter,transform] active:translate-y-px hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white"
           aria-label="Start menu"
           style={{
             background: "linear-gradient(to bottom, #3E9C4D 0%, #236F30 100%)",
             boxShadow: "inset 1px 1px 0px rgba(255,255,255,0.4), 2px 2px 3px rgba(0,0,0,0.3)",
             border: "none",
+            borderRadius: "8px",
+            flexShrink: 0,
             color: "white",
             paddingRight: "8px",
             paddingLeft: "6px",

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Disc3, Pause, Play } from "lucide-react"
+import { useMotionPreference } from "@/app/context/MotionContext"
 
 interface QuestionBlockProps {
   onClick?: () => void
@@ -20,7 +21,7 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
   const motionRef = useRef({ active, paused: false, focused: false, reduced: false, revealing: false, settled: false })
   const rewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [settled, setSettled] = useState(false)
-  const [paused, setPaused] = useState(false)
+  const { paused, setPaused } = useMotionPreference()
   const [reducedMotion, setReducedMotion] = useState(false)
   const [revealing, setRevealing] = useState(false)
   const [motionReady, setMotionReady] = useState(false)
@@ -28,6 +29,10 @@ export default function QuestionBlock({ onClick, active = true }: QuestionBlockP
   useEffect(() => {
     motionRef.current.active = active
   }, [active])
+
+  useEffect(() => {
+    motionRef.current.paused = paused
+  }, [paused])
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)")

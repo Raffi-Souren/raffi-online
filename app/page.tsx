@@ -11,6 +11,7 @@ import Taskbar from "./components/Taskbar"
 import NowPlaying from "./components/NowPlaying"
 import DesktopWelcome from "./components/DesktopWelcome"
 import WindowShell, { WindowActivityProvider } from "../components/ui/WindowShell"
+import { DEFAULT_LAB_SLUG, labSlugFromPath, type LabSlug } from "@/data/lab"
 
 const AboutWindow = dynamic(() => import("./components/AboutWindow"))
 const GameSelector = dynamic(() => import("./components/GameSelector"))
@@ -22,6 +23,7 @@ const IPodWindow = dynamic(() => import("./components/IPodWindow"))
 const ProjectsWindow = dynamic(() => import("./components/ProjectsWindow"))
 const RaffiWorldWindow = dynamic(() => import("./components/RaffiWorldWindow"))
 const RafOsTerminal = dynamic(() => import("./components/RafOsTerminal"))
+const LabWindow = dynamic(() => import("./components/LabWindow"))
 
 const DESKTOP_SHORTCUTS = [
   { action: "about", icon: "👤", label: "ABOUT", description: "A little about me" },
@@ -31,6 +33,7 @@ const DESKTOP_SHORTCUTS = [
   { action: "ipod", icon: "🎧", label: "iPod", description: "Mixes & music" },
   { action: "projects", icon: "🛠️", label: "PROJECTS", description: "Things I’m making" },
   { action: "startup", icon: "💡", label: "RAF OS TERMINAL", description: "Try my pitch-review tool" },
+  { action: "lab", icon: "🧪", label: "LAB", description: "Experiments, papers & architecture" },
 ] as const
 
 // Keep every window in a stable DOM slot. Visual ordering is supplied through
@@ -47,6 +50,7 @@ const WINDOW_SLOTS = [
   "projects",
   "startup",
   "counter",
+  "lab",
 ] as const
 
 const WELCOME_COLLAPSED_KEY = "raffi:welcome-collapsed"
@@ -68,7 +72,11 @@ export default function Home() {
     ipod: false,
     projects: false,
     world: false,
+    lab: false,
   })
+  const [labSlug, setLabSlug] = useState<LabSlug>(DEFAULT_LAB_SLUG)
+  const [notesTab, setNotesTab] = useState<"articles" | "research" | undefined>(undefined)
+  const [notesTabRequest, setNotesTabRequest] = useState(0)
   // Keep World and terminal sessions in stable slots, including after closing.
   // A close removes their taskbar entry; a minimize keeps it available to restore.
   const [worldLaunched, setWorldLaunched] = useState(false)
@@ -84,31 +92,38 @@ export default function Home() {
   const [windowOrder, setWindowOrder] = useState<string[]>([])
 
   useEffect(() => {
-    const app = new URLSearchParams(window.location.search).get("app")
+    const initialLabSlug = labSlugFromPath(window.location.pathname)
+    if (initialLabSlug) setLabSlug(initialLabSlug)
+    const requestedApp = new URLSearchParams(window.location.search).get("app")
+    const app = requestedApp && WINDOW_SLOTS.some((name) => name === requestedApp) ? requestedApp : initialLabSlug ? "lab" : null
     if (app && WINDOW_SLOTS.some((name) => name === app)) {
-      setOpenWindows((previous) => ({ ...previous, [app]: true }))
-      setWindowOrder([app])
+      setOpenWindows((previous) => ({ ...previous, ...(initialLabSlug ? { lab: true } : {}), [app]: true }))
+      setWindowOrder(initialLabSlug && app !== "lab" ? ["lab", app] : [app])
       if (app === "world") setWorldLaunched(true)
       if (app === "startup") setTerminalLaunched(true)
     }
 
-    // Only the terminal participates in browser navigation. Other apps keep
-    // their existing state when Back closes or Forward restores this session.
-    const syncTerminalLocation = () => {
+    // Deep-linked apps participate in Back/Forward without disturbing other
+    // open windows or reloading their sessions.
+    const syncDesktopLocation = () => {
       const terminalOpen = new URLSearchParams(window.location.search).get("app") === "startup"
-      setOpenWindows((previous) => ({ ...previous, startup: terminalOpen }))
-      setMinimizedWindows((previous) => ({ ...previous, startup: false }))
+      const locationSlug = labSlugFromPath(window.location.pathname)
+      const labOpen = Boolean(locationSlug) || new URLSearchParams(window.location.search).get("app") === "lab"
+      if (locationSlug) setLabSlug(locationSlug)
+      setOpenWindows((previous) => ({ ...previous, startup: terminalOpen, lab: labOpen }))
+      setMinimizedWindows((previous) => ({ ...previous, startup: false, lab: false }))
       setWindowOrder((previous) => {
-        const others = previous.filter((name) => name !== "startup")
-        return terminalOpen ? [...others, "startup"] : others
+        const others = previous.filter((name) => name !== "startup" && name !== "lab")
+        return [...others, ...(labOpen ? ["lab"] : []), ...(terminalOpen ? ["startup"] : [])]
       })
       if (terminalOpen) {
         setTerminalLaunched(true)
         setShowStartMenu(false)
       }
+      if (labOpen) setShowStartMenu(false)
     }
-    window.addEventListener("popstate", syncTerminalLocation)
-    return () => window.removeEventListener("popstate", syncTerminalLocation)
+    window.addEventListener("popstate", syncDesktopLocation)
+    return () => window.removeEventListener("popstate", syncDesktopLocation)
   }, [])
 
   const bringToFront = (windowName: string) => {
@@ -118,10 +133,20 @@ export default function Home() {
     })
   }
 
-  const openWindow = (windowName: string) => {
+  const openWindow = (windowName: string, requestedLabSlug?: LabSlug) => {
     setMinimizedWindows((previous) => ({ ...previous, [windowName]: false }))
     setWindowNotice(null)
     if (windowName === "world") setWorldLaunched(true)
+    if (windowName === "lab") {
+      const targetSlug = requestedLabSlug ?? labSlug
+      if (requestedLabSlug) setLabSlug(requestedLabSlug)
+      const url = new URL(window.location.href)
+      url.pathname = `/lab/${targetSlug}`
+      url.searchParams.delete("app")
+      if (url.pathname !== window.location.pathname || url.search !== window.location.search) {
+        window.history.pushState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+      }
+    }
     if (windowName === "startup") {
       setTerminalLaunched(true)
       const url = new URL(window.location.href)
@@ -147,7 +172,23 @@ export default function Home() {
         window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
       }
     }
+    if (windowName === "lab") {
+      const url = new URL(window.location.href)
+      if (labSlugFromPath(url.pathname)) url.pathname = "/"
+      if (url.searchParams.get("app") === "lab") url.searchParams.delete("app")
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+    }
     setWindowOrder((prev) => prev.filter((name) => name !== windowName))
+  }
+
+  const selectLabPost = (slug: LabSlug) => {
+    setLabSlug(slug)
+    const url = new URL(window.location.href)
+    url.pathname = `/lab/${slug}`
+    url.searchParams.delete("app")
+    if (url.pathname !== window.location.pathname || url.search !== window.location.search) {
+      window.history.pushState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+    }
   }
 
   const minimizeWindow = (windowName: string) => {
@@ -238,7 +279,9 @@ export default function Home() {
       case "blogroll":
         return <BlogrollWindow isOpen={openWindows.blogroll} onClose={() => closeWindow("blogroll")} />
       case "notes":
-        return <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} />
+        return <NotesWindow isOpen={openWindows.notes} onClose={() => closeWindow("notes")} initialTab={notesTab} tabRequest={notesTabRequest} onOpenLabResearch={() => {
+          openWindow("lab", "research")
+        }} />
       case "ipod":
         return <IPodWindow isOpen={openWindows.ipod} onClose={() => closeWindow("ipod")} />
       case "world":
@@ -276,6 +319,13 @@ export default function Home() {
             title="By the Numbers"
           />
         )
+      case "lab":
+        return <LabWindow isOpen={openWindows.lab} active={activeWindow === "lab" && !showStartMenu} slug={labSlug} onClose={() => closeWindow("lab")} onSelect={selectLabPost} onOpenNotes={() => {
+          setNotesTab("research")
+          setNotesTabRequest((request) => request + 1)
+          minimizeWindow("lab")
+          openWindow("notes")
+        }} />
     }
   }
 

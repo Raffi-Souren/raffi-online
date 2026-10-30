@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { RESEARCH_PAPERS } from "@/data/research-papers"
 import WindowShell from "../../components/ui/WindowShell"
 
 interface Article {
@@ -8,14 +9,6 @@ interface Article {
   title: string
   url: string
   platform?: "linkedin" | "substack"
-}
-
-interface ResearchPaper {
-  title: string
-  url: string
-  date: string
-  coAuthors?: string
-  venue?: string
 }
 
 interface Event {
@@ -157,54 +150,6 @@ const ARTICLES: Article[] = [
   },
 ]
 
-const RESEARCH_PAPERS: ResearchPaper[] = [
-  {
-    title: "When Replay Agreement Misleads: Capture Loss and Cancellation in Local Agents",
-    url: "https://lnkd.in/p/gsz3S5Tm",
-    date: "Dec 2026",
-    venue: "Poster · SLM-Agents Workshop at NeurIPS 2026, Paris",
-  },
-  {
-    title: "DFAH-Bench: Benchmarking Observable Agent Instability in Financial Decision-Making",
-    url: "https://arxiv.org/abs/2607.20491",
-    date: "Jun 2026",
-  },
-  {
-    title: "Forecasting Future Language: Context Design for Mention Markets",
-    url: "https://arxiv.org/abs/2602.21229",
-    date: "Feb 2026",
-    venue: "Poster · Advances in Financial AI Workshop at ICLR 2026, Rio de Janeiro",
-    coAuthors:
-      "Sumin Kim, Jihoon Kwon, Yoon Kim, Nicole Kagan, Raffi Khatchadourian, Wonbin Ahn, Alejandro Lopez-Lira, Jaewon Lee, Yoontae Hwang, Oscar Levy, Yongjae Lee, Chanyeol Choi",
-  },
-  {
-    title: "Replayable Financial Agents: A Determinism-Faithfulness Assurance Harness for Tool-Using LLM Agents",
-    url: "https://arxiv.org/abs/2601.15322",
-    date: "Jan 2026",
-  },
-  {
-    title: "LLM Output Drift: Cross-Provider Validation & Mitigation for Financial Workflows",
-    url: "https://arxiv.org/abs/2511.07585",
-    date: "Nov 2025",
-    venue: "AI4F Workshop at ACM ICAIF 2025, Singapore",
-  },
-  {
-    title: "Impact of External Forces and the Digital Age on the Turkish Narrative of Armenians in Turkey's Textbooks",
-    url: "https://www.academia.edu/44288138/Impact_of_External_Forces_and_the_Digital_Age_on_the_Turkish_Narrative_of_Armenians_in_Turkeys_Textbooks?source=swp_share",
-    date: "May 2017",
-  },
-  {
-    title: "Ticketmaster and Live Nation Antitrust Violations",
-    url: "https://drive.google.com/file/d/1ClBedYKfuRYiJU-DCmV45wRHUd2_Ier2/view?usp=sharing",
-    date: "May 2017",
-  },
-  {
-    title: "The Effect of a US Recession and Macroeconomic Variables on Stock Market Performance",
-    url: "https://drive.google.com/file/d/1fJcGuypNM7N-oBu6caEDm0hJlokZfihB/view?usp=sharing",
-    date: "Dec 2015",
-  },
-]
-
 const EVENTS: Event[] = [
   {
     title: "SLM-Agents Workshop @ NeurIPS 2026",
@@ -309,20 +254,26 @@ const PODCASTS: Podcast[] = [
 interface NotesWindowProps {
   isOpen: boolean
   onClose: () => void
+  initialTab?: NotesTab
+  tabRequest?: number
+  onOpenLabResearch?: () => void
 }
 
 type NotesTab = "articles" | "research" | "events" | "podcasts"
 const NOTES_TABS: readonly NotesTab[] = ["articles", "research", "events", "podcasts"]
 
 // Old routes (/events, /writing) land here with ?tab= so the right list opens first.
-function initialTab(): NotesTab {
+function notesTabFromLocation(): NotesTab {
   if (typeof window === "undefined") return "articles"
   const tab = new URLSearchParams(window.location.search).get("tab")
   return NOTES_TABS.find((name) => name === tab) ?? "articles"
 }
 
-export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
-  const [activeTab, setActiveTab] = useState<NotesTab>(initialTab)
+export default function NotesWindow({ isOpen, onClose, initialTab, tabRequest, onOpenLabResearch }: NotesWindowProps) {
+  const [activeTab, setActiveTab] = useState<NotesTab>(() => initialTab ?? notesTabFromLocation())
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab)
+  }, [initialTab, tabRequest])
 
   if (!isOpen) return null
 
@@ -591,6 +542,7 @@ export default function NotesWindow({ isOpen, onClose }: NotesWindowProps) {
               >
                 🎓 Research Papers
               </div>
+              {onOpenLabResearch && <button type="button" onClick={onOpenLabResearch} className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#245dda]" style={{ display: "block", marginBottom: 16, color: "#315a40", fontSize: 13, minHeight: 36 }}>Browse these papers in the Lab</button>}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 {RESEARCH_PAPERS.map((paper, index) => (
                   <div key={index} style={{ ...cardStyle, borderLeft: "4px solid #22c55e" }}>

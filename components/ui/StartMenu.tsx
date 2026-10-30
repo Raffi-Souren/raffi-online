@@ -38,6 +38,7 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow }: StartMenuPr
     { icon: "🎮", label: "Games", description: "Pick up and play", action: () => onOpenWindow("games") },
     { icon: "🎧", label: "iPod", description: "Mixes & music", action: () => onOpenWindow("ipod") },
     { icon: "🛠️", label: "Projects", description: "Things I’m making", action: () => onOpenWindow("projects") },
+    { icon: "🧪", label: "Lab", description: "Music, hardware & research experiments", action: () => onOpenWindow("lab") },
     { icon: "📝", label: "Notes", description: "Writing, research & talks", action: () => onOpenWindow("notes") },
     { icon: "💡", label: "RAF OS TERMINAL", description: "Try my pitch-review tool", action: () => onOpenWindow("startup") },
   ]
