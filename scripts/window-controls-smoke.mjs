@@ -7,7 +7,7 @@ const { chromium } = require("playwright")
 const base = process.env.RAFFI_APP_URL || "http://127.0.0.1:3100"
 const out = process.env.RAFFI_QA_OUTPUT_DIR || "/tmp/raffi-window-qa"
 await fs.mkdir(out, { recursive: true })
-const report = { checks: [], failures: [], errors: [], interceptedScorePosts: 0 }
+const report = { checks: [], failures: [], errors: [], frameRecoveries: [], interceptedScorePosts: 0 }
 const browser = await chromium.launch({
   headless: true,
   args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
@@ -72,6 +72,35 @@ async function open(page, app, query = "") {
   // visible before the dynamic content has established its natural height.
   if (app === "projects") await shell(page, app).getByRole("heading", { name: "Projects", exact: true }).waitFor()
   return shell(page, app)
+}
+
+async function requireLiveFrames(page, label) {
+  await page.bringToFront()
+  const initial = await page.evaluate(() => ({
+    count: window.__windowQaFrames.count,
+    ageMs: performance.now() - window.__windowQaFrames.last,
+  }))
+  const freshFrames = (count) => window.__windowQaFrames.count >= count + 2
+    && performance.now() - window.__windowQaFrames.last < 250
+  try {
+    // Wall-clock polling can observe a stalled compositor; RAF polling cannot.
+    await page.waitForFunction(freshFrames, initial.count, { polling: 100, timeout: 2000 })
+    return
+  } catch (error) {
+    if (error.name !== "TimeoutError") throw error
+  }
+  // Some headless CI pages remain visible but stop producing frames. One
+  // real resize invalidates that surface, then restores the tested viewport.
+  // The normal click still has to pass Playwright's actionability checks.
+  const viewport = page.viewportSize()
+  assert.ok(viewport, "Expected a viewport for compositor recovery")
+  await page.setViewportSize({ ...viewport, width: viewport.width + 1 })
+  await page.setViewportSize(viewport)
+  await page.bringToFront()
+  const count = await page.evaluate(() => window.__windowQaFrames.count)
+  await page.waitForFunction(freshFrames, count, { polling: 100, timeout: 5000 })
+  report.frameRecoveries.push({ label, viewport, initial })
+  console.info(`RECOVER ${label}: foreground frames resumed at the original viewport`)
 }
 async function bounds(page, dialog, name) {
   const viewport = page.viewportSize()
@@ -271,6 +300,7 @@ try {
     })
     await check(`${name}-minesweeper-timer-on-hide`, page, async () => {
       const dialog = await open(page, "games")
+      await requireLiveFrames(page, `${name}-minesweeper-launcher`)
       // This card swaps React content without navigating. In CI the click
       // completed, but Playwright's implicit navigation wait stalled. Wait for
       // the actual board below, while preserving normal click actionability.

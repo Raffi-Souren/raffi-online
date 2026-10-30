@@ -79,6 +79,7 @@
   .desktop-shortcut-ipod { top: 8rem; left: 2rem; }
   .desktop-shortcut-projects { top: 8rem; right: 2rem; }
   .desktop-shortcut-world { top: 8rem; left: 50%; transform: translateX(-50%); }
+  .desktop-shortcut-lab { top: 14rem; left: 2rem; }
 
   .desktop-welcome {
     position: absolute;

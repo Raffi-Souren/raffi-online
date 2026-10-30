@@ -220,6 +220,9 @@ try {
   await page.waitForTimeout(500)
   assert.ok(await page.evaluate(() => { const p = window.RAFFI_WORLD.getState().player; return Math.hypot(p.x + 60, p.z - 106) < 1 }), 'record-store screenshot must remain at its declared fixture')
   await page.screenshot({ path: OUT + '/strip-night-chase.png' })
+  // Each World below boots on its own. On a CPU-only runner a Medium World left
+  // rendering in the background starves the next one past its ready timeout.
+  await ctx.close()
 
   const maxDraws = Math.max(...samples.map((s) => s.drawCalls))
   const maxTris = Math.max(...samples.map((s) => s.triangles))
@@ -275,6 +278,7 @@ try {
   assert.equal(overlap.hitPrimary, false, 'interaction-prompt overlaps #btn-action')
   assert.equal(overlap.hitSecond, false, 'interaction-prompt overlaps #btn-second')
   assert.equal(overlap.hitRadio, false, 'interaction-prompt overlaps #btn-radio')
+  await mobile.close()
 
   // ---------- MUTATION: disable chunking → FREE budget must fail ----------
   const mutCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } })

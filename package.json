@@ -13,6 +13,7 @@
     "test:signal:browser": "node scripts/signal-lost-smoke.mjs",
     "test:windows:browser": "node scripts/window-controls-smoke.mjs",
     "test:play:browser": "node scripts/qa/play-readiness.mjs",
+    "test:lab:browser": "node scripts/lab-smoke.mjs",
     "test:raf-os:browser": "tsc -p tsconfig.test.json && node scripts/raf-os-flow-smoke.mjs",
     "test:world:missions": "node public/world/tools/mission-campaign-smoke.mjs",
     "test": "tsc -p tsconfig.test.json && node --test .test-build/lib/*.test.js public/world/tools/*.test.mjs",

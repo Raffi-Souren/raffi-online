@@ -4,6 +4,7 @@ import "./globals.css"
 import { Analytics } from "@vercel/analytics/next"
 import { AudioProvider } from "./context/AudioContext"
 import GlobalAudioPlayer from "./components/GlobalAudioPlayer"
+import { MotionProvider } from "./context/MotionContext"
 
 // The tab stays low-key. The full name lives in the description and the
 // structured data, so a search for it still lands here.
@@ -80,8 +81,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
         />
         <AudioProvider>
-          <GlobalAudioPlayer />
-          {children}
+          <MotionProvider>
+            <GlobalAudioPlayer />
+            {children}
+          </MotionProvider>
         </AudioProvider>
         <Analytics />
       </body>
