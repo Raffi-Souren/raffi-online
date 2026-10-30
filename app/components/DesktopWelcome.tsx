@@ -16,6 +16,10 @@ interface DesktopWelcomeProps {
 
 // The same blue as every window's title bar, so the welcome reads as part of the OS.
 const TITLE_BAR = "linear-gradient(180deg, #3b82f6 0%, #2464dd 45%, #1c55c5 100%)"
+// Luna's window frame: the blue continues down the sides of the document.
+const FRAME = "linear-gradient(180deg, #2a6ae3 0%, #1d55c6 100%)"
+// A brushed silver faceplate, like a portable deck from the same years as XP.
+const FACEPLATE = "repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px), linear-gradient(180deg, #eef1f4 0%, #d3d9df 48%, #b9c1ca 100%)"
 
 /** A cassette whose reels turn while the mix plays and stop where they are when it pauses. */
 function Cassette() {
@@ -93,11 +97,11 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
       data-motion-paused={reducedMotion}
       aria-label="Welcome to Raffi’s computer"
       style={{
-        border: "1px solid #3c76c8",
-        borderRadius: 7,
-        background: "#f7f9ff",
+        border: "1px solid #0a3ea5",
+        borderRadius: "8px 8px 4px 4px",
+        background: FRAME,
         color: "#252b35",
-        boxShadow: "0 5px 18px rgba(12, 32, 64, 0.24)",
+        boxShadow: "0 6px 20px rgba(12, 32, 64, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.18)",
         fontFamily: "Tahoma, Verdana, sans-serif",
       }}
     >
@@ -173,7 +177,8 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
         </button>
       </div>
 
-      <div id="desktop-welcome-content" hidden={collapsed} style={{ padding: "10px 12px 2px" }}>
+      <div id="desktop-welcome-content" hidden={collapsed} style={{ margin: "0 3px 3px", border: "1px solid #7f9db9", borderRadius: "0 0 2px 2px", background: "#ffffff", overflow: "hidden" }}>
+        <div style={{ padding: "10px 11px 11px" }}>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, lineHeight: 1.2, color: "#1b2330" }}>Hey, I’m Raffi.</h1>
         <p style={{ fontSize: 12, lineHeight: 1.45, color: "#515865", margin: "4px 0 10px" }}>
           Music, games, and things I’m making.
@@ -186,25 +191,34 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
           aria-label={mixSelected && error ? "Retry mix" : label}
           className="welcome-deck focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
           style={{
+            position: "relative",
             width: "100%",
-            minHeight: 56,
+            minHeight: 60,
             display: "flex",
             alignItems: "center",
-            gap: 9,
-            padding: "7px 8px",
-            border: "1px solid #151a20",
-            borderRadius: 5,
-            background: "linear-gradient(180deg, #3a4552 0%, #262e38 100%)",
-            color: "#fffbee",
+            gap: 8,
+            padding: "7px 8px 7px 7px",
+            border: "1px solid #6d7782",
+            borderRadius: 6,
+            background: FACEPLATE,
+            color: "#1d242c",
             cursor: "pointer",
             textAlign: "left",
             fontFamily: "inherit",
-            boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 0 rgba(0, 0, 0, 0.18)",
+            boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(0, 0, 0, 0.12), 0 2px 0 rgba(20, 30, 45, 0.16)",
           }}
         >
-          <Cassette />
-          <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 3 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, fontSize: 9, letterSpacing: ".06em", textTransform: "uppercase", color: "#dcc8a6" }}>
+          {/* Faceplate screws. */}
+          {[{ left: 3, top: 3 }, { right: 3, top: 3 }, { left: 3, bottom: 3 }, { right: 3, bottom: 3 }].map((spot, index) => (
+            <span key={index} aria-hidden="true" style={{ position: "absolute", ...spot, width: 4, height: 4, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #f4f6f8, #7b858f)", boxShadow: "0 0 0 0.5px #5d6670" }} />
+          ))}
+          {/* The cassette sits behind a smoked window in the deck. */}
+          <span aria-hidden="true" style={{ flexShrink: 0, padding: 3, borderRadius: 5, background: "linear-gradient(180deg, #11161c, #262d35)", boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.7)" }}>
+            <Cassette />
+          </span>
+          <span style={{ flex: 1, minWidth: 0, display: "grid", gap: 4 }}>
+            {/* A small backlit display, like the counter window on a deck. */}
+            <span className="welcome-lcd" style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, padding: "2px 5px", borderRadius: 2, background: "linear-gradient(180deg, #b9c9a3, #a7ba8e)", boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.35)", color: "#24301c", fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontSize: 9, letterSpacing: ".04em", textTransform: "uppercase" }}>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {mixSelected && currentTrack ? `SIDE A · ${currentTrack.title}` : "BADCO · SIDE A"}
               </span>
@@ -214,11 +228,16 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
                 </span>
               )}
             </span>
-            <span style={{ fontSize: 12, fontWeight: 700 }}>{label}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700 }}>
+              <span className="welcome-led" aria-hidden="true" />
+              {label}
+            </span>
           </span>
+          {/* A raised play key that sits down while the tape runs. */}
           <span
             aria-hidden="true"
-            style={{ width: 28, height: 28, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: "50%", background: "#f2e6c8", color: "#1b2027", boxShadow: "inset 0 -2px 0 rgba(0, 0, 0, 0.18)" }}
+            className="welcome-key"
+            style={{ width: 32, height: 32, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 5, color: "#1b2027" }}
           >
             {deck === "loading" ? (
               <LoaderCircle size={14} className={reducedMotion ? undefined : "motion-safe:animate-spin"} />
@@ -231,12 +250,15 @@ export default function DesktopWelcome({ collapsed, onCollapsedChange: setCollap
         </button>
         {mixSelected && error && <p role="status" style={{ fontSize: 11, lineHeight: 1.5, color: "#92400e", margin: "8px 0 0" }}>The mix didn’t start. Tap to try again.</p>}
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
-          <button type="button" aria-label="Open Lab" onClick={() => { setCollapsed(true); onExplore() }} className={linkClass} style={linkStyle}>
+        </div>
+        {/* Status bar, as at the foot of any XP window. */}
+        <div style={{ display: "flex", alignItems: "stretch", borderTop: "1px solid #d4d0c8", background: "linear-gradient(180deg, #f4f2ea, #e6e3d8)", boxShadow: "inset 0 1px 0 #ffffff" }}>
+          <button type="button" aria-label="Open Lab" onClick={() => { setCollapsed(true); onExplore() }} className={linkClass} style={{ ...linkStyle, flex: 1, justifyContent: "center" }}>
             <Compass size={14} aria-hidden="true" />
             Open Lab
           </button>
-          <button type="button" onClick={onAbout} className={linkClass} style={linkStyle}>
+          <span aria-hidden="true" style={{ width: 1, margin: "8px 0", background: "#b9b5aa", boxShadow: "1px 0 0 #ffffff" }} />
+          <button type="button" onClick={onAbout} className={linkClass} style={{ ...linkStyle, flex: 1, justifyContent: "center" }}>
             <UserRound size={14} aria-hidden="true" />
             About me
           </button>
