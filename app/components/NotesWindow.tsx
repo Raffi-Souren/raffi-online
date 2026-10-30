@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { RESEARCH_PAPERS } from "@/data/research-papers"
 import WindowShell from "../../components/ui/WindowShell"
 
@@ -271,9 +271,13 @@ function notesTabFromLocation(): NotesTab {
 
 export default function NotesWindow({ isOpen, onClose, initialTab, tabRequest, onOpenLabResearch }: NotesWindowProps) {
   const [activeTab, setActiveTab] = useState<NotesTab>(() => initialTab ?? notesTabFromLocation())
-  useEffect(() => {
+  // A new request from a Lab doorway picks its tab in the same render, so the
+  // window never shows the previous tab first.
+  const [handledRequest, setHandledRequest] = useState({ initialTab, tabRequest })
+  if (handledRequest.initialTab !== initialTab || handledRequest.tabRequest !== tabRequest) {
+    setHandledRequest({ initialTab, tabRequest })
     if (initialTab) setActiveTab(initialTab)
-  }, [initialTab, tabRequest])
+  }
 
   if (!isOpen) return null
 
