@@ -78,7 +78,7 @@ data/
 | AboutWindow | `app/components/AboutWindow.tsx` | Bio + Vimeo keynote embeds. |
 | BlogrollWindow | `app/components/BlogrollWindow.tsx` | Curated links with search/filter. |
 | NotesWindow | `app/components/NotesWindow.tsx` | Inline `ARTICLES` and shared `data/research-papers.ts`. |
-| LabWindow | `app/components/LabWindow.tsx` | Four experiments plus a RAF OS tool shortcut. RAF OS retains `/?app=startup` and its own window. |
+| LabWindow | `app/components/LabWindow.tsx` | Four experiments. RAF OS is a separate desktop/Start app at `/?app=startup`. |
 | GlobalAudioPlayer | `app/components/GlobalAudioPlayer.tsx` | Shared SoundCloud widget; no SoundCloud API proxy. |
 | IPodWindow | `app/components/IPodWindow.tsx` | iPod-style music player. |
 | ProjectsWindow | `app/components/ProjectsWindow.tsx` | Portfolio project cards. |

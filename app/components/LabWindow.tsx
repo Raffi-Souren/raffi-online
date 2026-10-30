@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 import { useEffect, useRef, useState } from "react"
-import { Link2, FlaskConical, Music2, SlidersHorizontal, FileText, Boxes, Terminal } from "lucide-react"
+import { Link2, FlaskConical, Music2, SlidersHorizontal, FileText, Boxes } from "lucide-react"
 import WindowShell from "@/components/ui/WindowShell"
 import { useMotionPreference } from "@/app/context/MotionContext"
 import { DEFAULT_LAB_SLUG, getLabPost, LAB_POSTS, type LabSlug } from "@/data/lab"
@@ -22,10 +22,9 @@ interface LabWindowProps {
   onSelect: (slug: LabSlug) => void
   onClose: () => void
   onOpenNotes: () => void
-  onOpenRafOs?: () => void
 }
 
-export default function LabWindow({ isOpen, active, slug, onSelect, onClose, onOpenNotes, onOpenRafOs }: LabWindowProps) {
+export default function LabWindow({ isOpen, active, slug, onSelect, onClose, onOpenNotes }: LabWindowProps) {
   const post = getLabPost(slug) ?? getLabPost(DEFAULT_LAB_SLUG)!
   const { reducedMotion } = useMotionPreference()
   const stageRef = useRef<HTMLDivElement>(null)
@@ -122,7 +121,6 @@ export default function LabWindow({ isOpen, active, slug, onSelect, onClose, onO
               }} className="hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#245dda]" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flexShrink: 0, whiteSpace: "nowrap", padding: "8px 11px", minHeight: 44, border: "1px solid", borderColor: entry.slug === slug ? "#316ac5" : "#aca899", background: entry.slug === slug ? "#dce9fa" : "#f5f4ec", boxShadow: entry.slug === slug ? "inset 0 1px 2px #b0c5e2" : "inset 0 1px 0 #fff", color: "#123567", borderRadius: 3, fontSize: 12, fontWeight: entry.slug === slug ? 700 : 400, textDecoration: "none" }}><Icon size={15} color={entry.slug === slug ? "#174fb0" : "#55758f"} aria-hidden="true" />{entry.title}</a>
               )
             })}
-            {onOpenRafOs && <div style={{ display: "flex", alignItems: "stretch", flexShrink: 0, borderLeft: "1px solid #b5b4a8", marginLeft: 4, paddingLeft: 8 }}><button type="button" onClick={onOpenRafOs} aria-label="Open RAF OS pitch review" title="RAF OS · pitch review" className="hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#245dda]" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 44, padding: "8px 11px", whiteSpace: "nowrap", border: "1px solid #aca899", borderRadius: 3, background: "#f5f4ec", boxShadow: "inset 0 1px 0 #fff", color: "#123567", fontSize: 12, cursor: "pointer" }}><Terminal size={15} color="#55758f" aria-hidden="true" />RAF OS</button></div>}
           </nav>
         </header>
         <div ref={scrollerRef} data-lab-scroll="true" style={{ overflowY: "auto", overscrollBehavior: "contain", minHeight: 0, flex: 1, background: "#fff" }}>

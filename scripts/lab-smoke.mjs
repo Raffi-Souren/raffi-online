@@ -260,7 +260,7 @@ try {
           const box = item.getBoundingClientRect()
           return { x: box.x, y: box.y, height: box.height }
         }))
-        assert.equal(row.length, 5, "Expected four experiment links and the RAF OS tool")
+        assert.equal(row.length, 4, "Expected the four experiment links")
         assert.ok(row.every((item) => Math.abs(item.y - row[0].y) <= 1 && item.height >= 44), "Phone Lab navigation wrapped or lost usable tap targets")
         assert.ok(row.every((item, index) => index === 0 || item.x > row[index - 1].x), "Phone Lab navigation must remain a horizontal row")
         assert.equal(await dialog(page).locator(".lab-subtitle").isVisible(), false, "Phone subtitle crowds the compact Lab header")
@@ -268,33 +268,36 @@ try {
       await screenshot(page, `${viewport}-tape-shelf`)
     })
 
-    await check("lab-tool-opens-existing-raf-os-without-submitting", viewport, page, async () => {
+    await check("standalone-raf-os-preserves-draft-without-submitting", viewport, page, async () => {
       await openLab(page)
-      assert.equal(await page.locator('[data-desktop-app="startup"]').count(), 0, "RAF OS should be a Lab tool rather than a desktop shortcut")
+      assert.equal(await page.locator('[data-desktop-app="startup"]').count(), 1, "RAF OS should retain its standalone desktop shortcut")
+      assert.equal(await dialog(page).getByRole("button", { name: "Open RAF OS pitch review", exact: true }).count(), 0, "RAF OS should not appear as a Lab tool")
       const writesBefore = report.interceptedRafOsWrites
+      const start = page.getByRole("region", { name: "Desktop taskbar", exact: true }).getByRole("button", { name: "Start menu", exact: true })
+      await start.click()
       await Promise.all([
         page.waitForResponse((response) => new URL(response.url()).pathname === "/api/raf-os" && response.request().method() === "GET"),
-        dialog(page).getByRole("button", { name: "Open RAF OS pitch review", exact: true }).click(),
+        page.getByRole("menu", { name: "Start menu", exact: true }).getByRole("menuitem", { name: "RAF OS", exact: true }).click(),
       ])
       const terminal = page.locator('[role="dialog"][data-window-id="startup"]')
       await terminal.waitFor({ state: "visible" })
       await terminal.getByRole("heading", { name: "VENTURE REVIEW", exact: true }).waitFor()
       const pitch = terminal.getByRole("textbox", { name: "Your pitch", exact: true })
-      assert.equal(await pitch.inputValue(), "", "Opening the tool should not invent or submit a pitch")
+      assert.equal(await pitch.inputValue(), "", "Opening RAF OS should not invent or submit a pitch")
       const draft = "A local smoke-test draft. Do not submit."
       await pitch.fill(draft)
       await terminal.getByRole("group", { name: "Window controls", exact: true }).getByRole("button", { name: /^Minimize / }).click()
       await terminal.waitFor({ state: "hidden" })
-      await dialog(page).getByRole("button", { name: "Open RAF OS pitch review", exact: true }).click()
+      const terminalTask = page.locator('[data-window-task="startup"]')
+      await terminalTask.click()
       await terminal.waitFor({ state: "visible" })
-      assert.equal(await terminal.count(), 1, "The Lab tool opened a duplicate terminal")
-      assert.equal(await pitch.inputValue(), draft, "Reopening the Lab tool lost the existing terminal session")
-      assert.equal(await page.locator('[data-window-task="startup"]').getAttribute("data-window-state"), "active")
-      await page.getByRole("region", { name: "Desktop taskbar", exact: true }).getByRole("button", { name: "Start menu", exact: true }).click()
+      assert.equal(await terminal.count(), 1, "Taskbar restoration opened a duplicate terminal")
+      assert.equal(await pitch.inputValue(), draft, "Restoring RAF OS lost the existing terminal session")
+      assert.equal(await terminalTask.getAttribute("data-window-state"), "active")
+      await start.click()
       await page.getByRole("menu", { name: "Start menu", exact: true }).getByRole("menuitem", { name: "welcome.txt", exact: true }).click()
       await page.locator('[data-desktop-welcome="true"]').waitFor({ state: "visible" })
       await terminal.waitFor({ state: "hidden" })
-      const terminalTask = page.locator('[data-window-task="startup"]')
       assert.equal(await terminalTask.getAttribute("data-window-state"), "minimized", "Welcome restoration should reveal the desktop without closing the terminal")
       assert.equal(await page.locator('[data-desktop-welcome="true"]').getAttribute("data-collapsed"), "false")
       await terminalTask.click()

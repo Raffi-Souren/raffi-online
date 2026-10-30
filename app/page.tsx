@@ -32,7 +32,8 @@ const DESKTOP_SHORTCUTS = [
   { action: "notes", icon: "📝", label: "NOTES", description: "Writing, research & talks" },
   { action: "ipod", icon: "🎧", label: "iPod", description: "Mixes & music" },
   { action: "projects", icon: "🛠️", label: "PROJECTS", description: "Things I’m making" },
-  { action: "lab", icon: "🧪", label: "LAB", description: "Experiments, research & tools" },
+  { action: "startup", icon: "💡", label: "RAF OS", description: "AI pitch review" },
+  { action: "lab", icon: "🧪", label: "LAB", description: "Experiments, papers & architecture" },
 ] as const
 
 // Keep every window in a stable DOM slot. Visual ordering is supplied through
@@ -347,7 +348,7 @@ export default function Home() {
           />
         )
       case "lab":
-        return <LabWindow isOpen={openWindows.lab} active={activeWindow === "lab" && !showStartMenu} slug={labSlug} onClose={() => closeWindow("lab")} onSelect={selectLabPost} onOpenRafOs={() => openWindow("startup")} onOpenNotes={() => {
+        return <LabWindow isOpen={openWindows.lab} active={activeWindow === "lab" && !showStartMenu} slug={labSlug} onClose={() => closeWindow("lab")} onSelect={selectLabPost} onOpenNotes={() => {
           setNotesTab("research")
           setNotesTabRequest((request) => request + 1)
           minimizeWindow("lab")
