@@ -15,6 +15,7 @@ import { onComplianceCleared } from './pursuit.js'
 import { stopCompare, beginRecordingRun } from './replay.js'
 import { setRadio, toast } from './hud.js'
 import { applyTapeUnlocks } from './tapes.js'
+import { resetFeel } from './feel.js'
 import { SAVE_VERSION, SAVE_SLOTS, SAVE_PREFIX, validateSaveRecord, saveSummary } from './save-core.js'
 
 let deps = null
@@ -138,6 +139,8 @@ export function loadGame(slot = 'auto') {
   const pose = safePose(save.player, save.vehicle ? 2 : 0.45)
   teleportPlayer(pose.x, pose.z, pose.yaw)
   state.time = save.playSeconds
+  // The clock just moved; drop feel cooldowns and sways from the session before.
+  resetFeel()
   state.district = districtAt(pose.x, pose.z)?.id || data.world.spawn.district
   state.radio.on = save.radio.on
   state.radio.stationIndex = data.radio.stations.findIndex((station) => station.id === save.radio.station)
