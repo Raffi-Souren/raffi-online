@@ -95,6 +95,14 @@ const blogrollItems: BlogrollItem[] = [
     category: "Creative",
     authors: ["Faraz Ahmad"],
   },
+  {
+    id: 11,
+    title: "Ported2Browser",
+    description:
+      "A directory of games ported to run in the browser. Hollow Knight, Mario Kart 64, Age of Empires II, OMORI, Pizza Tower, and more.",
+    url: "https://ported2browser.com/",
+    category: "Games",
+  },
 ]
 
 interface BlogrollWindowProps {
