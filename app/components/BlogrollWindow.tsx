@@ -99,7 +99,7 @@ const blogrollItems: BlogrollItem[] = [
     id: 11,
     title: "Ported2Browser",
     description:
-      "A directory of games ported to run in the browser. Hollow Knight, Mario Kart 64, Age of Empires II, OMORI, Pizza Tower, and more.",
+      "Console classics ported to play in the browser. SSX 3, Halo: Combat Evolved, FIFA Street 2, Mario Kart 64, Marvel vs Capcom 2, Crash Bash, and more.",
     url: "https://ported2browser.com/",
     category: "Games",
   },
