@@ -15,6 +15,7 @@ import {
 } from "../../lib/overtime-engine"
 import { createOvertimeScene } from "../../lib/overtime-scene"
 import ScoreEntry from "./ScoreEntry"
+import PersonalBestLine from "./PersonalBestLine"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
 import { useTouchControls } from "../../components/ui/useTouchControls"
@@ -625,6 +626,7 @@ export default function OvertimeGame() {
                 )}
                 {finished && (
                   <div style={{ marginTop: 16 }}>
+                    <PersonalBestLine key={`best-${runId.current}`} id="overtime" value={matchPoints(match)} color="#fde68a" />
                     <ScoreEntry key={runId.current} gameName="overtime" score={matchPoints(match)} level={1} />
                   </div>
                 )}

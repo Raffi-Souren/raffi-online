@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react"
 import { Flag, Hammer, HardHat, Pause, Play, RotateCcw, Shield, Warehouse } from "lucide-react"
 import ScoreEntry from "./ScoreEntry"
+import PersonalBestLine from "./PersonalBestLine"
 import { useTouchControls } from "../../components/ui/useTouchControls"
 import {
   buildDockyard,
@@ -1146,6 +1147,15 @@ export default function DockyardGame() {
                         ? `You reclaimed the pier in ${clock(hud.time)}${hud.wave ? ` after ${hud.wave} rival waves.` : ", before the first rival wave arrived."}`
                         : "Keep workers gathering and build sentries near home before sending your guards across the pier."}
                 </p>
+                {hud.phase === "won" && (
+                  <PersonalBestLine
+                    key={`dockyard-best-${runId}`}
+                    id={`dockyard-mission-${hud.level}`}
+                    value={Math.round(hud.time * 1000)}
+                    order="low"
+                    format={(ms) => `${clock(ms / 1000)} on this mission`}
+                  />
+                )}
                 {hud.phase === "won" && (
                   <ScoreEntry
                     key={`dockyard-${runId}`}

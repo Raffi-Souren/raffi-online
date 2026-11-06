@@ -13,6 +13,7 @@ import {
 } from "@/lib/signal-lost"
 import { createSignalArt, renderSignal } from "@/lib/signal-lost-render"
 import ScoreEntry from "./ScoreEntry"
+import PersonalBestLine from "./PersonalBestLine"
 import { useWindowActivity } from "../../components/ui/WindowShell"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
@@ -621,6 +622,14 @@ export default function SignalLostGame() {
                     ? "The substation is quiet. The neighborhood has its signal back."
                     : "Keep moving when a speaker glows amber. Use corners for cover, and let the coil cool between bursts."}
             </p>
+            {(hud.phase === "won" || hud.phase === "lost") && (
+              <PersonalBestLine
+                key={`signal-best-${runId}`}
+                id="signal-lost"
+                value={hud.kills * 100 + hud.secrets * 300 + (hud.phase === "won" ? 1000 + Math.max(0, 300 - hud.time) : 0)}
+                color="#e8e27a"
+              />
+            )}
             {(hud.phase === "won" || hud.phase === "lost") && (
               <ScoreEntry
                 key={`signal-lost-${runId}`}

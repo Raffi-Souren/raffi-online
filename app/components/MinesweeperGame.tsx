@@ -1,28 +1,104 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { Bomb, Flag, Timer, Trophy, X } from "lucide-react"
 import ScoreEntry from "./ScoreEntry"
 import { useWindowActivity } from "../../components/ui/WindowShell"
+import { readGameStorage, writeGameStorage } from "@/lib/game-utils"
+import { usePersonalBest } from "@/lib/personal-bests"
 
-const GRID_SIZE = 10
-const NUM_MINES = 15
+const DIFFICULTIES = {
+  easy: { label: "Easy", rows: 9, cols: 9, mines: 10 },
+  normal: { label: "Normal", rows: 10, cols: 10, mines: 15 },
+  hard: { label: "Hard", rows: 12, cols: 12, mines: 26 },
+} as const
 
+type Difficulty = keyof typeof DIFFICULTIES
+type Status = "ready" | "playing" | "lost" | "won"
 type CellState = "hidden" | "revealed" | "flagged"
 
 interface Cell {
   isMine: boolean
   neighborMines: number
   state: CellState
+  exploded?: boolean
+}
+
+const DIFFICULTY_KEY = "raffi-minesweeper-difficulty"
+const NUMBER_COLORS = ["", "#1d4ed8", "#15803d", "#b91c1c", "#6d28d9", "#92400e", "#0e7490", "#111827", "#4b5563"]
+
+function forEachNeighbor(rows: number, cols: number, r: number, c: number, visit: (nr: number, nc: number) => void) {
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue
+      const nr = r + dr
+      const nc = c + dc
+      if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) visit(nr, nc)
+    }
+  }
+}
+
+function emptyGrid(rows: number, cols: number): Cell[][] {
+  return Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => ({ isMine: false, neighborMines: 0, state: "hidden" as CellState })),
+  )
+}
+
+/** Plants mines outside the 3x3 around the first tap, so the first tap always opens an area. */
+function plantMines(grid: Cell[][], mines: number, safeR: number, safeC: number) {
+  const rows = grid.length
+  const cols = grid[0].length
+  const candidates: [number, number][] = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (Math.abs(r - safeR) > 1 || Math.abs(c - safeC) > 1) candidates.push([r, c])
+    }
+  }
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[candidates[i], candidates[j]] = [candidates[j], candidates[i]]
+  }
+  for (const [r, c] of candidates.slice(0, mines)) grid[r][c].isMine = true
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      let count = 0
+      forEachNeighbor(rows, cols, r, c, (nr, nc) => {
+        if (grid[nr][nc].isMine) count++
+      })
+      grid[r][c].neighborMines = count
+    }
+  }
+}
+
+function floodReveal(grid: Cell[][], startR: number, startC: number) {
+  const rows = grid.length
+  const cols = grid[0].length
+  const stack: [number, number][] = [[startR, startC]]
+  while (stack.length) {
+    const [r, c] = stack.pop()!
+    const cell = grid[r][c]
+    if (cell.state !== "hidden") continue
+    cell.state = "revealed"
+    if (!cell.isMine && cell.neighborMines === 0) {
+      forEachNeighbor(rows, cols, r, c, (nr, nc) => {
+        if (grid[nr][nc].state === "hidden") stack.push([nr, nc])
+      })
+    }
+  }
+}
+
+function isCleared(grid: Cell[][]) {
+  return grid.every((row) => row.every((cell) => cell.isMine || cell.state === "revealed"))
 }
 
 export default function MinesweeperGame() {
   const { active } = useWindowActivity()
   const [pageVisible, setPageVisible] = useState(true)
   const gameActive = active && pageVisible
-  const [grid, setGrid] = useState<Cell[][]>([])
-  const [gameOver, setGameOver] = useState(false)
-  const [gameWon, setGameWon] = useState(false)
-  const [firstClick, setFirstClick] = useState(true)
+  const [difficulty, setDifficulty] = useState<Difficulty>("normal")
+  const config = DIFFICULTIES[difficulty]
+  const [grid, setGrid] = useState<Cell[][]>(() => emptyGrid(config.rows, config.cols))
+  const [status, setStatus] = useState<Status>("ready")
   const [elapsedMs, setElapsedMs] = useState(0)
   const [runId, setRunId] = useState(0)
   const startedAt = useRef<number | null>(null)
@@ -32,84 +108,61 @@ export default function MinesweeperGame() {
   const touchStart = useRef<{ id: number; x: number; y: number } | null>(null)
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const suppressClick = useRef(false)
+  const { best, isNew, submit, clearNew } = usePersonalBest(`minesweeper-${difficulty}`, "low")
+  const ended = status === "lost" || status === "won"
+
   const clearHold = useCallback(() => {
     if (holdTimer.current !== null) clearTimeout(holdTimer.current)
     holdTimer.current = null
     touchStart.current = null
   }, [])
-  const flagsLeft = NUM_MINES - grid.flat().filter((cell) => cell.state === "flagged").length
 
-  const countNeighborMines = useCallback((grid: Cell[][], x: number, y: number) => {
-    let count = 0
-    for (let i = -1; i <= 1; i++) {
-      for (let j = -1; j <= 1; j++) {
-        if (i === 0 && j === 0) continue
-        const newX = x + i
-        const newY = y + j
-        if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
-          if (grid[newX][newY].isMine) count++
-        }
-      }
-    }
-    return count
-  }, [])
+  const flagsPlaced = grid.flat().filter((cell) => cell.state === "flagged").length
+  const minesLeft = config.mines - flagsPlaced
 
-  const initializeGrid = useCallback(
-    (avoidX?: number, avoidY?: number) => {
-      const newGrid: Cell[][] = []
-      for (let i = 0; i < GRID_SIZE; i++) {
-        newGrid[i] = []
-        for (let j = 0; j < GRID_SIZE; j++) {
-          newGrid[i][j] = { isMine: false, neighborMines: 0, state: "hidden" }
-        }
-      }
-
-      // Place mines (avoid first click position)
-      let minesPlaced = 0
-      while (minesPlaced < NUM_MINES) {
-        const x = Math.floor(Math.random() * GRID_SIZE)
-        const y = Math.floor(Math.random() * GRID_SIZE)
-        if (!newGrid[x][y].isMine && !(x === avoidX && y === avoidY)) {
-          newGrid[x][y].isMine = true
-          minesPlaced++
-        }
-      }
-
-      // Calculate neighbor mines
-      for (let i = 0; i < GRID_SIZE; i++) {
-        for (let j = 0; j < GRID_SIZE; j++) {
-          if (!newGrid[i][j].isMine) {
-            newGrid[i][j].neighborMines = countNeighborMines(newGrid, i, j)
-          }
-        }
-      }
-
-      return newGrid
+  const resetGame = useCallback(
+    (next: Difficulty = difficulty) => {
+      clearHold()
+      clearNew()
+      suppressClick.current = false
+      const nextConfig = DIFFICULTIES[next]
+      setGrid(emptyGrid(nextConfig.rows, nextConfig.cols))
+      setStatus("ready")
+      startedAt.current = null
+      pausedAt.current = null
+      setElapsedMs(0)
+      setRunId((id) => id + 1)
     },
-    [countNeighborMines],
+    [difficulty, clearHold, clearNew],
   )
 
-  const resetGame = useCallback(() => {
-    clearHold()
-    suppressClick.current = false
-    setGrid(initializeGrid())
-    setGameOver(false)
-    setGameWon(false)
-    setFirstClick(true)
-    startedAt.current = null
-    pausedAt.current = null
-    setElapsedMs(0)
-    setRunId((id) => id + 1)
-  }, [initializeGrid, clearHold])
+  useEffect(() => {
+    const saved = readGameStorage(DIFFICULTY_KEY)
+    if (saved && saved in DIFFICULTIES && saved !== "normal") {
+      setDifficulty(saved as Difficulty)
+      resetGame(saved as Difficulty)
+    }
+    // Runs once to restore the saved difficulty.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const chooseDifficulty = (next: Difficulty) => {
+    if (next === difficulty) return
+    setDifficulty(next)
+    writeGameStorage(DIFFICULTY_KEY, next)
+    resetGame(next)
+  }
 
   useEffect(() => {
-    resetGame()
-  }, [resetGame])
-
-  useEffect(() => {
-    const blur = () => { clearHold(); setPageVisible(false) }
+    const blur = () => {
+      clearHold()
+      setPageVisible(false)
+    }
     const focus = () => setPageVisible(!document.hidden)
-    const visibility = () => { if (document.hidden) blur(); else focus() }
+    const visibility = () => {
+      if (document.hidden) blur()
+      else focus()
+    }
     window.addEventListener("blur", blur)
     window.addEventListener("focus", focus)
     document.addEventListener("visibilitychange", visibility)
@@ -125,211 +178,252 @@ export default function MinesweeperGame() {
       clearHold()
       if (startedAt.current !== null && pausedAt.current === null) {
         pausedAt.current = performance.now()
-        if (!gameOver && !gameWon) setElapsedMs(Math.round(pausedAt.current - startedAt.current))
+        if (!ended) setElapsedMs(Math.round(pausedAt.current - startedAt.current))
       }
     } else if (pausedAt.current !== null) {
       // Exclude the entire hidden interval, including time after the last timer tick.
       if (startedAt.current !== null) startedAt.current += performance.now() - pausedAt.current
       pausedAt.current = null
     }
-  }, [gameActive, gameOver, gameWon, clearHold])
+  }, [gameActive, ended, clearHold])
 
   useEffect(() => {
-    if (!gameActive || firstClick || gameOver || gameWon) return
+    if (!gameActive || status !== "playing") return
     const timer = window.setInterval(() => {
       if (startedAt.current !== null) setElapsedMs(Math.round(performance.now() - startedAt.current))
     }, 100)
     return () => window.clearInterval(timer)
-  }, [gameActive, firstClick, gameOver, gameWon])
+  }, [gameActive, status])
 
-  const revealCell = useCallback((grid: Cell[][], x: number, y: number) => {
-    const cell = grid[x][y]
-    if (cell.state !== "hidden") return
-
-    cell.state = "revealed"
-
-    if (cell.neighborMines === 0 && !cell.isMine) {
-      for (let i = -1; i <= 1; i++) {
-        for (let j = -1; j <= 1; j++) {
-          if (i === 0 && j === 0) continue
-          const newX = x + i
-          const newY = y + j
-          if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
-            revealCell(grid, newX, newY)
-          }
-        }
-      }
-    }
-  }, [])
-
-  const handleCellClick = useCallback(
-    (x: number, y: number) => {
-      if (!gameActive || gameOver || gameWon || grid[x][y].state !== "hidden") return
-
-      let newGrid = grid.map((row) => row.map((cell) => ({ ...cell })))
-
-      if (firstClick) {
-        startedAt.current = performance.now()
-        // Regenerate grid to avoid mine on first click
-        newGrid = initializeGrid(x, y)
-        grid.forEach((row, rowIndex) =>
-          row.forEach((cell, columnIndex) => {
-            if (cell.state === "flagged") newGrid[rowIndex][columnIndex].state = "flagged"
-          }),
-        )
-        setFirstClick(false)
-      }
-
-      if (newGrid[x][y].isMine) {
-        // Reveal all mines
-        for (let i = 0; i < GRID_SIZE; i++) {
-          for (let j = 0; j < GRID_SIZE; j++) {
-            if (newGrid[i][j].isMine) {
-              newGrid[i][j].state = "revealed"
-            }
-          }
-        }
-        setGameOver(true)
-        setElapsedMs(Math.round(performance.now() - (startedAt.current ?? performance.now())))
+  const finish = useCallback(
+    (next: Grid, outcome: "lost" | "won") => {
+      const ms = Math.round(performance.now() - (startedAt.current ?? performance.now()))
+      setElapsedMs(ms)
+      if (outcome === "won") {
+        next.forEach((row) => row.forEach((cell) => {
+          if (cell.isMine) cell.state = "flagged"
+        }))
+        submit(ms)
       } else {
-        revealCell(newGrid, x, y)
+        next.forEach((row) => row.forEach((cell) => {
+          if (cell.isMine && cell.state === "hidden") cell.state = "revealed"
+        }))
+      }
+      setStatus(outcome)
+    },
+    [submit],
+  )
 
-        // Check win condition
-        let hiddenCells = 0
-        for (let i = 0; i < GRID_SIZE; i++) {
-          for (let j = 0; j < GRID_SIZE; j++) {
-            if (!newGrid[i][j].isMine && newGrid[i][j].state !== "revealed") {
-              hiddenCells++
-            }
-          }
-        }
-        if (hiddenCells === 0) {
-          setElapsedMs(Math.round(performance.now() - (startedAt.current ?? performance.now())))
-          setGameWon(true)
-        }
+  const reveal = useCallback(
+    (r: number, c: number) => {
+      if (!gameActive || ended) return
+      const current = grid[r][c]
+      const next: Grid = grid.map((row) => row.map((cell) => ({ ...cell })))
+
+      if (current.state === "revealed") {
+        // Chording: a satisfied number opens every unflagged neighbour.
+        if (current.neighborMines === 0) return
+        let flags = 0
+        forEachNeighbor(config.rows, config.cols, r, c, (nr, nc) => {
+          if (next[nr][nc].state === "flagged") flags++
+        })
+        if (flags !== current.neighborMines) return
+        let hitMine = false
+        forEachNeighbor(config.rows, config.cols, r, c, (nr, nc) => {
+          const cell = next[nr][nc]
+          if (cell.state !== "hidden") return
+          if (cell.isMine) {
+            cell.state = "revealed"
+            cell.exploded = true
+            hitMine = true
+          } else floodReveal(next, nr, nc)
+        })
+        if (hitMine) finish(next, "lost")
+        else if (isCleared(next)) finish(next, "won")
+        setGrid(next)
+        return
       }
 
-      setGrid(newGrid)
+      if (current.state !== "hidden") return
+      if (status === "ready") {
+        plantMines(next, config.mines, r, c)
+        startedAt.current = performance.now()
+        setStatus("playing")
+      }
+
+      if (next[r][c].isMine) {
+        next[r][c].state = "revealed"
+        next[r][c].exploded = true
+        finish(next, "lost")
+      } else {
+        floodReveal(next, r, c)
+        if (isCleared(next)) finish(next, "won")
+      }
+      setGrid(next)
     },
-    [gameActive, grid, gameOver, gameWon, firstClick, initializeGrid, revealCell],
+    [gameActive, ended, grid, status, config, finish],
   )
 
   const toggleFlag = useCallback(
-    (x: number, y: number) => {
-      if (!gameActive || gameOver || gameWon) return
-
-      const newGrid = grid.map((row) => row.map((cell) => ({ ...cell })))
-      const cell = newGrid[x][y]
-
-      if (cell.state === "hidden" && flagsLeft > 0) {
-        cell.state = "flagged"
-      } else if (cell.state === "flagged") {
-        cell.state = "hidden"
+    (r: number, c: number) => {
+      if (!gameActive || ended) return
+      const cell = grid[r][c]
+      if (cell.state === "revealed") {
+        reveal(r, c)
+        return
       }
-
-      setGrid(newGrid)
+      const next = grid.map((row) => row.map((item) => ({ ...item })))
+      next[r][c].state = cell.state === "flagged" ? "hidden" : "flagged"
+      setGrid(next)
     },
-    [gameActive, grid, gameOver, gameWon, flagsLeft],
+    [gameActive, ended, grid, reveal],
   )
 
   useEffect(() => clearHold, [clearHold])
 
-  const getCellContent = (cell: Cell) => {
-    if (cell.state === "hidden") return ""
-    if (cell.state === "flagged") return "🚩"
-    if (cell.isMine) return "💣"
-    return cell.neighborMines > 0 ? cell.neighborMines.toString() : ""
+  const describe = (cell: Cell) => {
+    if (cell.state === "flagged") return ended && !cell.isMine ? "wrong flag" : "flagged"
+    if (cell.state === "hidden") return "hidden"
+    if (cell.isMine) return cell.exploded ? "exploded mine" : "mine"
+    return `${cell.neighborMines} adjacent mines`
   }
 
-  const getCellStyle = (cell: Cell) => {
-    let baseStyle =
-      "flex items-center justify-center border border-gray-400 text-xs font-bold cursor-pointer select-none "
+  const cellBackground = (cell: Cell) => {
+    if (cell.state === "revealed") return cell.exploded ? "#dc2626" : cell.isMine ? "#fca5a5" : "#f3f4f6"
+    if (cell.state === "flagged" && ended && !cell.isMine) return "#fde68a"
+    return "#c7ccd3"
+  }
 
-    if (cell.state === "hidden") {
-      baseStyle += "bg-gray-300 hover:bg-gray-200 active:bg-gray-400 "
-    } else if (cell.state === "flagged") {
-      baseStyle += "bg-yellow-200 "
-    } else if (cell.isMine) {
-      baseStyle += "bg-red-500 "
-    } else {
-      baseStyle += "bg-gray-100 "
-
-      // Number colors
-      if (cell.neighborMines === 1) baseStyle += "text-blue-600 "
-      else if (cell.neighborMines === 2) baseStyle += "text-green-600 "
-      else if (cell.neighborMines === 3) baseStyle += "text-red-600 "
-      else if (cell.neighborMines === 4) baseStyle += "text-purple-600 "
-      else if (cell.neighborMines === 5) baseStyle += "text-yellow-600 "
-      else if (cell.neighborMines === 6) baseStyle += "text-pink-600 "
-      else if (cell.neighborMines === 7) baseStyle += "text-black "
-      else if (cell.neighborMines === 8) baseStyle += "text-gray-600 "
+  const iconSize = largeCells ? 18 : config.cols > 10 ? 13 : 15
+  const cellContent = (cell: Cell) => {
+    if (cell.state === "flagged") {
+      if (ended && !cell.isMine) return <X size={iconSize} aria-hidden="true" color="#b91c1c" strokeWidth={3} />
+      return <Flag size={iconSize} aria-hidden="true" color="#b91c1c" fill="#ef4444" />
     }
-
-    return baseStyle
+    if (cell.state === "hidden") return null
+    if (cell.isMine) return <Bomb size={iconSize} aria-hidden="true" color={cell.exploded ? "#fff" : "#111827"} />
+    return cell.neighborMines > 0 ? cell.neighborMines : null
   }
+
+  const seconds = (ms: number) => (ms / 1000).toFixed(1)
+  const statusText =
+    status === "lost" ? "Boom. Tap New game to try again." : status === "won" ? `Cleared in ${seconds(elapsedMs)}s` : status === "ready" ? "Tap any cell to start. The first tap is always safe." : "Tap a number with all its flags placed to clear around it."
 
   return (
-    <div className="p-4 max-w-full" style={{ maxHeight: "100%", overflow: "auto" }}>
-      <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
-        <div className="text-sm">
-          <span className="mr-4">🚩 {flagsLeft}</span>
-          <span className="mr-4">💣 {NUM_MINES}</span>
-          <span aria-label={`Elapsed time ${(elapsedMs / 1000).toFixed(1)} seconds`}>
-            ⏱ {(elapsedMs / 1000).toFixed(1)}s
-          </span>
-        </div>
+    <div className="max-w-full" style={{ padding: 12, maxHeight: "100%", overflow: "auto", color: "#1e293b", background: "#e5e7eb" }}>
+      <div role="group" aria-label="Difficulty" style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {(Object.keys(DIFFICULTIES) as Difficulty[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={difficulty === key}
+            onClick={() => chooseDifficulty(key)}
+            style={{
+              flex: 1,
+              minHeight: 44,
+              border: "1px solid #64748b",
+              borderRadius: 5,
+              background: difficulty === key ? "#245ab5" : "#f8fafc",
+              color: difficulty === key ? "#fff" : "#1e293b",
+              fontWeight: 700,
+              fontSize: 14,
+            }}
+          >
+            {DIFFICULTIES[key].label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }} aria-label={`${minesLeft} mines left to flag`}>
+          <Flag size={16} aria-hidden="true" color="#b91c1c" /> {minesLeft}
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }} aria-label={`Elapsed time ${seconds(elapsedMs)} seconds`}>
+          <Timer size={16} aria-hidden="true" /> {seconds(elapsedMs)}s
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#475569", fontSize: 13 }} aria-label={best ? `Best ${config.label} time ${seconds(best)} seconds` : `No ${config.label} best yet`}>
+          <Trophy size={15} aria-hidden="true" /> {best ? `${seconds(best)}s` : "--"}
+        </span>
         <button
-          onClick={resetGame}
-          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 min-h-[44px]"
+          type="button"
+          onClick={() => resetGame()}
+          style={{ minHeight: 44, padding: "0 14px", border: "1px solid #1e3a8a", borderRadius: 5, background: "#1d4ed8", color: "#fff", fontWeight: 700, fontSize: 14 }}
         >
-          New Game
+          New game
         </button>
       </div>
 
-      <div role="group" aria-label="Minesweeper touch options" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+      <div role="group" aria-label="Tap mode" style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         {(["reveal", "flag"] as const).map((mode) => (
           <button
             key={mode}
             type="button"
             aria-pressed={tapMode === mode}
             onClick={() => setTapMode(mode)}
-            style={{ minHeight: 44, padding: "8px 12px", border: "1px solid #64748b", borderRadius: 5, background: tapMode === mode ? "#245ab5" : "#eef2f7", color: tapMode === mode ? "#fff" : "#1e293b", fontWeight: 700 }}
+            style={{
+              flex: 1,
+              minHeight: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              border: "1px solid #64748b",
+              borderRadius: 5,
+              background: tapMode === mode ? "#334155" : "#f8fafc",
+              color: tapMode === mode ? "#fff" : "#1e293b",
+              fontWeight: 700,
+              fontSize: 14,
+            }}
           >
-            {mode === "reveal" ? "Tap to reveal" : "Tap to flag"}
+            {mode === "reveal" ? <Bomb size={16} aria-hidden="true" /> : <Flag size={16} aria-hidden="true" />}
+            {mode === "reveal" ? "Dig" : "Flag"}
           </button>
         ))}
         <button
           type="button"
           aria-pressed={largeCells}
           onClick={() => setLargeCells((value) => !value)}
-          style={{ minHeight: 44, padding: "8px 10px", border: "1px solid #64748b", borderRadius: 5, background: "#eef2f7", color: "#1e293b" }}
+          style={{ minHeight: 44, padding: "0 10px", border: "1px solid #64748b", borderRadius: 5, background: "#f8fafc", color: "#1e293b", fontSize: 13 }}
         >
-          {largeCells ? "Fit board" : "Larger cells"}
+          {largeCells ? "Fit" : "Zoom"}
         </button>
       </div>
-      <div style={{ width: "100%", maxWidth: 444, margin: "0 auto", overflowX: "auto", overscrollBehaviorX: "contain" }}>
+
+      <div style={{ width: "100%", overflowX: "auto", overscrollBehaviorX: "contain" }}>
         <div
-          className="border-2 border-gray-600"
           style={{
             display: "grid",
-            gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-            width: largeCells ? 444 : "100%",
-            minWidth: 280,
-            gap: 0,
+            gridTemplateColumns: `repeat(${config.cols}, 1fr)`,
+            width: largeCells ? config.cols * 44 : "100%",
+            maxWidth: largeCells ? undefined : 460,
+            margin: "0 auto",
+            minWidth: 260,
+            border: "3px solid #475569",
+            background: "#94a3b8",
+            gap: 1,
           }}
         >
-          {grid.map((row, x) =>
-            row.map((cell, y) => (
+          {grid.map((row, r) =>
+            row.map((cell, c) => (
               <button
-                key={`${x}-${y}`}
-                aria-label={`Row ${x + 1}, column ${y + 1}: ${cell.state === "revealed" ? (cell.isMine ? "mine" : `${cell.neighborMines} adjacent mines`) : cell.state}`}
-                className={getCellStyle(cell)}
+                key={`${runId}-${r}-${c}`}
+                type="button"
+                aria-label={`Row ${r + 1}, column ${c + 1}: ${describe(cell)}`}
                 style={{
                   width: "100%",
                   aspectRatio: "1",
                   minWidth: 0,
                   padding: 0,
-                  fontSize: largeCells ? 16 : 13,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "none",
+                  boxShadow: cell.state === "revealed" ? "none" : "inset 2px 2px 0 #eef2f7, inset -2px -2px 0 #8b95a3",
+                  background: cellBackground(cell),
+                  color: NUMBER_COLORS[cell.neighborMines],
+                  fontWeight: 800,
+                  fontSize: largeCells ? 18 : config.cols > 10 ? 14 : 16,
+                  cursor: ended ? "default" : "pointer",
                   touchAction: "manipulation",
                   WebkitTouchCallout: "none",
                   userSelect: "none",
@@ -339,29 +433,31 @@ export default function MinesweeperGame() {
                     suppressClick.current = false
                     return
                   }
-                  if (tapMode === "flag") toggleFlag(x, y)
-                  else handleCellClick(x, y)
+                  if (tapMode === "flag") toggleFlag(r, c)
+                  else reveal(r, c)
                 }}
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                  if (!touchStart.current && !suppressClick.current) toggleFlag(x, y)
+                onContextMenu={(event) => {
+                  event.preventDefault()
+                  if (!touchStart.current && !suppressClick.current) toggleFlag(r, c)
                 }}
-                onKeyDown={(e) => {
-                  if (e.key.toLowerCase() === "f") {
-                    e.preventDefault()
-                    toggleFlag(x, y)
+                onKeyDown={(event) => {
+                  if (event.key.toLowerCase() === "f") {
+                    event.preventDefault()
+                    toggleFlag(r, c)
                   }
                 }}
                 onPointerDown={(event) => {
                   clearHold()
                   suppressClick.current = false
-                  if (event.pointerType === "mouse") return
+                  if (event.pointerType === "mouse" || cell.state === "revealed") return
                   touchStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
                   holdTimer.current = setTimeout(() => {
                     suppressClick.current = true
-                    toggleFlag(x, y)
                     holdTimer.current = null
-                  }, 500)
+                    if (tapMode === "flag") reveal(r, c)
+                    else toggleFlag(r, c)
+                    navigator.vibrate?.(15)
+                  }, 400)
                 }}
                 onPointerMove={(event) => {
                   const touch = touchStart.current
@@ -375,35 +471,30 @@ export default function MinesweeperGame() {
                   suppressClick.current = true
                   clearHold()
                 }}
-                disabled={!gameActive || gameOver || gameWon}
+                disabled={!gameActive || ended}
               >
-                {getCellContent(cell)}
+                {cellContent(cell)}
               </button>
             )),
           )}
         </div>
       </div>
 
-      {gameOver && (
-        <div className="mt-4 text-center">
-          <div className="text-red-500 font-bold text-lg">💥 Game Over!</div>
-          <div className="text-sm text-gray-600">You hit a mine!</div>
-        </div>
+      <p role="status" style={{ margin: "10px 0 0", textAlign: "center", fontSize: 14, lineHeight: 1.5, fontWeight: ended ? 700 : 400, color: status === "lost" ? "#b91c1c" : status === "won" ? "#15803d" : "#475569" }}>
+        {statusText}
+        {status === "won" && isNew && ` New ${config.label} best!`}
+      </p>
+
+      {status === "won" && difficulty === "normal" && (
+        <ScoreEntry key={`minesweeper-${runId}`} gameName="minesweeper" score={elapsedMs} level={1} />
       )}
 
-      {gameWon && (
-        <div className="mt-4 text-center">
-          <div className="text-green-500 font-bold text-lg">🎉 You Won!</div>
-          <div className="text-sm text-gray-600">All mines found!</div>
-          <ScoreEntry key={`minesweeper-${runId}`} gameName="minesweeper" score={elapsedMs} level={1} />
-        </div>
-      )}
-
-      <div className="mt-4 text-xs text-gray-500 text-center">
-        <div className="md:block hidden">Click / Enter uses selected mode • Right click / F flags</div>
-        <div className="md:hidden block">{tapMode === "flag" ? "Tap to flag or unflag" : "Tap to reveal"} • Hold to flag</div>
-        {largeCells && <div>Swipe sideways to see the whole board.</div>}
-      </div>
+      <p style={{ margin: "8px 0 0", textAlign: "center", fontSize: 12, color: "#64748b" }}>
+        Hold a cell to {tapMode === "flag" ? "dig" : "flag"}. Right click or F also flags.
+        {difficulty !== "normal" && " Leaderboard times come from Normal."}
+      </p>
     </div>
   )
 }
+
+type Grid = Cell[][]
