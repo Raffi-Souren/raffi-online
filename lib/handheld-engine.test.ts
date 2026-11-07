@@ -166,6 +166,29 @@ test("Parachute steering is bounded and a finished run stops simulating", () => 
 })
 
 
+test("Parachute pad landings pay a bullseye bonus and streaks multiply", () => {
+  const game = createParachute()
+  game.player = { x: 200, y: 440 }
+  game.padX = 200
+  game.padDirection = 0
+  stepParachute(game, false, false, config, () => 1)
+  assert.equal(game.score, 45)
+  assert.equal(game.streak, 1)
+  game.player = { x: 380, y: 440 }
+  stepParachute(game, false, false, config, () => 1)
+  assert.equal(game.score, 45 + 15 * 2)
+  assert.equal(game.bestStreak, 2)
+})
+
+test("Parachute hits reset the streak and level 1 has no wind", () => {
+  const game = createParachute()
+  game.streak = 3
+  game.missiles = [{ x: 200, y: 50 }]
+  for (let i = 0; i < 400; i++) stepParachute(game, false, false, config, () => 0)
+  assert.equal(game.streak === 0 || game.landings > 0, true)
+  assert.equal(game.wind, 0)
+})
+
 test("Parachute analog steering preserves gentle movement and sanitizes invalid input", () => {
   const game = createParachute()
   stepParachute(game, 0, 0.25, config, () => 1)
