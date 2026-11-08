@@ -109,7 +109,19 @@ export interface ParachuteState {
   landings: number
   spawnClock: number
   invulnerable: number
+  /** Center of the moving landing pad on the ground. */
+  padX: number
+  padDirection: number
+  /** Safe landings in a row; a hit resets it. */
+  streak: number
+  bestStreak: number
+  /** Sideways drift per step; gusts start at level 2. */
+  wind: number
+  windClock: number
+  /** Most recent landing, for the on-screen callout. */
+  callout: { text: string; x: number; time: number } | null
 }
+export const PARACHUTE_PAD_HALF_WIDTH = 24
 export interface ParachuteConfig {
   level: number
   heliSpeed: number
@@ -126,6 +138,13 @@ export function createParachute(): ParachuteState {
     landings: 0,
     spawnClock: 0,
     invulnerable: 0,
+    padX: 80,
+    padDirection: 1,
+    streak: 0,
+    bestStreak: 0,
+    wind: 0,
+    windClock: 0,
+    callout: null,
   }
 }
 
@@ -146,8 +165,28 @@ export function stepParachute(
     state.helicopters.push({ x: fromLeft ? -32 : 432, y: random() * 120 + 40, direction: fromLeft ? 1 : -1 })
   }
   const input = (value: boolean | number) => Number.isFinite(Number(value)) ? Math.max(0, Math.min(1, Number(value))) : 0
+  if (state.callout) {
+    state.callout.time -= 16
+    if (state.callout.time <= 0) state.callout = null
+  }
+  const padSpeed = 0.35 + config.level * 0.15
+  state.padX += state.padDirection * padSpeed
+  if (state.padX < 40 || state.padX > 360) {
+    state.padDirection *= -1
+    state.padX = Math.max(40, Math.min(360, state.padX))
+  }
+  if (config.level >= 2) {
+    state.windClock += 16
+    if (state.windClock >= 3200) {
+      state.windClock = 0
+      const strength = 0.35 + config.level * 0.12
+      state.wind = Math.round((random() * 2 - 1) * strength * 100) / 100
+    }
+  } else {
+    state.wind = 0
+  }
   state.player = {
-    x: Math.max(14, Math.min(386, state.player.x + (input(right) - input(left)) * 4)),
+    x: Math.max(14, Math.min(386, state.player.x + (input(right) - input(left)) * 4 + state.wind)),
     y: state.player.y + 2.5,
   }
   state.helicopters = state.helicopters
@@ -173,9 +212,22 @@ export function stepParachute(
     state.player = { x: 200, y: 50 }
     state.invulnerable = 1000
     state.missiles = []
+    state.streak = 0
+    state.callout = { text: "HIT", x: 200, time: 700 }
   } else if (state.player.y >= 441) {
-    state.score += 10 + config.level * 5
+    state.streak++
+    state.bestStreak = Math.max(state.bestStreak, state.streak)
+    const multiplier = Math.min(5, state.streak)
+    const onPad = Math.abs(state.player.x - state.padX) <= PARACHUTE_PAD_HALF_WIDTH
+    const base = 10 + config.level * 5
+    const points = (base + (onPad ? 25 + config.level * 5 : 0)) * multiplier
+    state.score += points
     state.landings++
+    state.callout = {
+      text: `${onPad ? "BULLSEYE " : ""}+${points}${multiplier > 1 ? ` x${multiplier}` : ""}`,
+      x: state.player.x,
+      time: 900,
+    }
     state.player = { x: 200, y: 50 }
   }
 }

@@ -3,6 +3,16 @@
   "pickupRadius": 1.4,
   "tapes": [
     {
+      "id": "bc-bowery-land-2024",
+      "title": "Bowery Land 7-20-2024",
+      "district": "downtown",
+      "street": "2nd Ave",
+      "at": {
+        "x": 220,
+        "z": -240
+      }
+    },
+    {
       "id": "bc-1",
       "title": "BadCompany Radio",
       "district": "heights",
@@ -140,6 +150,96 @@
       "at": {
         "x": -566,
         "z": 303
+      }
+    },
+    {
+      "id": "bc-habibi-funk-plus",
+      "title": "حبيبي فانك بلس",
+      "district": "downtown",
+      "street": "3rd Ave",
+      "at": {
+        "x": -106,
+        "z": -315
+      }
+    },
+    {
+      "id": "bc-analog-digital-ep02",
+      "title": "[ANALOG & DIGITAL] EP.02 Mario Balotelli Edition",
+      "district": "bowl",
+      "street": "Centre St",
+      "at": {
+        "x": -330,
+        "z": 14
+      }
+    },
+    {
+      "id": "bc-29th-bday",
+      "title": "vinyl+digital=29th bday mix",
+      "district": "yards",
+      "street": "Pier Ave",
+      "at": {
+        "x": 534,
+        "z": -50
+      }
+    },
+    {
+      "id": "bc-vermont",
+      "title": "vermont 🏔",
+      "district": "strip",
+      "street": "Vantage Ave",
+      "at": {
+        "x": 54,
+        "z": 90
+      }
+    },
+    {
+      "id": "bc-105-heartbreak",
+      "title": "105 & HEARTBREAK</3",
+      "district": "downtown",
+      "street": "Vantage Ave",
+      "at": {
+        "x": 54,
+        "z": -185
+      }
+    },
+    {
+      "id": "bc-kim-k",
+      "title": "kim k by sweeterman💔",
+      "district": "strip",
+      "street": "2nd Ave",
+      "at": {
+        "x": 214,
+        "z": 230
+      }
+    },
+    {
+      "id": "bc-iloveraffi",
+      "title": "iLoveRaffi",
+      "district": "heights",
+      "street": "Bluff St",
+      "at": {
+        "x": -480,
+        "z": -256
+      }
+    },
+    {
+      "id": "bc-stuff",
+      "title": "stuff",
+      "district": "strip",
+      "street": "3rd Ave",
+      "at": {
+        "x": -106,
+        "z": 230
+      }
+    },
+    {
+      "id": "bc-mondays",
+      "title": "Mondays",
+      "district": "strip",
+      "street": "3rd Ave",
+      "at": {
+        "x": -106,
+        "z": 90
       }
     }
   ]

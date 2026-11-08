@@ -134,7 +134,15 @@ export function getRandomTrackIndex(length: number, current = -1): number {
   return next
 }
 
+// First entry is the site's lead mix: the welcome screen, preloaded player,
+// Raffi World, and Tape Shelf all start from BADCOMPANY_MIXES[0].
 export const BADCOMPANY_MIXES: Track[] = [
+  {
+    id: "bc-bowery-land-2024",
+    title: "Bowery Land 7-20-2024",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/1924236872",
+  },
   {
     id: "bc-1",
     title: "BadCompany Radio",
@@ -218,6 +226,60 @@ export const BADCOMPANY_MIXES: Track[] = [
     title: "Palm Trees in NYC (BSAP x sweeterman)",
     artist: "raf",
     url: "https://api.soundcloud.com/tracks/459410418",
+  },
+  {
+    id: "bc-habibi-funk-plus",
+    title: "حبيبي فانك بلس",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/1964294675",
+  },
+  {
+    id: "bc-analog-digital-ep02",
+    title: "[ANALOG & DIGITAL] EP.02 Mario Balotelli Edition",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/1661343147",
+  },
+  {
+    id: "bc-29th-bday",
+    title: "vinyl+digital=29th bday mix",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/1629615609",
+  },
+  {
+    id: "bc-vermont",
+    title: "vermont 🏔",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/960755560",
+  },
+  {
+    id: "bc-105-heartbreak",
+    title: "105 & HEARTBREAK</3",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/761233837",
+  },
+  {
+    id: "bc-kim-k",
+    title: "kim k by sweeterman💔",
+    artist: "BADCOMPANY",
+    url: "https://api.soundcloud.com/tracks/759176998",
+  },
+  {
+    id: "bc-iloveraffi",
+    title: "iLoveRaffi",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/321436500",
+  },
+  {
+    id: "bc-stuff",
+    title: "stuff",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/316605618",
+  },
+  {
+    id: "bc-mondays",
+    title: "Mondays",
+    artist: "raf",
+    url: "https://api.soundcloud.com/tracks/225127110",
   },
 ]
 

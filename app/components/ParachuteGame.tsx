@@ -9,7 +9,8 @@ import { useGameControlMode } from "../../components/ui/GameControlChoice"
 import HandheldConsole from "../../components/ui/HandheldConsole"
 import { useWindowActivity } from "../../components/ui/WindowShell"
 import { PARACHUTE_LEVELS, loadGameProgress, saveGameProgress, type GameProgress } from "@/lib/game-utils"
-import { createParachute, stepParachute } from "@/lib/handheld-engine"
+import { createParachute, stepParachute, PARACHUTE_PAD_HALF_WIDTH } from "@/lib/handheld-engine"
+import { readBest, submitBest } from "@/lib/personal-bests"
 
 interface Position {
   x: number
@@ -52,6 +53,7 @@ export default function ParachuteGame() {
   const [landings, setLandings] = useState(0)
   const [isNewHighScore, setIsNewHighScore] = useState(false)
   const [progress, setProgress] = useState<GameProgress | null>(null)
+  const [best, setBest] = useState<number | null>(null)
 
   const keysRef = useRef(new Set<string>())
   const stickRef = useRef(0)
@@ -81,7 +83,12 @@ export default function ParachuteGame() {
   }, [active])
 
   useEffect(() => {
-    setProgress(loadGameProgress("parachute"))
+    const saved = loadGameProgress("parachute")
+    setProgress(saved)
+    // Older runs only stored per-level bests; fold them into the single device best.
+    const legacy = Math.max(0, ...Object.values(saved.highScores ?? {}).map(Number).filter(Number.isFinite))
+    if (legacy > 0) submitBest("parachute", legacy, "high")
+    setBest(readBest("parachute"))
   }, [])
 
   useEffect(() => {
@@ -196,7 +203,9 @@ export default function ParachuteGame() {
     const finalScore = simulationRef.current.score
     setScore(finalScore)
     setGameView("gameover")
-    setIsNewHighScore(finalScore > (progress?.highScores[level] || 0))
+    const result = submitBest("parachute", finalScore, "high")
+    setIsNewHighScore(result.isNew)
+    setBest(result.best)
     if (progress) {
       const newProgress = { ...progress, highScores: { ...progress.highScores } }
       newProgress.highScores[level] = Math.max(newProgress.highScores[level] || 0, finalScore)
@@ -246,6 +255,8 @@ export default function ParachuteGame() {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
+    const sim = simulationRef.current
+
     ctx.fillStyle = "#87CEEB"
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
@@ -259,13 +270,50 @@ export default function ParachuteGame() {
       ctx.fillStyle = "#000"
       ctx.font = "bold 28px monospace"
       ctx.textAlign = "center"
-      ctx.fillText("PARACHUTE", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 80)
-      ctx.font = "16px monospace"
-      ctx.fillText("Avoid the missiles!", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30)
-      ctx.fillText("Land safely to score", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
+      ctx.fillText("PARACHUTE", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 110)
+      ctx.font = "15px monospace"
+      ctx.fillText("Dodge the missiles.", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 64)
+      ctx.fillText("Hit the yellow pad = BULLSEYE", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40)
+      ctx.fillText("Safe landings in a row stack x2..x5", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 16)
+      ctx.fillText("Wind picks up from level 2", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 8)
+      if (best) ctx.fillText(`Your best: ${best.toLocaleString("en-US")}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 44)
       ctx.font = "bold 18px monospace"
-      ctx.fillText("TAP TO START", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 60)
+      ctx.fillText("TAP TO START", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 90)
     } else {
+      // Landing pad
+      ctx.fillStyle = "#f5c518"
+      ctx.fillRect(sim.padX - PARACHUTE_PAD_HALF_WIDTH, GROUND_Y - 2, PARACHUTE_PAD_HALF_WIDTH * 2, 8)
+      ctx.fillStyle = "#000"
+      ctx.fillRect(sim.padX - 2, GROUND_Y - 2, 4, 8)
+
+      // Guide line from the jumper to the ground helps judge the landing spot.
+      ctx.strokeStyle = "rgba(0,0,0,0.18)"
+      ctx.setLineDash([4, 6])
+      ctx.beginPath()
+      ctx.moveTo(player.x, player.y + PLAYER_SIZE)
+      ctx.lineTo(player.x, GROUND_Y)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // Wind sock
+      if (sim.wind !== 0) {
+        const dir = Math.sign(sim.wind)
+        const length = 14 + Math.min(1, Math.abs(sim.wind)) * 26
+        ctx.fillStyle = "#000"
+        ctx.font = "bold 12px monospace"
+        ctx.textAlign = "center"
+        ctx.fillText("WIND", CANVAS_WIDTH / 2, 70)
+        ctx.strokeStyle = "#000"
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(CANVAS_WIDTH / 2 - (dir * length) / 2, 80)
+        ctx.lineTo(CANVAS_WIDTH / 2 + (dir * length) / 2, 80)
+        ctx.lineTo(CANVAS_WIDTH / 2 + (dir * length) / 2 - dir * 6, 75)
+        ctx.moveTo(CANVAS_WIDTH / 2 + (dir * length) / 2, 80)
+        ctx.lineTo(CANVAS_WIDTH / 2 + (dir * length) / 2 - dir * 6, 85)
+        ctx.stroke()
+      }
+
       // Draw parachute player
       ctx.fillStyle = "#FF4444"
       ctx.beginPath()
@@ -298,17 +346,47 @@ export default function ParachuteGame() {
         ctx.fill()
       })
 
+      // Flashing while invulnerable after a hit.
+      if (sim.invulnerable > 0 && Math.floor(sim.invulnerable / 120) % 2 === 0) {
+        ctx.fillStyle = "rgba(255,255,255,0.55)"
+        ctx.fillRect(player.x - 20, player.y - 34, 40, 50)
+      }
+
+      // Landing callout
+      if (sim.callout) {
+        const alpha = Math.min(1, sim.callout.time / 300)
+        ctx.fillStyle = sim.callout.text === "HIT" ? `rgba(200,0,0,${alpha})` : `rgba(0,0,0,${alpha})`
+        ctx.font = "bold 18px monospace"
+        ctx.textAlign = "center"
+        const x = Math.max(70, Math.min(CANVAS_WIDTH - 70, sim.callout.x))
+        ctx.fillText(sim.callout.text, x, GROUND_Y - 24 - (900 - sim.callout.time) / 30)
+      }
+
       // HUD
       ctx.fillStyle = "#000"
       ctx.font = "bold 16px monospace"
       ctx.textAlign = "left"
       ctx.fillText(`Score: ${score}`, 10, 25)
-      ctx.fillText(`Lives: ${"❤️".repeat(Math.max(0, lives))}`, 10, 48)
+      ctx.fillText("Lives:", 10, 48)
+      for (let i = 0; i < Math.max(0, lives); i++) {
+        const cx = 76 + i * 18
+        ctx.fillStyle = "#d62828"
+        ctx.beginPath()
+        ctx.arc(cx, 43, 7, Math.PI, 0)
+        ctx.fill()
+        ctx.fillStyle = "#000"
+        ctx.fillRect(cx - 1, 43, 2, 6)
+      }
+      ctx.fillStyle = "#000"
       ctx.textAlign = "right"
       ctx.fillText(`Level ${level}`, CANVAS_WIDTH - 10, 25)
-      ctx.fillText(`Landings: ${landings}`, CANVAS_WIDTH - 10, 48)
+      ctx.fillText(sim.streak > 1 ? `Streak x${Math.min(5, sim.streak)}` : `Landings: ${landings}`, CANVAS_WIDTH - 10, 48)
+      if (best) {
+        ctx.font = "12px monospace"
+        ctx.fillText(`Best ${best.toLocaleString("en-US")}`, CANVAS_WIDTH - 10, CANVAS_HEIGHT - 14)
+      }
     }
-  }, [gameView, player, helicopters, missiles, score, lives, level, landings])
+  }, [gameView, player, helicopters, missiles, score, lives, level, landings, best])
 
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-[760px] mx-auto px-2">

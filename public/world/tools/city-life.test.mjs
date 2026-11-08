@@ -28,7 +28,7 @@ test('every BADCOMPANY mix has exactly one tape, with the same id and title', ()
   const list = block.slice(block.indexOf('= ['), block.indexOf('\n]'))
   const mixes = [...list.matchAll(/id:\s*"([^"]+)",\s*title:\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g)]
     .map(([, id, double, single]) => ({ id, title: double !== undefined ? JSON.parse(`"${double}"`) : single.replace(/\\(.)/g, '$1') }))
-  assert.equal(mixes.length, 14)
+  assert.equal(mixes.length, 24)
   assert.deepEqual(tapes.tapes.map(({ id, title }) => ({ id, title })), mixes)
   assert.equal(new Set(ids).size, ids.length)
 })

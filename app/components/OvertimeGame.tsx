@@ -15,12 +15,14 @@ import {
 } from "../../lib/overtime-engine"
 import { createOvertimeScene } from "../../lib/overtime-scene"
 import ScoreEntry from "./ScoreEntry"
+import PersonalBestLine from "./PersonalBestLine"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
 import { useTouchControls } from "../../components/ui/useTouchControls"
 
 type Control = "left" | "right" | "forward" | "reverse" | "boost" | "jump"
 const STEER_CRUISE = 0.7
+const STICK_DEADZONE = 0.18
 const KEY_MAP: Record<string, Control> = {
   a: "left",
   arrowleft: "left",
@@ -150,15 +152,33 @@ export default function OvertimeGame() {
         Array.from(keyboard.current).some((key) => KEY_MAP[key] === control) ||
         Array.from(touches.current.values()).includes(control)
       if (activeRef.current) {
-        const steer = Math.max(-1, Math.min(1, stick.current.x + Number(pressed("right")) - Number(pressed("left"))))
-        const throttle = Math.max(-1, Math.min(1, -stick.current.y + Number(pressed("forward")) - Number(pressed("reverse"))))
-        // Turn rate scales with speed, so a parked car barely pivots. Steering
-        // alone rolls forward at cruise so one thumb can carry you to the ball.
+        const { x: sx, y: sy } = stick.current
+        const magnitude = Math.min(1, Math.hypot(sx, sy))
+        let steer: number, throttle: number
+        if (magnitude > STICK_DEADZONE) {
+          // The stick points where you want to go on screen, not car-relative,
+          // so left stays left even when the car faces the camera. The portrait
+          // camera looks down +x (screen up = +x, right = +z); landscape looks
+          // down -z (right = +x, down = +z).
+          const portrait = host.clientWidth < host.clientHeight
+          const worldX = portrait ? -sy : sx
+          const worldZ = portrait ? sx : sy
+          const target = Math.atan2(worldZ, worldX) - match.player.angle
+          const difference = Math.atan2(Math.sin(target), Math.cos(target))
+          steer = Math.max(-1, Math.min(1, difference * 2.4))
+          throttle = magnitude * (Math.abs(difference) > 1.9 ? 0.75 : 1)
+        } else {
+          steer = Math.max(-1, Math.min(1, Number(pressed("right")) - Number(pressed("left"))))
+          throttle = Math.max(-1, Math.min(1, Number(pressed("forward")) - Number(pressed("reverse"))))
+          // Turn rate scales with speed, so a parked car barely pivots. Steering
+          // alone rolls forward at cruise so one thumb can carry you to the ball.
+          if (throttle === 0 && steer !== 0) throttle = STEER_CRUISE * Math.abs(steer)
+        }
         stepMatch(
           match,
           {
             steer,
-            throttle: throttle === 0 && steer !== 0 ? STEER_CRUISE * Math.abs(steer) : throttle,
+            throttle,
             boost: pressed("boost"),
             jump: jumpPending.current || pressed("jump"),
           },
@@ -297,8 +317,8 @@ export default function OvertimeGame() {
       onContextMenu={(event) => event.preventDefault()}
       style={{
         ...buttonStyle,
-        width: sideControls ? "100%" : "clamp(44px, 8vw, 58px)",
-        minHeight: 44,
+        width: sideControls ? "100%" : 56,
+        minHeight: sideControls ? 44 : 56,
         padding: 6,
         touchAction: "none",
         userSelect: "none",
@@ -435,8 +455,8 @@ export default function OvertimeGame() {
         <div style={{ gridColumn: 1, gridRow: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: sideControls ? 8 : 0, flexShrink: 0 }}>
         {controlMode === "stick" ? (
           <GameJoystick
-            label="Drive car: up accelerates, down reverses, left and right steer"
-            size={88}
+            label="Drive car: push toward where you want to go"
+            size={sideControls ? 96 : 116}
             disabled={!active || (phase !== "playing" && phase !== "kickoff")}
             resetKey={runId.current}
             onChange={(value) => { stick.current = value }}
@@ -448,14 +468,12 @@ export default function OvertimeGame() {
             {touchButton("reverse", "Brake or reverse", <ArrowDown size={20} />)}
           </div>
         )}
-        {sideControls && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
         </div>
         <div style={{ gridColumn: 3, gridRow: 2, display: "flex", flexDirection: "column", alignItems: sideControls ? "stretch" : "flex-end", justifyContent: "center", padding: sideControls ? 8 : 0, gap: 7 }}>
-          {!sideControls && <GameControlChoice value={controlMode} onChange={(mode) => { clearControls(); setControlMode(mode) }} />}
-          <div style={{ display: "flex", flexDirection: sideControls ? "column" : "row", alignItems: sideControls ? "stretch" : "center", gap: 8 }}>
-            {touchButton("jump", "Jump", <span style={{ fontSize: 11 }}>Jump</span>)}
+          <div style={{ display: "flex", flexDirection: sideControls ? "column" : "row", alignItems: sideControls ? "stretch" : "center", gap: 10 }}>
+            {touchButton("jump", "Jump", <span style={{ fontSize: 13 }}>Jump</span>)}
             <div style={{ position: "relative" }}>
-              {touchButton("boost", "Boost", <Zap size={19} />, true)}
+              {touchButton("boost", "Boost", <Zap size={22} />, true)}
               <meter
                 aria-label="Boost fuel"
                 min={0}
@@ -601,13 +619,14 @@ export default function OvertimeGame() {
                     </div>
                     <div>
                       {touch
-                        ? "Use the stick to steer, accelerate or reverse, or choose arrow buttons. Steering alone rolls you forward. Gold pads refill boost."
+                        ? "Push the stick toward where you want to drive and the car turns and goes there. Prefer arrows? Pick Buttons above. Gold pads refill boost."
                         : "Steering alone rolls you forward. Gold pads refill boost. Esc pauses."}
                     </div>
                   </HowToPlay>
                 )}
                 {finished && (
                   <div style={{ marginTop: 16 }}>
+                    <PersonalBestLine key={`best-${runId.current}`} id="overtime" value={matchPoints(match)} color="#fde68a" />
                     <ScoreEntry key={runId.current} gameName="overtime" score={matchPoints(match)} level={1} />
                   </div>
                 )}

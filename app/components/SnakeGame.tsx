@@ -51,6 +51,9 @@ export default function SnakeGame() {
   const [progress, setProgress] = useState<GameProgress | null>(null)
   const [isNewHighScore, setIsNewHighScore] = useState(false)
   const [boardCleared, setBoardCleared] = useState(false)
+  const [bonus, setBonus] = useState<{ x: number; y: number; ticks: number } | null>(null)
+  const bonusRef = useRef<{ x: number; y: number; ticks: number } | null>(null)
+  const applesRef = useRef(0)
 
   const gameLoopRef = useRef<NodeJS.Timeout>()
   const snakeRef = useRef<Position[]>([{ x: 200, y: 200 }])
@@ -141,6 +144,9 @@ export default function SnakeGame() {
     setTimeElapsed(0)
     setIsNewHighScore(false)
     setBoardCleared(false)
+    bonusRef.current = null
+    applesRef.current = 0
+    setBonus(null)
   }, [])
 
   // Update level based on score
@@ -153,7 +159,15 @@ export default function SnakeGame() {
     if (actualLevel !== level) {
       setLevel(actualLevel)
       const config = getLevelConfig(actualLevel)
-      setObstacles(placeSnakeObstacles(config.obstacles, snake, food))
+      // Treat the next few cells ahead of the head as occupied so a level-up
+      // never drops a wall straight into the snake's path.
+      const head = snakeRef.current[0]
+      const step = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[directionRef.current]
+      const path = Array.from({ length: 6 }, (_, i) => ({
+        x: head.x + step[0] * GRID_SIZE * (i + 1),
+        y: head.y + step[1] * GRID_SIZE * (i + 1),
+      }))
+      setObstacles(placeSnakeObstacles(config.obstacles, [...snakeRef.current, ...path], food))
     }
   }, [score, level, gameView, snake, food])
 
@@ -282,15 +296,37 @@ export default function SnakeGame() {
       }
       snakeRef.current = next.snake
       setSnake(next.snake)
+      const head = next.snake[0]
+      let bonusPoints = 0
+      const current = bonusRef.current
+      if (current) {
+        if (current.x === head.x && current.y === head.y) {
+          bonusPoints = 50 * level
+          bonusRef.current = null
+        } else {
+          bonusRef.current = current.ticks > 1 ? { ...current, ticks: current.ticks - 1 } : null
+        }
+        setBonus(bonusRef.current)
+      }
       if (next.grows) {
-        const finalScore = score + 10 * level
+        const finalScore = score + 10 * level + bonusPoints
         const nextFood = chooseSnakeFood(next.snake, obstacles)
         if (!nextFood) {
           handleGameOver(true, finalScore)
           return
         }
+        applesRef.current += 1
+        if (applesRef.current % 5 === 0 && !bonusRef.current) {
+          const spot = chooseSnakeFood(next.snake, [...obstacles, nextFood])
+          if (spot) {
+            bonusRef.current = { ...spot, ticks: 40 }
+            setBonus(bonusRef.current)
+          }
+        }
         setScore(finalScore)
         setFood(nextFood)
+      } else if (bonusPoints) {
+        setScore(score + bonusPoints)
       }
     }
     if (firstStepRef.current) {
@@ -354,6 +390,21 @@ export default function SnakeGame() {
       ctx.arc(food.x + GRID_SIZE / 2, food.y + GRID_SIZE / 2, GRID_SIZE / 2 - 2, 0, Math.PI * 2)
       ctx.fill()
 
+      if (bonus) {
+        // Blinks during its last few moves so you know it's about to vanish.
+        if (bonus.ticks > 10 || bonus.ticks % 2 === 0) {
+          ctx.fillStyle = "#F2B705"
+          ctx.fillRect(bonus.x + 2, bonus.y + 2, GRID_SIZE - 4, GRID_SIZE - 4)
+          ctx.strokeStyle = "#5c3d00"
+          ctx.lineWidth = 2
+          ctx.strokeRect(bonus.x + 3, bonus.y + 3, GRID_SIZE - 6, GRID_SIZE - 6)
+        }
+        ctx.fillStyle = "#000"
+        ctx.font = "bold 12px monospace"
+        ctx.textAlign = "center"
+        ctx.fillText(`BONUS x5  ${bonus.ticks}`, CANVAS_SIZE / 2, 22)
+      }
+
       // HUD
       ctx.fillStyle = "#000"
       ctx.font = "bold 14px monospace"
@@ -373,7 +424,7 @@ export default function SnakeGame() {
         ctx.fillText("Arrows, swipe or stick", CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 86)
       }
     }
-  }, [gameView, snake, food, obstacles, score, level, highScore, waitingForMove])
+  }, [gameView, snake, food, obstacles, score, level, highScore, waitingForMove, bonus])
 
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-[760px] mx-auto px-2">
@@ -478,8 +529,8 @@ export default function SnakeGame() {
       </HandheldConsole>
 
       <div className="text-sm text-gray-600 font-mono text-center">
-        <span className="hidden md:inline">Arrow Keys to Move • Level up every 100 pts</span>
-        <span className="md:hidden">Stick, buttons or swipe to turn</span>
+        <span className="hidden md:inline">Arrow keys to move • Every 5th apple drops a gold bonus worth 5x</span>
+        <span className="md:hidden">Swipe or stick to turn • Grab gold bonuses fast</span>
       </div>
     </div>
   )

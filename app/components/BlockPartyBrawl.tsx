@@ -19,6 +19,7 @@ import { useWindowActivity } from "../../components/ui/WindowShell"
 import { BRAWL_WAVES, createBrawl, stepBrawl, type BrawlStatus } from "../../lib/brawl-game"
 import { drawBrawl } from "../../lib/brawl-scene"
 import ScoreEntry from "./ScoreEntry"
+import PersonalBestLine from "./PersonalBestLine"
 import GameJoystick from "../../components/ui/GameJoystick"
 import GameControlChoice, { useGameControlMode } from "../../components/ui/GameControlChoice"
 import { useTouchControls } from "../../components/ui/useTouchControls"
@@ -511,6 +512,7 @@ export default function BlockPartyBrawl() {
               </button>
               {(status === "won" || status === "lost") && (
                 <div style={{ marginTop: 16 }}>
+                  <PersonalBestLine key={`brawl-best-${runId.current}`} id="block-party-brawl" value={gameRef.current.score} color="#5b2c4a" />
                   <ScoreEntry
                     key={`block-party-brawl-${runId.current}`}
                     gameName="block-party-brawl"
