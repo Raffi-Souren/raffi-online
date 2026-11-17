@@ -189,44 +189,60 @@ try {
 
   // ---- pedestrian bump: sprint into someone walking ahead of you.
   const heatBefore = await page.evaluate(() => window.RAFFI_WORLD.complianceSnapshot?.().heat ?? 0)
-  const walker = await page.evaluate(async () => {
-    const { render, state } = window.__FEEL__
-    const before = new Map(render.gfx.scene.children.filter((o) => o.visible && o.userData?.rig === 'biped').map((o) => [o.uuid, o.position.clone()]))
-    const start = state.time
-    await new Promise((resolve) => { const wait = () => (state.time >= start + 0.7 ? resolve() : requestAnimationFrame(wait)); wait() })
-    const people = render.gfx.scene.children.filter((o) => o.visible && before.has(o.uuid))
-    const moving = people.map((person) => {
-      const old = before.get(person.uuid)
-      const dx = person.position.x - old.x, dz = person.position.z - old.z
-      return { person, dx, dz, moved: Math.hypot(dx, dz) }
-    }).filter(({ person, dx, dz, moved }) => {
-      if (!(moved > 0.2) || !people.every((other) => other === person || other.position.distanceTo(person.position) > 3)) return false
-      // The standing spot and the run-up between it and the walker must be open.
-      const collision = window.RAFFI_WORLD.collision()
-      for (const k of [1.2, 2.2, 3.2]) {
-        if (window.__FEEL__.physics.penetrationDepth(collision, person.position.x - dx / moved * k, person.position.z - dz / moved * k, 0.6) > 0) return false
-      }
-      return true
-    })
-    moving.sort((a, b) => b.moved - a.moved)
-    const chosen = moving[0]
-    if (!chosen) throw new Error('No walking pedestrian found')
-    const { person, dx, dz, moved } = chosen
-    // Start 3.2 m behind them, heading the same way: a full sprint run-up
-    // whatever their pace, closing on them from behind.
-    return { uuid: person.uuid, x: person.position.x - dx / moved * 3.2, z: person.position.z - dz / moved * 3.2, yaw: Math.atan2(dx, dz) }
-  })
-  await place(walker)
-  await page.evaluate((uuid) => { window.__FEEL__.bumpTarget = window.__FEEL__.render.gfx.scene.children.find((o) => o.uuid === uuid); window.__FEEL__.bumpStart = window.RAFFI_WORLD.feel().events }, walker.uuid)
-  stop = await record('bump', `
-    const target = ctx.bumpTarget
-    const bump = target.userData.bump
-    return { px: target.position.x, pz: target.position.z, tier: bump?.tier || 0, distance: bump?.distance || 0, applied: bump?.applied || 0 }`)
-  await hold(['Shift', 'w'], 2.0)
-  await simWait(1.0)
-  samples = await stop()
-  const hit = samples.findIndex((s) => s.tier > 0)
-  assert.ok(hit >= 0, 'no bump registered: ' + JSON.stringify(await page.evaluate(() => window.RAFFI_WORLD.feel())))
+  // The run-up is a straight sprint at where the walker is heading. If they
+  // turn or stop first, the miss says nothing about bumps, so pick another
+  // walker. A miss while they held their line is a real failure.
+  const tried = []
+  let hit = -1
+  for (let attempt = 0; attempt < 4 && hit < 0; attempt++) {
+    const walker = await page.evaluate(async (tried) => {
+      const { render, state } = window.__FEEL__
+      const before = new Map(render.gfx.scene.children.filter((o) => o.visible && o.userData?.rig === 'biped' && !tried.includes(o.uuid)).map((o) => [o.uuid, o.position.clone()]))
+      const start = state.time
+      await new Promise((resolve) => { const wait = () => (state.time >= start + 0.7 ? resolve() : requestAnimationFrame(wait)); wait() })
+      const people = render.gfx.scene.children.filter((o) => o.visible && before.has(o.uuid))
+      const moving = people.map((person) => {
+        const old = before.get(person.uuid)
+        const dx = person.position.x - old.x, dz = person.position.z - old.z
+        return { person, dx, dz, moved: Math.hypot(dx, dz) }
+      }).filter(({ person, dx, dz, moved }) => {
+        if (!(moved > 0.2) || !people.every((other) => other === person || other.position.distanceTo(person.position) > 3)) return false
+        // The standing spot and the run-up between it and the walker must be open.
+        const collision = window.RAFFI_WORLD.collision()
+        for (const k of [1.2, 2.2, 3.2]) {
+          if (window.__FEEL__.physics.penetrationDepth(collision, person.position.x - dx / moved * k, person.position.z - dz / moved * k, 0.6) > 0) return false
+        }
+        return true
+      })
+      moving.sort((a, b) => b.moved - a.moved)
+      const chosen = moving[0]
+      if (!chosen) throw new Error('No walking pedestrian found')
+      const { person, dx, dz, moved } = chosen
+      // Start 3.2 m behind them, heading the same way: a full sprint run-up
+      // whatever their pace, closing on them from behind.
+      return { uuid: person.uuid, x: person.position.x - dx / moved * 3.2, z: person.position.z - dz / moved * 3.2, yaw: Math.atan2(dx, dz) }
+    }, tried)
+    tried.push(walker.uuid)
+    await place(walker)
+    await page.evaluate((uuid) => { window.__FEEL__.bumpTarget = window.__FEEL__.render.gfx.scene.children.find((o) => o.uuid === uuid); window.__FEEL__.bumpStart = window.RAFFI_WORLD.feel().events }, walker.uuid)
+    stop = await record('bump', `
+      const target = ctx.bumpTarget
+      const bump = target.userData.bump
+      const p = ctx.state.player
+      return { px: target.position.x, pz: target.position.z, x: p.x, z: p.z, tier: bump?.tier || 0, distance: bump?.distance || 0, applied: bump?.applied || 0 }`)
+    await hold(['Shift', 'w'], 2.0)
+    await simWait(1.0)
+    samples = await stop()
+    hit = samples.findIndex((s) => s.tier > 0)
+    if (hit >= 0) break
+    // How far the walker strayed from the line the sprint ran along.
+    const sin = Math.sin(walker.yaw), cos = Math.cos(walker.yaw)
+    const strayed = Math.max(...samples.map((s) => Math.abs((s.px - walker.x) * cos - (s.pz - walker.z) * sin)))
+    const closest = Math.min(...samples.map((s) => Math.hypot(s.px - s.x, s.pz - s.z)))
+    report.bumpRetries = [...(report.bumpRetries || []), { strayed, closest }]
+    assert.ok(strayed > 0.5 || closest > 1.2, 'ran through a walker who held their line without a bump: ' + JSON.stringify({ strayed, closest, feel: await page.evaluate(() => window.RAFFI_WORLD.feel()) }))
+  }
+  assert.ok(hit >= 0, 'no bump registered in four run-ups: ' + JSON.stringify({ retries: report.bumpRetries, feel: await page.evaluate(() => window.RAFFI_WORLD.feel()) }))
   const bumpPlan = samples.filter((s) => s.tier > 0).at(-1)
   const shoveSamples = samples.slice(hit)
   const pushedFrom = samples[hit]
