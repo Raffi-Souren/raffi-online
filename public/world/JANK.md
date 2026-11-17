@@ -212,3 +212,22 @@ Evidence (session, not committed): `/tmp/raffi-world-city-life/report.json`,
 | Side gigs | No data-driven side gig yet. | charm | Deferred — needs its own pass with a payout and fail state |
 | Phone camera and texts | The phone has no camera or text thread yet. | charm | Deferred — the camera needs the photo-mode pass |
 | Waypoint long-press | Touch pins with a tap; there is no separate long-press on the street. | charm | Kept — a long-press would fight the stick |
+
+## Phase 7 — graphics (November 17)
+
+Evidence (session, not committed): before/after frames at four fixed poses
+(night strip, night club front, dusk Heights, midday downtown) on High
+and Medium, and `/tmp/raffi-world-graphics/report.json`.
+
+| Area | Issue | Severity | Fixed |
+|---|---|---|---|
+| Auto quality | Desktop Auto started at Balanced and could only step down, so a strong GPU never got High. | jank | Yes — starts from the GPU, climbs and drops with a learned ceiling |
+| Anti-aliasing | Balanced and Performance had none: stair-stepped rooflines, railings, poles. | jank | Yes — FXAA, plus a clamped sharpen when upscaling |
+| Shadows | three r183 silently swapped PCF-soft for hard PCF (a console warning every load). | jank | Yes — PCF with a per-tier penumbra radius |
+| Bloom | One narrow quarter-resolution blur; neon barely glowed. | charm | Yes — dual-filter bloom, core plus halo |
+| Ambient occlusion | Fixed sample spiral left faint rings. | jank | Yes — per-pixel rotation and a depth-aware filter |
+| Banding | 8-bit skies and fog banded at dusk. | jank | Yes — one-step triangular dither |
+| Reflections | Environment was a plain sky gradient. | charm | Yes — sun glow, skyline, lit windows at night |
+| Night | Ambient as bright as twilight; lamps and neon had nothing to stand out from. | charm | Partly — darker ambient; lamps that light the pavement under neon poles need light sources placed in the city data |
+| Wet streets | Wet ground reflects the environment, not the actual neon above it. | charm | Deferred — needs screen-space reflections, and their budget |
+| Temporal AA | No TAA, so fine detail can shimmer in motion on Balanced. | charm | Deferred — needs motion vectors through the merged city geometry |

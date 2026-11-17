@@ -142,6 +142,7 @@ export function updateFoliageCell(mesh, cameraPosition, tier) {
   const {fullCount,reducedCount}=mesh.userData.foliage
   const sphere=mesh.boundingSphere
   const distance=Math.max(0,Math.hypot(cameraPosition.x-mesh.position.x-sphere.center.x,cameraPosition.y-sphere.center.y,cameraPosition.z-mesh.position.z-sphere.center.z)-sphere.radius)
-  mesh.count=tier==='performance' || distance>(tier==='high'?95:55)?reducedCount:fullCount
-  mesh.castShadow=tier!=='performance' && distance<(tier==='high'?160:75)
+  const rich=tier==='high'||tier==='ultra'
+  mesh.count=tier==='performance' || distance>(rich?95:55)?reducedCount:fullCount
+  mesh.castShadow=tier!=='performance' && distance<(rich?160:75)
 }
