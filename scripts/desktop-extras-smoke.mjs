@@ -194,7 +194,9 @@ try {
     for (const app of ["about", "games", "notes", "projects", "blogroll"]) {
       await page.goto(`${base}/?app=${app}`, { waitUntil: "domcontentloaded", timeout: 120_000 })
       await page.locator(`[data-window-task="${app}"]`).waitFor({ timeout: 60_000 })
-      await page.waitForTimeout(500)
+      // The taskbar button shows before the window's own chunk has loaded and rendered.
+      if (app !== "notes") await page.locator(".tap-target").first().waitFor({ timeout: 60_000 })
+      await page.waitForTimeout(300)
       sizes[app] = await page.evaluate(() => [...document.querySelectorAll(".tap-target")].map((el) => {
         const box = el.getBoundingClientRect()
         return { text: (el.textContent || "").trim().slice(0, 24), height: Math.round(box.height), shown: box.width > 0 && box.height > 0 }
