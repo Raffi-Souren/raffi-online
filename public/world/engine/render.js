@@ -31,6 +31,14 @@ let waterTime = null
 let sky = null
 let csm = null
 let csmProjection = ''
+/**
+ * Each new set of cascades gets its own shader program key. three keeps one
+ * uniforms object per material and reuses a cached program for a known key,
+ * so cascades rebuilt with the old key would draw with the uniforms the old
+ * cascades' dispose() deleted, and crash.
+ */
+let csmGeneration = 0
+const originalCacheKeys = new Map()
 const originalMaterialHooks = new Map()
 const lowLightUniforms = { uLowSun: { value: sunDirection }, uLowKey: { value: new THREE.Color(1, 1, 1) }, uLowFill: { value: new THREE.Color(0.65, 0.72, 0.85) } }
 const wetness = { value: 0 }
@@ -119,8 +127,16 @@ export function setQuality(preset, { automatic = false } = {}) {
   gfx.post.setBloomLevels(q.bloomLevels)
   gfx.post.setAOEnabled(q.ao)
   gfx.post.setAOScale(q.aoScale)
-  // Cascades are built for one map size; a tier with another size rebuilds them.
-  if (csm && csm.lights[0]?.shadow.mapSize.x !== q.cascadeShadowSize) removeCascades()
+  // High and Ultra differ only in cascade map size and softness: resize the
+  // maps in place rather than rebuilding the cascades and recompiling.
+  if (csm && q.cascadeShadowSize > 0) {
+    const resized = csm.shadowMapSize !== q.cascadeShadowSize
+    csm.shadowMapSize = q.cascadeShadowSize
+    csm.lights.forEach((light, index) => {
+      if (resized) { light.shadow.map?.dispose(); light.shadow.map = null; light.shadow.mapSize.set(q.cascadeShadowSize, q.cascadeShadowSize) }
+      light.shadow.radius = q.shadowRadius / (1 + index * 0.5)
+    })
+  }
   applyMaterialTier()
   lastShadowTime = -Infinity
   resize()
@@ -696,6 +712,8 @@ function removeCascades() {
   for (const light of csm.lights) light.shadow.dispose()
   csm.dispose()
   for (const [material, hook] of originalMaterialHooks) { material.onBeforeCompile = hook; material.needsUpdate = true }
+  for (const [material, key] of originalCacheKeys) { material.customProgramCacheKey = key; material.needsUpdate = true }
+  originalCacheKeys.clear()
   csm = null
   csmProjection = ''
   lastShadowTime = -Infinity
@@ -715,6 +733,7 @@ function updateCascades(camera) {
       lightNear: 1, lightFar: 700, shadowBias: -0.000035,
     })
     csm.fade = true
+    csmGeneration++
     csm.updateFrustums()
     csm.lights.forEach((light, index) => {
       light.shadow.normalBias = 0.018 + index * 0.012
@@ -730,11 +749,16 @@ function updateCascades(camera) {
       originalMaterialHooks.set(material, material.onBeforeCompile)
       material.addEventListener('dispose', () => {
         originalMaterialHooks.delete(material)
+        originalCacheKeys.delete(material)
         csm?.shaders.delete(material)
       })
     }
     const hook = originalMaterialHooks.get(material)
     material.userData.preCSMHook = hook
+    if (!originalCacheKeys.has(material)) originalCacheKeys.set(material, material.customProgramCacheKey)
+    const baseKey = originalCacheKeys.get(material)
+    const generation = csmGeneration
+    material.customProgramCacheKey = () => baseKey.call(material) + ':csm' + generation
     csm.setupMaterial(material)
     const csmHook = material.onBeforeCompile
     material.onBeforeCompile = (shader, renderer) => { hook?.(shader, renderer); csmHook(shader, renderer) }

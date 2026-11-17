@@ -16,7 +16,9 @@ concurrency:
 jobs:
   release-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # The browser gate grew past 25 minutes on the hosted runner with the
+    # street-life, graphics and desktop-extras smokes.
+    timeout-minutes: 35
 
     steps:
       - name: Check out repository

@@ -4,7 +4,8 @@
  * Graphics smoke: every tier renders with no WebGL or three.js complaint,
  * with the passes it promises (FXAA where there is no MSAA, wide bloom, AO
  * on High and Ultra, soft cascaded shadows), and a picture that is not
- * blank. Auto mode recognises a software GPU and stays light, and its
+ * blank, switching between them live as the pause menu does. Auto mode
+ * recognises a software GPU and stays light, and its
  * governor lowers the render resolution under slow frames (with sharpening
  * to match) and restores it when frames recover. Each World runs in its own
  * context, closed before the next one starts.
@@ -82,8 +83,21 @@ const expectations = {
 }
 
 try {
+  // One World, switched tier to tier the way the pause menu does: it boots
+  // once (booting is most of the cost on a CPU renderer) and every switch
+  // is exercised live, cascades rebuilt and materials swapped included.
+  const tiered = await open({ tier: 'low' })
   for (const [param, expected] of Object.entries(expectations)) {
-    const { context, page, complaints } = await open({ tier: param })
+    const { page } = tiered
+    const seen = tiered.complaints.length
+    if (param !== 'low') {
+      await page.evaluate((preset) => window.RAFFI_WORLD.setQuality(preset), param)
+      // Shadows refresh at 30 Hz of game time and bloom is immediate, so a few
+      // frames settle a switch; on a CPU renderer each High frame takes seconds.
+      const until = await page.evaluate(() => window.__GFX__.state.time + 0.4)
+      await page.waitForFunction((until) => window.__GFX__.state.time >= until, until, { timeout: 180_000 })
+    }
+    const complaints = tiered.complaints.slice(seen)
     const state = await snapshot(page)
     state.bytes = await picture(page, `tier-${param}`)
     state.complaints = complaints
@@ -102,8 +116,27 @@ try {
     check(state.bytes > 60_000, 'picture looks blank')
     if (param === 'medium') check(state.drawCalls < 250, 'Medium over its 250 draw-call budget')
     if (param === 'ultra') check(state.drawDistance > report.tiers.high.drawDistance, 'Ultra sees no further than High')
-    await context.close()
   }
+  // Down to Balanced (cascades torn down) and back to High (rebuilt). three
+  // reuses a cached shader program for a known key, so a rebuild with the
+  // old key drew without its cascade boundaries, or crashed on Ultra.
+  {
+    const { page } = tiered
+    const seen = tiered.complaints.length
+    for (const preset of ['balanced', 'high']) {
+      await page.evaluate((preset) => window.RAFFI_WORLD.setQuality(preset), preset)
+      const until = await page.evaluate(() => window.__GFX__.state.time + 0.3)
+      await page.waitForFunction((until) => window.__GFX__.state.time >= until, until, { timeout: 180_000 })
+    }
+    const cascades = await page.evaluate(() => {
+      const { gfx } = window.__GFX__
+      const props = gfx.renderer.properties.get(gfx.materials.opaque)
+      return { uniforms: !!props.uniforms?.CSM_cascades, maps: window.RAFFI_WORLD.getQuality().activeShadowMaps }
+    })
+    report.roundTrip = { ...cascades, complaints: tiered.complaints.slice(seen) }
+    if (!cascades.uniforms || cascades.maps.length !== 3 || report.roundTrip.complaints.length) problems.push('High → Balanced → High lost its cascades · ' + JSON.stringify(report.roundTrip))
+  }
+  await tiered.context.close()
 
   // ---- auto on a software GPU: light tier, then the governor at work.
   {
