@@ -1,5 +1,5 @@
 {
-  "$comment": "Fourteen BADCOMPANY tapes hidden on sidewalks and stoops, one per mix in data/audio-library.ts (ids and titles must match; public/world/tools/city-life.test.mjs checks). Finding one is saved under localStorage 'raffi:tapes-found', shared with the Lab's Tape Shelf; it never locks a mix. Spots were sampled clear of every solid.",
+  "$comment": "BADCOMPANY tapes hidden on sidewalks and stoops, one per mix in data/audio-library.ts (ids and titles must match; public/world/tools/city-life.test.mjs checks). Finding one is saved under localStorage 'raffi:tapes-found', shared with the Lab's Tape Shelf; it never locks a mix. Keep every spot on a sidewalk, clear of solids and off the road (the street-life smoke checks).",
   "pickupRadius": 1.4,
   "tapes": [
     {
@@ -8,7 +8,7 @@
       "district": "downtown",
       "street": "2nd Ave",
       "at": {
-        "x": 220,
+        "x": 227.2,
         "z": -240
       }
     },
