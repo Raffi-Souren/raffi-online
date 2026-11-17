@@ -29,6 +29,7 @@ const WINDOW_TITLES: Record<string, string> = {
   startup: "RAF OS TERMINAL",
   counter: "BY THE NUMBERS",
   lab: "LAB",
+  system: "SYSTEM PROPERTIES",
 }
 
 export default function Taskbar({
@@ -139,11 +140,11 @@ export default function Taskbar({
         overflow: "hidden",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, overflow: "hidden", paddingBlock: "3px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, overflow: "hidden", paddingBlock: "4px" }}>
         <button
           type="button"
           onClick={onStartClick}
-          className="transition-[filter,transform] active:translate-y-px hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white"
+          className="tap-bar transition-[filter,transform] active:translate-y-px hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white"
           aria-label="Start menu"
           style={{
             background: "linear-gradient(to bottom, #3E9C4D 0%, #236F30 100%)",
@@ -219,7 +220,7 @@ export default function Taskbar({
           <button
             type="button"
             onClick={() => onWindowClick("crates")}
-            className="hover:bg-[#3E80F1] rounded transition-colors"
+            className="tap-bar hover:bg-[#3E80F1] rounded transition-colors"
             style={{
               backgroundColor: "transparent",
               border: "none",
@@ -301,7 +302,7 @@ export default function Taskbar({
                   data-window-state={minimized ? "minimized" : active ? "active" : "background"}
                   type="button"
                   onClick={() => onTaskClick(name)}
-                  className="hover:bg-[#2860D6] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] transition-colors"
+                  className="tap-bar hover:bg-[#2860D6] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.2)] transition-colors"
                   title={minimized ? `${title} is minimized. Click to restore.` : active ? `Minimize ${title}` : `Switch to ${title}`}
                   aria-label={minimized ? `Restore ${title} window` : active ? `Minimize ${title} window` : `Switch to ${title} window`}
                   aria-pressed={active}

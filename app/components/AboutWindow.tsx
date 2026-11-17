@@ -57,7 +57,7 @@ export default function AboutWindow({ isOpen, onClose }: AboutWindowProps) {
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: "inline-block", color: "#1d4ed8", marginTop: 12, fontSize: 14 }}
-            className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+            className="tap-target hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
           >
             Professional bio & work ↗
           </a>

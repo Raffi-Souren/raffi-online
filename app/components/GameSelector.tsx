@@ -506,7 +506,7 @@ export default function GameSelector({ isOpen, onClose, onOpenWorld }: GameSelec
                 fontWeight: category === item ? 700 : 400,
                 boxShadow: category === item ? "inset 0 1px 2px #51694125" : "0 1px 0 #d7dcd4",
               }}
-              className="hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+              className="tap-target hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
             >
               {item}
             </button>

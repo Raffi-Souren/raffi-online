@@ -309,7 +309,7 @@ export default function NotesWindow({ isOpen, onClose, initialTab, tabRequest, o
 
   const tabButtonStyle = (isActive: boolean) => ({
     flex: "1 1 124px",
-    minHeight: 38,
+    minHeight: 44,
     padding: "0.5rem 0.75rem",
     fontSize: "0.875rem",
     fontWeight: "500",
