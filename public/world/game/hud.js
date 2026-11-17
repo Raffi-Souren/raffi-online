@@ -193,6 +193,25 @@ function drawTapeMarkers(ctx, px, pz, cx, cy, scale, reach) {
   }
 }
 
+/** Where open gigs start (gold) and where coffee is (cream), from game/gigs.js and game/life.js. */
+function drawLifeMarkers(ctx, px, pz, cx, cy, scale, reach) {
+  for (const cart of state.coffeeCarts || []) {
+    const dx = cart.x - px, dz = cart.z - pz
+    if (Math.hypot(dx, dz) > reach) continue
+    ctx.fillStyle = '#f0e2bd'
+    ctx.beginPath(); ctx.arc(cx + dx * scale, cy + dz * scale, 3, 0, Math.PI * 2); ctx.fill()
+  }
+  for (const gig of state.gigMarkers || []) {
+    const dx = gig.x - px, dz = gig.z - pz
+    if (Math.hypot(dx, dz) > reach) continue
+    const x = cx + dx * scale, y = cy + dz * scale
+    ctx.strokeStyle = '#f2bd45'; ctx.lineWidth = 2.5
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.stroke()
+    ctx.fillStyle = '#f2bd45'
+    ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill()
+  }
+}
+
 function drawMinimap() {
   const canvas = els.minimapCanvas
   const ctx = mapContext
@@ -235,6 +254,7 @@ function drawMinimap() {
   })
 
   if (!state.interior) drawTapeMarkers(ctx, px, pz, cx, cy, pixelsPerMetre, worldRadius)
+  if (!state.interior) drawLifeMarkers(ctx, px, pz, cx, cy, pixelsPerMetre, worldRadius)
 
   if (waypoint) {
     if (!routePoints.length || Math.hypot(px - routeOrigin.x, pz - routeOrigin.z) > 18) {

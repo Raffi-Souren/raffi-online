@@ -221,6 +221,7 @@ export function tryKickflip() {
     (v.handling?.topSpeed || 12) * 1.15
   )
   bus.emit('toast', 'KICKFLIP…')
+  bus.emit('kickflip')
   return true
 }
 
@@ -350,7 +351,8 @@ function updateWalking(dt, input, world, beatPhase) {
     x: mag > 0.001 ? wantX / mag : 0,
     z: mag > 0.001 ? wantZ / mag : 0,
     magnitude: mag,
-    run: !!input.run,
+    // Out of breath (game/life.js): no sprint until stamina is back.
+    run: !!input.run && !p.sprintLocked,
     scale: (player.stagger > 0 ? 0.5 : 1) * (player.wallContact ? tuning.wallBrush : 1),
   }, dt, tuning)
   p.vx = loco.vx

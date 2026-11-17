@@ -1,5 +1,5 @@
 /**
- * RAFFI WORLD — fourteen BADCOMPANY tapes hidden around the city.
+ * RAFFI WORLD — BADCOMPANY tapes hidden around the city, one per mix.
  *
  * Two instanced meshes draw every tape (shell and label), so the whole set
  * costs two draw calls. Walking or riding within reach picks one up: a pop,
@@ -104,6 +104,7 @@ function pickUp(tape) {
   const first = result.count === 1
   applyTapeUnlocks()
   publishMarkers()
+  bus.emit('tape-found', { count: result.count, total })
   toast(first
     ? `TAPE FOUND · ${tape.title} · 1/${total} · BADCO FM is on the radio now`
     : `TAPE ${result.count}/${total} · ${tape.title}${result.count === total ? ' · the whole shelf' : ''}`, 4)

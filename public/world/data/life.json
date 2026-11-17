@@ -1,0 +1,112 @@
+{
+  "$comment": "Street life: cash, skills that grow with use, sprint stamina, side gigs and texts. Rules are in game/life-core.js; this file is the tuning and the content. Every gig start, stop and spot is on a sidewalk clear of solids (the street-life smoke checks them against the generated city). Cash only buys comforts: nothing here gates a mission, a mix or a tape.",
+
+  "stamina": {
+    "$comment": "Seconds of sprint by Legs level 1–5. Sprint comes back after regenDelay seconds, over regenSeconds, restBoost times faster standing still. Empty means winded until it is back to windedUntil.",
+    "sprintSeconds": [12, 15, 18, 22, 26],
+    "regenDelay": 0.9,
+    "regenSeconds": 7,
+    "restBoost": 1.6,
+    "windedUntil": 0.3
+  },
+
+  "skills": {
+    "$comment": "xp thresholds for levels 1–5, shared by all four. payPerLevel is the gig bonus per level above 1 in the gig's own skill.",
+    "thresholds": [0, 100, 300, 700, 1500],
+    "payPerLevel": 0.05,
+    "legs": { "name": "Legs", "grows": "Sprinting", "perk": "Longer sprint", "metresPerXp": 10 },
+    "wheels": { "name": "Wheels", "grows": "Driving", "perk": "Better pay on driving gigs", "metresPerXp": 40 },
+    "board": { "name": "Board", "grows": "Skating and kickflips", "perk": "Better pay on skate gigs", "metresPerXp": 15, "xpPerFlip": 4 },
+    "hustle": { "name": "Hustle", "grows": "Finishing gigs", "perk": "Opens bigger gigs", "xpPerGig": 25, "xpPerBest": 10 }
+  },
+
+  "prices": { "coffee": 4, "valet": 20, "tapeTip": 25 },
+  "coffee": { "wiredSeconds": 60, "radius": 3.2 },
+  "valet": { "vehicle": "compact", "label": "Your ride" },
+
+  "gigs": [
+    {
+      "id": "crate-run", "name": "CRATE RUN", "kind": "delivery", "giver": "Bea", "skill": "wheels", "hustle": 1,
+      "pitch": "Three orders, one hot crate. Club first, then the yards, then the Mainframe lobby.",
+      "start": { "x": -60, "z": 152.8 }, "seconds": 170, "radius": 9,
+      "stops": [
+        { "x": 112, "z": 152.8, "label": "THE CLUB" },
+        { "x": 372.8, "z": 90, "label": "DOCK AVE" },
+        { "x": 52.8, "z": -200, "label": "MAINFRAME LOBBY" }
+      ],
+      "pay": { "base": 45, "perSecond": 0.6, "timeCap": 40 }
+    },
+    {
+      "id": "flyer-drop", "name": "FLYER DROP", "kind": "delivery", "giver": "Mae", "skill": "legs", "hustle": 1,
+      "pitch": "Fresh off the screen. Five stoops in the Heights before the ink is dry. On foot or on a board.",
+      "start": { "x": -322, "z": -395 }, "seconds": 180, "radius": 6,
+      "stops": [
+        { "x": -392.8, "z": -330, "label": "7TH AVE STOOP" },
+        { "x": -470, "z": -257.2, "label": "BLUFF ST STOOP" },
+        { "x": -552.8, "z": -190, "label": "9TH AVE STOOP" },
+        { "x": -480, "z": -127.2, "label": "HARBOR ST STOOP" },
+        { "x": -407.2, "z": -180, "label": "7TH AVE CORNER" }
+      ],
+      "pay": { "base": 30, "perSecond": 0.5, "timeCap": 35 }
+    },
+    {
+      "id": "skate-line", "name": "WATERFRONT LINE", "kind": "line", "giver": "Jules", "skill": "board", "hustle": 1, "ride": "skateboard", "offRideSeconds": 5,
+      "pitch": "One loop of the Heights on a board. Stay on it. Kickflips between gates pay extra.",
+      "start": { "x": -331, "z": -404 }, "seconds": 120, "radius": 7,
+      "stops": [
+        { "x": -260, "z": -380, "label": "5TH AVE" },
+        { "x": -260, "z": -250, "label": "BLUFF ST" },
+        { "x": -400, "z": -250, "label": "7TH AVE" },
+        { "x": -400, "z": -380, "label": "PROMENADE ST" },
+        { "x": -340, "z": -380, "label": "THE PLAZA" }
+      ],
+      "pay": { "base": 35, "perSecond": 0.5, "timeCap": 30, "perFlip": 4, "flipCap": 40 }
+    },
+    {
+      "id": "find-the-dj", "name": "FIND THE DJ", "kind": "hunt", "giver": "Lena", "skill": "hustle", "hustle": 1,
+      "pitch": "Pop-up set tonight. No address. Your phone picks up the signal: more bars, closer.",
+      "start": { "x": 178, "z": 152.8 }, "seconds": 130, "radius": 8, "reach": 300,
+      "spots": [
+        { "x": -92.8, "z": 240, "label": "3RD AVE" },
+        { "x": 227.2, "z": 230, "label": "2ND AVE" },
+        { "x": 52.8, "z": 60, "label": "VANTAGE AVE" },
+        { "x": 300, "z": 307.2, "label": "STADIUM ST" }
+      ],
+      "pay": { "base": 60, "perSecond": 0.5, "timeCap": 40 }
+    },
+    {
+      "id": "crosstown-run", "name": "CROSSTOWN RUN", "kind": "delivery", "giver": "Nico", "skill": "wheels", "hustle": 2,
+      "pitch": "Four signatures across four districts. Take a car. I’ve marked them in order.",
+      "start": { "x": -430, "z": -127.2 }, "seconds": 200, "radius": 9,
+      "stops": [
+        { "x": -407.2, "z": 100, "label": "THE BOWL" },
+        { "x": -60, "z": 152.8, "label": "B-SIDE RECORDS" },
+        { "x": 532.8, "z": 40, "label": "PIER AVE" },
+        { "x": 212.8, "z": -240, "label": "2ND AVE DESK" }
+      ],
+      "pay": { "base": 110, "perSecond": 0.8, "timeCap": 70 }
+    }
+  ],
+
+  "texts": [
+    { "id": "welcome", "from": "Bea", "when": { "event": "start" }, "body": "You’re on the block now. If you need pocket money, open Gigs on your phone. I always have a crate that’s late." },
+    { "id": "first-tape", "from": "Bea", "when": { "event": "tape", "count": 1 }, "body": "You found one of Raf’s tapes?? BADCO FM should be up on your dial now. There are more out there. Stoops, mostly." },
+    { "id": "five-tapes", "from": "Lena", "when": { "event": "tape", "count": 5 }, "body": "Five tapes. You’re digging properly. If you get stuck, the Tapes app sells tips. I’m not proud of it." },
+    { "id": "all-tapes", "from": "Bea", "when": { "event": "tape-all" }, "body": "The whole shelf. Nobody’s done that. Go look at it in the Lab, every spine has a sticker." },
+    { "id": "first-gig", "from": "Bea", "when": { "event": "gig", "result": "done", "count": 1 }, "body": "Paid. See, the city’s nicer with twenty dollars in your pocket. Coffee carts take cash." },
+    { "id": "crate-run-done", "from": "Bea", "when": { "event": "gig", "id": "crate-run", "result": "done" }, "body": "All three signed for. The club said the crate was still warm. Same time tomorrow?" },
+    { "id": "crate-run-late", "from": "Bea", "when": { "event": "gig", "id": "crate-run", "result": "timeout" }, "body": "They closed the door on you. It happens. Take a car next time, the yards are further than they look." },
+    { "id": "flyer-drop-done", "from": "Mae", "when": { "event": "gig", "id": "flyer-drop", "result": "done" }, "body": "Five stoops, no smudges. I’ll print you something for the wall. Come by the table." },
+    { "id": "flyer-drop-late", "from": "Mae", "when": { "event": "gig", "id": "flyer-drop", "result": "timeout" }, "body": "Ink dried before you got there. Pace yourself: sprint the straights, walk the corners." },
+    { "id": "skate-line-done", "from": "Jules", "when": { "event": "gig", "id": "skate-line", "result": "done" }, "body": "Clean line. People on the promenade actually clapped. Throw more flips in next time, they pay." },
+    { "id": "skate-line-off", "from": "Jules", "when": { "event": "gig", "id": "skate-line", "result": "off-ride" }, "body": "You got off the board. The whole point is the board." },
+    { "id": "dj-found", "from": "Lena", "when": { "event": "gig", "id": "find-the-dj", "result": "done" }, "body": "You found it. I saw you at the back. Next one’s somewhere else, that’s the game." },
+    { "id": "dj-missed", "from": "Lena", "when": { "event": "gig", "id": "find-the-dj", "result": "timeout" }, "body": "Set’s over. Watch the bars on your phone, not the street signs." },
+    { "id": "crosstown-open", "from": "Nico", "when": { "event": "level", "skill": "hustle", "level": 2 }, "body": "Nico here. I hear you finish what you start. Crosstown Run is on your phone now. It pays like a real job." },
+    { "id": "crosstown-done", "from": "Nico", "when": { "event": "gig", "id": "crosstown-run", "result": "done" }, "body": "Four signatures, four districts. I’ve never had that back before the desk closed." },
+    { "id": "legs-3", "from": "Jules", "when": { "event": "level", "skill": "legs", "level": 3 }, "body": "You’re getting quick. Come run with us at the waterfront some time." },
+    { "id": "first-photo", "from": "Lena", "when": { "event": "photo", "count": 1 }, "body": "Saw the photo. You’ve got an eye. Try Disposable flash at night, outside the club." },
+    { "id": "first-coffee", "from": "Mae", "when": { "event": "coffee", "count": 1 }, "body": "Cart coffee. Now you live here." },
+    { "id": "flush", "from": "Nico", "when": { "event": "cash", "atLeast": 500 }, "body": "Five hundred in your pocket. Don’t let it change you. The valet will bring your car round for twenty." }
+  ]
+}

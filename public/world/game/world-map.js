@@ -108,6 +108,10 @@ function draw() {
     ctx.fillStyle = '#e8692f'; ctx.strokeStyle = '#f0e2bd'; ctx.lineWidth = 1.5
     ctx.fillRect(x(tape.x) - 6, y(tape.z) - 4, 12, 8); ctx.strokeRect(x(tape.x) - 6, y(tape.z) - 4, 12, 8)
   }
+  for (const gig of state.gigMarkers || []) {
+    ctx.strokeStyle = '#f2bd45'; ctx.lineWidth = 3
+    ctx.beginPath(); ctx.arc(x(gig.x), y(gig.z), 7, 0, Math.PI * 2); ctx.stroke()
+  }
   const target = getWaypoint()
   if (target) {
     ctx.strokeStyle = '#ffce6b'; ctx.lineWidth = 3
