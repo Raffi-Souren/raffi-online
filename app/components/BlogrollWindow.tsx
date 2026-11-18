@@ -164,6 +164,7 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
                 aria-pressed={selectedCategory === category}
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
+                className="tap-target"
                 onClick={() => setSelectedCategory(category)}
                 style={{
                   fontSize: "0.75rem",
@@ -234,7 +235,7 @@ export default function BlogrollWindow({ isOpen, onClose }: BlogrollWindowProps)
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm font-medium hover:underline gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+                  className="tap-target inline-flex items-center text-sm font-medium hover:underline gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
                   style={{ color: "#2563eb" }}
                 >
                   Visit Site <ExternalLink className="h-3 w-3" />

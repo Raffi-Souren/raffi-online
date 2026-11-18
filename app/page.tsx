@@ -7,6 +7,7 @@ import QuestionBlock from "../components/easter/QuestionBlock"
 import DesktopIcon from "../components/ui/DesktopIcon"
 import StartMenu from "../components/ui/StartMenu"
 import DesktopContextMenu from "../components/ui/DesktopContextMenu"
+import KonamiBalloon from "../components/easter/KonamiBalloon"
 import Taskbar from "./components/Taskbar"
 import NowPlaying from "./components/NowPlaying"
 import DesktopWelcome from "./components/DesktopWelcome"
@@ -24,6 +25,7 @@ const ProjectsWindow = dynamic(() => import("./components/ProjectsWindow"))
 const RaffiWorldWindow = dynamic(() => import("./components/RaffiWorldWindow"))
 const RafOsTerminal = dynamic(() => import("./components/RafOsTerminal"))
 const LabWindow = dynamic(() => import("./components/LabWindow"))
+const SystemPropertiesWindow = dynamic(() => import("./components/SystemPropertiesWindow"))
 
 const DESKTOP_SHORTCUTS = [
   { action: "about", icon: "👤", label: "ABOUT", description: "A little about me" },
@@ -51,6 +53,7 @@ const WINDOW_SLOTS = [
   "startup",
   "counter",
   "lab",
+  "system",
 ] as const
 
 const WELCOME_COLLAPSED_KEY = "raffi:welcome-collapsed"
@@ -76,6 +79,7 @@ export default function Home() {
     projects: false,
     world: false,
     lab: false,
+    system: false,
   })
   const [labSlug, setLabSlug] = useState<LabSlug>(DEFAULT_LAB_SLUG)
   const [notesTab, setNotesTab] = useState<"articles" | "research" | undefined>(undefined)
@@ -340,6 +344,15 @@ export default function Home() {
             onMinimize={() => minimizeWindow("startup")}
           />
         )
+      case "system":
+        return (
+          <SystemPropertiesWindow
+            isOpen={openWindows.system}
+            onClose={() => closeWindow("system")}
+            onOpenWindow={openWindow}
+            openCount={WINDOW_SLOTS.filter((name) => openWindows[name]).length}
+          />
+        )
       case "counter":
         return (
           <UnderConstructionWindow
@@ -421,6 +434,8 @@ export default function Home() {
 
       {/* Now Playing Component */}
       <NowPlaying />
+
+      <KonamiBalloon enabled={!showStartMenu && activeWindow !== "games" && activeWindow !== "world" && activeWindow !== "startup"} />
 
       {/* Taskbar - z-50 */}
       <Taskbar

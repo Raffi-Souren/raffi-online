@@ -18,12 +18,13 @@ export default function DesktopContextMenu({ onOpenWindow }: DesktopContextMenuP
   const [position, setPosition] = useState({ x: 0, y: 0 })
 
   const handleContextMenu = useCallback((e: MouseEvent) => {
-    // Only show context menu if clicking on the desktop background
+    // Only on bare desktop: the wallpaper, or the empty part of the icon grid,
+    // which spans the screen above it. Icons, windows and the welcome keep
+    // the browser's own menu.
     const target = e.target as HTMLElement
     const isDesktopBackground =
-      target.tagName === "IMG" ||
-      target.closest('[data-desktop-bg="true"]') ||
-      (target.classList.contains("min-h-screen") && !target.closest("button") && !target.closest('[role="dialog"]'))
+      Boolean(target.closest('[data-desktop-bg="true"]')) ||
+      target.matches('[data-desktop-icons="true"]')
 
     if (isDesktopBackground) {
       e.preventDefault()
@@ -57,7 +58,7 @@ export default function DesktopContextMenu({ onOpenWindow }: DesktopContextMenuP
     { label: "Projects", action: () => onOpenWindow("projects") },
     { label: "Raffi World", action: () => onOpenWindow("world") },
     { label: "Notes", action: () => onOpenWindow("notes"), divider: true },
-    { label: "Properties", action: () => onOpenWindow("about"), disabled: false },
+    { label: "Properties", action: () => onOpenWindow("system"), disabled: false },
   ]
 
   if (!isOpen) return null

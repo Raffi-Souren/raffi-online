@@ -729,3 +729,22 @@ html {
     transition: none;
   }
 }
+
+/* Phones: every control gets a finger-sized target without changing how it
+   looks with a mouse. .tap-target grows the control itself; .tap-bar keeps a
+   taskbar button's size and stretches its touch area to the bar's height. */
+@media (pointer: coarse) {
+  .tap-target {
+    min-height: 44px !important;
+    display: inline-flex;
+    align-items: center;
+  }
+  .tap-bar {
+    position: relative;
+  }
+  .tap-bar::after {
+    content: "";
+    position: absolute;
+    inset: -4px 0;
+  }
+}

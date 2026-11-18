@@ -42,6 +42,7 @@ export default function StartMenu({ isOpen, onClose, onOpenWindow, onShowWelcome
     { icon: "🧪", label: "Lab", description: "Music, hardware & research experiments", action: () => onOpenWindow("lab") },
     { icon: "📝", label: "Notes", description: "Writing, research & talks", action: () => onOpenWindow("notes") },
     { icon: "💡", label: "RAF OS", description: "AI pitch review", action: () => onOpenWindow("startup") },
+    { icon: "🖥️", label: "My Computer", description: "System properties & high scores", action: () => onOpenWindow("system") },
     ...(onShowWelcome ? [{ icon: "📄", label: "welcome.txt", description: "Reopen the welcome cassette", action: onShowWelcome }] : []),
   ]
 
