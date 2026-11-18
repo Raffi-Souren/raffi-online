@@ -450,3 +450,58 @@ generated city (clear of solids, off the road). `street-life.test.mjs` covers
 profile tolerance, levels, the wallet, stamina at 30/60/144 Hz, each gig kind,
 pay caps, best times, text matching, and that every gig can be finished in its
 time at a plausible pace.
+
+## November 17 graphics pass (the best picture a device holds smoothly)
+
+**Tiers.** Performance, Balanced, High and a new Ultra. Ultra draws at the
+display's own density up to 1440p-class pixel counts, with three 2048
+shadow cascades, full-resolution ambient occlusion and a 620 m view.
+Players can still pick any tier in the pause menu.
+
+**Auto.** Auto mode starts from what the GPU looks like
+(`engine/quality-core.js`): High on a dedicated or Apple desktop GPU,
+Balanced on integrated graphics and recent iPhones or Adreno 7xx phones,
+Performance on other phones, and Performance with nowhere higher to go on
+a software renderer such as CI's SwiftShader. Phones never try Ultra.
+While you play, a governor watches frame times. Under steady slow frames
+(over 21 ms for at least a second) it lowers the render resolution in 10%
+steps to 70%, and only then drops a tier. After six seconds of steady
+60 fps or better it raises resolution back, then tries the next tier up. A
+tier that cannot hold is undone within eight seconds and becomes the
+ceiling, remembered for this GPU on the next visit, so nothing flip-flops.
+One long frame (a shader compile, a tab switch) is not a trend. The pause
+menu shows what Auto settled on, e.g. "Graphics: Auto (High)".
+
+**Image.** All post-processing is in `engine/post.js`:
+- Anti-aliasing on every tier: MSAA on High and Ultra, FXAA (three.js's,
+  vendored) on Balanced and Performance.
+- A contrast-adaptive sharpen, clamped to the neighbourhood so it never
+  halos, restores detail when the scene is drawn below screen resolution.
+- Bloom is dual-filter over four or five levels, so neon tubes and lamps
+  get a bright core and a wide halo. A Karis average stops one blazing
+  pixel from flickering the whole glow.
+- Ambient occlusion turns its sample spiral per pixel and is smoothed by
+  a depth-aware filter, so it reads as contact darkening without rings.
+- AgX tone mapping and the sRGB encode are done in our own shader (three
+  only tone-maps output drawn straight to the screen). A one-step dither
+  stops skies and fog from banding.
+
+**Light.** three r183 retired PCF-soft shadows. The renderer now asks for
+PCF with a radius (2 texels on Balanced, 2.5 High, 3 Ultra), which
+samples a rotated disc for a real penumbra. Reflections come from a
+generated environment that now carries the sun's glow and a seeded
+skyline ring, lit windows and streetlight haze after dark, so car paint,
+glass and wet streets reflect a city. Night ambient is lower (moon 0.7,
+sky 0.82) so lamp pools, windows and neon carry the street. Texture
+filtering is 16× anisotropic on desktop.
+
+Evidence: `pnpm run test:world:graphics` (in the release gate) loads every
+tier and checks it raises no WebGL or three.js complaint and draws the
+passes it promises: FXAA where there is no MSAA, bloom levels, AO,
+shadow maps and penumbra. It also checks that Medium stays under 250 draw
+calls, that pictures are not blank, that Auto keeps a software GPU on
+Performance, and that the governor shrinks the render target to 70% under
+slow frames and restores it. `quality-core.test.mjs` pins GPU recognition,
+start plans, learned ceilings, the resolution-before-tier order, probes
+that get undone, cooldowns, 120 Hz displays, and that a single hitch does
+not count.

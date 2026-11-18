@@ -10,7 +10,8 @@ import { CSM } from '../vendor/csm/CSM.js'
 import { applyUrbanSurfaceShader } from './urban-assets.js'
 import { createFoliageMaterial, addFoliageMotion, updateFoliageCell, foliageTime, foliageWind } from '../gen/foliage.js'
 import { addPropWobble } from './prop-wobble.js'
-import { data, state, device, query, lerp, clamp } from './state.js'
+import { data, state, device, query, lerp, clamp, makeRng } from './state.js'
+import { TIERS, classifyGpu, startPlan, applyLearnedCeiling, createGovernor, stepGovernor } from './quality-core.js'
 
 export const gfx = {
   renderer: null, scene: null, rt: null, post: null,
@@ -30,6 +31,14 @@ let waterTime = null
 let sky = null
 let csm = null
 let csmProjection = ''
+/**
+ * Each new set of cascades gets its own shader program key. three keeps one
+ * uniforms object per material and reuses a cached program for a known key,
+ * so cascades rebuilt with the old key would draw with the uniforms the old
+ * cascades' dispose() deleted, and crash.
+ */
+let csmGeneration = 0
+const originalCacheKeys = new Map()
 const originalMaterialHooks = new Map()
 const lowLightUniforms = { uLowSun: { value: sunDirection }, uLowKey: { value: new THREE.Color(1, 1, 1) }, uLowFill: { value: new THREE.Color(0.65, 0.72, 0.85) } }
 const wetness = { value: 0 }
@@ -41,34 +50,48 @@ let localLightMix = 0.45
 let currentRenderCamera = null
 let shadowSubmission = null
 let qualityPreset = 'auto'
-let automaticTier = null
 let lastFrameTime = 0
-let frameAverage = 16.7
-let qualitySamples = 0
-const QUALITY_PRESETS = ['auto', 'high', 'balanced', 'performance']
+/** Auto mode's plan for this device and the governor that adjusts it while playing. */
+let gpu = { renderer: '', class: 'unknown' }
+let plan = startPlan('unknown')
+let governor = null
+/** Render resolution as a fraction of the tier's target (auto mode only). */
+let dynamicScale = 1
+const CEILING_KEY = 'raffi-world-graphics-ceiling'
+const QUALITY_PRESETS = ['auto', 'ultra', 'high', 'balanced', 'performance']
 
 function qualitySettings(preset, renderer) {
-  const tier = preset === 'auto' ? (automaticTier || (device.mobile ? 'performance' : 'balanced')) : preset
+  const tier = preset === 'auto' ? (governor?.tier || plan.tier) : preset
   const low = tier === 'performance'
   const balanced = tier === 'balanced'
+  const ultra = tier === 'ultra'
   const hdr = renderer.extensions.has('EXT_color_buffer_float') || renderer.extensions.has('EXT_color_buffer_half_float')
+  const samples = low || balanced || device.mobile ? 0 : Math.min(4, renderer.capabilities.maxSamples)
   return {
-    preset, tier, renderTier: low ? 'low' : balanced ? 'medium' : 'high', hdr,
-    maxPixels: low ? 524288 : device.mobile ? 720000 : 2073600,
-    drawDistance: low ? 180 : balanced ? 260 : 500,
-    pixelRatio: low || balanced ? 1 : 1.5,
-    samples: low || balanced || device.mobile ? 0 : Math.min(4, renderer.capabilities.maxSamples),
-    // One tightly bounded contact map on Medium; High uses three 1024 maps.
+    preset, tier, renderTier: low ? 'low' : balanced ? 'medium' : ultra ? 'ultra' : 'high', hdr,
+    // Ultra draws up to 1440p-class pixel counts at the display's own density.
+    maxPixels: low ? 524288 : device.mobile ? 720000 : ultra ? 3686400 : 2073600,
+    drawDistance: low ? 180 : balanced ? 260 : ultra ? 620 : 500,
+    pixelRatio: low || balanced ? 1 : ultra ? 2 : 1.5,
+    samples,
+    // Tiers without MSAA get FXAA in the present pass instead.
+    antialias: samples === 0,
+    // One tightly bounded contact map on Medium; High uses three 1024 maps, Ultra three 2048.
     shadowSize: low ? 0 : 2048,
-    cascadeShadowSize: low || balanced ? 0 : 1024,
+    cascadeShadowSize: low || balanced ? 0 : ultra ? 2048 : 1024,
     shadowExtent: balanced ? 42 : 84,
-    bloom: hdr && !low, ao: hdr && !low && !balanced, csm: !low && !balanced,
+    // Penumbra width in shadow-map texels.
+    shadowRadius: balanced ? 2 : ultra ? 3 : 2.5,
+    bloom: hdr && !low, bloomLevels: balanced ? 4 : 5,
+    ao: hdr && !low && !balanced, aoScale: ultra ? 1 : 0.5, csm: !low && !balanced,
     localLights: low ? 0 : balanced ? 4 : 6,
+    scale: preset === 'auto' ? dynamicScale : 1,
   }
 }
 
 export function getQuality() {
-  return { ...gfx.quality, backend: gfx.backend,
+  return { ...gfx.quality, backend: gfx.backend, gpu: gpu.class, gpuRenderer: gpu.renderer,
+    ceiling: qualityPreset === 'auto' ? governor?.ceiling ?? plan.ceiling : null,
     activeShadowMaps: csm ? csm.lights.map(light => light.shadow.mapSize.x) : gfx.lighting?.sun.castShadow ? [gfx.lighting.sun.shadow.mapSize.x] : [],
   }
 }
@@ -76,7 +99,10 @@ export function getQuality() {
 export function setQuality(preset, { automatic = false } = {}) {
   preset = ({ low: 'performance', medium: 'balanced' })[preset] || preset
   if (!QUALITY_PRESETS.includes(preset) || !gfx.renderer) return getQuality()
-  if (!automatic) { automaticTier = null; qualitySamples = 0; frameAverage = 16.7 }
+  if (!automatic) {
+    dynamicScale = 1
+    governor = preset === 'auto' ? createGovernor(plan) : null
+  }
   qualityPreset = preset
   const previous = gfx.quality
   gfx.quality = qualitySettings(preset, gfx.renderer)
@@ -92,16 +118,29 @@ export function setQuality(preset, { automatic = false } = {}) {
   }
   Object.assign(sun.shadow.camera, { left: -q.shadowExtent, right: q.shadowExtent, top: q.shadowExtent, bottom: -q.shadowExtent })
   sun.shadow.camera.updateProjectionMatrix()
+  sun.shadow.radius = q.shadowRadius
   if (gfx.rt.samples !== q.samples) {
     gfx.rt.samples = q.samples
     gfx.rt.dispose()
   }
   gfx.post.setBloomEnabled(q.bloom)
+  gfx.post.setBloomLevels(q.bloomLevels)
   gfx.post.setAOEnabled(q.ao)
+  gfx.post.setAOScale(q.aoScale)
+  // High and Ultra differ only in cascade map size and softness: resize the
+  // maps in place rather than rebuilding the cascades and recompiling.
+  if (csm && q.cascadeShadowSize > 0) {
+    const resized = csm.shadowMapSize !== q.cascadeShadowSize
+    csm.shadowMapSize = q.cascadeShadowSize
+    csm.lights.forEach((light, index) => {
+      if (resized) { light.shadow.map?.dispose(); light.shadow.map = null; light.shadow.mapSize.set(q.cascadeShadowSize, q.cascadeShadowSize) }
+      light.shadow.radius = q.shadowRadius / (1 + index * 0.5)
+    })
+  }
   applyMaterialTier()
   lastShadowTime = -Infinity
   resize()
-  try { localStorage.setItem('raffi-world-graphics', preset) } catch {}
+  if (!automatic) { try { localStorage.setItem('raffi-world-graphics', preset) } catch {} }
   return getQuality()
 }
 
@@ -115,7 +154,7 @@ export function cycleQuality() {
 function internalSizeFor(w, h) {
   const q = gfx.quality
   const scale = Math.min(device.dpr, q.pixelRatio)
-  const budgetScale = Math.min(scale, Math.sqrt(q.maxPixels / Math.max(1, w * h)))
+  const budgetScale = Math.min(scale, Math.sqrt(q.maxPixels / Math.max(1, w * h))) * (q.scale ?? 1)
   return { w: Math.max(1, Math.round(w * budgetScale)), h: Math.max(1, Math.round(h * budgetScale)) }
 }
 
@@ -179,6 +218,12 @@ export function initRenderer(canvas) {
   const requestedQuality = ({ low: 'performance', medium: 'balanced' })[requested] || requested
   if (QUALITY_PRESETS.includes(requestedQuality)) qualityPreset = requestedQuality
   if (query.lowfi) qualityPreset = 'performance'
+  gpu = detectGpu(renderer)
+  let learned = null
+  try { const saved = JSON.parse(localStorage.getItem(CEILING_KEY) || 'null'); if (saved?.renderer === gpu.renderer) learned = saved.ceiling } catch {}
+  plan = applyLearnedCeiling(startPlan(gpu.class), learned)
+  dynamicScale = 1
+  governor = qualityPreset === 'auto' ? createGovernor(plan) : null
   gfx.quality = qualitySettings(qualityPreset, renderer)
   const { hdr } = gfx.quality
   renderer.setPixelRatio(Math.min(device.dpr, gfx.quality.pixelRatio))
@@ -187,7 +232,8 @@ export function initRenderer(canvas) {
   renderer.toneMappingExposure = 1
   renderer.autoClear = true
   renderer.shadowMap.enabled = gfx.quality.shadowSize > 0
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  // r183 retired PCFSoft; PCF with a radius now samples a rotated disc, which is softer.
+  renderer.shadowMap.type = THREE.PCFShadowMap
   renderer.shadowMap.autoUpdate = false
   renderer.info.autoReset = false
 
@@ -203,6 +249,7 @@ export function initRenderer(canvas) {
   Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent, near: 1, far: 650 })
   sun.shadow.camera.updateProjectionMatrix()
   sun.shadow.bias = -0.00006
+  sun.shadow.radius = gfx.quality.shadowRadius
   sun.shadow.normalBias = 0.018
   sun.shadow.autoUpdate = false
   scene.add(hemi, sun, sun.target)
@@ -223,7 +270,10 @@ export function initRenderer(canvas) {
   gfx.rt.depthTexture = new THREE.DepthTexture(internal.w, internal.h, THREE.UnsignedIntType)
   gfx.internal = internal
   gfx.post = createPostPass({ hdr, bloom: gfx.quality.bloom })
+  gfx.post.setBloomLevels(gfx.quality.bloomLevels)
+  gfx.post.setAOScale(gfx.quality.aoScale)
   gfx.post.setInternalSize(internal.w, internal.h)
+  syncPresent(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight, internal)
   gfx.post.setPresentation(data.world.render || {})
   gfx.post.setAOEnabled(gfx.quality.ao)
   if (hdr) {
@@ -323,7 +373,8 @@ export function initMaterials(atlasTexture, channels = {}) {
   const metalnessMap = surfaces.metalnessMap || channels.metalnessTexture || null
   const emissiveMap = surfaces.emissiveMap || channels.emissiveTexture || null
   for (const texture of [atlasTexture, roughnessMap, bumpMap, metalnessMap, emissiveMap]) {
-    if (texture) texture.anisotropy = Math.min(device.mobile ? 4 : 8, gfx.renderer.capabilities.getMaxAnisotropy())
+    // Streets and facades seen at a grazing angle stay sharp into the distance.
+    if (texture) texture.anisotropy = Math.min(device.mobile ? 4 : 16, gfx.renderer.capabilities.getMaxAnisotropy())
   }
   const base = { map: atlasTexture, vertexColors: true, fog: true }
   const physical = {
@@ -413,20 +464,61 @@ function blendGrade(from, to, amount) {
 }
 
 /** Small generated environment, prefiltered once per completed grade change.
- * Colour textures enter as sRGB; PMREM's output remains linear HDR. */
+ * Colour textures enter as sRGB; PMREM's output remains linear HDR. Besides
+ * the sky it carries the sun's glow and a ring of city skyline, lit windows
+ * after dark, so car paint, glass and wet streets reflect a city. */
 function updateEnvironment(grade, id) {
   if (!pmrem || environmentGrade === id) return
+  const W = 512, H = 256, horizon = H / 2
   const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 128
+  canvas.width = W
+  canvas.height = H
   const ctx = canvas.getContext('2d')
-  const gradient = ctx.createLinearGradient(0, 0, 0, 128)
+  const gradient = ctx.createLinearGradient(0, 0, 0, H)
   gradient.addColorStop(0, gradeColorA.set(grade.skyTop).lerp(gradeColorB.set('#dce5ee'), 0.36).getStyle())
   gradient.addColorStop(0.44, grade.skyBottom)
   gradient.addColorStop(0.53, grade.fogColor)
   gradient.addColorStop(1, '#252b32')
   ctx.fillStyle = gradient
-  ctx.fillRect(0, 0, 256, 128)
+  ctx.fillRect(0, 0, W, H)
+  const night = id === 'night' || id === 'mainframe' ? 1 : id === 'dusk' ? 0.45 : 0
+  // The sun's glow, where the equirectangular map puts its direction.
+  if (sunDirection.y > -0.05 && night < 1) {
+    const u = Math.atan2(sunDirection.z, sunDirection.x) / (Math.PI * 2) + 0.5
+    const v = Math.asin(clamp(sunDirection.y, -1, 1)) / Math.PI + 0.5
+    const glow = ctx.createRadialGradient(u * W, (1 - v) * H, 0, u * W, (1 - v) * H, 48)
+    glow.addColorStop(0, gradeColorA.set(grade.key).getStyle())
+    glow.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.fillStyle = glow
+    ctx.fillRect(0, 0, W, H)
+    ctx.globalCompositeOperation = 'source-over'
+  }
+  // Skyline: low blocks all round, a few towers. Seeded, so it never changes.
+  const rng = makeRng('environment-skyline')
+  const silhouette = gradeColorA.set(grade.fogColor).lerp(gradeColorB.set('#141922'), 0.55 + night * 0.35).getStyle()
+  const windows = []
+  ctx.fillStyle = silhouette
+  for (let x = 0; x < W;) {
+    const width = rng.int(5, 16)
+    const height = rng.chance(0.12) ? rng.int(18, 30) : rng.int(4, 13)
+    ctx.fillRect(x, horizon - height, width + 1, height + 2)
+    if (night > 0) for (let wy = horizon - height + 2; wy < horizon - 1; wy += 3) for (let wx = x + 1; wx < x + width - 1; wx += 3) if (rng.chance(0.35 * night)) windows.push([wx, wy])
+    x += width
+  }
+  ctx.fillStyle = `rgba(255, 196, 120, ${0.55 + night * 0.4})`
+  for (const [wx, wy] of windows) ctx.fillRect(wx, wy, 1, 1)
+  if (night > 0) {
+    // Streetlight haze hangs over the city just above the rooftops.
+    const haze = ctx.createLinearGradient(0, horizon - 26, 0, horizon + 6)
+    haze.addColorStop(0, 'rgba(255,170,110,0)')
+    haze.addColorStop(0.7, `rgba(255,170,110,${0.16 * night})`)
+    haze.addColorStop(1, 'rgba(255,170,110,0)')
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.fillStyle = haze
+    ctx.fillRect(0, horizon - 26, W, 32)
+    ctx.globalCompositeOperation = 'source-over'
+  }
   const source = new THREE.CanvasTexture(canvas)
   source.colorSpace = THREE.SRGBColorSpace
   source.mapping = THREE.EquirectangularReflectionMapping
@@ -441,7 +533,9 @@ function updateEnvironment(grade, id) {
 const LIGHT_LEVELS = {
   dusk: { sun: 3.4, sky: 1.25, env: 1.0, disk: 3.0 },
   haze: { sun: 3.8, sky: 1.05, env: 0.85, disk: 3.4 },
-  night: { sun: 0.95, sky: 1.2, env: 0.8, disk: 0.5 },
+  // Night leans on lamps, windows and neon: the sky fill is low enough for
+  // their pools of light to read, high enough to find your way between them.
+  night: { sun: 0.7, sky: 0.82, env: 0.66, disk: 0.5 },
   mainframe: { sun: 0.65, sky: 1.7, env: 0.55, disk: 0 },
 }
 
@@ -509,7 +603,15 @@ export function resize() {
     gfx.rt.setSize(internal.w, internal.h)
     gfx.post.setInternalSize(internal.w, internal.h)
   }
+  syncPresent(w, h, internal)
   return internal
+}
+
+/** FXAA on tiers without MSAA; a little sharpening when the scene is drawn smaller than the screen. */
+function syncPresent(w, h, internal) {
+  const upscale = Math.sqrt((w * Math.min(device.dpr, 2) * h * Math.min(device.dpr, 2)) / Math.max(1, internal.w * internal.h))
+  const recover = upscale > 1.05 ? clamp((upscale - 1) * 0.3, 0, 0.22) : 0
+  gfx.post.setPresent({ antialias: gfx.quality.antialias, sharpen: (gfx.quality.antialias ? 0.08 : 0) + recover })
 }
 
 function updateLighting(camera) {
@@ -610,6 +712,8 @@ function removeCascades() {
   for (const light of csm.lights) light.shadow.dispose()
   csm.dispose()
   for (const [material, hook] of originalMaterialHooks) { material.onBeforeCompile = hook; material.needsUpdate = true }
+  for (const [material, key] of originalCacheKeys) { material.customProgramCacheKey = key; material.needsUpdate = true }
+  originalCacheKeys.clear()
   csm = null
   csmProjection = ''
   lastShadowTime = -Infinity
@@ -629,9 +733,12 @@ function updateCascades(camera) {
       lightNear: 1, lightFar: 700, shadowBias: -0.000035,
     })
     csm.fade = true
+    csmGeneration++
     csm.updateFrustums()
     csm.lights.forEach((light, index) => {
       light.shadow.normalBias = 0.018 + index * 0.012
+      // Far cascades cover more ground per texel, so they need less radius for the same softness.
+      light.shadow.radius = gfx.quality.shadowRadius / (1 + index * 0.5)
       light.shadow.autoUpdate = false
     })
     lastShadowTime = -Infinity
@@ -642,11 +749,16 @@ function updateCascades(camera) {
       originalMaterialHooks.set(material, material.onBeforeCompile)
       material.addEventListener('dispose', () => {
         originalMaterialHooks.delete(material)
+        originalCacheKeys.delete(material)
         csm?.shaders.delete(material)
       })
     }
     const hook = originalMaterialHooks.get(material)
     material.userData.preCSMHook = hook
+    if (!originalCacheKeys.has(material)) originalCacheKeys.set(material, material.customProgramCacheKey)
+    const baseKey = originalCacheKeys.get(material)
+    const generation = csmGeneration
+    material.customProgramCacheKey = () => baseKey.call(material) + ':csm' + generation
     csm.setupMaterial(material)
     const csmHook = material.onBeforeCompile
     material.onBeforeCompile = (shader, renderer) => { hook?.(shader, renderer); csmHook(shader, renderer) }
@@ -672,22 +784,58 @@ function updateCascades(camera) {
   return true
 }
 
+/** What the browser says the GPU is. Some browsers hide it; that reads as unknown. */
+function detectGpu(renderer) {
+  let name = ''
+  try {
+    const gl = renderer.getContext()
+    const info = gl.getExtension('WEBGL_debug_renderer_info')
+    name = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '')
+  } catch {}
+  return { renderer: name.slice(0, 160), class: classifyGpu(name, { mobile: device.mobile }) }
+}
+
+/**
+ * Auto mode: the governor lowers the render resolution before a tier, and
+ * climbs back when frames have room. A tier this device could not hold is
+ * remembered for its next visit, so it is not tried again every session.
+ */
 function updateAutomaticQuality() {
   const now = performance.now()
   const elapsed = now - lastFrameTime
   lastFrameTime = now
-  if (qualityPreset !== 'auto' || !state.ready || state.paused || document.hidden || elapsed <= 0 || elapsed > 2000) return
-  frameAverage += (Math.min(elapsed, 250) - frameAverage) * 0.045
-  // Ignore shader warm-up and require sustained evidence before lowering the
-  // pixel/shadow workload. Never oscillate between presets during gameplay.
-  if (++qualitySamples < 150) return
-  const slow = gfx.quality.tier === 'high' ? frameAverage > 32 : frameAverage > 36
-  if (slow && gfx.quality.tier !== 'performance') {
-    automaticTier = gfx.quality.tier === 'high' ? 'balanced' : 'performance'
-    qualitySamples = 0
-    frameAverage = 16.7
-    setQuality('auto', { automatic: true })
+  if (qualityPreset !== 'auto' || !governor || !state.ready || state.paused || document.hidden || elapsed <= 0 || elapsed > 2000) return
+  governFrame(elapsed, now / 1000)
+}
+
+function governFrame(frameMs, seconds) {
+  const ceiling = governor.ceiling
+  const next = stepGovernor(governor, frameMs, seconds)
+  if (governor.ceiling !== ceiling) {
+    try { localStorage.setItem(CEILING_KEY, JSON.stringify({ renderer: gpu.renderer, ceiling: governor.ceiling })) } catch {}
   }
+  if (!next) return null
+  dynamicScale = next.scale
+  if (next.tier && next.tier !== gfx.quality.tier) setQuality('auto', { automatic: true })
+  else { gfx.quality = qualitySettings('auto', gfx.renderer); resize() }
+  return next
+}
+
+/**
+ * Smokes only (debug API): feeds auto mode frames as if they had happened,
+ * so the resolution and tier changes can be checked on a real page without
+ * waiting minutes of real slow frames. Returns the changes it made.
+ */
+export function feedQualityGovernor(frameMs, frames) {
+  if (qualityPreset !== 'auto' || !governor) return []
+  let clock = Math.max(performance.now() / 1000, governor.lastChange + 1)
+  const changes = []
+  for (let i = 0; i < frames; i++) {
+    clock += frameMs / 1000
+    const change = governFrame(frameMs, clock)
+    if (change) changes.push(change)
+  }
+  return changes
 }
 
 export function renderFrame(camera) {

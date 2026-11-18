@@ -54,7 +54,7 @@ export async function createNearCharacters(scene, { tier = 'medium', surfaceRoot
   const catalog = await loadPopulation(), entries = new Map(), farTemplates = new Map()
   const surfaces = [], ray = new THREE.Raycaster(), normal = new THREE.Vector3(), projection = new THREE.Matrix4(), frustum = new THREE.Frustum(), sphere = new THREE.Sphere()
   const stats = { ready: false, enabled: true, active: 0, near: 0, far: 0, slots: 0, triangles: 0, draws: 0, bones: 0, mixerUpdates: 0, groundQueries: 0, groundCandidates: 0, sources: [], error: null }
-  let disposed = false, capacity = LOW.has(tier) ? 0 : ['high', 'cinematic'].includes(tier) ? 6 : 4, farDistance = LOW.has(tier) ? 70 : 120
+  let disposed = false, capacity = LOW.has(tier) ? 0 : ['high', 'ultra', 'cinematic'].includes(tier) ? 6 : 4, farDistance = LOW.has(tier) ? 70 : 120
   surfaceRoot?.updateMatrixWorld(true)
   surfaceRoot?.traverse(object => {
     if (!object.isMesh || object.material?.transparent) return
@@ -120,8 +120,8 @@ export async function createNearCharacters(scene, { tier = 'medium', surfaceRoot
   return {
     stats,
     async setQuality(nextTier) {
-      capacity = LOW.has(nextTier) ? 0 : ['high', 'cinematic'].includes(nextTier) ? 6 : 4
-      farDistance = LOW.has(nextTier) ? 70 : ['high', 'cinematic'].includes(nextTier) ? 160 : 120
+      capacity = LOW.has(nextTier) ? 0 : ['high', 'ultra', 'cinematic'].includes(nextTier) ? 6 : 4
+      farDistance = LOW.has(nextTier) ? 70 : ['high', 'ultra', 'cinematic'].includes(nextTier) ? 160 : 120
     },
     update(dt, state, camera = null) {
       dt = Number.isFinite(dt) ? Math.max(0, Math.min(.1, dt)) : 0

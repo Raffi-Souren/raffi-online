@@ -12,7 +12,7 @@ import {
   state, data, query, device, bus, loadData, initState,
   districtAt, gradeForHour, currentHour, clamp,
 } from './state.js'
-import { initRenderer, initMaterials, applyGrade, resize, renderFrame, gfx, getQuality, cycleQuality, setQuality } from './render.js'
+import { initRenderer, initMaterials, applyGrade, resize, renderFrame, gfx, getQuality, cycleQuality, setQuality, feedQualityGovernor } from './render.js'
 import {
   initCamera, updateCamera, rotateView, setPinch, cam,
   cycleCameraMode, getCameraMode, setCameraMode, orbitView, getDrivingView, setDrivingView, setReducedMotion,
@@ -397,6 +397,9 @@ function cyclePauseGrade() {
   syncPauseGradeLabel()
 }
 
+/** Refreshes the pause menu's Graphics button (set by initPauseMenu). */
+let syncPauseQuality = () => {}
+
 function setPaused(paused) {
   state.paused = !!paused
   simulation.reset()
@@ -416,6 +419,7 @@ function setPaused(paused) {
     player.blockedTime = 0
     const sound = els.pause?.querySelector('[data-pause="sound"]')
     if (sound) sound.textContent = audioSnapshot().muted ? 'Sound: Off' : 'Sound: On'
+    syncPauseQuality()
     setInteractionPrompt(null)
     // Freeze run A when the player opens pause mid-record so REWIND can arm.
     if (getReplayPhase() === 'recording') endRecordingRun()
@@ -441,17 +445,21 @@ function initPauseMenu() {
   volume.addEventListener('input', () => { setVolume(Number(volume.value) / 100); syncVolume() })
   const syncQuality = () => {
     const q = getQuality()
-    const label = q.preset.charAt(0).toUpperCase() + q.preset.slice(1)
+    const name = (id) => id.charAt(0).toUpperCase() + id.slice(1)
+    // Auto says what it settled on, so the choice is never a mystery.
+    const label = q.preset === 'auto' ? `Auto (${name(q.tier)})` : name(q.preset)
     const button = els.pause?.querySelector('[data-pause="quality"]')
     if (button) button.textContent = 'Graphics: ' + label
     const note = document.getElementById('quality-description')
     if (note) note.textContent = q.preset === 'auto'
-      ? 'Graphics adjust to keep the city responsive.'
+      ? 'The best picture this device holds smoothly. Resolution and detail adjust while you play.'
+      : q.preset === 'ultra' ? 'Native resolution, sharper shadows and the widest view. For strong graphics cards.'
       : q.preset === 'high' ? 'Full detail, soft shadows and richer reflections.'
         : q.preset === 'balanced' ? 'Detailed streets with a lighter graphics budget.'
           : 'A lighter scene for smoother play on smaller devices.'
   }
   syncQuality()
+  syncPauseQuality = syncQuality
   document.getElementById('desktop-pause')?.addEventListener('click', () => setPaused(true))
   document.getElementById('desktop-phone')?.addEventListener('click', () => openPhone())
   document.getElementById('game-question')?.addEventListener('click', () => openCheatMenu())
@@ -993,6 +1001,7 @@ async function boot() {
     setCameraMode,
     getQuality,
     setQuality,
+    feedQualityGovernor,
     audioSnapshot,
     getVolume,
     trafficSnapshot,
