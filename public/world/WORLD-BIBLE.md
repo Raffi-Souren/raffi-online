@@ -360,7 +360,7 @@ its own page, offline from the desktop, or while a story scene owns the music,
 the station's synth plays instead (`hostPlaysStation` in `engine/audio-core.js`).
 Cars remember the station they were left on and play it again when you climb back in.
 
-**Tapes.** Fourteen cassettes, one per mix in `data/audio-library.ts`, sit on
+**Tapes.** A cassette for every mix in `data/audio-library.ts` (24 today) sits on
 sidewalks and stoops (`data/tapes.json`, ids and titles checked against the
 library). Two instanced meshes draw the whole set. Walking within 1.4 m (2.3 m
 in a vehicle) picks one up once: a pop, the pickup sound and a count. The found
@@ -392,3 +392,116 @@ Lab storefront, pins the map by right-click through an interior round trip, and
 works the phone by touch. `city-life.test.mjs` covers pickup idempotency,
 storage tolerance, BADCO FM's fallback rule, New York time across daylight
 saving and the storefront slugs.
+
+## November 16 street life (Phase 2b: cash, skills, gigs, texts, camera)
+
+The city gives you things to do between missions, and remembers that you did
+them. All of it is optional, none of it gates a mission, a mix or a tape, and
+the tone stays section 2: nobody gets hurt and nothing is stolen.
+
+**Cash and skills.** `game/life-core.js` (pure) and `data/life.json` hold the
+rules. The wallet is whole dollars, never negative. Four skills grow with use and
+have five levels: Legs (metres sprinted) lengthens the sprint from 12 s to 26 s;
+Wheels (metres driven) and Board (metres skated, kickflips) raise the pay of
+their own gigs by 5% a level; Hustle (gigs finished) opens bigger gigs. A new
+level is a dry one-line toast. The profile is saved under localStorage
+`raffi-world:life:v1`, apart from the save slots like found tapes, and a damaged
+or foreign profile reads as a fresh one.
+
+**Stamina.** Sprinting drains a meter that shows only while it is in use. Empty
+means winded: a walk until it is back to 30%. It refills after 0.9 s of not
+sprinting, faster standing still. A mission never drains it, so authored timings
+are unchanged. Coffee at any food cart ($4) refills it and makes the sprint free
+for 60 s.
+
+**Side gigs.** Five gigs in `data/life.json`, each given by someone already in
+the city, each starting at a gold ring on a sidewalk (E on foot) or from Gigs on
+the phone. Crate Run (Bea) and Crosstown Run (Nico, Hustle 2) are timed
+deliveries in stop order; Flyer Drop (Mae) is a delivery sized for feet or a
+board; Waterfront Line (Jules) is a gate loop that only counts on a skateboard,
+brings its own board, and pays for kickflips; Find the DJ (Lena) hides a pop-up
+set at a rotating spot with no pin, only signal bars in the objective line. A
+finish pays a base plus seconds left and tricks, both capped. Running out of time
+or leaving the board ends it with no pay and no penalty. Best times are kept. A
+mission or a loaded save drops a running gig.
+
+**Texts.** Contacts text when something happens: a first tape, a gig won or
+missed, a new level, a first coffee or photo. `texts` in `data/life.json` are
+matched by event; a milestone skipped past still arrives, and each text is sent
+once. A text never talks over the toast that caused it: it waits six seconds.
+The PHONE button shows a dot while any are unread.
+
+**Phone.** Four more apps: Gigs (pay, pitch, best time, drop), Texts, Me (wallet,
+the four skill meters, the valet) and Camera. The valet ($20) drops the last car
+you drove on the nearest open street. Tapes can sell a tip ($25) that pins the
+nearest tape you are missing; each tape is paid for once.
+
+**Camera.** The street holds still while you orbit within 12 m of yourself
+(drag, arrows, pinch or scroll), with five looks: Street, Disposable flash, XP
+Bliss, Sodium night and Mono zine. Looks are colour filters over the finished
+frame, so they cost the renderer nothing and never touch the city's grade. Snap
+saves a PNG of exactly that frame with a small raffi.computer stamp.
+
+Evidence: `pnpm run test:world:life` (in the release gate) sprints until winded,
+starts Crate Run from its ring and delivers it, buys a coffee, calls the valet,
+reads the texts, takes a photo through the real download, reloads, and works the
+phone by touch. It also checks every gig point and every tape against the
+generated city (clear of solids, off the road). `street-life.test.mjs` covers
+profile tolerance, levels, the wallet, stamina at 30/60/144 Hz, each gig kind,
+pay caps, best times, text matching, and that every gig can be finished in its
+time at a plausible pace.
+
+## November 17 graphics pass (the best picture a device holds smoothly)
+
+**Tiers.** Performance, Balanced, High and a new Ultra. Ultra draws at the
+display's own density up to 1440p-class pixel counts, with three 2048
+shadow cascades, full-resolution ambient occlusion and a 620 m view.
+Players can still pick any tier in the pause menu.
+
+**Auto.** Auto mode starts from what the GPU looks like
+(`engine/quality-core.js`): High on a dedicated or Apple desktop GPU,
+Balanced on integrated graphics and recent iPhones or Adreno 7xx phones,
+Performance on other phones, and Performance with nowhere higher to go on
+a software renderer such as CI's SwiftShader. Phones never try Ultra.
+While you play, a governor watches frame times. Under steady slow frames
+(over 21 ms for at least a second) it lowers the render resolution in 10%
+steps to 70%, and only then drops a tier. After six seconds of steady
+60 fps or better it raises resolution back, then tries the next tier up. A
+tier that cannot hold is undone within eight seconds and becomes the
+ceiling, remembered for this GPU on the next visit, so nothing flip-flops.
+One long frame (a shader compile, a tab switch) is not a trend. The pause
+menu shows what Auto settled on, e.g. "Graphics: Auto (High)".
+
+**Image.** All post-processing is in `engine/post.js`:
+- Anti-aliasing on every tier: MSAA on High and Ultra, FXAA (three.js's,
+  vendored) on Balanced and Performance.
+- A contrast-adaptive sharpen, clamped to the neighbourhood so it never
+  halos, restores detail when the scene is drawn below screen resolution.
+- Bloom is dual-filter over four or five levels, so neon tubes and lamps
+  get a bright core and a wide halo. A Karis average stops one blazing
+  pixel from flickering the whole glow.
+- Ambient occlusion turns its sample spiral per pixel and is smoothed by
+  a depth-aware filter, so it reads as contact darkening without rings.
+- AgX tone mapping and the sRGB encode are done in our own shader (three
+  only tone-maps output drawn straight to the screen). A one-step dither
+  stops skies and fog from banding.
+
+**Light.** three r183 retired PCF-soft shadows. The renderer now asks for
+PCF with a radius (2 texels on Balanced, 2.5 High, 3 Ultra), which
+samples a rotated disc for a real penumbra. Reflections come from a
+generated environment that now carries the sun's glow and a seeded
+skyline ring, lit windows and streetlight haze after dark, so car paint,
+glass and wet streets reflect a city. Night ambient is lower (moon 0.7,
+sky 0.82) so lamp pools, windows and neon carry the street. Texture
+filtering is 16× anisotropic on desktop.
+
+Evidence: `pnpm run test:world:graphics` (in the release gate) loads every
+tier and checks it raises no WebGL or three.js complaint and draws the
+passes it promises: FXAA where there is no MSAA, bloom levels, AO,
+shadow maps and penumbra. It also checks that Medium stays under 250 draw
+calls, that pictures are not blank, that Auto keeps a software GPU on
+Performance, and that the governor shrinks the render target to 70% under
+slow frames and restores it. `quality-core.test.mjs` pins GPU recognition,
+start plans, learned ceilings, the resolution-before-tier order, probes
+that get undone, cooldowns, 120 Hz displays, and that a single hitch does
+not count.

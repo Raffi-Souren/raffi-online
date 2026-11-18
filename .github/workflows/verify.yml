@@ -16,7 +16,9 @@ concurrency:
 jobs:
   release-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # The browser gate grew past 25 minutes on the hosted runner with the
+    # street-life, graphics and desktop-extras smokes.
+    timeout-minutes: 35
 
     steps:
       - name: Check out repository
@@ -67,7 +69,7 @@ jobs:
           done
 
           curl --fail --silent http://127.0.0.1:3100/world/index.html > /dev/null
-          mkdir -p /tmp/raffi-world-smoke /tmp/raffi-world-collisions /tmp/raffi-world-feel /tmp/raffi-world-city-life /tmp/raffi-world-minimap /tmp/raffi-signal-smoke /tmp/raffi-camera-budget /tmp/raffi-replay-smoke
+          mkdir -p /tmp/raffi-world-smoke /tmp/raffi-world-collisions /tmp/raffi-world-feel /tmp/raffi-world-city-life /tmp/raffi-world-street-life /tmp/raffi-world-minimap /tmp/raffi-signal-smoke /tmp/raffi-camera-budget /tmp/raffi-replay-smoke /tmp/raffi-world-graphics
           export RAFFI_WORLD_URL=http://127.0.0.1:3100/world/index.html
           export RAFFI_APP_URL=http://127.0.0.1:3100
           # GitHub's CPU-only SwiftShader runs gameplay in Low. The independent
@@ -90,6 +92,10 @@ jobs:
           pnpm run test:world:feel
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-city-life
           pnpm run test:world:city
+          export RAFFI_SMOKE_OUT=/tmp/raffi-world-street-life
+          pnpm run test:world:life
+          export RAFFI_SMOKE_OUT=/tmp/raffi-world-graphics
+          pnpm run test:world:graphics
           export RAFFI_SMOKE_OUT=/tmp/raffi-world-minimap
           pnpm run test:world:minimap
           export RAFFI_SMOKE_OUT=/tmp/raffi-signal-smoke
@@ -110,6 +116,8 @@ jobs:
             /tmp/raffi-world-collisions
             /tmp/raffi-world-feel
             /tmp/raffi-world-city-life
+            /tmp/raffi-world-street-life
+            /tmp/raffi-world-graphics
             /tmp/raffi-world-minimap
             /tmp/raffi-signal-smoke
             /tmp/raffi-camera-budget

@@ -12,7 +12,7 @@ import {
   state, data, query, device, bus, loadData, initState,
   districtAt, gradeForHour, currentHour, clamp,
 } from './state.js'
-import { initRenderer, initMaterials, applyGrade, resize, renderFrame, gfx, getQuality, cycleQuality, setQuality } from './render.js'
+import { initRenderer, initMaterials, applyGrade, resize, renderFrame, gfx, getQuality, cycleQuality, setQuality, feedQualityGovernor } from './render.js'
 import {
   initCamera, updateCamera, rotateView, setPinch, cam,
   cycleCameraMode, getCameraMode, setCameraMode, orbitView, getDrivingView, setDrivingView, setReducedMotion,
@@ -66,8 +66,11 @@ import { unlockAudio, updateAudio, setAudioActive, audioBeat, audioSnapshot, tog
 import { hostPlaysStation } from './audio-core.js'
 import { initWorldMap, showWorldMap, hideWorldMap, isWorldMapOpen } from '../game/world-map.js'
 import { initCheats, showCheats, hideCheats, cheatsOpen } from '../game/cheats.js'
-import { initPhone, showPhone, hidePhone, isPhoneOpen } from '../game/phone.js'
+import { initPhone, showPhone, hidePhone, isPhoneOpen, setPhoneUnread } from '../game/phone.js'
 import { initLabFronts, labFrontContext, labFrontsSnapshot } from '../game/lab-fronts.js'
+import { initLife, updateLife, coffeeContext, buyCoffee, lifeSnapshot, notePhoto, pay } from '../game/life.js'
+import { initGigs, updateGigs, gigContext, startGig, dropGig, gigSnapshot } from '../game/gigs.js'
+import { initPhoto, showPhoto, hidePhoto, isPhotoOpen, photoCamera, snapPhoto, photoSnapshot } from '../game/photo.js'
 import { createPlayerCharacter } from './player-character.js'
 import { createNearCharacters } from './near-characters.js'
 import { prepareHeroVehicle } from './hero-vehicle.js'
@@ -394,6 +397,9 @@ function cyclePauseGrade() {
   syncPauseGradeLabel()
 }
 
+/** Refreshes the pause menu's Graphics button (set by initPauseMenu). */
+let syncPauseQuality = () => {}
+
 function setPaused(paused) {
   state.paused = !!paused
   simulation.reset()
@@ -407,11 +413,13 @@ function setPaused(paused) {
   if (!state.paused) hideWorldMap()
   if (!state.paused) hideCheats()
   if (!state.paused) hidePhone()
+  if (!state.paused) hidePhoto()
   if (!state.paused) hideSaveMenu()
   if (state.paused) {
     player.blockedTime = 0
     const sound = els.pause?.querySelector('[data-pause="sound"]')
     if (sound) sound.textContent = audioSnapshot().muted ? 'Sound: Off' : 'Sound: On'
+    syncPauseQuality()
     setInteractionPrompt(null)
     // Freeze run A when the player opens pause mid-record so REWIND can arm.
     if (getReplayPhase() === 'recording') endRecordingRun()
@@ -437,17 +445,21 @@ function initPauseMenu() {
   volume.addEventListener('input', () => { setVolume(Number(volume.value) / 100); syncVolume() })
   const syncQuality = () => {
     const q = getQuality()
-    const label = q.preset.charAt(0).toUpperCase() + q.preset.slice(1)
+    const name = (id) => id.charAt(0).toUpperCase() + id.slice(1)
+    // Auto says what it settled on, so the choice is never a mystery.
+    const label = q.preset === 'auto' ? `Auto (${name(q.tier)})` : name(q.preset)
     const button = els.pause?.querySelector('[data-pause="quality"]')
     if (button) button.textContent = 'Graphics: ' + label
     const note = document.getElementById('quality-description')
     if (note) note.textContent = q.preset === 'auto'
-      ? 'Graphics adjust to keep the city responsive.'
+      ? 'The best picture this device holds smoothly. Resolution and detail adjust while you play.'
+      : q.preset === 'ultra' ? 'Native resolution, sharper shadows and the widest view. For strong graphics cards.'
       : q.preset === 'high' ? 'Full detail, soft shadows and richer reflections.'
         : q.preset === 'balanced' ? 'Detailed streets with a lighter graphics budget.'
           : 'A lighter scene for smoother play on smaller devices.'
   }
   syncQuality()
+  syncPauseQuality = syncQuality
   document.getElementById('desktop-pause')?.addEventListener('click', () => setPaused(true))
   document.getElementById('desktop-phone')?.addEventListener('click', () => openPhone())
   document.getElementById('game-question')?.addEventListener('click', () => openCheatMenu())
@@ -494,8 +506,41 @@ function openWorldMap() {
   showWorldMap()
 }
 
+/** The valet brings the last car you drove (or a hatchback) to the nearest street. Null on success. */
+function callValet() {
+  const price = data.life.prices.valet
+  const short = price - lifeSnapshot().cash
+  if (short > 0) return `The valet is $${price}. You’re $${short} short.`
+  const delivery = deliverVehicle(lastCar || data.life.valet.vehicle, 'valet')
+  if (delivery.error) return delivery.error
+  pay(price, 'The valet')
+  onRideMounted(delivery.vehicle)
+  toast(`${data.life.valet.label} is here · −$${price}`, 3)
+  return null
+}
+
+function openPhotoMode() {
+  hideSaveMenu()
+  hideCheats()
+  hideWorldMap()
+  hidePhone()
+  setPaused(true)
+  els.pause?.classList.add('hidden')
+  showPhoto()
+}
+
+/** Draws one frame from any camera, with the same culling the game loop does. */
+function renderView(camera) {
+  camera.updateMatrixWorld(true)
+  if (world.cityRoot) updateOpaqueFogCull(camera, world.cityRoot)
+  nearCharacters?.update(0, state, camera)
+  actorBatcher?.update(camera)
+  renderFrame(camera)
+}
+
 function openPhone() {
   hideSaveMenu()
+  hidePhoto()
   hideCheats()
   hideWorldMap()
   setPaused(true)
@@ -534,35 +579,46 @@ function openCheatMenu(code = null) {
 }
 
 const cheatRides = []
+/**
+ * Drops a ride on the nearest open stretch of street and puts the player on
+ * it: the cheat sheet, the valet and board gigs all deliver this way.
+ * Returns { vehicle } or { error } with the reason in plain words.
+ */
+function deliverVehicle(archetype, tag) {
+  if (state.interior) return { error: 'Step outside to have your ride delivered.' }
+  const road = nearestRoad(world.graph, state.player.x, state.player.z).segment
+  if (!road) return { error: 'Find a street for your delivery.' }
+  let position = null
+  for (const offset of [8, -8, 16, -16, 24]) {
+    const x = road.horizontal ? clamp(state.player.x + offset, Math.min(road.ax, road.bx) + 4, Math.max(road.ax, road.bx) - 4) : road.ax + 2.6
+    const z = road.horizontal ? road.az + 2.6 : clamp(state.player.z + offset, Math.min(road.az, road.bz) + 4, Math.max(road.az, road.bz) - 4)
+    const safe = resolveCircle(world.collision, x, z, 2.2, 5)
+    if (Math.hypot(safe.x - x, safe.z - z) < 0.2 && world.vehicles.every((v) => Math.hypot(v.x - x, v.z - z) > 5)) { position = { x, z }; break }
+  }
+  if (!position) return { error: 'The street is busy. Move to an open stretch and try again.' }
+  if (player.vehicle) exitVehicle(world.collision)
+  while (cheatRides.length >= 3) {
+    const old = cheatRides.shift()
+    old.mesh.removeFromParent()
+    old.mesh.geometry.dispose()
+    const index = world.vehicles.indexOf(old)
+    if (index >= 0) world.vehicles.splice(index, 1)
+  }
+  const vehicle = spawnVehicle(gfx.scene, gfx.materials, world.atlas, archetype, position.x, position.z, road.horizontal ? Math.PI / 2 : 0, tag)
+  if (!vehicle) return { error: 'That ride is not available.' }
+  world.vehicles.push(vehicle)
+  cheatRides.push(vehicle)
+  enterVehicle(vehicle)
+  cam.target.set(vehicle.x, 0, vehicle.z)
+  setCameraMode('chase')
+  playSfx('ui-confirm')
+  return { vehicle }
+}
+
 function applyCheat(cheat) {
   if (cheat.action === 'vehicle') {
-    if (state.interior) return 'Step outside to have your ride delivered.'
-    const road = nearestRoad(world.graph, state.player.x, state.player.z).segment
-    if (!road) return 'Find a street for your delivery.'
-    let position = null
-    for (const offset of [8, -8, 16, -16, 24]) {
-      const x = road.horizontal ? clamp(state.player.x + offset, Math.min(road.ax, road.bx) + 4, Math.max(road.ax, road.bx) - 4) : road.ax + 2.6
-      const z = road.horizontal ? road.az + 2.6 : clamp(state.player.z + offset, Math.min(road.az, road.bz) + 4, Math.max(road.az, road.bz) - 4)
-      const safe = resolveCircle(world.collision, x, z, 2.2, 5)
-      if (Math.hypot(safe.x - x, safe.z - z) < 0.2 && world.vehicles.every((v) => Math.hypot(v.x - x, v.z - z) > 5)) { position = { x, z }; break }
-    }
-    if (!position) return 'The street is busy. Move to an open stretch and try again.'
-    if (player.vehicle) exitVehicle(world.collision)
-    while (cheatRides.length >= 3) {
-      const old = cheatRides.shift()
-      old.mesh.removeFromParent()
-      old.mesh.geometry.dispose()
-      const index = world.vehicles.indexOf(old)
-      if (index >= 0) world.vehicles.splice(index, 1)
-    }
-    const vehicle = spawnVehicle(gfx.scene, gfx.materials, world.atlas, cheat.vehicle, position.x, position.z, road.horizontal ? Math.PI / 2 : 0, 'cheat:' + cheat.code)
-    world.vehicles.push(vehicle)
-    cheatRides.push(vehicle)
-    enterVehicle(vehicle)
-    cam.target.set(vehicle.x, 0, vehicle.z)
-    setCameraMode('chase')
-    playSfx('ui-confirm')
-    return cheat.label + ' delivered. Back to the block to drive.'
+    const delivery = deliverVehicle(cheat.vehicle, 'cheat:' + cheat.code)
+    return delivery.error || cheat.label + ' delivered. Back to the block to drive.'
   }
   if (cheat.action === 'clear') {
     setComplianceTier(0)
@@ -665,7 +721,9 @@ async function beginFastTravel(transit) {
   queueDialogue('subway-arrive', { duration: 4.4 })
 }
 
+let lastCar = null
 function onRideMounted(vehicle) {
+  if (vehicle.kind === 'car') lastCar = vehicle.archetypeId
   const remembered = data.radio.stations[vehicle.radioStation]
   if (remembered?.unlocked && (!state.radio.on || remembered !== data.radio.stations[state.radio.stationIndex])) {
     state.radio.stationIndex = vehicle.radioStation
@@ -746,6 +804,17 @@ async function boot() {
   initPlayer(gfx.scene, materials, atlas)
   initTapes(gfx.scene)
   initLabFronts({ scene: world.cityRoot, collision })
+  initLife({ collision, textArrived: setPhoneUnread })
+  initGigs({ scene: gfx.scene, deliverRide: (archetype) => deliverVehicle(archetype, 'gig:' + archetype).error || null })
+  initPhoto({
+    close: () => setPaused(false),
+    gameCamera: () => cam.camera,
+    canvas: () => els.canvas,
+    collision: () => world.collision,
+    redraw: () => { pausedFrameDirty = true },
+    render: renderView,
+    taken: notePhoto,
+  })
   playerCharacter = await createPlayerCharacter(player, { tier: getQuality().tier, surfaceRoot: world.cityRoot })
   streetCombat = createStreetCombat({scene:gfx.scene,state,collision,moveCircle,character:playerCharacter,onHit:() => { bus.emit('sfx','ui-deny');toast('BACK OFF. · Give them some space.',2);setComplianceTier(Math.max(1,state.compliance.tier),state.compliance.heat+8) }})
   spawnParkedCars(gfx.scene, materials, atlas)
@@ -776,6 +845,8 @@ async function boot() {
     },
     openLab: openLabRoom,
     openMap: openWorldMap,
+    openCamera: openPhotoMode,
+    valet: callValet,
   })
   initHud({
     root: els.hud, district: els.district, objective: els.objective,
@@ -897,6 +968,14 @@ async function boot() {
     collision: () => world.collision,
     tapes: tapesSnapshot,
     labFronts: labFrontsSnapshot,
+    life: lifeSnapshot,
+    gig: gigSnapshot,
+    startGig,
+    dropGig,
+    buyCoffee,
+    photo: photoSnapshot,
+    openPhotoMode,
+    snapPhoto,
     phone: () => ({ open: isPhoneOpen() }),
     triangleTotal: built.triangles,
     setWaypoint,
@@ -922,6 +1001,7 @@ async function boot() {
     setCameraMode,
     getQuality,
     setQuality,
+    feedQualityGovernor,
     audioSnapshot,
     getVolume,
     trafficSnapshot,
@@ -1074,7 +1154,7 @@ function loop(now) {
 
     // Context priority: dialogue → mission/transit → nearby ride. Touch GAS
     // is a distinct input from keyboard E, so it can never eject the rider.
-    const ctx = contextAction(world.vehicles, [recordShopQuest(), storyContext(), sportsContext(), printStudioContext(), missionContext(), transitAction(), interiorDoorContext(), labFrontContext()])
+    const ctx = contextAction(world.vehicles, [recordShopQuest(), storyContext(), sportsContext(), printStudioContext(), missionContext(), transitAction(), interiorDoorContext(), labFrontContext(), gigContext(), coffeeContext()])
     const controls = player.vehicle?.controls
     const dialogueBlocking = isDialogueBlocking()
     const missionAction = missionActionLabel()
@@ -1143,6 +1223,8 @@ function loop(now) {
         else if (ctx.kind === 'interior-enter') enterInterior(ctx.target)
         else if (ctx.kind === 'interior-exit') exitInterior()
         else if (ctx.kind === 'lab-door') openLabRoom(ctx.target)
+        else if (ctx.kind === 'gig') { const problem = startGig(ctx.target); if (problem) toast(problem, 3) }
+        else if (ctx.kind === 'coffee') buyCoffee()
       }
     }
 
@@ -1165,6 +1247,8 @@ function loop(now) {
         streetCombat?.update(dt)
         updatePlayer(dt, input, world.collision, state.radio.beatPhase)
         updateTapes()
+        updateLife(dt, state.mode === 'vehicle' ? player.vehicle?.kind || 'car' : null)
+        updateGigs(dt)
       }
 
       if (!world.transitBusy && !isDialogueBlocking()) { updateMissions(dt); updateSideActivities(dt) }
@@ -1233,9 +1317,10 @@ function loop(now) {
   }
 
   // Fog-depth cull opaque city chunks only (never emissive/alpha/actors).
-  if (world.cityRoot && cam.camera) {
-    cam.camera.updateMatrixWorld(true)
-    updateOpaqueFogCull(cam.camera, world.cityRoot)
+  const view = photoCamera() || cam.camera
+  if (world.cityRoot && view) {
+    view.updateMatrixWorld(true)
+    updateOpaqueFogCull(view, world.cityRoot)
   }
 
   if (!state.paused || pausedFrameDirty) {
@@ -1249,9 +1334,9 @@ function loop(now) {
     try {
       const presentationState = { ...state, player: displayedPlayer }
       playerCharacter?.update(state.paused ? 0 : dt, presentationState)
-      nearCharacters?.update(state.paused ? 0 : dt, presentationState, cam.camera)
-      actorBatcher?.update(cam.camera)
-      renderFrame(cam.camera)
+      nearCharacters?.update(state.paused ? 0 : dt, presentationState, view)
+      actorBatcher?.update(view)
+      renderFrame(view)
     } finally { renderPoses.restore() }
     pausedFrameDirty = false
   }

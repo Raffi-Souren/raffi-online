@@ -16,6 +16,8 @@ import { stopCompare, beginRecordingRun } from './replay.js'
 import { setRadio, toast } from './hud.js'
 import { applyTapeUnlocks } from './tapes.js'
 import { resetFeel } from './feel.js'
+import { resetLifeClock } from './life.js'
+import { dropGig } from './gigs.js'
 import { SAVE_VERSION, SAVE_SLOTS, SAVE_PREFIX, validateSaveRecord, saveSummary } from './save-core.js'
 
 let deps = null
@@ -141,6 +143,9 @@ export function loadGame(slot = 'auto') {
   state.time = save.playSeconds
   // The clock just moved; drop feel cooldowns and sways from the session before.
   resetFeel()
+  // A running gig belongs to the session that started it, not to the save.
+  dropGig(null)
+  resetLifeClock()
   state.district = districtAt(pose.x, pose.z)?.id || data.world.spawn.district
   state.radio.on = save.radio.on
   state.radio.stationIndex = data.radio.stations.findIndex((station) => station.id === save.radio.station)

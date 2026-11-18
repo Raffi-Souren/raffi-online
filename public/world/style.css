@@ -996,3 +996,40 @@ body:has(#crib-garage:not([hidden]):not(.hidden)) #side-activities {
 #phone button:focus-visible { outline: 3px solid #f2bd45; outline-offset: 1px; }
 .phone-hinge { height: 10px; margin: 12px 30px 0; border-radius: 6px; background: linear-gradient(#5b6372, #a3acb9); }
 #touch.dialogue #btn-phone { display: none; }
+
+/* --------------------------------------------------------- street life --- */
+#wallet { margin-top: 4px; font-size: 13px; font-weight: 700; color: #f2bd45; text-shadow: 0 1px 0 #0008; }
+#stamina { position: absolute; left: 50%; bottom: calc(118px + var(--safe-b)); width: 150px; height: 7px; transform: translateX(-50%); border: 1px solid rgba(255, 255, 255, 0.45); border-radius: 4px; background: rgba(8, 12, 20, 0.6); overflow: hidden; opacity: 0; transition: opacity 0.25s; }
+#stamina.show { opacity: 1; }
+#stamina i { display: block; width: 100%; height: 100%; transform-origin: left center; background: #9fe3ff; }
+#stamina[data-state="winded"] i { background: var(--pink); }
+#stamina[data-state="wired"] i { background: #f2bd45; }
+#btn-phone[data-unread]::after, #desktop-phone[data-unread]::after { content: ""; position: absolute; top: -4px; right: -4px; width: 11px; height: 11px; border-radius: 50%; background: #e5574b; border: 2px solid #fff; }
+#desktop-phone { position: relative; }
+#phone-tabs { grid-template-columns: repeat(5, 1fr); }
+.phone-text { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border: 1px solid #b7b29c; border-radius: 10px 10px 10px 2px; background: #fffdf4; color: #10213d; }
+.phone-text strong { font-size: 11px; color: #2a6be0; }
+.phone-text span { font-size: 12.5px; line-height: 1.45; }
+.phone-text[data-unread="true"] { border-color: #2a6be0; background: #eef4ff; }
+.phone-skill { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: baseline; padding: 7px 10px; border: 1px solid #b7b29c; border-radius: 5px; background: #fffdf4; color: #10213d; }
+.phone-skill strong { font-size: 13px; }
+.phone-skill span { font-size: 11px; color: #4d5565; text-align: right; }
+.phone-skill i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #2a6be0 calc(var(--fill, 0) * 100%), #d8d4c4 calc(var(--fill, 0) * 100%)); }
+
+/* ---------------------------------------------------------- photo mode --- */
+#photo { position: absolute; inset: 0; z-index: 55; }
+#photo.hidden { display: none; }
+#photo-frame { position: absolute; inset: 0; cursor: grab; touch-action: none; --vignette: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, var(--vignette)) 100%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55), inset 0 0 0 14px rgba(0, 0, 0, 0.18); }
+#photo-frame:active { cursor: grabbing; }
+#photo-frame.flash { animation: photo-flash 0.32s ease-out; }
+@keyframes photo-flash { 0% { background-color: rgba(255, 255, 255, 0.85); } 100% { background-color: transparent; } }
+#photo-stamp { position: absolute; right: 22px; bottom: 20px; font: 700 13px Tahoma, Verdana, sans-serif; color: rgba(255, 255, 255, 0.92); text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45); pointer-events: none; }
+#photo-date { position: absolute; left: 22px; bottom: 20px; font: 700 15px "Courier New", monospace; color: #ff9a2e; pointer-events: none; }
+#photo-bar { position: absolute; left: 50%; bottom: calc(52px + var(--safe-b)); transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 6px; border-radius: 8px; border: 1px solid #e9eef5; background: linear-gradient(160deg, #cfd6df, #8d97a5); box-shadow: 0 10px 30px #0008; max-width: calc(100% - 24px); }
+#photo-bar button { min-height: 44px; min-width: 58px; padding: 0 12px; font: inherit; font-size: 12px; color: #10213d; background: linear-gradient(#fff, #d8d4c4); border: 1px solid #8a8670; border-radius: 4px; cursor: pointer; }
+#photo-bar button:focus-visible { outline: 3px solid #f2bd45; outline-offset: 1px; }
+#photo-snap { font-weight: 700; background: linear-gradient(#ffe7a1, #f2bd45) !important; border-color: #8a5a00 !important; }
+#photo-note { position: absolute; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); margin: 0; padding: 4px 10px; border-radius: 4px; font-size: 11px; color: #f0ece0; background: rgba(8, 12, 20, 0.7); white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+#photo-note:empty { display: none; }
+body.photo-mode #hud, body.photo-mode #side-activities { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { #photo-frame.flash { animation: none; } }
