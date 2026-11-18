@@ -360,7 +360,7 @@ its own page, offline from the desktop, or while a story scene owns the music,
 the station's synth plays instead (`hostPlaysStation` in `engine/audio-core.js`).
 Cars remember the station they were left on and play it again when you climb back in.
 
-**Tapes.** Fourteen cassettes, one per mix in `data/audio-library.ts`, sit on
+**Tapes.** A cassette for every mix in `data/audio-library.ts` (24 today) sits on
 sidewalks and stoops (`data/tapes.json`, ids and titles checked against the
 library). Two instanced meshes draw the whole set. Walking within 1.4 m (2.3 m
 in a vehicle) picks one up once: a pop, the pickup sound and a count. The found
@@ -392,6 +392,64 @@ Lab storefront, pins the map by right-click through an interior round trip, and
 works the phone by touch. `city-life.test.mjs` covers pickup idempotency,
 storage tolerance, BADCO FM's fallback rule, New York time across daylight
 saving and the storefront slugs.
+
+## November 16 street life (Phase 2b: cash, skills, gigs, texts, camera)
+
+The city gives you things to do between missions, and remembers that you did
+them. All of it is optional, none of it gates a mission, a mix or a tape, and
+the tone stays section 2: nobody gets hurt and nothing is stolen.
+
+**Cash and skills.** `game/life-core.js` (pure) and `data/life.json` hold the
+rules. The wallet is whole dollars, never negative. Four skills grow with use and
+have five levels: Legs (metres sprinted) lengthens the sprint from 12 s to 26 s;
+Wheels (metres driven) and Board (metres skated, kickflips) raise the pay of
+their own gigs by 5% a level; Hustle (gigs finished) opens bigger gigs. A new
+level is a dry one-line toast. The profile is saved under localStorage
+`raffi-world:life:v1`, apart from the save slots like found tapes, and a damaged
+or foreign profile reads as a fresh one.
+
+**Stamina.** Sprinting drains a meter that shows only while it is in use. Empty
+means winded: a walk until it is back to 30%. It refills after 0.9 s of not
+sprinting, faster standing still. A mission never drains it, so authored timings
+are unchanged. Coffee at any food cart ($4) refills it and makes the sprint free
+for 60 s.
+
+**Side gigs.** Five gigs in `data/life.json`, each given by someone already in
+the city, each starting at a gold ring on a sidewalk (E on foot) or from Gigs on
+the phone. Crate Run (Bea) and Crosstown Run (Nico, Hustle 2) are timed
+deliveries in stop order; Flyer Drop (Mae) is a delivery sized for feet or a
+board; Waterfront Line (Jules) is a gate loop that only counts on a skateboard,
+brings its own board, and pays for kickflips; Find the DJ (Lena) hides a pop-up
+set at a rotating spot with no pin, only signal bars in the objective line. A
+finish pays a base plus seconds left and tricks, both capped. Running out of time
+or leaving the board ends it with no pay and no penalty. Best times are kept. A
+mission or a loaded save drops a running gig.
+
+**Texts.** Contacts text when something happens: a first tape, a gig won or
+missed, a new level, a first coffee or photo. `texts` in `data/life.json` are
+matched by event; a milestone skipped past still arrives, and each text is sent
+once. A text never talks over the toast that caused it: it waits six seconds.
+The PHONE button shows a dot while any are unread.
+
+**Phone.** Four more apps: Gigs (pay, pitch, best time, drop), Texts, Me (wallet,
+the four skill meters, the valet) and Camera. The valet ($20) drops the last car
+you drove on the nearest open street. Tapes can sell a tip ($25) that pins the
+nearest tape you are missing; each tape is paid for once.
+
+**Camera.** The street holds still while you orbit within 12 m of yourself
+(drag, arrows, pinch or scroll), with five looks: Street, Disposable flash, XP
+Bliss, Sodium night and Mono zine. Looks are colour filters over the finished
+frame, so they cost the renderer nothing and never touch the city's grade. Snap
+saves a PNG of exactly that frame with a small raffi.computer stamp.
+
+Evidence: `pnpm run test:world:life` (in the release gate) sprints until winded,
+starts Crate Run from its ring and delivers it, buys a coffee, calls the valet,
+reads the texts, takes a photo through the real download, reloads, and works the
+phone by touch. It also checks every gig point and every tape against the
+generated city (clear of solids, off the road). `street-life.test.mjs` covers
+profile tolerance, levels, the wallet, stamina at 30/60/144 Hz, each gig kind,
+pay caps, best times, text matching, and that every gig can be finished in its
+time at a plausible pace.
 
 ## November 17 graphics pass (the best picture a device holds smoothly)
 

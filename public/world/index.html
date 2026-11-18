@@ -34,6 +34,7 @@
         <span class="cl-pips"></span>
       </div>
       <div id="clock">--:--</div>
+      <div id="wallet" aria-label="Cash">$0</div>
     </div>
 
     <div id="minimap" role="img" aria-label="Local map">
@@ -50,6 +51,8 @@
         <span id="radio-bpm">92</span>
       </div>
     </div>
+
+    <div id="stamina" role="img" aria-label="Sprint stamina"><i></i></div>
 
     <div id="interaction-prompt">
       <span id="interaction-key">E</span>
@@ -174,6 +177,18 @@
       </div>
       <div class="phone-hinge" aria-hidden="true"></div>
     </section>
+  </div>
+
+  <div id="photo" class="hidden" role="dialog" aria-modal="true" aria-label="Camera" aria-hidden="true">
+    <div id="photo-frame"><span id="photo-date" aria-hidden="true"></span><span id="photo-stamp" aria-hidden="true">raffi.computer</span></div>
+    <div id="photo-bar">
+      <button type="button" id="photo-look">Look: Street</button>
+      <button type="button" id="photo-wide" aria-label="Wider lens">Wide</button>
+      <button type="button" id="photo-tight" aria-label="Tighter lens">Tight</button>
+      <button type="button" id="photo-snap">Snap</button>
+      <button type="button" id="photo-done">Done</button>
+    </div>
+    <p id="photo-note" role="status" aria-live="polite"></p>
   </div>
 
   <div id="world-map" class="hidden" role="dialog" aria-modal="true" aria-labelledby="world-map-title">

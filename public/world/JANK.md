@@ -205,13 +205,33 @@ Evidence (session, not committed): `/tmp/raffi-world-city-life/report.json`,
 |---|---|---|---|
 | Radio | Stations were synth loops only; the real mixes lived on the desktop. | charm | Yes — BADCO FM asks the desktop player, synth fallback on its own page |
 | Cars | Leaving a car forgot what it was playing. | charm | Yes — each car keeps its station |
-| Exploration | Nothing to find off the mission path. | charm | Yes — fourteen tapes shared with the Lab's Tape Shelf |
+| Exploration | Nothing to find off the mission path. | charm | Yes — a tape per mix, shared with the Lab's Tape Shelf |
 | Navigation | Routes only came from the map or a mission marker. | charm | Yes — Contacts on the phone set a route; right-click pins on the map |
 | Clock | The HUD clock followed the visitor's own time zone. | charm | Yes — America/New_York, `?clock=local` to opt out |
 | Lab rooms | The World and the Lab did not know about each other. | charm | Partly — storefront signs and the phone open Lab rooms; walk-in interiors are deferred |
 | Side gigs | No data-driven side gig yet. | charm | Deferred — needs its own pass with a payout and fail state |
 | Phone camera and texts | The phone has no camera or text thread yet. | charm | Deferred — the camera needs the photo-mode pass |
 | Waypoint long-press | Touch pins with a tap; there is no separate long-press on the street. | charm | Kept — a long-press would fight the stick |
+
+## Phase 6 — street life (November 16)
+
+Evidence (session, not committed): `/tmp/raffi-world-street-life/report.json`,
+`winded.png`, `phone-me.png`, `photo-mode.png`, `photo.png` and
+`phone-touch-gigs.png` from `pnpm run test:world:life`.
+
+| Area | Issue | Severity | Fixed |
+|---|---|---|---|
+| Release gate | Main went red on November 8: the feel smoke sprinted at where a pedestrian was heading and missed when they turned. | blocker | Yes — the run-up retries with another walker only when the target left the line; a miss on someone who held their line still fails |
+| Release gate | The city-life smoke expected 14 tapes; the mix library now has 24. Hidden behind the failure above. | blocker | Yes — the smoke counts from the data |
+| Tapes | The Bowery Land tape sat in a traffic lane on 2nd Ave. | jank | Yes — moved to the sidewalk; the street-life smoke now checks every tape |
+| Side gigs | Deferred from Phase 2. | charm | Yes — five gigs, three kinds, data-driven |
+| Between missions | Nothing to earn, spend or get better at. | charm | Yes — cash, four skills, stamina, coffee, valet, tape tips |
+| Phone | No texts or camera. | charm | Yes — Texts and a photo mode with five looks |
+| Gig givers | Gigs start at a ring or on the phone; the giver is not standing there. | charm | Deferred — needs spare cast slots and a bark slot |
+| Find the DJ | The set is a beacon and signal bars; there is no DJ, crowd or audible mix at the spot. | charm | Deferred — belongs with the booth mini-game |
+| Photo mode | No roll or FOV readout, and photos are not kept in a gallery. | charm | Deferred — a gallery needs storage rules for image blobs |
+| Weather | Still always dry. | charm | Deferred — own pass, with the perf budget |
+| Cash sinks | Cash buys comforts only; there is nothing to own. | charm | Deferred — outfits or a garage need art |
 
 ## Phase 7 — graphics (November 17)
 
