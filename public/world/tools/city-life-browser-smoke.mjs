@@ -103,7 +103,10 @@ try {
   await boot(context)
 
   const fresh = await page.evaluate(() => ({ tapes: window.RAFFI_WORLD.tapes(), stored: localStorage.getItem('raffi:tapes-found') }))
-  assert.equal(fresh.tapes.total, 14)
+  // One tape per mix in the library, however many that is today.
+  const tapeTotal = await page.evaluate(() => window.__CITY__.data.tapes.tapes.length)
+  assert.ok(tapeTotal >= 14, 'tapes went missing: ' + tapeTotal)
+  assert.equal(fresh.tapes.total, tapeTotal)
   assert.deepEqual(fresh.tapes.found, [])
   assert.equal(fresh.tapes.markers, 0, 'tape markers show before the first find')
   assert.equal(fresh.stored, null)
@@ -123,7 +126,7 @@ try {
   report.pickup = afterPickup
   assert.deepEqual(afterPickup.tapes.found, [tape.id])
   assert.deepEqual(afterPickup.stored, [tape.id])
-  assert.equal(afterPickup.tapes.markers, 13, 'remaining tapes are not on the map after the first find')
+  assert.equal(afterPickup.tapes.markers, tapeTotal - 1, 'remaining tapes are not on the map after the first find')
   assert.match(afterPickup.toast, /TAPE FOUND/)
   assert.equal((await badco()).unlocked, true, 'the first tape did not unlock BADCO FM')
 
@@ -142,7 +145,7 @@ try {
   assert.match(radioApp, /BADCO FM/)
   assert.equal(await page.locator('#phone-panel button', { hasText: 'BADCO FM' }).isDisabled(), false, 'BADCO FM locked on the phone')
   await page.locator('#phone-tabs button', { hasText: 'Tapes' }).click()
-  assert.match(await page.locator('#phone-panel').innerText(), /1\/14 found/)
+  assert.ok((await page.locator('#phone-panel').innerText()).includes(`1/${tapeTotal} found`), 'the Tapes app has the wrong count')
   await capture('phone-tapes')
   await page.locator('#phone-tabs button', { hasText: 'Radio' }).click()
   await page.locator('#phone-panel button', { hasText: 'BADCO FM' }).click()
@@ -195,7 +198,7 @@ try {
     return { tapes: window.RAFFI_WORLD.tapes(), badco: data.radio.stations.find((station) => station.hostMixes).unlocked }
   })
   assert.deepEqual(reloaded.tapes.found, [tape.id])
-  assert.equal(reloaded.tapes.markers, 13)
+  assert.equal(reloaded.tapes.markers, tapeTotal - 1)
   assert.equal(reloaded.badco, true)
   await context.close()
 
