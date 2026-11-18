@@ -208,6 +208,15 @@ try {
       await welcome.waitFor({ state: "hidden" })
       await page.reload({ waitUntil: "domcontentloaded" })
       const start = page.getByRole("region", { name: "Desktop taskbar", exact: true }).getByRole("button", { name: "Start menu", exact: true })
+      // The server-rendered Start button is clickable before React hydrates
+      // it, and a tap in that window is dropped for good. With the welcome
+      // dismissed there is nothing on screen that marks hydration, so wait for
+      // React's props on the button itself (on the clock, not per frame).
+      await page.waitForFunction(
+        (button) => Object.keys(button).some((key) => key.startsWith("__reactProps$")),
+        await start.elementHandle(),
+        { polling: 100 },
+      )
       await start.click()
       const menu = page.getByRole("menu", { name: "Start menu", exact: true })
       await menu.waitFor({ state: "visible" })

@@ -61,13 +61,16 @@ async function open(page, app, query = "") {
   await task(page, app).waitFor()
   // Visible chrome can arrive before its activity/focus contract settles.
   // Wait for the usable app, rather than giving a role query a fixed head start.
+  // This is React state, not paint, so poll on the clock: a RAF poll never
+  // returns from a page whose compositor stalled right after navigation, and
+  // requireLiveFrames, which recovers that stall, only runs after open().
   await page.waitForFunction((app) => {
     const dialog = document.querySelector(`[role="dialog"][data-window-id="${app}"]`)
     const button = document.querySelector(`[data-window-task="${app}"]`)
     return button?.getAttribute("data-window-state") === "active"
       && dialog?.getAttribute("aria-modal") === "true"
       && !dialog.closest('[aria-hidden="true"], [inert]')
-  }, app)
+  }, app, { polling: 100 })
   // Projects loads inside a parent-owned shell, so its initial shell can be
   // visible before the dynamic content has established its natural height.
   if (app === "projects") await shell(page, app).getByRole("heading", { name: "Projects", exact: true }).waitFor()
